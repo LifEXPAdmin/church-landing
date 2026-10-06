@@ -1,10 +1,11 @@
 ## Featured profile resources locally verified, 6 October 2026 UTC
 
-Application `7f9f28e` / build `cU-Nl090FdcOne2jnv9GH` adds up to six ordered
+Application `2356885` / build `yB8ycJbNab2ZsF7lHzjzY` adds up to six ordered
 listing, opportunity and media references to the versioned profile editor. Current
 source permissions govern each displayed card; profile pinning and calendar behavior
 remain reused. The candidate passed 32 registered checks, six final HTTPS checks,
-13 controlled component cases and 20 production-browser groups. No new schema or
+13 controlled component cases and 21 production-browser groups. Empty and entirely
+inaccessible collections stay hidden until a current read permits content. No new schema or
 provider activation. [PROFILE_FEATURED_REPORT.md](PROFILE_FEATURED_REPORT.md) records
 exact evidence scopes, failed attempts, corrections and rollback compatibility.
 Owned runtimes are stopped. This is a local handoff; combined release and dependency

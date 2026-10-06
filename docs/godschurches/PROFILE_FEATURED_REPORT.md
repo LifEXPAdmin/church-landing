@@ -1,9 +1,8 @@
 # Featured profile resources
 
 October 6, 2026 UTC. Locally verified and ready for integration. Not merged or live.
-Application `7f9f28e6bddf65778f5c57752d9b143a35251978`, production build
-`cU-Nl090FdcOne2jnv9GH`. Browser QA follow-through is `cc4e207`; its only differences
-from that application are the two profile browser scripts.
+Application and browser QA `2356885964648e6d500f90d344ab133913cfa3db`, production
+build `yB8ycJbNab2ZsF7lHzjzY`.
 
 ## Behavior and boundaries
 
@@ -20,6 +19,9 @@ permissions. Generic member preview assumes no owner or church grants. Visitor
 preview remains identity-only. Member HTML/RSC omit raw featured IDs and copied
 source metadata. Current client cards contain only permitted narrow projections.
 No hidden-reference counts or per-item private placeholders are exposed.
+Successful empty or fully inaccessible collections hide the reader section. Its
+observer remains mounted so newly permitted content can appear after a current read.
+Owners retain controls to remove unavailable saved choices.
 
 Visible focused cards refresh at a bounded 30-second interval. Blur, offline,
 identity or route changes, failed reads and the 10-second request deadline conceal
@@ -38,7 +40,8 @@ configuration. Existing opaque module recovery, export and erasure remain the ow
 - 32 registered input, real PostgreSQL, profile module/recovery, calendar, pin and
   saved-resource checks passed at `73434e4`. All 124 populated migrations and an
   actual workspace dump/restore passed. Subsequent application changes were the
-  equivalent raw-reference omission and client cancellation hardening, covered by
+  equivalent raw-reference omission, client cancellation hardening and empty-section
+  presentation, covered by
   final HTTP, component and browser checks.
 - Six production HTTPS checks passed at the final application: strict current-account
   API validation and caching, guest/member/preview HTML/RSC boundaries, existing
@@ -48,12 +51,13 @@ configuration. Existing opaque module recovery, export and erasure remain the ow
   cases. These model lifecycle and transport behavior; they are separate from native
   browser acceptance. A deliberately noncooperative transport reproduced the deadline
   robustness gap before the fix.
-- Twenty production-browser groups passed with zero page errors: seven featured
+- Twenty-one production-browser groups passed with zero page errors: eight featured
   resource flows, eight existing module flows and five profile/settings/photo flows.
   They cover actual add/order/save, current audience previews, focused withdrawal,
   native two-window foreground changes, offline/resume, retained link/selection,
   committed-but-lost save with identical retry bytes, explicit conflict review,
-  upload retry preservation and 320-pixel enlarged-text layout. The featured runner
+  upload retry preservation, empty/inaccessible section omission with current-access
+  recovery and 320-pixel enlarged-text layout. The featured runner
   observed zero external requests. The viewport capture was visually inspected.
 - Production build, types, changed-source lint, copy, hydration, runtime traces,
   source-security and diff checks passed. Build lint retains existing repository
@@ -63,9 +67,10 @@ configuration. Existing opaque module recovery, export and erasure remain the ow
 The first focus attempts retained failed evidence: headless automation did not
 produce a native focus change. A headed browser with forced focus disabled supplied
 that acceptance. The older profile browser expectations also needed the new explicit
-empty collection field. The corrected QA rerun used the same verified application
-build and completed all twenty groups. All owned browsers, server and fictional
-databases were closed afterward.
+empty collection field. A corrected QA rerun completed twenty groups on the prior
+verified build. Final review found an empty reader placeholder; the final application
+hides it, and a new complete build/HTTPS/browser run passed all twenty-one groups.
+All owned browsers, server and fictional databases were closed afterward.
 
 ## Integration and remaining acceptance
 

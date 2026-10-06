@@ -165,6 +165,9 @@ visible client, cleared on concealment or failed access, and rechecked at a boun
 30-second interval. Background throttling means this is not instantaneous revocation.
 Minimal cards link back to the canonical source; private provider, contact and
 application details are never included.
+Successful empty or fully inaccessible collections omit the reader section while
+keeping its observer mounted for a fresh current-access read. Generic failed-read
+notices and owner controls for unavailable saved choices remain available.
 
 The three reorderable text sections remain separate. The collection has keyboard
 Up/Down and Remove controls for its own order. The module storage bound remains
