@@ -537,7 +537,11 @@ try {
     await count(1);
   }
   await page.setViewportSize({ width: 320, height: 740 });
+  await page.reload();
   await page.addStyleTag({ content: "html { font-size: 24px !important; }" });
+  await count(1);
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => window.scrollTo(0, 0));
   await bounded();
   await page.screenshot({
     path: output + "/search-320-enlarged.png",
