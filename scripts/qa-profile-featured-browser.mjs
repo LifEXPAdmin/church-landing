@@ -42,7 +42,7 @@ const der = execFileSync("openssl", ["pkey", "-pubin", "-outform", "DER"], {
   input: pub
 });
 const browser = await chromium.launch({
-  headless: true,
+  headless: process.env.PROFILE_FEATURED_HEADED !== "1",
   executablePath:
     process.env.CHROMIUM_PATH ??
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",

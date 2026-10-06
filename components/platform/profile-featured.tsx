@@ -28,27 +28,50 @@ async function readResources(
   owner: string,
   signal: AbortSignal
 ): Promise<FeaturedResult> {
-  const response = await fetch(url, {
-    signal,
-    cache: "no-store",
-    credentials: "same-origin",
-    headers: { "X-Expected-Account": owner }
+  let abort = () => {};
+  const stopped = new Promise<never>((_, reject) => {
+    abort = () =>
+      reject(
+        Object.assign(Error("Resource read canceled."), { name: "AbortError" })
+      );
+    signal.addEventListener("abort", abort, { once: true });
   });
-  const result = await response.json();
-  if (!response.ok)
-    throw Error(result.message ?? "Featured resources could not be checked.");
-  const identity = await fetch("/api/platform/profile?view=identity", {
-    signal,
-    cache: "no-store",
-    credentials: "same-origin"
-  });
-  if (
-    !identity.ok ||
-    (await identity.json()).id !== owner ||
-    result.viewerId !== owner
-  )
-    throw Error("Your sign-in changed. Reload before continuing.");
-  return result;
+  try {
+    if (signal.aborted) {
+      abort();
+      return await stopped;
+    }
+    return await Promise.race([
+      stopped,
+      (async () => {
+        const response = await fetch(url, {
+          signal,
+          cache: "no-store",
+          credentials: "same-origin",
+          headers: { "X-Expected-Account": owner }
+        });
+        const result = await response.json();
+        if (!response.ok)
+          throw Error(
+            result.message ?? "Featured resources could not be checked."
+          );
+        const identity = await fetch("/api/platform/profile?view=identity", {
+          signal,
+          cache: "no-store",
+          credentials: "same-origin"
+        });
+        if (
+          !identity.ok ||
+          (await identity.json()).id !== owner ||
+          result.viewerId !== owner
+        )
+          throw Error("Your sign-in changed. Reload before continuing.");
+        return result;
+      })()
+    ]);
+  } finally {
+    signal.removeEventListener("abort", abort);
+  }
 }
 const choiceUrl = (references: ProfileFeaturedReference[]) =>
   `/api/platform/profile?${new URLSearchParams({ view: "featured-choice", references: JSON.stringify(references) })}`;
