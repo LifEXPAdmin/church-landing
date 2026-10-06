@@ -1,5 +1,6 @@
 import { InterchurchHelpPage } from "@/components/platform/interchurch-help-page";
 import { ExchangeInquiryEntry } from "@/components/platform/exchange-handoff-page";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exchangeReturnHref } from "@/lib/platform/exchange-navigation";
@@ -52,7 +53,7 @@ export default async function Page({
       owner = listing.ownerChurch ?? listing.owner;
     if (listing.helpPurpose)
       return (
-        <PlatformShell user={user}>
+        <PlatformShell user={user} signInReturnTo={path}>
           <InterchurchHelpPage
             owner={user?.id ?? null}
             view="request"
@@ -170,9 +171,28 @@ export default async function Page({
             Open need actions and progress
           </Link>
         )}
-        {user && !result.structuredNeed && (
-          <ExchangeInquiryEntry owner={user.id} listingId={id} />
-        )}
+        {!result.structuredNeed &&
+          (user ? (
+            <ExchangeInquiryEntry owner={user.id} listingId={id} />
+          ) : (
+            <section className="space-y-3" aria-label="Listing inquiry">
+              <h2 className="text-2xl">Ask about this listing</h2>
+              <p>
+                Sign in to check whether a private inquiry is available to your
+                account. The listing owner’s contact choices still apply.
+              </p>
+              <Link
+                prefetch={false}
+                className="gc-button"
+                href={accountEntryHref("join", path, "account")}
+              >
+                Sign in to ask about this listing
+              </Link>
+              <p className="text-sm">
+                Signing in does not send an inquiry or reserve this listing.
+              </p>
+            </section>
+          ))}
         <section
           className="space-y-3 rounded-xl border border-gc-divider p-4"
           aria-label="Owner and listing safety"
@@ -255,7 +275,7 @@ export default async function Page({
     content = <ExchangeUnavailable error={error} href={path} />;
   }
   return (
-    <PlatformShell user={user}>
+    <PlatformShell user={user} signInReturnTo={path}>
       <section className="container-shell py-8 sm:py-10">
         <div className="mx-auto max-w-3xl space-y-6">
           <ExchangeNavigation />

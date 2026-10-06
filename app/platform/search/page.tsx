@@ -9,7 +9,10 @@ import {
   searchUrlInput
 } from "@/lib/platform/community-search";
 import { PortalError } from "@/lib/platform/portal-policy";
-import type { SearchNavigation } from "@/lib/platform/search-navigation";
+import {
+  searchHref,
+  type SearchNavigation
+} from "@/lib/platform/search-navigation";
 export const metadata: Metadata = {
   title: { absolute: "Explore | God’s Churches" },
   description:
@@ -40,7 +43,10 @@ export default async function PlatformSearchPage({
     inputError = error.message;
   }
   return (
-    <PlatformShell user={user}>
+    <PlatformShell
+      user={user}
+      signInReturnTo={inputError ? "/platform/search" : searchHref(query)}
+    >
       <section className="container-shell space-y-6 py-8 sm:py-10">
         <div className="rounded-xl border border-gc-divider bg-gc-surface p-6 text-gc-text sm:p-8">
           <p className="mb-3 text-sm uppercase tracking-widest text-gc-accent">

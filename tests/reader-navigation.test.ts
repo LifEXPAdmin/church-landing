@@ -294,12 +294,12 @@ test("saved return preserves only valid collection and cursor state", () => {
   );
 });
 
-test("search return retains bounded query/category/filter/cursor without owner authority", () => {
+test("search return retains public filters and restarts account-bound pagination", () => {
   assert.equal(
     safeAccountReturn(
       "/platform/search?q=%E4%B8%AD%E6%96%87&kind=posts&topic=prayer&churchId=church-1&after=opaque_123&owner=other"
     ),
-    "/platform/search?kind=posts&after=opaque_123&topic=prayer&churchId=church-1&q=%E4%B8%AD%E6%96%87"
+    "/platform/search?kind=posts&topic=prayer&churchId=church-1&q=%E4%B8%AD%E6%96%87"
   );
   assert.equal(
     safeAccountReturn("/platform/search?kind=admin&after=%2Fexternal"),

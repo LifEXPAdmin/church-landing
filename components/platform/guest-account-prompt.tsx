@@ -20,9 +20,9 @@ export function GuestAccountPrompt({
           {accountReasons[accountReason(reason)]}
         </h1>
         <p className="my-5 text-gc-muted">
-          Public posts, comments and church pages are open to everyone. An
-          account lets you connect and participate. After signing in, you’ll
-          return to where you left off.
+          Publicly shared pages and resources are open to everyone. An account
+          lets you connect and participate. After signing in, you’ll return to
+          where you left off.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link

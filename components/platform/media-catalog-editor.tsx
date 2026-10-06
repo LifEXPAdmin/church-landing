@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 import { mediaTopicSuggestions } from "@/lib/platform/media-topic-options";
 import {
   MediaNavigation,
@@ -307,7 +308,13 @@ export function MediaEditor({
         <p>
           <Link
             className="underline"
-            href="/platform/login?next=%2Fplatform%2Fmedia%2Fstudio"
+            href={accountEntryHref(
+              "login",
+              id
+                ? `/platform/media/${encodeURIComponent(id)}/edit`
+                : "/platform/media/new",
+              "account"
+            )}
           >
             Sign in
           </Link>{" "}

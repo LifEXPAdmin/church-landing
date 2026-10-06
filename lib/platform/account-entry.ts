@@ -4,6 +4,18 @@ import { relationshipSearch } from "./relationship-navigation";
 import { isSettingsPath } from "./settings-registry";
 import { readerDate, readerId } from "./reader-navigation";
 import { activityCategories } from "./activity-types";
+import {
+  searchCategories,
+  searchChurchFilter,
+  searchQueryLimit,
+  type SearchCategory
+} from "./search-navigation";
+import { POST_TOPICS } from "./post-options";
+import {
+  DISCOVERY_RADII,
+  discoveryCountry,
+  discoveryPlaceId
+} from "./discovery-options";
 
 // Account entry preserves only known in-app reading/navigation state. Never
 // preserve credentials, arbitrary query strings or another authentication page.
@@ -25,6 +37,89 @@ export function safeAccountReturn(value: unknown): string {
     )
   )
     return url.pathname.replace(/\/$/, "");
+  // Media returns to an existing reader or workspace. The playlist editor flag
+  // opens a form only; tokens, cursors, drafts and commands never cross sign-in.
+  if (
+    url.origin === "https://return.invalid" &&
+    /^\/platform\/media(?:\/(?:new|studio|saved|playlists(?:\/[a-zA-Z0-9_-]{1,100})?|[a-zA-Z0-9_-]{1,100}(?:\/edit)?))?\/?$/.test(
+      url.pathname
+    )
+  ) {
+    const path = url.pathname.replace(/\/$/, "");
+    const editor =
+      /^\/platform\/media\/playlists\/[a-zA-Z0-9_-]{1,100}$/.test(path) &&
+      url.searchParams.getAll("edit").length === 1 &&
+      url.searchParams.get("edit") === "1";
+    return path + (editor ? "?edit=1" : "");
+  }
+  // Account entry starts a fresh search page. Keep only unambiguous public
+  // filters supported by the current category, never account-bound cursors.
+  if (
+    url.origin === "https://return.invalid" &&
+    url.pathname.replace(/\/$/, "") === "/platform/search"
+  ) {
+    const p = url.searchParams,
+      query = new URLSearchParams();
+    const keys = [
+      "kind",
+      "q",
+      "topic",
+      "churchId",
+      "country",
+      "placeId",
+      "radiusKm"
+    ];
+    if (keys.some((key) => p.getAll(key).length > 1)) return "/platform/search";
+    const kind = (p.get("kind") ?? "posts") as SearchCategory;
+    const q = (p.get("q") ?? "").trim();
+    if (
+      !searchCategories.includes(kind) ||
+      q.length > searchQueryLimit(kind) ||
+      /[\u0000-\u001f\u007f]/.test(q) ||
+      (kind === "listings" && q.length === 1)
+    )
+      return "/platform/search";
+    if (p.has("kind")) query.set("kind", kind);
+    const topic = p.get("topic"),
+      church = p.get("churchId");
+    if (topic) {
+      if (kind !== "posts" || !POST_TOPICS.some((value) => value === topic))
+        return "/platform/search";
+      query.set("topic", topic);
+    }
+    if (church) {
+      if (!searchChurchFilter(kind) || !readerId(church))
+        return "/platform/search";
+      query.set("churchId", church);
+    }
+    if (["country", "placeId", "radiusKm"].some((key) => p.get(key))) {
+      if (kind !== "listings") return "/platform/search";
+      try {
+        const country = discoveryCountry(p.get("country"));
+        const place = p.get("placeId"),
+          radius = p.get("radiusKm");
+        if (
+          place &&
+          (!country ||
+            !/^[1-9]\d{0,8}$/.test(place) ||
+            !discoveryPlaceId(Number(place)))
+        )
+          return "/platform/search";
+        if (
+          radius &&
+          (!place || !DISCOVERY_RADII.some((value) => String(value) === radius))
+        )
+          return "/platform/search";
+        if (country) query.set("country", country);
+        if (place) query.set("placeId", place);
+        if (radius) query.set("radiusKm", radius);
+      } catch {
+        return "/platform/search";
+      }
+    }
+    if (q) query.set("q", q);
+    return "/platform/search" + (query.size ? "?" + query : "");
+  }
   // Private group return paths carry no invitation, cursor or unsent action.
   if (
     url.origin === "https://return.invalid" &&
@@ -167,21 +262,6 @@ export function safeAccountReturn(value: unknown): string {
     url.searchParams.get("tab") === "photos"
   )
     query.set("tab", "photos");
-  if (url.pathname === "/platform/search") {
-    const kind = url.searchParams.get("kind");
-    if (
-      kind &&
-      ["posts", "people", "churches", "events", "topics"].includes(kind)
-    )
-      query.set("kind", kind);
-    const after = url.searchParams.get("after");
-    if (after && /^[a-zA-Z0-9_-]{1,256}$/.test(after))
-      query.set("after", after);
-    for (const key of ["topic", "churchId"]) {
-      const value = readerId(url.searchParams.get(key));
-      if (value) query.set(key, value);
-    }
-  }
   if (url.pathname === "/platform/saved") {
     for (const key of ["collectionId", "after"]) {
       const value = readerId(url.searchParams.get(key));

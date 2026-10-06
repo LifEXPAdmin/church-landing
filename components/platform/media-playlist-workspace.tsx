@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { accountEntryHref } from "@/lib/platform/account-entry";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { SocialClientError, socialRequest } from "@/lib/platform/social-client";
@@ -454,7 +455,18 @@ function PlaylistWorkspace({
         </p>
       ) : !owner && (mode === "saved" || editing) ? (
         <p>
-          <Link className="underline" href="/platform/login">
+          <Link
+            className="underline"
+            href={accountEntryHref(
+              "login",
+              mode === "saved"
+                ? "/platform/media/saved"
+                : id
+                  ? `/platform/media/playlists/${encodeURIComponent(id)}?edit=1`
+                  : "/platform/media/playlists",
+              "account"
+            )}
+          >
             Sign in
           </Link>{" "}
           to manage your private media collections.

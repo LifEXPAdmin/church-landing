@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   const user = await getCurrentPlatformUser();
   return (
-    <PlatformShell user={user}>
+    <PlatformShell user={user} signInReturnTo="/platform/media/saved">
       <div className="mx-auto max-w-4xl space-y-6 p-[12px] sm:p-6">
         <MediaPlaylistWorkspace owner={user?.id ?? null} mode="saved" />
       </div>

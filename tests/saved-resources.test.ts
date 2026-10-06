@@ -174,7 +174,7 @@ const save = (
   });
 const saved = async (actor = member, query: Record<string, unknown> = {}) =>
   (await readPostWorkspace(db, actor.token, { view: "saved", ...query })) as {
-    items: any[];
+    items: { id: string; available: boolean; resource?: { id: string; kind: string; title: string }; post?: unknown }[];
     nextCursor: string | null;
   };
 async function media() {
@@ -233,6 +233,7 @@ test("all four kinds bookmark only references and resolve fresh, narrow cards wi
   const page = await saved();
   for (let i = 0; i < rows.length; i++) {
     const item = page.items.find((r) => r.id === rows[i].id);
+    assert.ok(item?.resource);
     assert.equal(item.available, true);
     assert.equal(item.resource.kind, references[i].kind);
     assert.equal(item.resource.id, references[i].id);
@@ -252,7 +253,7 @@ test("all four kinds bookmark only references and resolve fresh, narrow cards wi
     data: { title: "Changed current event title" }
   });
   assert.equal(
-    (await saved()).items.find((r) => r.id === rows[1].id).resource.title,
+    (await saved()).items.find((r) => r.id === rows[1].id)?.resource?.title,
     "Changed current event title"
   );
   await db.exchangeListing.update({
@@ -311,7 +312,7 @@ test("current access gates save, status and receipt replay; private personal eve
   await denied(postWorkspaceCommand(db, member.token, mutation), 404);
   await denied(save(e.reference), 404);
   assert.equal(
-    (await saved()).items.find((r) => r.id === result.id).available,
+    (await saved()).items.find((r) => r.id === result.id)?.available,
     false
   );
   const personal = await event("PRIVATE", true);
@@ -333,6 +334,7 @@ test("duplicate races, changed retries, owner isolation, collection move and rem
   const item = (await saved()).items.find(
     (r) => r.resource?.id === e.occurrence.id
   );
+  assert.ok(item);
   const collection = randomUUID();
   const command = (
     operation: string,

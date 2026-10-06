@@ -1,3 +1,28 @@
+## 6 October 2026: implemented resource account entry
+
+This continuation repairs guest entry for already implemented resources. Media
+reader and management paths now survive account entry, including an explicit
+playlist editor view without its draft, cursor or command values. Search returns
+retain the current supported category and applicable public filters, and restart
+pagination for the new account. Duplicate or invalid public filters return to a
+fresh search. Media, Search, Exchange and event headers preserve their destination;
+event entry retains a valid viewing time zone. Guest Exchange listings expose an
+inquiry sign-in link while the signed-in service still determines whether contact
+is available. Signing in does not automatically bookmark, inquire or respond.
+
+The existing source services remain authoritative for public projections and
+current access. This change adds no public adapter or permission for unimplemented
+business resources. Generic non-indexed Exchange, Gather and Media metadata and
+anonymous event metadata remain governed by their existing owners. Canceled public
+events may remain readable even when excluded from discovery metadata.
+
+Four focused regression groups reproduced the return-path defects before repair.
+The repaired account-entry and reader-navigation checks pass 24 tests. Production
+build, browser, HTTPS and final review acceptance are pending at this source
+checkpoint. The existing saved-resource fixture's explicit any was replaced with
+a bounded assertion type after the full lint run exposed that inherited error.
+No dependency or schema changes, integration or deployment are included.
+
 # Browse before joining
 
 ## Implementation — September 9, 2026

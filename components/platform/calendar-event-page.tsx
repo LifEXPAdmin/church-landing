@@ -10,6 +10,7 @@ import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { readCalendarEvent } from "@/lib/platform/calendar-session";
 import { getPublicCalendarEvent } from "@/lib/platform/calendar-reads";
 import { calendarZone } from "@/lib/platform/calendar-time";
+import { validEventDisplayZone } from "@/lib/indexing-policy";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { PlatformShell } from "./platform-shell";
 import { PortalCard, PortalHeading, portalLinkClass } from "./portal-ui";
@@ -38,6 +39,11 @@ export async function CalendarEventPage({
 }) {
   if (process.env.NODE_ENV !== "production") return <CalendarDevelopment />;
   const user = await getCurrentPlatformUser();
+  const returnPath =
+    eventPath(id) +
+    (timeZone && validEventDisplayZone(timeZone)
+      ? "?" + new URLSearchParams({ timeZone })
+      : "");
   let privateData: Awaited<ReturnType<typeof readCalendarEvent>> | undefined;
   try {
     if (user) {
@@ -88,7 +94,7 @@ export async function CalendarEventPage({
       occurrenceVersion: event.version
     };
     return (
-      <PlatformShell user={user}>
+      <PlatformShell user={user} signInReturnTo={returnPath}>
         <CalendarSnapshot
           owner={privateData ? user?.id : undefined}
           url={calendarReadUrl("event", { occurrenceId: id })}
@@ -263,11 +269,7 @@ export async function CalendarEventPage({
                         href={
                           user
                             ? "/platform/my-church"
-                            : accountEntryHref(
-                                "signup",
-                                eventPath(id),
-                                "calendar"
-                              )
+                            : accountEntryHref("signup", returnPath, "calendar")
                         }
                       >
                         {user
@@ -279,7 +281,7 @@ export async function CalendarEventPage({
                           className={portalLinkClass}
                           href={accountEntryHref(
                             "login",
-                            eventPath(id),
+                            returnPath,
                             "calendar"
                           )}
                         >
@@ -414,7 +416,7 @@ export async function CalendarEventPage({
     );
   } catch (error) {
     return (
-      <PlatformShell user={user}>
+      <PlatformShell user={user} signInReturnTo={returnPath}>
         <CalendarUnavailable
           message={
             error instanceof PortalError && error.status === 400
@@ -426,13 +428,13 @@ export async function CalendarEventPage({
           <div className="container-shell flex flex-wrap gap-5 pb-8">
             <Link
               className={portalLinkClass}
-              href={accountEntryHref("signup", eventPath(id), "calendar")}
+              href={accountEntryHref("signup", returnPath, "calendar")}
             >
               Join to check shared event access
             </Link>
             <Link
               className={portalLinkClass}
-              href={accountEntryHref("login", eventPath(id), "calendar")}
+              href={accountEntryHref("login", returnPath, "calendar")}
             >
               Sign in
             </Link>

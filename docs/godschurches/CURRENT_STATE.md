@@ -1,5 +1,15 @@
 ## Universal resource search and recent-history follow-through locally verified, 6 October 2026 UTC
 
+## Guest resource account-entry continuation, 6 October 2026
+
+The current candidate preserves Media and Search destinations at sign-in, exposes
+safe guest Exchange inquiry entry and repairs resource/header returns including
+event viewing time zones. Existing public readers and private access rules remain
+the authority. Business activation and release acceptance remain open. See
+[GUEST_BROWSING_REPORT.md](GUEST_BROWSING_REPORT.md) for scope and current evidence;
+production build/browser verification is pending at this source checkpoint.
+
+
 Application `91fdaa351f7969b60ff2d0718afc6b5bf2bcad0e` extends Explore with listings,
 media, volunteer opportunities and listed groups through current canonical readers.
 Signed continuation preserves source permissions and filters; minimal cards carry

@@ -11,7 +11,7 @@ export default async function Page() {
   const user = await getCurrentPlatformUser(),
     owner = user?.id ?? null;
   return (
-    <PlatformShell user={user}>
+    <PlatformShell user={user} signInReturnTo="/platform/media/studio">
       <div className="mx-auto max-w-4xl space-y-6 p-[12px] sm:p-6">
         <MediaLibrary owner={owner} studio />
       </div>
