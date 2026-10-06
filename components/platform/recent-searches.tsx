@@ -11,6 +11,11 @@ import {
 } from "@/lib/platform/recent-searches";
 import { searchHref } from "@/lib/platform/search-navigation";
 
+const historyForeground = () =>
+  navigator.onLine &&
+  document.visibilityState === "visible" &&
+  document.hasFocus();
+
 export function useRecentSearches(owner: string | null) {
   const [state, setState] = useState<RecentSearchState | null>(null);
   const [message, setMessage] = useState("");
@@ -18,7 +23,7 @@ export function useRecentSearches(owner: string | null) {
   const available = useRef(false);
   const run = useCallback(
     async (change?: RecentSearchChange) => {
-      if (!owner || !available.current) return;
+      if (!owner || !available.current || !historyForeground()) return;
       const sequence = ++generation.current;
       try {
         const before =
@@ -26,7 +31,12 @@ export function useRecentSearches(owner: string | null) {
             ? localStorage.getItem(recentSearchKey(owner))
             : undefined;
         const currentOwner = await currentSocialOwner();
-        if (sequence !== generation.current || !available.current) return;
+        if (
+          sequence !== generation.current ||
+          !available.current ||
+          !historyForeground()
+        )
+          return;
         if (currentOwner !== owner) {
           setState(null);
           setMessage(
@@ -73,7 +83,7 @@ export function useRecentSearches(owner: string | null) {
       setMessage("");
     };
     const refresh = () => {
-      if (document.visibilityState === "hidden") return hide();
+      if (!historyForeground()) return hide();
       available.current = true;
       void run();
     };

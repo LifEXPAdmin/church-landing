@@ -1,7 +1,7 @@
 # Opt-in recent searches
 
-Explore now offers recent searches for its existing posts, people, churches,
-events and topics categories. The preference starts off. Signed-in members can
+Explore offers recent searches for posts, people, churches, events, topics,
+listings, media, volunteer opportunities and listed groups. The preference starts off. Signed-in members can
 enable it for their current account in this browser, remove one entry, clear all,
 or turn it off and delete the stored preference and history.
 
@@ -9,7 +9,8 @@ Only explicit search submissions are recorded. Opening, restoring or reloading
 a results URL never adds its query back. History stores query/category/time,
 not result payloads, permission grants, church filters or pagination cursors.
 Following a history link runs the ordinary current-permission search again.
-This change does not activate new resource types or change saved-item services.
+The [resource search adapters](UNIVERSAL_SEARCH.md) own resource discovery;
+recent history does not change saved-item permissions.
 
 The versioned browser store is scoped by account ID, bounded to 20 unique
 query/category pairs and 200 characters per query. Display excludes entries older
@@ -43,5 +44,11 @@ node --import ./tests/register.mjs --test tests/recent-searches.test.ts
 
 This source change has no schema migration, new dependency, production writes
 or deployment. Full application/live acceptance and the existing release gates
-remain separate from component checks. Broader resource-adapter expansion is
-still outside this change.
+remain separate from component checks. Resource-adapter expansion now has its own acceptance record linked above.
+The production-build baseline reproduced a native unfocused-window leak after a
+real cross-window storage event and delayed actual identity response. Reads now
+require visible, online, focused state before dispatch and before settling; passive
+background hints cannot restore history. The native two-window regression is
+`scripts/qa-recent-search-foreground-browser.mjs` with `RECENT_FOREGROUND_HEADED=1`
+and an isolated HTTPS fixture directory. Playwright's forced-focus emulation is
+disabled for that check. Final browser acceptance is pending.

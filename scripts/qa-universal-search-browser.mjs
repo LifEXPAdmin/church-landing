@@ -259,6 +259,17 @@ try {
   await resultsRegion()
     .getByText("No matching listings available to you.", { exact: true })
     .waitFor();
+  await page.evaluate((id) => {
+    window.__privateSearchWasRendered = false;
+    new MutationObserver(() => {
+      if (document.querySelector(`[data-search-id="${id}"]`))
+        window.__privateSearchWasRendered = true;
+    }).observe(document.body, { childList: true, subtree: true });
+  }, privateListing.id);
+  let finishRace;
+  const raceFinished = new Promise((resolve) => {
+    finishRace = resolve;
+  });
   let intercepted = false;
   const raceRoute = async (route) => {
     if (intercepted) return route.continue();
@@ -286,21 +297,18 @@ try {
     );
     await context.clearCookies();
     await route.fulfill({ response: reply });
+    finishRace();
   };
   await page.route("**/api/platform/search?**", raceRoute);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await raceFinished;
   await page.waitForFunction(() => {
     const region = document.querySelector('[aria-label="Search results"]');
-    return region && !region.textContent.includes("Loading");
+    return region && region.getAttribute("aria-busy") === "false";
   });
-  // Wait for both identity reads and held response settlement, with a bounded UI check.
-  await page.waitForFunction(
-    () =>
-      document.querySelector("[data-search-id]") ||
-      document.querySelector('[role="alert"]')
+  const anonymousPrivateVisible = await page.evaluate(
+    () => window.__privateSearchWasRendered
   );
-  const anonymousPrivateVisible =
-    (await page.locator(`[data-search-id="${privateListing.id}"]`).count()) > 0;
   await page.unroute("**/api/platform/search?**", raceRoute);
   await go(query("listings", marker) + "&q=unused");
   await page.waitForFunction(
