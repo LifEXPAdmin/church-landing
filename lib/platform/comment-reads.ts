@@ -188,8 +188,18 @@ async function project(
     };
   });
 }
-export function readComments(db: PrismaClient, token: unknown, query: Query) {
+export function readComments(
+  db: PrismaClient,
+  token: unknown,
+  query: Query,
+  expectedOwner?: string | null
+) {
   return withPostRead(db, token, async (tx, context) => {
+    if (expectedOwner !== undefined && context.actorId !== expectedOwner)
+      throw new PortalError(
+        401,
+        "Your sign-in changed. Reload before continuing."
+      );
     const post = await readableConversation(tx, context, query.postId),
       view = query.view ?? "roots";
     if (
@@ -319,6 +329,7 @@ export function readComments(db: PrismaClient, token: unknown, query: Query) {
       : null;
     return {
       kind: "thread" as const,
+      viewerId: context.actorId,
       readScope: post.groupId ? groupReadScope(context, post) : null,
       readProof: groupReadProof(context, post, [
         ...rows
@@ -358,12 +369,18 @@ export function readCommentDrafts(
     postId?: unknown;
     replyToId?: unknown;
     after?: unknown;
-  }
+  },
+  expectedOwner?: string | null
 ) {
   return withOwnedSession(
     db,
     token,
     async (tx, session) => {
+      if (expectedOwner !== undefined && session.userId !== expectedOwner)
+        throw new PortalError(
+          401,
+          "Your sign-in changed. Reload before continuing."
+        );
       const context = await postContext(tx, session.userId);
       const rows = await tx.privateCommentDraft.findMany({
         where: {

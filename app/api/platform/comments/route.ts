@@ -20,24 +20,38 @@ export async function GET(request: Request) {
   try {
     const q = new URL(request.url).searchParams,
       token = requestSessionToken(request);
+    const expectedOwner =
+      request.headers.get("x-expected-account") ?? undefined;
     const result =
       q.get("view") === "drafts"
-        ? await readCommentDrafts(prisma, token, {
-            id: q.get("draftId"),
-            postId: q.get("postId"),
-            replyToId: q.get("replyToId"),
-            after: q.get("after")
-          })
-        : await readComments(prisma, token, {
-            postId: q.get("postId"),
-            view: q.get("view") ?? "roots",
-            sort: q.get("sort") ?? "oldest",
-            rootId: q.get("rootId"),
-            commentId: q.get("commentId"),
-            q: q.get("q"),
-            after: q.get("after")
-          });
-    return Response.json(result, { headers: socialHeaders });
+        ? await readCommentDrafts(
+            prisma,
+            token,
+            {
+              id: q.get("draftId"),
+              postId: q.get("postId"),
+              replyToId: q.get("replyToId"),
+              after: q.get("after")
+            },
+            expectedOwner
+          )
+        : await readComments(
+            prisma,
+            token,
+            {
+              postId: q.get("postId"),
+              view: q.get("view") ?? "roots",
+              sort: q.get("sort") ?? "oldest",
+              rootId: q.get("rootId"),
+              commentId: q.get("commentId"),
+              q: q.get("q"),
+              after: q.get("after")
+            },
+            expectedOwner
+          );
+    return Response.json(result, {
+      headers: { ...socialHeaders, Vary: "Cookie, X-Expected-Account" }
+    });
   } catch (e) {
     return socialError(e);
   }

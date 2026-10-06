@@ -119,6 +119,7 @@ export type CommentItem = {
   href: string;
 };
 export type CommentThreadPage = {
+  viewerId: string | null;
   readProof?: string | null;
   readScope?: string | null;
   kind: "thread";

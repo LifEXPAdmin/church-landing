@@ -5,6 +5,7 @@ import { PlatformShell } from "./platform-shell";
 import { SavePostControl } from "./save-post-control";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
+import { RecruitmentConversation } from "./resource-conversation";
 import { RegionalTime } from "./regional-presentation";
 import {
   VolunteerApplyForm,
@@ -429,6 +430,11 @@ export async function VolunteerPage({
                 )}
               </p>
             )}
+            <RecruitmentConversation
+              owner={result.ownerId}
+              opportunityId={result.opportunity.id}
+              postId={result.opportunity.postId}
+            />
           </div>
         );
       else

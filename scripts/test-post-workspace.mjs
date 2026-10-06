@@ -151,7 +151,7 @@ try {
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
   const files = process.argv.includes("--resource-conversations")
-    ? ["tests/resource-conversations.test.ts"]
+    ? ["tests/resource-conversations.test.ts", "tests/social-foundations.test.ts", "tests/comment-draft-controller.test.ts", "tests/comment-notifications.test.ts", "tests/comment-preview-capacity.test.ts", "tests/volunteer-applications.test.ts", "tests/gather-groups.test.ts", "tests/post-reader.test.ts"]
     : process.argv.includes("--profile-featured")
     ? ["tests/profile-featured-input.test.ts", "tests/profile-featured.test.ts", "tests/profile-modules.test.ts", "tests/profile-modules-restore.test.ts", "tests/profile-events.test.ts", "tests/profile-pin.test.ts", "tests/saved-resources.test.ts"]
     : process.argv.includes("--guest-resource-entry")

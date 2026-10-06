@@ -33,15 +33,18 @@ import {
 export function CommentThread({
   postId,
   commentId,
+  expectedOwner,
   initiallyClosed = false
 }: {
   postId: string;
   commentId?: string;
+  expectedOwner?: string | null;
   initiallyClosed?: boolean;
 }) {
   const sourceVisible = useReadVisibility();
   const privateScope = usePrivatePostWorkspace();
-  const fixedOwner = privateScope?.owner;
+  const originalOwner = useRef(expectedOwner).current;
+  const fixedOwner = privateScope?.owner ?? originalOwner;
   const visibleNow = useRef(sourceVisible);
   visibleNow.current = sourceVisible;
   const [sort, setSort] = useState<"oldest" | "newest">("oldest");
@@ -73,7 +76,12 @@ export function CommentThread({
     busy = useRef(false);
   const load = useCallback(
     async (after?: string, rootId?: string) => {
-      if (busy.current || (fixedOwner && !visibleNow.current)) return;
+      if (
+        busy.current ||
+        (fixedOwner !== undefined &&
+          (!visibleNow.current || !document.hasFocus() || !navigator.onLine))
+      )
+        return;
       busy.current = true;
       const seq = ++sequence.current;
       setPending(true);
@@ -96,9 +104,15 @@ export function CommentThread({
         const result = await socialRequest<CommentThreadPage>(
           `/api/platform/comments?${q}`,
           undefined,
-          fixedOwner ?? (after || rootId ? owner : undefined)
+          fixedOwner !== undefined
+            ? fixedOwner
+            : after || rootId
+              ? owner
+              : undefined
         );
         if (seq !== sequence.current) return;
+        if (result.data.viewerId !== result.owner)
+          throw new Error("Your sign-in changed. Reload before continuing.");
         if (owner !== undefined && owner !== result.owner) {
           setReply(null);
           setEditing(null);
@@ -135,6 +149,10 @@ export function CommentThread({
               result.owner
             );
             if (seq !== sequence.current) return;
+            if (linked.data.viewerId !== linked.owner)
+              throw new Error(
+                "Your sign-in changed. Reload before continuing."
+              );
             setContext(linked.data);
             const linkedPage = groupReadPage(linked.data);
             if (linkedPage)
