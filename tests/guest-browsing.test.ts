@@ -214,7 +214,9 @@ test("anonymous HTML and RSC expose public reading and minimal author labels but
   );
   const editor = await (await get("/platform/profile/me", a.token)).text();
   assert.match(editor, /<title>Edit your God’s Churches profile<\/title>/);
-  assert.match(editor, /Edit your profile/);
+  // The private editor is deliberately absent until browser-side access recheck.
+  assert.match(editor, /Checking current account access/);
+  assert.ok(!editor.includes(a.user.bio!));
   assert.ok(!prompt.includes('name="currentPassword"'));
 });
 

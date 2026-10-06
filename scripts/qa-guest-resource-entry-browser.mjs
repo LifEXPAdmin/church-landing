@@ -100,6 +100,7 @@ const headerReturn = async (expected) => {
 };
 const signInThrough = async (link, actor, expected) => {
   await link.click();
+  await page.waitForURL(/\/platform\/(?:join|login)\?/);
   if (new URL(page.url()).pathname === "/platform/join")
     await page
       .getByRole("main")
@@ -432,6 +433,45 @@ try {
     assert.ok(!publicText.includes(secret));
   ok(
     "Guest HTML, RSC and media API preserve private-resource absence and omit owner credentials and rights evidence"
+  );
+  // Recheck the resource after real account entry. A formerly public link must
+  // not restore hidden details or replay the action after publication is removed.
+  await go(mediaPath);
+  await page
+    .getByRole("link", {
+      name: "Sign in to bookmark this resource",
+      exact: true
+    })
+    .click();
+  await page.waitForURL(/\/platform\/join\?/);
+  await db.mediaCatalogItem.update({
+    where: { id: media.id },
+    data: { state: "DRAFT" }
+  });
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "Sign in", exact: true })
+    .click();
+  await page.getByLabel("Email", { exact: true }).fill(reader.email);
+  await page.getByLabel("Password", { exact: true }).fill(reader.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL(config.origin + mediaPath);
+  await page
+    .getByRole("button", { name: /Reload|Check again/i })
+    .first()
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("heading", { name: fields.title, exact: true })
+      .count(),
+    0
+  );
+  assert.equal(
+    await db.savedPostItem.count({ where: { ownerId: reader.id } }),
+    0
+  );
+  ok(
+    "Access removed during actual sign-in returns an unavailable reader and creates no bookmark"
   );
   assert.deepEqual(errors, []);
   assert.deepEqual(blockedRequests, []);
