@@ -525,6 +525,17 @@ try {
   await count(0);
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
   await count(1);
+  // The platform's independent sign-in boundary deliberately asks for recheck
+  // after an offline transition. Complete that visible recovery before capture.
+  const recheck = page.getByRole("button", {
+    name: "Recheck this sign-in",
+    exact: true
+  });
+  if (await recheck.isVisible()) {
+    await recheck.click();
+    await recheck.waitFor({ state: "hidden" });
+    await count(1);
+  }
   await page.setViewportSize({ width: 320, height: 740 });
   await page.addStyleTag({ content: "html { font-size: 24px !important; }" });
   await bounded();
