@@ -22,7 +22,7 @@ Object.assign(process.env, {
   PRIVILEGED_MFA_MODE: "off"
 });
 const { PrismaClient } = await import("@prisma/client");
-const { featuredFixture, saveFeatured } =
+const { featuredFixture } =
   await import("../tests/profile-featured-fixture.ts");
 const { getProfileEditor } = await import("../lib/platform/profiles.ts");
 const db = new PrismaClient();
@@ -104,6 +104,28 @@ const waitFor = async (work) => {
   }
   assert.fail("Timed out waiting for current resource state");
 };
+const nativeOtherWindow = async () => {
+  const cdp = await browser.newBrowserCDPSession();
+  const pageCdp = await context.newCDPSession(page);
+  await pageCdp.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+  await page.bringToFront();
+  await page.waitForFunction(() => document.hasFocus());
+  const { targetInfo } = await pageCdp.send("Target.getTargetInfo");
+  const created = context.waitForEvent("page");
+  await cdp.send("Target.createTarget", {
+    url: "about:blank",
+    browserContextId: targetInfo.browserContextId,
+    newWindow: true,
+    background: false
+  });
+  const other = await created;
+  const otherCdp = await context.newCDPSession(other);
+  await otherCdp.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+  await other.bringToFront();
+  await page.waitForFunction(() => !document.hasFocus());
+  assert.equal(await other.evaluate(() => document.hasFocus()), true);
+  return other;
+};
 try {
   await signIn(f.owner);
   await go("/platform/profile/me");
@@ -149,6 +171,58 @@ try {
   );
   ok(
     "Actual editor checks, adds and keyboard-reorders all three kinds, saves once and displays a featured-only profile"
+  );
+  await go("/platform/profile/me");
+  await picker().waitFor();
+  await page
+    .getByRole("button", { name: "Move featured resource 3 up", exact: true })
+    .click();
+  const priorVersion = (await getProfileEditor(db, f.owner.token)).presentation
+    .version;
+  const savedBodies = [];
+  const loseReply = async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    savedBodies.push(route.request().postData());
+    const response = await route.fetch();
+    if (savedBodies.length === 1) return route.abort("failed");
+    return route.fulfill({ response });
+  };
+  await page.route("**/api/platform/account", loseReply);
+  await page.getByRole("button", { name: "Save profile", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Retry original save", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Review latest saved profile", exact: true })
+    .click();
+  await page
+    .getByRole("heading", { name: "Latest saved version", exact: true })
+    .waitFor();
+  assert.equal(savedBodies.length, 2);
+  assert.equal(savedBodies[0], savedBodies[1]);
+  assert.equal(
+    (await getProfileEditor(db, f.owner.token)).presentation.version,
+    priorVersion + 1
+  );
+  await page.unroute("**/api/platform/account", loseReply);
+  await page
+    .getByRole("button", {
+      name: "Keep my edits and use this version",
+      exact: true
+    })
+    .click();
+  await page
+    .getByRole("button", { name: "Move featured resource 3 up", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Save profile", exact: true }).click();
+  await page.waitForURL("**/platform/profile/" + f.owner.username);
+  assert.deepEqual(
+    (await getProfileEditor(db, f.owner.token)).presentation.modules
+      .featuredResources,
+    [f.references[0], f.references[2], f.references[1]]
+  );
+  ok(
+    "Committed-but-lost collection save retains identical retry bytes, avoids a second commit and requires explicit version review"
   );
   await signIn(f.outsider);
   await go("/platform/profile/" + f.owner.username);
@@ -205,9 +279,7 @@ try {
   ok(
     "Focused profile removes withdrawn media on its bounded current-access refresh"
   );
-  const other = await context.newPage();
-  await other.goto("about:blank");
-  await other.bringToFront();
+  const other = await nativeOtherWindow();
   await waitFor(
     async () =>
       !(await reader()
@@ -240,8 +312,7 @@ try {
   await page
     .getByLabel("Existing resource page link", { exact: true })
     .fill("/platform/media/unfinished-draft");
-  const other2 = await context.newPage();
-  await other2.bringToFront();
+  const other2 = await nativeOtherWindow();
   await page.bringToFront();
   await picker().waitFor();
   assert.equal(
@@ -304,6 +375,31 @@ try {
       2
     )
   );
+} catch (error) {
+  writeFileSync(
+    output + "/FAILED.json",
+    JSON.stringify(
+      {
+        results,
+        errors,
+        external,
+        message: String(error),
+        focus: await page
+          .evaluate(() => ({
+            focused: document.hasFocus(),
+            visibility: document.visibilityState,
+            online: navigator.onLine
+          }))
+          .catch(() => null)
+      },
+      null,
+      2
+    )
+  );
+  await page
+    .screenshot({ path: output + "/failed.png", fullPage: true })
+    .catch(() => {});
+  throw error;
 } finally {
   await context.close();
   await browser.close();
