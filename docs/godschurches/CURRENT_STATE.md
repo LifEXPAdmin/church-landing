@@ -7,7 +7,9 @@ safe guest Exchange inquiry entry and repairs resource/header returns including
 event viewing time zones. Existing public readers and private access rules remain
 the authority. Business activation and release acceptance remain open. See
 [GUEST_BROWSING_REPORT.md](GUEST_BROWSING_REPORT.md) for scope and current evidence;
-production build/browser verification is pending at this source checkpoint.
+application `c461fd5` / build `RK3cF7UWibib-5BUJH1GV` passed 50 registered checks,
+8 HTTPS and 4 metadata checks, and 20 browser groups. All owned runtimes stopped.
+This is a local handoff, with full business scope and release gates still open.
 
 
 Application `91fdaa351f7969b60ff2d0718afc6b5bf2bcad0e` extends Explore with listings,

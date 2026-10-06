@@ -16,12 +16,35 @@ business resources. Generic non-indexed Exchange, Gather and Media metadata and
 anonymous event metadata remain governed by their existing owners. Canceled public
 events may remain readable even when excluded from discovery metadata.
 
-Four focused regression groups reproduced the return-path defects before repair.
-The repaired account-entry and reader-navigation checks pass 24 tests. Production
-build, browser, HTTPS and final review acceptance are pending at this source
-checkpoint. The existing saved-resource fixture's explicit any was replaced with
-a bounded assertion type after the full lint run exposed that inherited error.
-No dependency or schema changes, integration or deployment are included.
+Verified application source `c461fd56ac00f62c0bacaeb84c988d8e04505d27`, production
+build `RK3cF7UWibib-5BUJH1GV`. Four focused groups failed before repair. The
+registered suite passed 50 tests (4 account-entry, 20 reader-navigation, 18 resource
+search, 2 registry and 6 saved-resource checks), all 124 populated migration
+checks and an actual dump/restore. That suite ran at application-equivalent
+`61f3826`; subsequent changes were confined to browser QA and one legacy HTTPS
+assertion. Final build passed types, lint, copy, hydration, trace and source-security
+checks. Lint retains 39 inherited warnings.
+
+Final runtime passed 8 HTTPS guest/media checks, 4 public metadata checks and
+20 browser groups. Actual media bookmark, Exchange inquiry and media Search
+sign-ins return to their original destinations without automatic writes. Removing
+publication during sign-in yields a current 404 and unavailable reader, with no
+bookmark. Public and unavailable event entry retain the event and valid display
+zone. Guest HTML/RSC/API omit private resource details, rights evidence and owner
+credentials. Resource Search rechecks guest/account transitions, current access,
+offline state and pagination. The Exchange guest entry and Search pass 320-pixel
+enlarged-text checks. One optional privileged-MFA challenge test was skipped;
+server MFA enforcement was enabled, which is not challenge acceptance.
+
+The first HTTPS attempt exposed an obsolete expectation that the private profile
+editor be rendered in initial HTML. The corrected check verifies its existing
+access-recheck shell and absence of private biography. A browser assertion was
+also corrected to read the existing boundary's `message` field after an actual
+404, rather than claiming denial based on an initial loading state. Failures and
+final evidence are retained privately. The saved-resource fixture's explicit any
+was replaced with a bounded assertion type after lint exposed that inherited
+error. All task-owned runtimes stopped. No dependency or schema changes,
+integration or deployment are included. Final source review follows this receipt.
 
 # Browse before joining
 
