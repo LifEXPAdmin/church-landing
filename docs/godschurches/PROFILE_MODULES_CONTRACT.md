@@ -16,7 +16,7 @@ church appointment, management capability or new audience.
 | Links          | Typed optional modules, up to 3 labeled HTTP/HTTPS links                                                                 |
 | Pinned post    | Existing personal profile pin service; recheck the canonical post and source audience on every read                      |
 | Calendar       | One explicitly selected canonical event occurrence, resolved through current calendar audience and block checks          |
-| Featured media | Reserved and unavailable until a published media owner and current source projection exist                               |
+| Featured resources | Up to six listing, opportunity or media references, resolved through current canonical resource policies |
 
 `PROFILE_MODULE_SLOTS` is the typed inventory. Unavailable slots are rejected as
 input and produce no placeholder, blank tab or enabled control. Calendar references
@@ -27,7 +27,7 @@ This change does not create media or calendar copies in profile JSON.
 ## Input and display
 
 The versioned account profile endpoint accepts `profileModules` with required
-`testimony`, `skills` and `links`, plus optional `order` and `calendarOccurrenceId`. Strings and arrays have strict bounds; unknown
+`testimony`, `skills` and `links`, plus optional `order`, `calendarOccurrenceId` and `featuredResources`. Strings and arrays have strict bounds; unknown
 fields, duplicate skills, malformed links and unsupported modules are rejected.
 Text rejects unsupported C0 controls, DEL and lone UTF-16 surrogates before any
 profile write. Ordinary tabs, line breaks and valid multilingual or emoji text
@@ -135,3 +135,42 @@ There is no provider activation, credential or background scheduler requirement.
 The reader adds no query or external request. Payloads remain bounded and optional;
 the server renders module content. Only the existing profile form carries the new
 input controls. This is a functional cost statement, not a measured speed claim.
+
+
+## Featured resources continuation, October 6, 2026
+
+The optional collection holds up to six distinct `{kind, id}` references, with
+`exchangeListing`, `volunteerOpportunity` and `mediaCatalogItem` as the only kinds.
+Unknown fields, unsupported kinds and malformed IDs are rejected. The original
+post pin and selected event keep their existing owners and positions.
+
+The current versioned profile transaction checks newly added references against
+canonical source access for the verified adult owner. Unavailable retained choices
+can be reordered or removed without blocking unrelated edits. Omission by older
+clients preserves the saved collection; explicit `[]` removes it. No source record,
+audience, participation, bookmark or provider activation is changed by featuring.
+
+The owner editor retains selection order and unsent link text in mounted memory.
+Check and add only prepares a draft. Save profile commits it with the existing
+immutable retry payload and version conflict review. No local or session storage
+holds these references. Owner export includes them; erasure and opaque
+`PROFILE_MODULES` replay use the existing profile presentation controls.
+
+Member HTML and RSC contain no featured IDs, copied titles, unavailable counts or
+per-item placeholders. A small dedicated read checks current viewer identity,
+profile identity and visibility, saved references and each source policy in one
+permission transaction. Generic member preview assumes no owner or church grants.
+Visitor preview stays identity-only. Source details are fetched by the focused
+visible client, cleared on concealment or failed access, and rechecked at a bounded
+30-second interval. Background throttling means this is not instantaneous revocation.
+Minimal cards link back to the canonical source; private provider, contact and
+application details are never included.
+
+The three reorderable text sections remain separate. The collection has keyboard
+Up/Down and Remove controls for its own order. The module storage bound remains
+16,000 bytes and the account request bound remains 32 KiB. No schema or dependency
+change is required. Deploy the compatible decoder, omission-preserving writer and
+editor together. An older strict decoder rejects the new key, so an unchanged older
+application is not a safe rollback after the field is saved.
+
+See [PROFILE_FEATURED_REPORT.md](PROFILE_FEATURED_REPORT.md) for fresh acceptance.

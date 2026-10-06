@@ -150,7 +150,9 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  const files = process.argv.includes("--guest-resource-entry")
+  const files = process.argv.includes("--profile-featured")
+    ? ["tests/profile-featured-input.test.ts", "tests/profile-featured.test.ts", "tests/profile-modules.test.ts", "tests/profile-modules-restore.test.ts", "tests/profile-events.test.ts", "tests/profile-pin.test.ts", "tests/saved-resources.test.ts"]
+    : process.argv.includes("--guest-resource-entry")
     ? ["tests/guest-resource-entry.test.ts", "tests/reader-navigation.test.ts", "tests/universal-search.test.ts", "tests/resource-contracts.test.ts", "tests/saved-resources.test.ts"]
     : process.argv.includes("--universal-search")
     ? ["tests/universal-search.test.ts", "tests/community-search.test.ts", "tests/recent-searches.test.ts"]

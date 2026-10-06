@@ -29,6 +29,8 @@ import {
 } from "./profile-modules";
 import { isEligible } from "./portal-policy";
 import { profileEventIn } from "./profile-events";
+import { featuredKey } from "./profile-featured-input";
+import { resolvePostResourcesIn } from "./post-resource-attachments";
 import { postContext } from "./post-access";
 import { recordDiscoveryControl } from "./retention-controls";
 import {
@@ -447,6 +449,35 @@ export async function updateAccountProfile(
     // Clients predating section ordering can still edit content without silently
     // resetting the owner's arrangement. The same profile version guards both.
     const savedModules = readProfileModules(presentation?.modules);
+    if (
+      modules &&
+      !Object.hasOwn(modules, "featuredResources") &&
+      savedModules.featuredResources
+    )
+      modules = {
+        ...modules,
+        featuredResources: savedModules.featuredResources
+      };
+    const additions =
+      modules?.featuredResources?.filter(
+        (reference) =>
+          !savedModules.featuredResources?.some(
+            (saved) => featuredKey(saved) === featuredKey(reference)
+          )
+      ) ?? [];
+    // Removing or reordering an unavailable saved choice remains possible.
+    // Only newly introduced references need current eligible source access.
+    if (additions.length) {
+      if (!isEligible(locationState))
+        throw new AccountError("profile-featured");
+      const readable = await resolvePostResourcesIn(
+        tx,
+        await postContext(tx, current.id),
+        additions
+      );
+      if (additions.some((reference) => !readable.has(featuredKey(reference))))
+        throw new AccountError("profile-featured");
+    }
     const savedOrder = savedModules.order;
     if (modules && !modules.order && savedOrder)
       modules = { ...modules, order: savedOrder };

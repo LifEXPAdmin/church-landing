@@ -10,6 +10,7 @@ export class AccountError extends Error {
     | "handle-taken"
     | "profile"
     | "profile-event"
+    | "profile-featured"
     | "profile-disclosure"
     | "profile-conflict";
   constructor(code: AccountError["code"]) {

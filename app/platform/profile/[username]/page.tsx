@@ -1,3 +1,4 @@
+import { ProfileFeaturedResources } from "@/components/platform/profile-featured";
 import { ProfilePhotos } from "@/components/platform/profile-photos";
 import { ProfileModuleContent } from "@/components/platform/profile-modules";
 import { LocalEventTime } from "@/components/platform/local-event-time";
@@ -437,6 +438,15 @@ export default async function MemberProfilePage({
                 {profile.presentation.introduction}
               </p>
             </section>
+          )}
+          {!photosTab && (
+            <ProfileFeaturedResources
+              username={profile.username!}
+              profileId={profile.id}
+              owner={currentUser.id}
+              version={profile.presentation.version ?? 0}
+              preview={preview === "member"}
+            />
           )}
           {photosTab ? (
             <ProfilePhotos

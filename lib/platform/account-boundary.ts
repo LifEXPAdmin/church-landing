@@ -697,6 +697,8 @@ async function processAccountRequest(
           "Choose a more unique password. Avoid common passwords or versions of your name, username, email or God's Churches. A password manager can help.",
         "profile-event":
           "Your selected event is no longer available to add. Check its current access or remove the selection, then save again. Your other edits are still here.",
+        "profile-featured":
+          "A new featured resource is unavailable to add. Check its current access or remove the selection, then save again. Adding resources requires a verified adult account. Your other edits are still here.",
         "profile-disclosure":
           "Choose Only me for your location. Sharing with members requires a verified email and confirmed adult eligibility.",
         "profile-conflict":
@@ -742,6 +744,7 @@ async function processAccountRequest(
           : operation === "update-profile" &&
               (error.code === "profile" ||
                 error.code === "profile-event" ||
+                error.code === "profile-featured" ||
                 error.code === "profile-disclosure")
             ? // These failures precede a committed profile edit. Session errors
               // can occur after commit, so a generic 400 is not this assurance.

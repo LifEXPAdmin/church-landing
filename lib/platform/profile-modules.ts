@@ -1,3 +1,7 @@
+import {
+  profileFeaturedReferences,
+  type ProfileFeaturedReference
+} from "./profile-featured-input";
 export type ProfileLink = { label: string; url: string };
 export const PROFILE_MODULE_ORDER = ["testimony", "skills", "links"] as const;
 export type ProfileModuleKind = (typeof PROFILE_MODULE_ORDER)[number];
@@ -14,6 +18,7 @@ export type ProfileModules = {
   order?: ProfileModuleKind[];
   // A reference only. Member readers must resolve it through calendar policy.
   calendarOccurrenceId?: string | null;
+  featuredResources?: ProfileFeaturedReference[];
 };
 export type ProfileModuleSection =
   | { kind: "testimony"; text: string }
@@ -28,7 +33,7 @@ export const PROFILE_MODULE_SLOTS = [
   { kind: "introduction", available: true },
   { kind: "pinned-post", available: true },
   { kind: "calendar", available: true },
-  { kind: "featured-media", available: false }
+  { kind: "featured-media", available: true }
 ] as const;
 
 export function emptyProfileModules(): ProfileModules {
@@ -61,13 +66,17 @@ export function validateProfileModules(value: unknown): ProfileModules {
           "skills",
           "links",
           "order",
-          "calendarOccurrenceId"
+          "calendarOccurrenceId",
+          "featuredResources"
         ].includes(key)
     )
   )
     throw Error("Invalid profile modules");
   const hasOrder = Object.hasOwn(value, "order");
   const hasCalendar = Object.hasOwn(value, "calendarOccurrenceId");
+  const featuredResources = Object.hasOwn(value, "featuredResources")
+    ? profileFeaturedReferences(value.featuredResources)
+    : undefined;
   if (
     hasCalendar &&
     value.calendarOccurrenceId !== null &&
@@ -118,6 +127,7 @@ export function validateProfileModules(value: unknown): ProfileModules {
     testimony,
     skills,
     links,
+    ...(featuredResources ? { featuredResources } : {}),
     ...(hasOrder ? { order: [...(value.order as ProfileModuleKind[])] } : {}),
     ...(hasCalendar
       ? { calendarOccurrenceId: value.calendarOccurrenceId as string | null }

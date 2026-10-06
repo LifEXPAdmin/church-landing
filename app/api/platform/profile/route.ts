@@ -7,6 +7,10 @@ import { PortalError } from "@/lib/platform/portal";
 import { withOwnedSession } from "@/lib/platform/account-sessions";
 import { AccountError } from "@/lib/platform/accounts";
 import { getProfileEventChoice } from "@/lib/platform/profile-events";
+import {
+  getProfileFeaturedChoices,
+  getProfileFeaturedResources
+} from "@/lib/platform/profile-featured";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
@@ -32,6 +36,59 @@ export async function GET(request: Request) {
         }
       );
     const query = new URL(request.url).searchParams;
+    if (
+      query.get("view") === "featured-choice" ||
+      query.get("view") === "featured-resources"
+    ) {
+      const choosing = query.get("view") === "featured-choice";
+      const allowed = choosing
+        ? ["view", "references"]
+        : ["view", "username", "preview"];
+      if (
+        [...query.keys()].some(
+          (key) => !allowed.includes(key) || query.getAll(key).length !== 1
+        )
+      )
+        throw new PortalError(400, "Choose supported profile resource fields.");
+      if (choosing) {
+        const raw = query.get("references") ?? "";
+        let input: unknown;
+        try {
+          if (raw.length > 2048) throw Error();
+          input = JSON.parse(raw);
+        } catch {
+          throw new PortalError(
+            400,
+            "Choose valid featured resource references."
+          );
+        }
+        return Response.json(
+          await getProfileFeaturedChoices(
+            prisma,
+            requestSessionToken(request),
+            input,
+            expectedOwner
+          ),
+          { headers }
+        );
+      }
+      const username = query.get("username") ?? "";
+      if (
+        !/^[A-Za-z0-9_]{3,24}$/.test(username) ||
+        (query.has("preview") && query.get("preview") !== "member")
+      )
+        throw new PortalError(400, "Choose an available member profile.");
+      return Response.json(
+        await getProfileFeaturedResources(
+          prisma,
+          requestSessionToken(request),
+          username,
+          query.get("preview") === "member",
+          expectedOwner
+        ),
+        { headers }
+      );
+    }
     if (query.get("view") === "event-choice")
       return Response.json(
         await getProfileEventChoice(

@@ -136,9 +136,11 @@ export function getMemberProfile(
     const relationshipsVisible =
       (profile.id === context.actorId && !memberPreview) ||
       socialPreferences?.showRelationships !== false;
-    const { calendarOccurrenceId, ...visibleModules } = readProfileModules(
-      profile.presentation?.modules
-    );
+    const {
+      calendarOccurrenceId,
+      featuredResources: _featuredResources,
+      ...visibleModules
+    } = readProfileModules(profile.presentation?.modules);
     const selectedEvent = await profileEventIn(
       tx,
       reader,

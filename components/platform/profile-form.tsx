@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { accountInputClass } from "./account-form";
 import type { ProfileEditorView } from "@/lib/platform/profiles";
 import { ParticipationChoice } from "./participation-choice";
+import { ProfileFeaturedPicker } from "./profile-featured";
+import type { ProfileFeaturedReference } from "@/lib/platform/profile-featured-input";
 import { ProfileEventPicker } from "./profile-events";
 import { roleLabels } from "@/lib/platform/format";
 import {
@@ -91,6 +93,10 @@ export function ProfileForm({
   const [calendarOccurrenceId, setCalendarOccurrenceId] = useState(
     profile.presentation.modules.calendarOccurrenceId
   );
+  const [featuredResources, setFeaturedResources] = useState<
+    ProfileFeaturedReference[]
+  >(profile.presentation.modules.featuredResources ?? []);
+  const [featuredPending, setFeaturedPending] = useState(false);
   const [eventPending, setEventPending] = useState(false);
   const [moduleOrder, setModuleOrder] = useState<ProfileModuleKind[]>(() => [
     ...(profile.presentation.modules.order ?? PROFILE_MODULE_ORDER)
@@ -243,7 +249,13 @@ export function ProfileForm({
     }
   }
   async function sendOriginal(body: string) {
-    if (busy.current || !visibleNow.current || imagesPending || eventPending)
+    if (
+      busy.current ||
+      !visibleNow.current ||
+      imagesPending ||
+      eventPending ||
+      featuredPending
+    )
       return;
     const seq = generation.current;
     begin();
@@ -407,7 +419,8 @@ export function ProfileForm({
           pendingBody ||
           conflict ||
           imagesPending ||
-          eventPending
+          eventPending ||
+          featuredPending
         )
           return;
         captureDraft();
@@ -417,6 +430,7 @@ export function ProfileForm({
           background
         };
         const profileModules = {
+          featuredResources,
           ...(calendarOccurrenceId !== undefined
             ? { calendarOccurrenceId }
             : {}),
@@ -647,10 +661,37 @@ export function ProfileForm({
             </fieldset>
           </fieldset>
         )}
+        <ProfileFeaturedPicker
+          owner={owner}
+          selected={featuredResources}
+          visible={visible}
+          disabled={
+            pending ||
+            !!pendingBody ||
+            imagesPending ||
+            eventPending ||
+            !visible
+          }
+          onSelect={(references) => {
+            if (!visibleNow.current || pendingBody) return;
+            setFeaturedResources(references);
+            onDirty(true);
+          }}
+          onBusy={(value) => {
+            setFeaturedPending(value);
+            onBusy(value || busy.current || eventPending);
+          }}
+        />
         <ProfileEventPicker
           owner={owner}
           selected={calendarOccurrenceId}
-          disabled={pending || !!pendingBody || imagesPending || !visible}
+          disabled={
+            pending ||
+            !!pendingBody ||
+            imagesPending ||
+            featuredPending ||
+            !visible
+          }
           onSelect={(id) => {
             if (!visibleNow.current || pendingBody) return;
             setCalendarOccurrenceId(id);
@@ -658,7 +699,7 @@ export function ProfileForm({
           }}
           onBusy={(value) => {
             setEventPending(value);
-            onBusy(value || busy.current);
+            onBusy(value || busy.current || featuredPending);
           }}
         />
         {visible && (
@@ -939,7 +980,12 @@ export function ProfileForm({
                   <button
                     type="button"
                     className="gc-profile-text-button"
-                    disabled={pending || imagesPending || eventPending}
+                    disabled={
+                      pending ||
+                      imagesPending ||
+                      eventPending ||
+                      featuredPending
+                    }
                     onClick={() => void sendOriginal(pendingBody)}
                   >
                     Retry original save
@@ -1039,6 +1085,27 @@ export function ProfileForm({
                     </dd>
                   </div>
                   <div>
+                    <dt>Featured resource selections</dt>
+                    <dd>
+                      {latest.presentation.modules.featuredResources?.length ? (
+                        <ol>
+                          {latest.presentation.modules.featuredResources.map(
+                            (reference, index) => (
+                              <li
+                                key={`${reference.kind}:${reference.id}`}
+                                className="break-all"
+                              >
+                                {index + 1}. {reference.kind}: {reference.id}
+                              </li>
+                            )
+                          )}
+                        </ol>
+                      ) : (
+                        "None"
+                      )}
+                    </dd>
+                  </div>
+                  <div>
                     <dt>Selected event</dt>
                     <dd>
                       {latest.presentation.modules.calendarOccurrenceId ? (
@@ -1095,7 +1162,8 @@ export function ProfileForm({
                 !!pendingBody ||
                 conflict ||
                 imagesPending ||
-                eventPending
+                eventPending ||
+                featuredPending
               }
               className="min-h-12 w-full rounded-full sm:w-auto"
             >
