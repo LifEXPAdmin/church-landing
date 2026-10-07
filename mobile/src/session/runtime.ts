@@ -41,11 +41,12 @@ export function createNativeRuntime(options: {
   }
   function atHome(read: () => Promise<void>) {
     if (disposed) return Promise.resolve();
-    const operation = ++intent;
+    const prior = intent;
     const opened = navigation.open({ kind: "screen", screen: "home" });
     const state = navigation.getSnapshot();
-    return current(operation) && opened === "opened" && state.owner && state.destination?.kind === "screen" && state.destination.screen === "home"
-      ? read() : Promise.resolve();
+    if (!current(prior) || opened !== "opened" || !state.owner || state.destination?.kind !== "screen" || state.destination.screen !== "home")
+      return Promise.resolve();
+    intent++; return read();
   }
   function readCommand(allowed: (state: ReadingSnapshot) => boolean, run: () => void | Promise<void>) {
     const prior = intent, state = reading.getSnapshot();
@@ -82,9 +83,12 @@ export function createNativeRuntime(options: {
     },
     recordForegroundActivity: session.recordForegroundActivity,
     async open(destination: AppDestination) {
-      const operation = ++intent;
+      const prior = intent;
       const result = navigation.open(destination);
-      if (result === "opened" && current(operation)) await loadCurrent(navigation.getSnapshot().generation, operation);
+      if (current(prior) && (result === "opened" || result === "sign-in-required")) {
+        const operation = ++intent;
+        if (result === "opened") await loadCurrent(navigation.getSnapshot().generation, operation);
+      }
       return result;
     },
     startFeed(mode: Parameters<typeof reading.startFeed>[0]) { return atHome(() => reading.startFeed(mode)); },

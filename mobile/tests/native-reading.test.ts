@@ -22,7 +22,7 @@ function response(value: unknown, status = 200, retryAfter: string | null = null
   return { status, retryAfter, apiVersion: "1", contentType: "application/json", cacheControl: "no-store", body: JSON.stringify(value) };
 }
 const denied = (code: string, status: number) => response({ apiVersion: "1", error: { code, message: "Fictional failure", retryAfterSeconds: null } }, status);
-function fixture(enabled = true) {
+function fixture(enabled = true, homeAvailable = true) {
   let nonce = 0, elapsed = 0;
   const timers = new Set<{ at: number; callback: () => void }>();
   const secret = store(), marker = store();
@@ -36,7 +36,7 @@ function fixture(enabled = true) {
     clock: { now: () => elapsed, schedule(callback, delayMs) {
       const timer = { at: elapsed + delayMs, callback }; timers.add(timer); return () => { timers.delete(timer); };
     } },
-    ...(enabled ? { availability: { screens: ["home"], resources: ["post"] } } : {}),
+    ...(enabled ? { availability: { screens: homeAvailable ? ["home"] : [], resources: ["post"] } } : {}),
     wire: async request => {
       state.requests.push(request);
       const result = await state.intercept?.(request); if (result) return result;
@@ -290,6 +290,26 @@ test("expiry concealment cannot let an outer clear cancel a newer post read", as
     if (!changed && f.runtime.reading.getSnapshot().kind === "idle") { changed = true; newer = f.runtime.open(post); }
   });
   await f.runtime.open({ kind: "screen", screen: "home" }); await newer;
+  assert.deepEqual(f.runtime.navigation.getSnapshot().destination, post);
+  assert.equal(f.runtime.reading.getSnapshot().kind, "post");
+});
+
+test("ignored destinations cannot suppress the initial verified feed read", async t => {
+  const f = fixture(); t.after(f.dispose); let ignored: Promise<unknown> | undefined;
+  f.runtime.session.subscribe(() => {
+    if (f.runtime.session.getSnapshot().phase === "ready") ignored = f.runtime.open({ kind: "screen", screen: "messages" });
+  });
+  await f.signIn(); assert.equal(await ignored, "unavailable");
+  assert.equal(f.runtime.reading.getSnapshot().kind, "feed");
+});
+
+test("unavailable Home commands cannot suppress a verified contextual post read", async t => {
+  const f = fixture(true, false); t.after(f.dispose); await f.runtime.setForeground(true); await f.runtime.open(post);
+  let ignored: Promise<void> | undefined;
+  f.runtime.session.subscribe(() => {
+    if (f.runtime.session.getSnapshot().phase === "ready") ignored = f.runtime.startFeed("latest");
+  });
+  await f.runtime.signIn(input); await ignored;
   assert.deepEqual(f.runtime.navigation.getSnapshot().destination, post);
   assert.equal(f.runtime.reading.getSnapshot().kind, "post");
 });
