@@ -9,7 +9,9 @@ assert(web.exclude.includes("mobile"), "Website TypeScript must exclude the mobi
 assert(readFileSync(join(root, "eslint.config.mjs"), "utf8").includes('"mobile/**"'));
 assert(readFileSync(join(root, ".vercelignore"), "utf8").split("\n").includes("mobile"));
 assert(!JSON.parse(readFileSync(join(root, "package.json"), "utf8")).workspaces, "No implicit root workspace conversion.");
-const allowed = new Set(["react", "react-native", "expo", "expo/fetch", "expo-status-bar", "expo-linking", "expo-secure-store", "react-native-safe-area-context"]);
+const mobilePackage = JSON.parse(readFileSync(join(mobile, "package.json"), "utf8"));
+assert.equal(mobilePackage.dependencies["@godschurches/shared-core"], "file:../packages/shared-core", "Use the canonical shared source package.");
+const allowed = new Set(["@godschurches/shared-core", "react", "react-native", "expo", "expo/fetch", "expo-status-bar", "expo-linking", "expo-secure-store", "react-native-safe-area-context"]);
 let count = 0;
 function inspect(path) {
   const source = readFileSync(path, "utf8");

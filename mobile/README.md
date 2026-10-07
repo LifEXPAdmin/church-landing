@@ -22,6 +22,8 @@ From `mobile/`:
 ```sh
 node scripts/workspace.mjs inspect
 node scripts/workspace.mjs install
+node scripts/workspace.mjs compatibility
+node scripts/workspace.mjs config
 node scripts/workspace.mjs fixture
 node scripts/workspace.mjs dev
 node scripts/workspace.mjs typecheck
@@ -39,6 +41,11 @@ paths are ignored by Git. Reserve the shared heavy-job contract before install,
 fixture/dev runtime or export. The launcher checks that reservation against this
 worktree. Only one worker owns heavy work at a time.
 
+The pinned Expo CLI reads its shell-only `__UNSAFE_EXPO_HOME_DIRECTORY` setting;
+the launcher points it at the task's new `.generated/expo-home` directory.
+Existing Expo account state is preserved. Recheck the installed CLI's actual
+settings path when changing SDK versions; `EXPO_HOME` is not honored by SDK 57.
+
 The fictional feed listens on loopback port 4084. Metro uses port 8084. Inspect
 port ownership before starting them. Do not terminate an existing foreign
 listener. iOS Simulator reads `127.0.0.1:4084`; Android Emulator reads its host
@@ -52,6 +59,8 @@ probes. Expo Go is not acceptance evidence.
 `com.godschurches.mobile.dev` and `godschurches-dev`; staging uses
 `com.godschurches.mobile.staging` and `godschurches-staging`.
 These are reversible local identifiers, not registered store identities.
+Variant slugs are also distinct, so Expo Dev Client's generated `exp+` schemes
+cannot collide when development and staging are installed together.
 Production configuration fails deliberately until the owner/seller identifiers,
 credential scope and release configuration are settled.
 
@@ -59,6 +68,11 @@ The local fixture network plugin enables cleartext access only in these
 non-production configurations. The JavaScript fixture reader accepts only the
 two exact loopback origins above, sends no cookies or credentials, rejects
 redirects, and has an eight-second timeout. It cannot access production.
+
+Generate the iOS project with `node scripts/workspace.mjs prebuild-ios` after
+reserving the heavy-job contract. This uses `--no-install --no-clean`, keeps the
+project on the SSD and leaves CocoaPods/native compilation for the inspected
+Xcode route. The first generated target is iPhone-only with an iOS 16.4 minimum.
 
 Generated `ios/` and `android/` live under `mobile/` on the SSD. A later native
 build must use task-scoped DerivedData, Gradle caches and device storage after
@@ -86,3 +100,7 @@ launch, read the local fixture API, complete navigation/retry/sign-out, pass
 secure-store cleanup and app-link round trips, and record release-style download
 and installed-size baselines. JavaScript tests, typechecking, bundle export,
 source review and web preview do not satisfy those native checks.
+
+The initial dependency audit found transitive advisories in development tooling.
+The exact lock and audit are retained for triage. Do not force npm's proposed
+framework downgrades or treat successful exports as dependency-security approval.

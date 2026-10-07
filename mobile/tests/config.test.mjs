@@ -11,6 +11,7 @@ test("development and staging use separate identities; production remains gated"
     assert.notEqual(dev.ios.bundleIdentifier, staging.ios.bundleIdentifier);
     assert.notEqual(dev.android.package, staging.android.package);
     assert.notEqual(dev.scheme, staging.scheme);
+    assert.notEqual(dev.slug, staging.slug, "Expo Dev Client generated schemes must not collide");
     assert.equal(dev.extra.fixtureOnly, true);
     assert.equal(dev.updates.enabled, false);
     process.env.APP_VARIANT = "production";

@@ -72,8 +72,8 @@ function Journey() {
     catch { setProbe("Secure storage check failed. Retry on a native development build."); }
     finally { storageRunning.current = false; setProbeBusy(false); }
   }
-  async function startDemo() {
-    if (!(await journey.start())) return;
+  async function loadDemo(read: () => Promise<boolean> | undefined) {
+    if (!(await read())) return;
     const target = pendingLink.current;
     if (target && journey.openPost(target)) {
       pendingLink.current = null;
@@ -99,7 +99,7 @@ function Journey() {
         <View style={styles.panel}>
           <Text accessibilityRole="header" style={styles.heading}>Try the first journey</Text>
           <Text style={styles.body}>Continue as Alex, a demo member. Real sign-in will connect after the shared account adapter is verified.</Text>
-          <Action label="Continue with demo account" onPress={() => { void startDemo(); }} />
+          <Action label="Continue with demo account" onPress={() => { void loadDemo(journey.start); }} />
         </View>
         {state.notice ? <Text accessibilityLiveRegion="polite" style={styles.body}>{state.notice}</Text> : null}
       </> : <>
@@ -109,7 +109,7 @@ function Journey() {
         </View>
         {state.screen === "feed" ? <>
           {state.status === "loading" ? <View accessibilityLiveRegion="polite"><ActivityIndicator color={theme.color.accent} /><Text style={styles.body}>Loading demo posts...</Text></View> : null}
-          {state.status === "error" ? <View style={styles.panel}><Text accessibilityRole="alert" style={styles.body}>The demo could not load. Your next read starts when you retry.</Text><Action label="Retry demo feed" onPress={() => { void journey.retry(); }} /></View> : null}
+          {state.status === "error" ? <View style={styles.panel}><Text accessibilityRole="alert" style={styles.body}>The demo could not load. Your next read starts when you retry.</Text><Action label="Retry demo feed" onPress={() => { void loadDemo(journey.retry); }} /></View> : null}
           {state.status === "ready" && state.posts.length === 0 ? <Text style={styles.body}>No demo posts yet.</Text> : null}
           {state.posts.map((post) => <PostPreview key={post.id} post={post} onOpen={() => journey.openPost(post.id)} />)}
           <Action label="Try offline state" secondary disabled={state.status === "loading"} onPress={() => { void journey.simulateOffline(); }} />

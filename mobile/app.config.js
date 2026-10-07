@@ -8,7 +8,9 @@ module.exports = () => {
   const selected = variants[variant];
   return {
     name: selected.name,
-    slug: "godschurches-mobile",
+    // Expo Dev Client also derives an exp+ scheme from this slug. Keep that
+    // generated scheme separate when both local variants are installed.
+    slug: selected.scheme,
     version: "0.0.1",
     platforms: ["ios", "android"],
     orientation: "default",

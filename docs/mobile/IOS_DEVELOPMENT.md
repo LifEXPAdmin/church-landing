@@ -3,6 +3,14 @@
 Prepared 7 October 2026 for the provisional Expo 57 application. This document
 describes local build routes; no native build or signing success is claimed.
 
+The first installed workspace passed Expo compatibility and TypeScript checks,
+nine fixture/configuration tests and iPhone/Android Hermes bundle exports. The
+generated iOS project has the `GodsChurchesDev` scheme, iPhone device family,
+`com.godschurches.mobile.dev` identifier and iOS 16.4 deployment target. Its
+entitlements are empty, with only development local-network configuration and
+distinct app/Dev Client URL schemes. CocoaPods and native compilation remain
+unrun. These are generated-project checks, not Simulator/device acceptance.
+
 ## Toolchain and support floor
 
 The inspected host runs macOS 26.3 on Apple silicon. Node is 22.23.2 and npm is
@@ -55,7 +63,7 @@ including iOS keychain persistence across reinstalls.
    rather than changing another worker's global selection.
 3. Reserve the machine-build contract, run the guarded package install and
    compatibility/type checks, and inspect the generated native config. Generate
-   the iOS project on the SSD. Provision CocoaPods through a task-scoped tool/cache
+   the iOS project on the SSD with the guarded `prebuild-ios` action. Provision CocoaPods through a task-scoped tool/cache
    route before resolving pods; do not install into an unexamined system Ruby.
 4. Read the generated workspace and schemes with `xcodebuild -list`. Build the
    discovered application scheme for a supported Simulator destination, passing

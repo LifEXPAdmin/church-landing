@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { postPreviewText } from "@godschurches/shared-core";
 import type { FixturePost } from "../spike/fixture";
 import { Action } from "./Action";
 import { theme } from "./theme";
@@ -7,7 +8,7 @@ export function PostPreview({ post, onOpen }: { post: FixturePost; onOpen: () =>
   return <View style={styles.card}>
     <Text style={styles.author}>{post.author}</Text>
     <Text accessibilityRole="header" style={styles.title}>{post.title}</Text>
-    <Text style={styles.body}>{post.excerpt}</Text>
+    <Text style={styles.body}>{postPreviewText({ content: post.body, contentNote: post.contentNote, safeExcerpt: post.excerpt })}</Text>
     {post.contentNote ? <Text style={styles.note}>Content note: {post.contentNote}</Text> : null}
     <Action label={"Read " + post.title} onPress={onOpen} secondary />
   </View>;
