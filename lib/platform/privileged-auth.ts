@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { createHmac } from "node:crypto";
-import { withOwnedSession } from "./account-sessions";
+import { requireSessionOwner, withOwnedSession } from "./account-sessions";
 import { readAccountSession } from "./accounts";
 import { allowAccountAttempt } from "./account-limits";
 import { accountConfig } from "./account-config";
@@ -21,8 +21,9 @@ import {
 } from "./privileged-auth-policy";
 
 const unavailable = () => new PortalError(503, "Authenticator setup is not available yet. Your personal account remains available.");
-export function readPrivilegedAuthentication(db: PrismaClient, token: unknown) {
+export function readPrivilegedAuthentication(db: PrismaClient, token: unknown, expectedOwner?: string) {
   return withOwnedSession(db, token, async (tx, session) => {
+    requireSessionOwner(session, expectedOwner);
     const authority = await privilegedAuthority(tx, session.userId);
     const factor = await tx.adminAuthenticator.findUnique({ where: { userId: session.userId } });
     const notices = await tx.privilegedSecurityNotice.findMany({
@@ -47,7 +48,8 @@ export function readPrivilegedAuthentication(db: PrismaClient, token: unknown) {
 export type PrivilegedAuthenticationSnapshot = Awaited<ReturnType<typeof readPrivilegedAuthentication>>;
 
 export async function privilegedAuthenticatorCommand(
-  db: PrismaClient, token: unknown, input: Record<string, unknown>, credential: unknown
+  db: PrismaClient, token: unknown, input: Record<string, unknown>, credential: unknown,
+  expectedOwner?: string
 ) {
   adminFields(input, ["operation", "requestKey", "expectedVersion", "currentPassword", "credentialMethod", "code", "recoveryCode", "purpose"]);
   const operation = String(input.operation), key = adminRequestKey(input.requestKey);
@@ -56,9 +58,12 @@ export async function privilegedAuthenticatorCommand(
   if (privilegedMode() === "off" || !accountDeliveryAvailable()) throw unavailable();
   const actor = await readAccountSession(db, token);
   if (!actor) throw new PortalError(401, "Sign in to manage your authenticator.");
+  requireSessionOwner({ userId: actor.id }, expectedOwner);
   if (!(await allowAccountAttempt(db, accountConfig().rateSecret + ":privileged-authenticator", "verify", actor.id, actor.id)))
     throw new PortalError(429, "Too many authenticator attempts. Keep your unsent work and retry in fifteen minutes.", 900);
   return withOwnedSession(db, token, async (tx, session) => {
+    // Recheck under the canonical lock before authority checks or receipt replay.
+    requireSessionOwner(session, expectedOwner);
     const authority = await privilegedAuthority(tx, session.userId);
     if (!authority) throw new PortalError(403, "Verify your account email and adult eligibility before setting up an authenticator.");
     const userId = session.userId;

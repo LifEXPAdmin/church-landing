@@ -30,6 +30,38 @@ type OwnedSession = Prisma.PlatformSessionGetPayload<{
   select: typeof sessionSelect;
 }>;
 
+export class AccountSessionOwnerError extends AccountError {
+  constructor() {
+    super("session");
+  }
+}
+
+/** Expected identity is a consistency check, never an authentication source. */
+export function requireSessionOwner(
+  current: { userId: string },
+  expectedOwner?: unknown
+) {
+  if (expectedOwner != null && expectedOwner !== current.userId)
+    throw new AccountSessionOwnerError();
+}
+
+export async function revokeCurrentAccountSession(
+  db: PrismaClient,
+  token: unknown,
+  expectedOwner: string
+) {
+  return withOwnedSession(
+    db,
+    token,
+    async (tx, current) => {
+      requireSessionOwner(current, expectedOwner ?? "");
+      await tx.platformSession.delete({ where: { id: current.id } });
+      return { ownerId: current.userId };
+    },
+    true
+  );
+}
+
 export async function withOwnedSession<T>(
   db: PrismaClient,
   token: unknown,

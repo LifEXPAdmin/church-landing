@@ -95,6 +95,20 @@ const union = <A, B>(a: WireSchema<A>, b: WireSchema<B>) =>
     return b.parse(value, mode);
   });
 
+// Shared, runtime-independent building blocks for additional versioned slices.
+export const wire = Object.freeze({
+  schema,
+  text,
+  integer,
+  boolean,
+  literal,
+  oneOf,
+  nullable,
+  array,
+  object,
+  union
+});
+
 export const apiId = text(100, 1, /^[A-Za-z0-9_-]+$/);
 export const apiUsername = text(24, 3, /^[A-Za-z0-9_]+$/);
 export const apiCursor = text(2000, 1, /^[A-Za-z0-9_.-]+$/);
@@ -259,6 +273,7 @@ export const apiErrorRules = Object.freeze({
   forbidden: { status: 403, action: "none" },
   authenticator_required: { status: 403, action: "verify_authenticator" },
   not_found: { status: 404, action: "none" },
+  method_not_allowed: { status: 405, action: "correct_request" },
   conflict: { status: 409, action: "refresh" },
   cursor_invalid: { status: 409, action: "refresh" },
   recovery_required: { status: 409, action: "review" },

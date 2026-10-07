@@ -1,3 +1,14 @@
+## Native session adapter implementation, 7 October 2026
+
+The native password, session discovery/activity/logout and authenticator routes
+are implemented locally on the accepted v1 contract. They reuse canonical account
+sessions, rate limits, expiry and session-bound MFA; browser cookie/Origin rules
+are unchanged. No schema or dependency changes. Pure contracts, type checking,
+focused lint and copy checks pass. Isolated database, HTTPS/build and final review
+are pending; this checkpoint is not merged or live. Native OAuth remains disabled
+and actual mobile-client/device acceptance is separate. See
+[NATIVE_SESSION_ADAPTER.md](NATIVE_SESSION_ADAPTER.md).
+
 ## Initial web/native wire contract, 7 October 2026
 
 The additive contract in `lib/platform/api-contracts.ts` describes eleven proposed

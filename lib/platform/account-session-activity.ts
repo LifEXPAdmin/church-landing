@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { AccountError } from "./account-error";
-import { withOwnedSession } from "./account-sessions";
+import { requireSessionOwner, withOwnedSession } from "./account-sessions";
 import {
   accountSessionDeadline,
   accountSessionIsActive,
@@ -24,8 +24,7 @@ export async function readAccountSessionActivity(
   expectedOwner?: string | null
 ) {
   return withOwnedSession(db, token, async (_tx, current) => {
-    if (expectedOwner != null && expectedOwner !== current.userId)
-      throw new AccountError("session");
+    requireSessionOwner(current, expectedOwner);
     const now = new Date();
     if (!accountSessionIsActive(current, now))
       throw new AccountError("session");
@@ -33,14 +32,14 @@ export async function readAccountSessionActivity(
   });
 }
 
-/** Only the explicit, same-origin foreground HTTP boundary calls this writer. */
+/** Only an explicit, authenticated foreground activity boundary calls this writer. */
 export async function recordAccountSessionActivity(
   db: PrismaClient,
   token: unknown,
   expectedOwner: string
 ) {
   return withOwnedSession(db, token, async (tx, current) => {
-    if (expectedOwner !== current.userId) throw new AccountError("session");
+    requireSessionOwner(current, expectedOwner ?? "");
     // withOwnedSession acquired the account lock and revalidated credentials.
     // Take time here, after any wait, never from the browser or transaction start.
     const now = new Date();
