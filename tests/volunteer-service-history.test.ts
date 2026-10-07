@@ -423,8 +423,7 @@ test("combined history pages remain bounded and continuations never select anoth
   );
 });
 
-test("linked Need completion retains its designated coordinator authority at the new volunteer entry point", async () => {
-  const f = await fixture(true);
+async function linkNeed(f: Awaited<ReturnType<typeof fixture>>) {
   await db.churchCapabilityGrant.create({
     data: {
       churchId: f.churchA.id,
@@ -509,6 +508,12 @@ test("linked Need completion retains its designated coordinator authority at the
       itemConfirmed: true
     })
   );
+  return need;
+}
+
+test("linked Need completion retains its designated coordinator authority at the new volunteer entry point", async () => {
+  const f = await fixture(true);
+  await linkNeed(f);
   await db.churchCapabilityGrant.create({
     data: {
       churchId: f.churchA.id,
@@ -567,4 +572,323 @@ test("a queued confirmation rechecks session revocation under the authorization 
     ).completedAt,
     null
   );
+});
+
+function correctionOnly(
+  record: VolunteerServiceRecord | null | undefined,
+  kind: "signup" | "application",
+  id: string
+) {
+  assert.ok(
+    record,
+    "The organizer needs a current redacted correction receipt"
+  );
+  assert.deepEqual(record.target, { kind, id });
+  assert.equal(record.canCorrect, true);
+  assert.equal(record.canComplete, false);
+  assert.equal(record.canShare, false);
+  assert.equal(record.canHide, false);
+  assert.equal(record.shared, false);
+  assert.equal(record.current, false);
+  assert.equal(record.title, "Unavailable volunteer service");
+  assert.equal(record.postId, null);
+  assert.equal(record.opportunityId, null);
+  return record;
+}
+
+async function coordinatorApplications(f: Awaited<ReturnType<typeof fixture>>) {
+  const page = await readVolunteers(db, f.ada.token, {
+    view: "applications",
+    id: f.opportunity.id
+  });
+  assert.equal(page.view, "applications");
+  if (page.view !== "applications") throw Error("Missing applications");
+  assert.equal(page.ownerId, f.ada.id);
+  return page;
+}
+
+async function coordinatorRoster(token: string, slotId: string) {
+  const page = await readVolunteers(db, token, {
+    view: "service-roster",
+    id: slotId
+  });
+  assert.equal(page.view, "service-roster");
+  if (page.view !== "service-roster") throw Error("Missing service roster");
+  return page;
+}
+
+function omitsPrivateFields(value: unknown, forbidden: string[]) {
+  const serialized = JSON.stringify(value);
+  for (const text of forbidden) {
+    assert.ok(
+      text.length > 0,
+      "The privacy assertion needs populated source data"
+    );
+    assert.ok(!serialized.includes(text), `Redacted receipt includes ${text}`);
+  }
+}
+
+async function noCorrectionAuthority(
+  request: Promise<Array<{ service: VolunteerServiceRecord | null }>>,
+  id: string
+) {
+  await request.then(
+    (rows) =>
+      assert.ok(
+        !rows.some(
+          (row) => row.service?.target.id === id && row.service.canCorrect
+        )
+      ),
+    (error: unknown) =>
+      assert.ok(
+        error instanceof PortalError && [403, 404].includes(error.status)
+      )
+  );
+}
+
+for (const timed of [false, true])
+  test(`${timed ? "timed application and roster" : "untimed application"} provides only a correction receipt after volunteer membership loss`, async () => {
+    const f = await fixture(timed);
+    if (timed) await linkNeed(f);
+    const statement = "Fictional former volunteer private answer",
+      decision = "Fictional former volunteer private decision",
+      availability = "Fictional former volunteer private availability",
+      historicalNote = "Fictional former volunteer private event note",
+      completionNote = "Fictional former volunteer private completion note";
+    // Populate distinct sensitive fields so an accidentally widened coordinator
+    // projection cannot pass merely because the original fixture was empty.
+    await db.volunteerApplication.update({
+      where: { id: f.application.id },
+      data: { statement, decisionNote: decision, availability }
+    });
+    await db.volunteerApplicationEvent.updateMany({
+      where: { applicationId: f.application.id },
+      data: { note: historicalNote }
+    });
+    const before = await coordinatorApplications(f);
+    const original = before.items.find((item) => item.id === f.application.id);
+    assert.ok(original?.service);
+    assert.equal(original.statement, statement);
+    assert.equal(original.applicantName, f.lee.name);
+    await volunteerCommand(db, f.ada.token, {
+      ...confirm(original.service),
+      reason: completionNote
+    });
+    await volunteerCommand(
+      db,
+      f.lee.token,
+      consent(await own(f.lee.token, f.targetId))
+    );
+    await db.churchConnection.updateMany({
+      where: { userId: f.lee.id, churchId: f.churchA.id },
+      data: { state: "REMOVED" }
+    });
+
+    const page = await coordinatorApplications(f);
+    const row = page.items.find((item) => item.id === f.application.id);
+    assert.ok(
+      row,
+      "A retained completion must remain correctable without reopening private applicant details"
+    );
+    assert.equal(row.current, false);
+    assert.equal(row.own, false);
+    assert.equal(row.applicantName, null);
+    assert.equal(row.title, "Unavailable volunteer opportunity");
+    assert.equal(row.opportunityId, null);
+    assert.equal(row.statement, "");
+    assert.equal(row.availability, "");
+    assert.equal(row.decisionNote, "");
+    assert.deepEqual(row.history, []);
+    assert.equal(row.canWithdraw, false);
+    assert.equal(row.canEditAvailability, false);
+    assert.equal(row.canClearAvailability, false);
+    const receipt = correctionOnly(
+      row.service,
+      timed ? "signup" : "application",
+      f.targetId
+    );
+    const privateValues = [
+      f.lee.name,
+      f.lee.email,
+      statement,
+      decision,
+      availability,
+      historicalNote,
+      completionNote,
+      f.opportunity.contact,
+      f.opportunityPost.id,
+      f.opportunity.id
+    ];
+    omitsPrivateFields(row, privateValues);
+    const correction = confirm(receipt, false);
+    if (timed) {
+      const roster = await coordinatorRoster(
+        f.ada.token,
+        f.opportunity.slotId!
+      );
+      const person = roster.people.find((item) => item.id === f.targetId);
+      assert.ok(
+        person,
+        "The timed roster must expose the same minimal correction path"
+      );
+      const rosterReceipt = correctionOnly(
+        person.service,
+        "signup",
+        f.targetId
+      );
+      assert.equal(rosterReceipt.version, receipt.version);
+      omitsPrivateFields(person, privateValues);
+
+      // Volunteer organizer duty alone is insufficient for this linked Need.
+      const revoked = await db.churchCapabilityGrant.updateMany({
+        where: {
+          churchId: f.churchA.id,
+          userId: f.ada.id,
+          capability: "MANAGE_EXCHANGE_LISTINGS",
+          revokedAt: null
+        },
+        data: { revokedAt: new Date() }
+      });
+      assert.equal(revoked.count, 1);
+      await denied(volunteerCommand(db, f.ada.token, correction), 404);
+      await noCorrectionAuthority(
+        coordinatorApplications(f).then((value) => value.items),
+        f.targetId
+      );
+      await noCorrectionAuthority(
+        coordinatorRoster(f.ada.token, f.opportunity.slotId!).then(
+          (value) => value.people
+        ),
+        f.targetId
+      );
+      await db.churchCapabilityGrant.updateMany({
+        where: {
+          churchId: f.churchA.id,
+          userId: f.ada.id,
+          capability: "MANAGE_EXCHANGE_LISTINGS"
+        },
+        data: { revokedAt: null }
+      });
+    }
+    const saved = await volunteerCommand(db, f.ada.token, correction);
+    assert.equal(saved.id, receipt.target.id);
+    assert.equal(saved.version, receipt.version + 1);
+    assert.deepEqual(
+      await volunteerCommand(db, f.ada.token, correction),
+      saved
+    );
+    const corrected = await own(f.lee.token, f.targetId);
+    assert.equal(corrected.completed, false);
+    assert.equal(corrected.shared, false);
+    await denied(volunteerCommand(db, f.ada.token, confirm(corrected)), 404);
+    await denied(volunteerCommand(db, f.lee.token, consent(corrected)), 404);
+    assert.equal(
+      (
+        await db.volunteerApplication.findUniqueOrThrow({
+          where: { id: f.application.id }
+        })
+      ).state,
+      "ACCEPTED"
+    );
+    if (timed) {
+      const signup = await db.postVolunteerSignup.findUniqueOrThrow({
+        where: { id: f.targetId }
+      });
+      assert.equal(signup.state, "ACTIVE");
+      assert.equal(signup.completedAt, null);
+      assert.equal(
+        (
+          await db.postVolunteerSlot.findUniqueOrThrow({
+            where: { id: signup.slotId }
+          })
+        ).capacity,
+        3
+      );
+    }
+    const revoked = await db.churchCapabilityGrant.updateMany({
+      where: {
+        churchId: f.churchA.id,
+        userId: f.ada.id,
+        capability: "MANAGE_CHURCH_VOLUNTEERS",
+        revokedAt: null
+      },
+      data: { revokedAt: new Date() }
+    });
+    assert.equal(revoked.count, 1);
+    await denied(coordinatorApplications(f), 404);
+    await denied(volunteerCommand(db, f.ada.token, correction), 404);
+  });
+
+test("a direct role retains only its organizer correction receipt after volunteer membership loss", async () => {
+  const f = await seedParticipation(db),
+    slot = await f.slot({ capacity: 2 });
+  const signup = await f.command(f.lee, {
+    operation: "volunteer",
+    slotId: slot.id,
+    slotVersion: slot.version,
+    expectedVersion: 0
+  });
+  const original = (await coordinatorRoster(f.ada.token, slot.id)).people.find(
+    (row) => row.id === signup.id
+  );
+  assert.ok(original?.service);
+  await volunteerCommand(db, f.ada.token, confirm(original.service));
+  await volunteerCommand(
+    db,
+    f.lee.token,
+    consent(await own(f.lee.token, signup.id))
+  );
+  await db.churchConnection.updateMany({
+    where: { userId: f.lee.id, churchId: f.churchA.id },
+    data: { state: "REMOVED" }
+  });
+  const roster = await coordinatorRoster(f.ada.token, slot.id);
+  const person = roster.people.find((row) => row.id === signup.id);
+  assert.ok(person);
+  const receipt = correctionOnly(person.service, "signup", signup.id);
+  omitsPrivateFields(person, [
+    f.lee.name,
+    f.lee.email,
+    f.post.id,
+    "Fictional completion note"
+  ]);
+  const correction = confirm(receipt, false);
+  const saved = await volunteerCommand(db, f.ada.token, correction);
+  assert.equal(saved.id, receipt.target.id);
+  assert.equal(saved.version, receipt.version + 1);
+  assert.deepEqual(await volunteerCommand(db, f.ada.token, correction), saved);
+  const corrected = await own(f.lee.token, signup.id);
+  assert.equal(corrected.completed, false);
+  assert.equal(corrected.shared, false);
+  await denied(volunteerCommand(db, f.ada.token, confirm(corrected)), 404);
+  await denied(volunteerCommand(db, f.lee.token, consent(corrected)), 404);
+  assert.equal(
+    await db.volunteerApplication.count({ where: { userId: f.lee.id } }),
+    0
+  );
+  assert.equal(
+    (
+      await db.postVolunteerSignup.findUniqueOrThrow({
+        where: { id: signup.id }
+      })
+    ).state,
+    "ACTIVE"
+  );
+  assert.equal(
+    (await db.postVolunteerSlot.findUniqueOrThrow({ where: { id: slot.id } }))
+      .capacity,
+    2
+  );
+  const revoked = await db.churchCapabilityGrant.updateMany({
+    where: {
+      churchId: f.churchA.id,
+      userId: f.ada.id,
+      capability: "MANAGE_CHURCH_VOLUNTEERS",
+      revokedAt: null
+    },
+    data: { revokedAt: new Date() }
+  });
+  assert.equal(revoked.count, 1);
+  await denied(coordinatorRoster(f.ada.token, slot.id), 403);
+  await denied(volunteerCommand(db, f.ada.token, correction), 404);
 });
