@@ -71,6 +71,50 @@ Stale replacement outcomes retain their cleanup status instead of hiding failure
 These rules are the native integration contract. The vault itself implements no
 HTTP transport, refresh token, account policy, authorization or authenticated UI.
 
+## Session controller preparation
+
+`mobile/src/session/session-controller.ts` now consumes that vault and the typed
+canonical native client through injected ports. Its public immutable snapshots
+contain only phase, local generation, foreground state, verified account fields
+and bounded status values. Credentials, installation bindings, passwords and raw
+errors are never published. No feed, post or private response cache is added.
+
+Startup and each foreground return read a candidate, verify its captured owner
+with the canonical session endpoint and read the server's activity deadline
+before revealing an account. Fresh password issuance also verifies the issued
+credential and completes checked storage before publication. Every asynchronous
+result is fenced by the foreground epoch. Backgrounding synchronously clears the
+account, advances the epoch, cancels work and removes the expiry timer.
+
+Server deadlines use conservative elapsed time from before the activity request.
+A monotonic clock, snapshot reads and an expiry timer conceal overdue sessions;
+device wall-clock changes cannot extend the elapsed budget. Only an explicit
+foreground interaction may request activity renewal. Concurrent renewals are
+coalesced locally, and no background timer sends renewal requests. A confirmed
+session rejection invalidates the exact saved candidate immediately.
+
+Sign-out queues persistent local invalidation before any remote await and clears
+the public account immediately. A separate captured client revokes only the old
+token. Its late completion cannot clear or replace a newer account, including a
+new credential for the same account. Local cleanup and remote confirmation are
+reported separately. Unknown issuance or restoration reports remote uncertainty
+when no token can be captured. Cancellation converts pending revocation to
+uncertainty across foreground transitions. Failed persistent cleanup also keeps
+its warning when a lifecycle change invalidates the initiating screen.
+
+At most one detached revocation is retained, with no credential retry queue.
+A second rapid logout still clears local state and reports remote uncertainty.
+An abandoned save uses its original random credential binding for any delayed
+cleanup. The controller never substitutes a newer credential to repair an old
+logout, and it cannot revoke a password result lost before its token was received.
+
+The app must bind visibility to active and focused lifecycle state, including
+Android blur, and render only the controller's current snapshot. Native privacy
+covering for task-switcher snapshots remains a platform acceptance requirement.
+No controller has been connected to the fictional `App.tsx` yet. Activation is
+also gated on the [strict native transport](NATIVE_TRANSPORT.md), canonical
+fixture availability, source compatibility and native-device checks.
+
 ## Evidence and remaining acceptance
 
 The pure tests cover bounded replacement, reinstall remnants, malformed records,
@@ -78,6 +122,12 @@ interruption before activation, failed activation, storage exceptions and silent
 write/delete failures, final activation cancellation with unconfirmed cleanup,
 marker eviction during restoration, same-account replacement and delayed logout.
 They model storage behavior and cannot certify operating-system persistence.
+
+Controller checks additionally hold restoration, password replies, persistence,
+renewal and logout across lifecycle changes; verify no account is revealed before
+server and storage confirmation; preserve a newer same-account login after old
+logout; and distinguish network uncertainty, local cleanup failure and server
+rejection. These use a fictional injected wire, not real native networking.
 
 Before acceptance, run the full sign-in, bounded feed, detail and safe-sign-out
 journey on both native platforms against canonical fictional accounts. Exercise
