@@ -30,17 +30,26 @@ export async function recordHelpChange(
       where: { id: targetId },
       include: { agreement: true }
     });
-    const recipientId =
-      offer?.responderId === actorId ? offer.coordinatorId : offer?.responderId;
-    if (offer && recipientId)
-      await recordDomainActivity(tx, {
-        kind: "INTERCHURCH_HELP",
-        category: "needs",
-        sourceId: offer.id,
-        sourceVersion: offer.version,
-        actorId,
-        recipientId
-      });
+    const recipients =
+      action === "SCHEDULE_CHANGED"
+        ? [offer?.coordinatorId, offer?.responderId]
+        : [
+            offer?.responderId === actorId
+              ? offer.coordinatorId
+              : offer?.responderId
+          ];
+    if (offer)
+      for (const recipientId of new Set(recipients)) {
+        if (!recipientId || recipientId === actorId) continue;
+        await recordDomainActivity(tx, {
+          kind: "INTERCHURCH_HELP",
+          category: "needs",
+          sourceId: offer.id,
+          sourceVersion: offer.version,
+          actorId,
+          recipientId
+        });
+      }
   }
   return row;
 }

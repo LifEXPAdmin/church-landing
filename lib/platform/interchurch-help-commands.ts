@@ -21,6 +21,7 @@ import {
   helpCategory,
   helpChoice,
   helpTermsFields,
+  parseHelpAgreementTerms,
   parseHelpTerms,
   supportedHelpDuty
 } from "./interchurch-help-input";
@@ -40,6 +41,10 @@ import {
   recordHelpChange,
   revokeHelpOffers
 } from "./interchurch-help-lifecycle";
+import {
+  readHelpSchedule,
+  assertHelpScheduleCapacity
+} from "./interchurch-help-schedule";
 
 const fields: Record<string, string[]> = {
   "withdraw-coordinator": ["requestId"],
@@ -68,6 +73,12 @@ const fields: Record<string, string[]> = {
   decline: ["offerId"],
   select: ["offerId", "requestTermsVersion", "acceptTerms", "externalNotices"],
   amend: ["offerId", "schema", "terms", "requestTermsVersion", "acceptTerms"],
+  "link-schedule": [
+    "offerId",
+    "schedule",
+    "requestTermsVersion",
+    "acceptTerms"
+  ],
   acknowledge: [
     "offerId",
     "termsVersion",
@@ -156,6 +167,79 @@ async function authorize(
     (row.kind === "ORGANIZATION" || row.coordinatorId === actorId)
   )
     await requirePrivilegedAuthentication(tx, actorId);
+  if (
+    row.agreement &&
+    !["withdraw", "withdraw-contact", "cancel"].includes(op)
+  ) {
+    const request = await tx.interchurchHelpRequest.findUniqueOrThrow({
+      where: { id: row.requestId },
+      include: { listing: true }
+    });
+    const pair = schedulePair(row, request.listing?.ownerChurchId);
+    if (op === "link-schedule") {
+      if (v.schedule !== null)
+        await chosenSchedule(
+          tx,
+          pair,
+          v.schedule,
+          parseHelpAgreementTerms(row.agreement.terms).schedule
+        );
+    } else {
+      const stored = parseHelpAgreementTerms(row.agreement.terms).schedule;
+      if (stored) {
+        const source = await readHelpSchedule(tx, pair, stored);
+        if (!source) throw helpUnavailable();
+        if (source.changed)
+          throw new PortalError(
+            409,
+            "The linked schedule changed. Review and link its current version before acknowledging or sharing contact details."
+          );
+      }
+    }
+  }
+}
+
+function schedulePair(
+  row: { coordinatorId: string | null; responderId: string | null },
+  ownerChurchId: string | null | undefined
+) {
+  if (!row.coordinatorId || !row.responderId || !ownerChurchId)
+    throw helpUnavailable();
+  return {
+    coordinatorId: row.coordinatorId,
+    responderId: row.responderId,
+    ownerChurchId
+  };
+}
+async function chosenSchedule(
+  tx: PostTx,
+  pair: ReturnType<typeof schedulePair>,
+  input: unknown,
+  prior?: { kind: string; id: string } | null
+) {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new PortalError(400, "Choose a current event or volunteer shift.");
+  const v = input as Record<string, unknown>;
+  socialInput(v, ["kind", "id", "fingerprint"]);
+  if (
+    (v.kind !== "EVENT" && v.kind !== "VOLUNTEER_SLOT") ||
+    typeof v.fingerprint !== "string" ||
+    !/^[a-f0-9]{64}$/.test(v.fingerprint)
+  )
+    throw new PortalError(400, "Choose a current event or volunteer shift.");
+  const source = await readHelpSchedule(
+    tx,
+    pair,
+    { kind: v.kind, id: postId(v.id) },
+    { requireFuture: prior?.kind !== v.kind || prior.id !== v.id }
+  );
+  if (!source) throw helpUnavailable();
+  if (source.binding.fingerprint !== v.fingerprint)
+    throw new PortalError(
+      409,
+      "That schedule changed. Refresh the choices before linking it."
+    );
+  return source;
 }
 async function requestFields(v: unknown) {
   if (!v || typeof v !== "object" || Array.isArray(v))
@@ -223,6 +307,7 @@ export function interchurchHelpCommand(
     input,
     async (tx, actorId) => {
       await tx.$executeRaw`SELECT set_config('gc.interchurch_help_writer', 'v1', true)`;
+      await tx.$executeRaw`SELECT set_config('gc.interchurch_schedule_writer', 'v1', true)`;
       if (op === "withdraw-coordinator") {
         const row = await tx.interchurchHelpRequest.findUniqueOrThrow({
           where: { id: postId(input.requestId) }
@@ -753,10 +838,81 @@ export function interchurchHelpCommand(
               "This agreement has ended. Start fresh for new help."
             );
           supportedHelpDuty(request as Parameters<typeof supportedHelpDuty>[0]);
-          if (op === "amend") {
+          if (op === "link-schedule") {
+            expected(input.requestTermsVersion, request.termsVersion);
+            if (input.acceptTerms !== true)
+              throw new PortalError(
+                400,
+                "Explicitly confirm the schedule link change. Both participants must review the resulting agreement."
+              );
+            const prior = parseHelpAgreementTerms(agreement.terms);
+            const source =
+              input.schedule === null
+                ? null
+                : await chosenSchedule(
+                    tx,
+                    schedulePair(offer, request.listing?.ownerChurchId),
+                    input.schedule,
+                    prior.schedule
+                  );
+            if (source)
+              await assertHelpScheduleCapacity(
+                tx,
+                source.binding,
+                agreement.id
+              );
+            const fields = helpTermsFields(prior.terms);
+            const next = source
+              ? {
+                  ...fields,
+                  startLocal: source.startLocal,
+                  endLocal: source.endLocal,
+                  timeZone: source.timeZone,
+                  schedule: source.binding
+                }
+              : fields;
+            // Validate the canonical time snapshot through the same existing
+            // agreement constraints, including DST and maximum span.
+            supportedHelpDuty(parseHelpAgreementTerms(next).terms);
+            await tx.interchurchHelpAgreement.update({
+              where: { id: agreement.id },
+              data: {
+                terms: next,
+                termsVersion: { increment: 1 },
+                requestTermsVersion: request.termsVersion,
+                offerVersion: offer.version + 1,
+                state: "NEEDS_REVIEW",
+                requesterAcknowledged: null,
+                responderAcknowledged: null,
+                requesterContact: "",
+                responderContact: "",
+                contactVersion: { increment: 1 },
+                version: { increment: 1 }
+              }
+            });
+          } else if (op === "amend") {
             expected(input.requestTermsVersion, request.termsVersion);
             const terms = parseHelpTerms(input.schema, input.terms);
             supportedHelpDuty(terms);
+            const schedule = parseHelpAgreementTerms(agreement.terms).schedule;
+            if (schedule) {
+              const source = await readHelpSchedule(
+                tx,
+                schedulePair(offer, request.listing?.ownerChurchId),
+                schedule
+              );
+              if (!source) throw helpUnavailable();
+              if (
+                source.changed ||
+                source.startLocal !== terms.startLocal ||
+                source.endLocal !== terms.endLocal ||
+                source.timeZone !== terms.timeZone
+              )
+                throw new PortalError(
+                  409,
+                  "Keep the linked canonical schedule. Review a changed source or explicitly remove its link before proposing different times."
+                );
+            }
             if (input.acceptTerms !== true)
               throw new PortalError(
                 400,
@@ -766,7 +922,10 @@ export function interchurchHelpCommand(
             await tx.interchurchHelpAgreement.update({
               where: { id: agreement.id },
               data: {
-                terms: helpTermsFields(terms),
+                terms: {
+                  ...helpTermsFields(terms),
+                  ...(schedule ? { schedule } : {})
+                },
                 termsVersion: version,
                 requestTermsVersion: request.termsVersion,
                 offerVersion: offer.version + 1,
@@ -790,7 +949,7 @@ export function interchurchHelpCommand(
                 400,
                 "Acknowledge the exact current agreement terms."
               );
-            supportedHelpDuty(parseHelpTerms(HELP_SCHEMA, agreement.terms));
+            supportedHelpDuty(parseHelpAgreementTerms(agreement.terms).terms);
             const external = helpBoolean(input.externalNotices),
               requester = actorId === offer.coordinatorId;
             const a = requester

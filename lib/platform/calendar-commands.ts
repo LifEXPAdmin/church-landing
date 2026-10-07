@@ -1,4 +1,5 @@
 import { wakeCalendarReminders } from "./calendar-reminder-plan";
+import { invalidateHelpSchedule } from "./interchurch-help-schedule";
 import { saveCalendarLayer } from "./calendar-layer-preferences";
 import { recordDomainActivity, recordFanout } from "./domain-activity";
 import type {
@@ -548,6 +549,7 @@ export async function calendarCommand(
         "SET_EVENT_VISIBILITY",
         event.version + 1
       );
+      await invalidateHelpSchedule(tx, actor.id, { eventId: event.id });
       return { id: event.id, message: "The event series audience is updated." };
     }
     requirePublishedEdit(context, event);
@@ -688,7 +690,8 @@ export async function calendarCommand(
         }
       });
     } else throw new PortalError(400, "Choose an available calendar action.");
-    for (const occurrence of changedOccurrences)
+    for (const occurrence of changedOccurrences) {
+      await invalidateHelpSchedule(tx, actor.id, { occurrenceId: occurrence.id });
       await recordFanout(
         tx,
         "EVENT_CHANGED",
@@ -696,6 +699,7 @@ export async function calendarCommand(
         occurrence.version,
         actor.id
       );
+    }
     await audit(
       tx,
       actor.id,
