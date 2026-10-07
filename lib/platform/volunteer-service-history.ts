@@ -149,7 +149,8 @@ async function source(
   tx: PostTx,
   context: PostContext,
   record: Loaded,
-  ownerContext?: PostContext
+  ownerContext?: PostContext,
+  requireOwnerAccess = true
 ) {
   if (
     record.quarantined ||
@@ -163,6 +164,9 @@ async function source(
     await opportunitySource(tx, context, record.opportunityId);
   if (record.needId && !(await needSource(tx, record.needId, context)))
     throw unavailableVolunteer();
+  // A current organizer may correct an existing receipt after the volunteer
+  // leaves. This never grants source access, new completion or profile consent.
+  if (!requireOwnerAccess) return post;
   // Consent cannot carry a former volunteer's source rights into a profile.
   const owner =
     context.actorId === record.ownerId
@@ -182,9 +186,11 @@ async function coordinator(
   tx: PostTx,
   context: PostContext,
   record: Loaded,
-  checkedPost?: Awaited<ReturnType<typeof participationPost>>
+  checkedPost?: Awaited<ReturnType<typeof participationPost>>,
+  correcting = false
 ) {
-  const post = checkedPost ?? (await source(tx, context, record));
+  const post =
+    checkedPost ?? (await source(tx, context, record, undefined, !correcting));
   if (record.target.kind === "signup") {
     if (!canOrganize(context, post)) throw unavailableVolunteer();
   } else requireOpportunityCoordinator(context, post);
@@ -279,7 +285,13 @@ export async function authorizeVolunteerServiceIn(
       "Choose whether the service was completed."
     );
     postField(input.reason, 500, !completed && record.row.completedAt ? 3 : 0);
-    await coordinator(tx, await postContext(tx, actorId), record);
+    await coordinator(
+      tx,
+      await postContext(tx, actorId),
+      record,
+      undefined,
+      !completed
+    );
     if (await recoveryFence(tx, record))
       throw new PortalError(
         409,
@@ -343,17 +355,17 @@ export async function recordVolunteerCompletionIn(
   const record = await load(tx, target);
   if (!context.actorId)
     throw new PortalError(401, "Sign in to confirm service.");
-  await coordinator(tx, context, record);
+  const completed = boolean(
+    completedValue,
+    "Choose whether the service was completed."
+  );
+  await coordinator(tx, context, record, undefined, !completed);
   if (await recoveryFence(tx, record))
     throw new PortalError(
       409,
       "Protected recovery must reconcile this service record before confirmation."
     );
   expected(expectedVersion, record.row.version);
-  const completed = boolean(
-    completedValue,
-    "Choose whether the service was completed."
-  );
   const reason = postField(
     reasonValue,
     500,

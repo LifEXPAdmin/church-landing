@@ -227,6 +227,17 @@ test("source and organizer revocation hide service and deny old confirmation whi
   assert.deepEqual(await volunteerCommand(db, f.lee.token, hide), receipt);
   await denied(volunteerCommand(db, f.ada.token, command), 404);
   await denied(volunteerCommand(db, f.val.token, consent(before, false)), 404);
+  const correction = confirm(unavailable, false);
+  const corrected = await volunteerCommand(db, f.ada.token, correction);
+  assert.deepEqual(
+    await volunteerCommand(db, f.ada.token, correction),
+    corrected
+  );
+  const privateRecord = await own(f.lee.token, f.targetId);
+  assert.equal(privateRecord.completed, false);
+  assert.equal(privateRecord.shared, false);
+  await denied(volunteerCommand(db, f.ada.token, confirm(privateRecord)), 404);
+  await denied(volunteerCommand(db, f.lee.token, consent(privateRecord)), 404);
 });
 
 test("a source-null untimed receipt retains owner-only consent removal without changing its assignment", async () => {
