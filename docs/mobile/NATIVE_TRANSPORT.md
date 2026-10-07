@@ -93,8 +93,7 @@ The mobile tests cover bridge ordering, cancellation races, flight limits and
 the canonical adapter/session journey using fictional ports. Use the shared
 repository test loader for extensionless canonical imports:
 `node --import ../tests/register.mjs --test --test-concurrency=1 tests/*.test.ts tests/*.test.mjs`
-from `mobile`. The UI preparation receipt also contains the package-script
-correction; consume it when integrating that receipt.
+from `mobile`, or use `npm test`, which now applies that same loader.
 
 `node mobile/scripts/check-native-json.mjs` verifies the prepared SSD and exclusive
 machine-build claim before compiling Foundation policy/transport checks with the
@@ -104,6 +103,13 @@ under the task's generated directory. The fictional URLProtocol fixture makes
 no network requests and changes no trust settings. These checks exercise macOS
 Foundation, not the Expo wrapper or an iOS binary. Android compilation and the
 resolved Gradle dependency graph require the configured Android toolchain.
+
+The local Swift 6 compile passes with warnings treated as errors. Ten macOS
+Foundation test groups cover request policy, single-use bodies, responses,
+redirect refusal, cancellation and the native 15-second deadline. Cancellation
+waits for the fictional request to start before cancelling, so that check proves
+an active task was stopped. This evidence does not establish iOS or Android
+binary acceptance.
 
 Autolinking search and resolution can verify both native class registrations
 without generating a new app project or installing dependencies. Podspec syntax

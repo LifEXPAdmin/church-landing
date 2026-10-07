@@ -18,9 +18,11 @@ const worktree = typeof bound === "string" ? bound : bound?.worktree;
 assert(claim?.resources.includes("contract:machine-build") && worktree && realpathSync(worktree) === realpathSync(root), "Reserve the shared machine-build slot in this worktree first.");
 const output = mkdtempSync(join(mobile, ".generated/native-json-check-"));
 const executable = join(output, "native-json-checks");
+console.log("Retained native check output: " + output);
 const swift = join(mobile, "modules/gc-native-json/ios");
-const env = { ...process.env, TMPDIR: join(mobile, ".generated/tmp"), CLANG_MODULE_CACHE_PATH: join(output, "module-cache") };
-const compilation = spawnSync("xcrun", ["swiftc", "-swift-version", "6", "-warnings-as-errors", "-module-cache-path", join(output, "module-cache"),
+const moduleCache = join(mobile, ".generated/cache/native-json-swift");
+const env = { ...process.env, TMPDIR: join(mobile, ".generated/tmp"), CLANG_MODULE_CACHE_PATH: moduleCache };
+const compilation = spawnSync("xcrun", ["swiftc", "-swift-version", "6", "-warnings-as-errors", "-module-cache-path", moduleCache,
   join(swift, "GCJSONPolicy.swift"), join(swift, "GCJSONTransport.swift"), join(mobile, "tests/native-json.swift"), "-o", executable], { stdio: "inherit", env });
 if (compilation.error) throw compilation.error;
 assert.equal(compilation.status, 0, "macOS Foundation transport must compile.");

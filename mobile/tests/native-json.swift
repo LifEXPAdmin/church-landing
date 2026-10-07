@@ -56,6 +56,13 @@ private final class FictionalProtocol: URLProtocol, @unchecked Sendable {
     await withCheckedContinuation { continuation in transport.cancel(value) { continuation.resume() } }
   }
   static func succeeded(_ result: Result<GCJSONReply, GCJSONFailure>) -> Bool { if case .success = result { return true }; return false }
+  static func barrier(_ semaphore: DispatchSemaphore) async -> Bool {
+    await withCheckedContinuation { continuation in
+      DispatchQueue.global(qos: .utility).async {
+        continuation.resume(returning: semaphore.wait(timeout: .now() + 3) == .success)
+      }
+    }
+  }
   static func main() async throws {
     var groups = 0
     let validOrigin = try GCJSONPolicy.origin(environment: "staging", value: origin)
@@ -138,11 +145,11 @@ private final class FictionalProtocol: URLProtocol, @unchecked Sendable {
     let cancelID = id(30)
     let reserved = await reserve(transport, cancelID); expect(reserved, "reserve held call")
     let pending = Task { await send(transport, cancelID, request("hold-cancel")) }
-    let started = await Task.detached { FictionalProtocol.cancelStarted.wait(timeout: .now() + 3) == .success }.value
+    let started = await barrier(FictionalProtocol.cancelStarted)
     expect(started, "held request reached the actual URLProtocol before cancellation")
     await cancel(transport, cancelID)
     let cancelled = await pending.value; expect(!succeeded(cancelled), "native cancellation completes held request")
-    let stopped = await Task.detached { FictionalProtocol.cancelStopped.wait(timeout: .now() + 3) == .success }.value
+    let stopped = await barrier(FictionalProtocol.cancelStopped)
     expect(stopped, "cancellation stops the native protocol")
     groups += 1
     let deadlineID = id(31)
