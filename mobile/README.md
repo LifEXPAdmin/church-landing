@@ -29,6 +29,7 @@ node scripts/workspace.mjs fixture
 node scripts/workspace.mjs dev
 node scripts/workspace.mjs typecheck
 node scripts/workspace.mjs test
+npm run lint
 npm run check:boundary
 node scripts/workspace.mjs export
 ```
@@ -149,3 +150,10 @@ Native launch, light/dark/system changes, large-text reflow, keyboard focus and
 selection, TalkBack/VoiceOver, navigation-bar contrast and device lifecycle remain
 separate acceptance checks. These controls do not activate real credentials,
 change API behavior or satisfy release acceptance.
+
+## Source verification and CI
+
+The scoped native lint configuration reuses the website's existing locked
+analysis tools. See [Mobile verification](../docs/mobile/VERIFICATION.md) for
+separate source checks, package-security gates and manually selected exports.
+Native builds, hosted CI, staging and device acceptance remain distinct.
