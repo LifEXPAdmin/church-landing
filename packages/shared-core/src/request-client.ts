@@ -1,4 +1,6 @@
 /** Runtime-neutral request attempts. Adapters own fetch, credentials and events. */
+import { apiFailure, type WireValue } from "./api-contracts";
+import { decodeNativePasswordResponse, nativePasswordInput } from "./native-auth-contracts";
 export type RequestIdentity = Readonly<{
   owner: string | null;
   /** A non-secret generation that changes on account or credential replacement. */
@@ -95,13 +97,71 @@ export type PreparedRequest<T> = {
 };
 export type RequestRunOptions = { cancellation?: RequestCancellation; onDispatch?: () => void };
 
-export function prepareRequest<T>(
-  adapter: RequestAdapter,
-  input: RequestData & {
+type RequestInput<T> = RequestData & {
     decode: (value: unknown, identity: RequestIdentity) => T;
     /** Enable only for an endpoint with a reviewed original-key replay contract. */
     idempotent?: boolean;
-  }
+};
+
+export function prepareRequest<T>(
+  adapter: RequestAdapter,
+  input: RequestInput<T>
+): PreparedRequest<T> {
+  return prepareAttempt(adapter, input);
+}
+
+/**
+ * Initial native issuance is a single guest command, never a recoverable draft.
+ * Snapshot the initiating guest generation before any asynchronous capture. The
+ * adapter must omit credentials/account headers and recheck its captured local
+ * generation immediately before sending. The caller commits the returned token
+ * only while that initiating generation remains current.
+ */
+export async function issueNativePasswordCredential(
+  adapter: RequestAdapter,
+  credentials: WireValue<typeof nativePasswordInput>,
+  initiatingIdentity: RequestIdentity,
+  options: Pick<RequestRunOptions, "cancellation"> = {}
+): Promise<ReturnType<typeof decodeNativePasswordResponse>> {
+  if (!validIdentity(initiatingIdentity) || initiatingIdentity.owner !== null) throw accountChanged(false);
+  const guest = Object.freeze({ ...initiatingIdentity });
+  let body: string;
+  try { body = JSON.stringify(nativePasswordInput.parse(credentials)); }
+  catch { throw new RequestClientError(400, "Enter a valid email address and password.", undefined, false, "validation"); }
+  // Even a typed adapter exception can contain a private message/code. Only
+  // errors created by this command boundary may retain diagnostic fields.
+  const adapterCall = async <T>(read: () => Promise<T>): Promise<T> => {
+    try { return await read(); } catch { throw unconfirmed(false); }
+  };
+  const issuanceAdapter: RequestAdapter = {
+    capture: cancellation => adapterCall(async () => {
+      const captured = await adapter.capture(cancellation);
+      return {
+        identity: captured.identity,
+        send: (request, signal) => adapterCall(() => captured.send(request, signal))
+      };
+    }),
+    currentIdentity: cancellation => adapterCall(() => adapter.currentIdentity(cancellation)),
+    now() { try { return adapter.now(); } catch { throw unconfirmed(false); } },
+    // The fixed native endpoint uses the canonical envelope. Never expose an
+    // arbitrary server message (which could echo submitted credentials).
+    decodeFailure(value) {
+      const failure = apiFailure.parse(value, "strip");
+      return { code: failure.error.code, message: "Sign-in was not completed. Check your details or try again." };
+    }
+  };
+  const result = await prepareAttempt(issuanceAdapter, {
+    path: "/api/platform/v1/auth/password", method: "POST", expectedOwner: null,
+    body, decode: decodeNativePasswordResponse
+  }, guest).run({ cancellation: options.cancellation });
+  return result.data;
+}
+
+// Only the fixed one-shot issuance entry above can supply a guest identity.
+function prepareAttempt<T>(
+  adapter: RequestAdapter,
+  input: RequestInput<T>,
+  initiatingGuest?: RequestIdentity
 ): PreparedRequest<T> {
   let safePath = input.path.startsWith("/api/platform/") && input.path.length <= 8192 && !/[\\\s#]/.test(input.path);
   try {
@@ -129,7 +189,7 @@ export function prepareRequest<T>(
   });
   // Capture callbacks/policy too; changing the caller's input cannot rebind a retry.
   const decode = input.decode, idempotent = input.idempotent === true;
-  let original: RequestIdentity | undefined, attempts = 0, busy = false;
+  let original: RequestIdentity | undefined = initiatingGuest, attempts = 0, busy = false;
   return Object.freeze({
     request,
     async run({ cancellation, onDispatch }: RequestRunOptions = {}) {
@@ -145,9 +205,13 @@ export function prepareRequest<T>(
         if (cancellation?.cancelled) throw cancelled(false);
         if (!validIdentity(context.identity)) throw unconfirmed(false);
         if ((request.expectedOwner !== undefined && context.identity.owner !== request.expectedOwner) ||
-            (write && !context.identity.owner) || (original && !sameIdentity(original, context.identity)))
+            (write && !context.identity.owner && !initiatingGuest) || (original && !sameIdentity(original, context.identity)))
           throw accountChanged(false);
         original ??= Object.freeze({ ...context.identity });
+        if (initiatingGuest) {
+          const before = await adapter.currentIdentity(cancellation);
+          if (!validIdentity(before) || !sameIdentity(original, before)) throw accountChanged(false);
+        }
         onDispatch?.();
         if (cancellation?.cancelled) throw cancelled(false);
         dispatched = true;

@@ -1,7 +1,8 @@
 # Portable shared core
 
 `packages/shared-core` is the canonical source for selected post input shapes,
-options, editor hints and headless draft-controller types. Existing website import
+options, editor hints, semantic destinations, request attempts, the headless draft
+controller, and API/native-auth wire decoders. Existing website import
 paths forward to this same implementation. The private package is versioned
 `0.1.0` and has no runtime dependencies. It does not change the root npm workspace,
 lockfile, deployment layout or mobile framework choice.
@@ -25,7 +26,8 @@ import {
 ```
 
 Exports cover post/discovery/resource/photo-reference shapes, post categories,
-topics and preview helpers, editor validation, and draft state/transport types.
+topics and preview helpers, editor validation, draft state/transport, destination
+parsing and web paths, request attempts, and the canonical API/native-auth schemas.
 Existing web callers continue using their current module paths. The shared check
 resolves the actual package manifest through a separate native-compatible consumer
 with only ES2022 libraries and no ambient types. It rejects dependencies outside
@@ -44,16 +46,25 @@ reference-only photos/resource cards and the existing serialization whitelist
 remain unchanged. `PostDraft.linkUrl` remains optional; the saved payload requires
 it. Preview receipts are not part of the persisted draft payload.
 
-The runtime browser controller stays in `lib/platform/draft-controller.ts`. Its
-timer, UUID generation, endpoint paths and authenticated transport still need
-native adapters before any mobile controller integration. Its prior UI/server
-imports were type-only dependencies, not an existing runtime server-code leak.
+The draft-controller implementation now lives in shared-core; the existing web
+path supplies browser timer and UUID adapters. Native integration still requires
+reviewed endpoint mapping and lifecycle adapters before enabling draft writes.
+The initial mobile reading journey does not activate them. See
+`SHARED_REQUEST_CONTROLLER.md` for preserved browser behavior and teardown gates.
 
-Authoritative parsing, account/audience checks, cryptography, database access,
+The API and native-auth implementations were consumed byte-for-byte from the
+reviewed canonical receipt `64e2106`, then moved into this package. The two legacy
+`lib/platform` contract files are export-only forwards; both paths share the same
+schema objects and `WireContractError` class. Fictional examples stay outside the
+runtime package. Response decoders preserve owner/audience constraints and strip
+unknown additive fields; server encoders still reject unintended fields. See
+`PORTABILITY_CHECKS.md` for the explicitly reconciled preactivation baseline.
+
+Authoritative request handling, account/audience checks, cryptography, database access,
 transactions and upload handling remain in website server modules. Browser social
-transport, DOM UI, resource availability gates, native authentication and versioned
-API implementation are outside this extraction. The active API contract remains
-under its separate canonical owner.
+transport, DOM UI, resource availability gates, native credential storage and
+versioned API server implementation remain platform-specific. Canonical website
+tasks continue to own backend policy and route changes.
 
 ## Verification
 
@@ -62,6 +73,7 @@ fallback or automatic cleanup of retained evidence:
 
 ```sh
 GC_SHARED_CORE_TMP=/absolute/task/generated/tmp node scripts/check-shared-core.mjs
+GC_SHARED_CORE_TMP=/absolute/task/generated/tmp npm run check:portable
 node --import ./tests/register.mjs --test tests/draft-controller.test.ts
 npm run check:copy
 ```
