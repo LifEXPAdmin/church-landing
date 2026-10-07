@@ -2,6 +2,7 @@ import { requireGroupParticipation } from "./group-policy";
 import { recordDomainActivity } from "./domain-activity";
 import type { PrismaClient } from "@prisma/client";
 import { requireSocialActivity } from "./social-activity-limits";
+import { requireSessionOwner } from "./account-sessions";
 import {
   postContext,
   postReadableWhere,
@@ -182,7 +183,8 @@ export async function createCommentIn(
 export async function commentCommand(
   db: PrismaClient,
   token: unknown,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  expectedOwner?: string
 ) {
   socialInput(input, [
     "operation",
@@ -474,6 +476,7 @@ export async function commentCommand(
     input,
     run,
     async (tx, ownerId) => {
+      requireSessionOwner({ userId: ownerId }, expectedOwner);
       if (!input.postId) return;
       const context = await postContext(tx, ownerId);
       const post = await tx.platformPost.findUnique({

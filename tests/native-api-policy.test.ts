@@ -11,7 +11,10 @@ import { handleNativeReadRequest } from "../lib/platform/native-read-boundary";
 import { handleNativeImageRequest } from "../lib/platform/native-media-boundary";
 import { handleNativeReactionRequest } from "../lib/platform/native-reaction-boundary";
 import { handleNativeBookmarkRequest } from "../lib/platform/native-bookmark-boundary";
-import { handleNativeCommentReadRequest } from "../lib/platform/native-comment-boundary";
+import {
+  handleNativeCommentReadRequest,
+  handleNativeCommentLikeRequest
+} from "../lib/platform/native-comment-boundary";
 import { decodeApiResponse, apiFailure } from "../lib/platform/api-contracts";
 
 const priorOrigin = process.env.ACCOUNT_ORIGIN;
@@ -188,7 +191,9 @@ test("bookmark admission stops before database and body access while preserving 
     "bookmarkCollections",
     "bookmarkStatus"
   ] as const) {
-    for (const method of resource === "bookmarkStatus" ? ["GET"] : ["GET", "POST"]) {
+    for (const method of resource === "bookmarkStatus"
+      ? ["GET"]
+      : ["GET", "POST"]) {
       for (const reason of ["version", "pause", "invalid"]) {
         process.env.NATIVE_API_DISABLED_FEATURES =
           reason === "version"
@@ -255,15 +260,115 @@ test("bookmark admission stops before database and body access while preserving 
 test("comment reading can be paused before database access and never activates native writes", async () => {
   const { db, calls } = unusedDatabase();
   for (const reason of ["version", "pause", "invalid"]) {
-    process.env.NATIVE_API_DISABLED_FEATURES = reason === "version" ? "" : reason === "pause" ? "comments.read" : "unknown.feature";
-    await denied(await handleNativeCommentReadRequest(db, request("posts/post/comments", "GET", reason === "version" ? { "X-API-Version": "2" } : {}).value, { postId: "post" }), reason === "version" ? 426 : 503, reason === "version" ? "unsupported_version" : "feature_unavailable");
+    process.env.NATIVE_API_DISABLED_FEATURES =
+      reason === "version"
+        ? ""
+        : reason === "pause"
+          ? "comments.read"
+          : "unknown.feature";
+    await denied(
+      await handleNativeCommentReadRequest(
+        db,
+        request(
+          "posts/post/comments",
+          "GET",
+          reason === "version" ? { "X-API-Version": "2" } : {}
+        ).value,
+        { postId: "post" }
+      ),
+      reason === "version" ? 426 : 503,
+      reason === "version" ? "unsupported_version" : "feature_unavailable"
+    );
   }
   process.env.NATIVE_API_DISABLED_FEATURES = "comments.read";
-  await denied(await handleNativeCommentReadRequest(db, request("posts/post/comments", "GET", { Origin: origin }).value, { postId: "post" }), 403, "forbidden");
+  await denied(
+    await handleNativeCommentReadRequest(
+      db,
+      request("posts/post/comments", "GET", { Origin: origin }).value,
+      { postId: "post" }
+    ),
+    403,
+    "forbidden"
+  );
   assert.equal(calls(), 0);
   delete process.env.NATIVE_API_DISABLED_FEATURES;
-  assert.equal(nativeCapabilityPolicy().features.find((f) => f.name === "comments.read")?.available, true);
-  assert.equal(nativeCapabilityPolicy().features.find((f) => f.name === "comments.write")?.available, false);
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.read")
+      ?.available,
+    true
+  );
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.write")
+      ?.available,
+    false
+  );
+});
+
+test("comment Like admission stops before database and body use without enabling comment text writes", async () => {
+  const { db, calls } = unusedDatabase();
+  const params = { postId: "post", commentId: "comment" };
+  const path = "posts/post/comments/comment/like";
+  for (const reason of ["version", "pause", "invalid"]) {
+    process.env.NATIVE_API_DISABLED_FEATURES =
+      reason === "version"
+        ? ""
+        : reason === "pause"
+          ? "commentLikes.write"
+          : "unknown.feature";
+    const probe = request(
+      path,
+      "POST",
+      {
+        ...credentials,
+        ...(reason === "version" ? { "X-API-Version": "2" } : {})
+      },
+      true
+    );
+    await denied(
+      await handleNativeCommentLikeRequest(db, probe.value, params),
+      reason === "version" ? 426 : 503,
+      reason === "version" ? "unsupported_version" : "feature_unavailable"
+    );
+    assert.equal(probe.pulls(), 0);
+  }
+  await denied(
+    await handleNativeCommentLikeRequest(
+      db,
+      request(path, "POST", { ...credentials, Origin: origin }, true).value,
+      params
+    ),
+    403,
+    "forbidden"
+  );
+  await denied(
+    await handleNativeCommentLikeRequest(
+      db,
+      request(path, "POST", {}, true).value,
+      params
+    ),
+    401,
+    "unauthenticated"
+  );
+  const method = await handleNativeCommentLikeRequest(
+    db,
+    request(path).value,
+    params
+  );
+  assert.equal(method.headers.get("allow"), "POST");
+  await denied(method, 405, "method_not_allowed");
+  assert.equal(calls(), 0);
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
+  assert.equal(
+    nativeCapabilityPolicy().features.find(
+      (f) => f.name === "commentLikes.write"
+    )?.available,
+    true
+  );
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.write")
+      ?.available,
+    false
+  );
 });
 
 test("unsupported version reaches no database or request body through session, core read or image adapters", async () => {

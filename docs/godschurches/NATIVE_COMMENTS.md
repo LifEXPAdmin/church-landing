@@ -1,9 +1,9 @@
-# Native comment reading
+# Native comment reading and Likes
 
 The versioned `GET /api/platform/v1/posts/:postId/comments` adapter calls the
 same `readComments` service as the website. It introduces no discussion store,
-schema, notification owner or native write operation. `comments.read` is an
-optional capability; `comments.write` remains unavailable.
+schema or notification owner. `comments.read` is an optional capability;
+`comments.write` remains unavailable for comment text and discussion controls.
 
 The default view is `roots`, ordered `oldest`; roots also support `newest`.
 `replies` requires `rootId`, while `context` requires `commentId`. Replies and
@@ -38,10 +38,30 @@ length constraint. A longer permitted legacy comment returns
 `available: true, requiresWeb: true` with only its structural fields. Ordinary
 available comments use `requiresWeb: false` and retain complete text, including
 empty legacy text. Nothing is truncated or deleted, and other comments remain
-readable. The thread-level `requiresWeb: true` keeps writes, prayer controls,
+readable. The thread-level `requiresWeb: true` keeps comment text, prayer controls,
 mention suggestions, private drafts and group read acknowledgements on the
 website until their native consumers have separate acceptance. Responses remain
 bounded to 2 MiB.
+
+## Comment Likes
+
+`POST /api/platform/v1/posts/:postId/comments/:commentId/like` supports only an
+explicit Like or unlike through the separate `commentLikes.write` capability.
+Its body contains `mutationId`, `expectedVersion` and boolean `desired`.
+The original member must be supplied with the bearer credential. Identity is
+checked before the shared `comments` rate bucket and request body, then again
+inside `commentCommand`'s existing permission and session lock before receipt
+replay. Both path targets become part of the canonical command fingerprint.
+The website and native adapter use the same command, versions, operation cap,
+permissions and durable notification outbox. No receipt or storage is duplicated.
+
+The response contains only a historical mutation receipt. Re-read the authorized
+thread for current Like state, version and visible count. Exact old retries never
+restore a state that a later change replaced. A lost response keeps the original
+request reference and intended state; a different command needs a new reference.
+Post-commit handoff or projection failures remain unconfirmed. Requests are
+bounded to 16 KiB and receipts retain the response bound above. Comment text,
+private drafts, prayer, pins and conversation settings still use the website.
 
 ## Verification
 
@@ -63,3 +83,9 @@ then consumed by `scripts/qa-native-comments-browser.mjs` to check actual websit
 rendering, linked children, unavailable roots and interrupted-read recovery.
 Retain exact source/build evidence separately from app integration and native
 device, security and release acceptance.
+
+`--native-comment-likes` on the same fixture runner adds native Like service
+checks and canonical comment notification regressions. The corresponding HTTP
+and browser checks compare native changes with the website's existing Like
+controls, immutable lost-response retry and current access. A source receipt
+does not complete the separate mobile UI or native device journey.

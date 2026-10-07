@@ -42,6 +42,84 @@ const response = (item: object) => ({
   data: { ...apiResponseExamples.comments.data, items: [item] }
 });
 
+test("native comment Likes bind both path targets and accept only a bounded immutable intended state", () => {
+  const contract = apiContracts.setCommentLike;
+  assert.equal(contract.method, "POST");
+  assert.equal(
+    contract.path,
+    "/api/platform/v1/posts/:postId/comments/:commentId/like"
+  );
+  assert.deepEqual(
+    contract.params.parse({ postId: "post", commentId: "comment" }),
+    { postId: "post", commentId: "comment" }
+  );
+  for (const params of [
+    { postId: "post" },
+    { commentId: "comment" },
+    { postId: "post", commentId: "../comment" },
+    { postId: "post", commentId: "comment", ownerId: "other" }
+  ])
+    assert.throws(() => contract.params.parse(params), WireContractError);
+  const input = { mutationId: "change-1", expectedVersion: 0, desired: true };
+  assert.deepEqual(contract.body.parse(input), input);
+  assert.deepEqual(contract.body.parse({ ...input, desired: false }), {
+    ...input,
+    desired: false
+  });
+  for (const fields of [
+    { desired: "true" },
+    { desired: null },
+    { expectedVersion: -1 },
+    { expectedVersion: Number.MAX_SAFE_INTEGER + 1 },
+    { mutationId: "a".repeat(81) },
+    { operation: "delete" },
+    { postId: "other" },
+    { commentId: "other" },
+    { ownerId: "other" },
+    { content: "injected" }
+  ])
+    assert.throws(
+      () => contract.body.parse({ ...input, ...fields }),
+      WireContractError
+    );
+  assert.throws(
+    () => contract.query.parse({ cursor: "unrelated" }),
+    WireContractError
+  );
+});
+
+test("comment Like receipts require their original member and never imply current reaction counts", () => {
+  const value = apiResponseExamples.setCommentLike;
+  assert.deepEqual(
+    decodeApiResponse("setCommentLike", value, value.viewerId),
+    value
+  );
+  assert.throws(
+    () => decodeApiResponse("setCommentLike", value, "other"),
+    WireContractError
+  );
+  assert.throws(
+    () => encodeApiResponse("setCommentLike", { ...value, viewerId: null }),
+    WireContractError
+  );
+  assert.throws(
+    () =>
+      encodeApiResponse("setCommentLike", {
+        ...value,
+        data: { ...value.data, count: 2 }
+      }),
+    WireContractError
+  );
+  assert.deepEqual(
+    decodeApiResponse(
+      "setCommentLike",
+      { ...value, data: { ...value.data, added: true } },
+      value.viewerId
+    ),
+    value
+  );
+});
+
 test("comment fields separate visible text, neutral parents and bounded website-only legacy comments", () => {
   for (const item of [
     visible,

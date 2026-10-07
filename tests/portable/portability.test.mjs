@@ -161,7 +161,8 @@ for (const [name, before, after, finding] of [
   ["unsupported error discriminator", 'method_not_allowed: { status: 405, action: "correct_request" },', 'method_not_allowed: { status: 405, action: "correct_request" },\n  future_error: { status: 422, action: "correct_request" },', /^WIRE_COMPATIBILITY_TS/],
   ["missing required audience", '  audience: oneOf(["PUBLIC", "CHURCH", "GROUP"]),\n', '', /^WIRE_COMPATIBILITY_TS/],
   ["changed response field type", "commentCount: integer(),", "commentCount: text(30),", /^WIRE_COMPATIBILITY_TS/],
-  ["new required write input", "object({ mutationId, expectedVersion: version, desired: boolean })", "object({ mutationId, expectedVersion: version, desired: boolean, confirmed: boolean })", /^WIRE_COMPATIBILITY_TS/],
+  // Target the frozen baseline operation, not a newer additive Like endpoint.
+  ["new required write input", '"/posts/:postId/like",\n    empty,\n    object({ mutationId, expectedVersion: version, desired: boolean })', '"/posts/:postId/like",\n    empty,\n    object({ mutationId, expectedVersion: version, desired: boolean, confirmed: boolean })', /^WIRE_COMPATIBILITY_TS/],
   ["moved endpoint", '"/capabilities",', '"/new-capabilities",', /^WIRE_ENDPOINT_CHANGED$/],
   ["narrowed input validator", "export const apiId = text(100,", "export const apiId = text(5,", /^WIRE_REQUEST_INCOMPATIBLE$/],
   ["widened response cursor bound", "export const apiCursor = text(4096,", "export const apiCursor = text(8192,", /^WIRE_RESPONSE_BOUND_CHANGED$/],

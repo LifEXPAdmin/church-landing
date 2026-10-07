@@ -504,13 +504,15 @@ const endpoint = <Q, B, R>(
   Object.freeze({
     method,
     path: API_BASE_PATH + path,
-    params: path.includes(":postId")
-      ? object({ postId: apiId })
-      : path.includes(":churchId")
-        ? object({ churchId: apiId })
-        : path.includes(":username")
-          ? object({ username: apiUsername })
-          : empty,
+    params: path.includes(":commentId")
+      ? object({ postId: apiId, commentId: apiId })
+      : path.includes(":postId")
+        ? object({ postId: apiId })
+        : path.includes(":churchId")
+          ? object({ churchId: apiId })
+          : path.includes(":username")
+            ? object({ username: apiUsername })
+            : empty,
     query,
     body,
     response: envelope(response),
@@ -519,6 +521,14 @@ const endpoint = <Q, B, R>(
   });
 
 export const apiContracts = Object.freeze({
+  setCommentLike: endpoint(
+    "POST",
+    "/posts/:postId/comments/:commentId/like",
+    empty,
+    object({ mutationId, expectedVersion: version, desired: boolean }),
+    apiMutationReceipt,
+    "member"
+  ),
   comments: endpoint(
     "GET",
     "/posts/:postId/comments",
