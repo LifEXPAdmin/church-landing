@@ -26,6 +26,8 @@ Object.assign(process.env, {
 const { PrismaClient } = await import("@prisma/client");
 const { seedVolunteerApplications } =
   await import("../tests/seed-volunteer-applications.ts");
+const { volunteerCommand } =
+  await import("../lib/platform/volunteer-commands.ts");
 const { commentCommand } = await import("../lib/platform/comment-commands.ts");
 const db = new PrismaClient();
 const f = await seedVolunteerApplications(db, false);
@@ -285,6 +287,182 @@ try {
   ok(
     "Original comment working copy survives actual A-to-B-to-A cookie and Next router refreshes"
   );
+  phase = "native focus and offline retention";
+  const other = await nativeOtherWindow();
+  assert.equal(
+    await page.getByLabel("Comment text", { exact: true }).isVisible(),
+    false
+  );
+  await other.close();
+  await page.bringToFront();
+  await page.getByLabel("Comment text", { exact: true }).waitFor();
+  assert.equal(
+    await page.getByLabel("Comment text", { exact: true }).inputValue(),
+    unsent
+  );
+  await context.setOffline(true);
+  await page.waitForFunction(() => !navigator.onLine);
+  assert.equal(
+    await page.getByLabel("Comment text", { exact: true }).isVisible(),
+    false
+  );
+  await context.setOffline(false);
+  await page.getByLabel("Comment text", { exact: true }).waitFor();
+  assert.equal(
+    await page.getByLabel("Comment text", { exact: true }).inputValue(),
+    unsent
+  );
+  ok(
+    "Native window blur and browser offline state conceal and preserve the original comment draft"
+  );
+
+  phase = "committed comment with changed account";
+  const committed = Promise.withResolvers(),
+    release = Promise.withResolvers();
+  const bodies = [];
+  let saved;
+  let denyRetry = null;
+  const commentRoute = async (route) => {
+    const request = route.request();
+    if (
+      request.method() !== "POST" ||
+      JSON.parse(request.postData() ?? "{}").operation !== "create"
+    )
+      return route.fallback();
+    bodies.push(request.postData());
+    if (bodies.length === 1) {
+      const response = await forwarded(route);
+      assert.equal(response.status, 200, response.body.toString());
+      saved = JSON.parse(response.body);
+      committed.resolve();
+      await bounded(
+        release.promise,
+        "Release committed create response",
+        30000
+      );
+      await route.fulfill(response);
+    } else if (denyRetry) {
+      await route.fulfill({
+        status: denyRetry,
+        contentType: "application/json",
+        body: JSON.stringify({
+          message: "Fictional temporary original-request denial"
+        })
+      });
+    } else await route.continue();
+  };
+  await page.route("**/api/platform/comments", commentRoute);
+  await page
+    .getByRole("dialog", { name: "Write a comment", exact: true })
+    .getByRole("button", { name: "Reply", exact: true })
+    .click();
+  await bounded(committed.promise, "Comment did not commit");
+  await cookieOwner(f.val);
+  await refresh();
+  release.resolve();
+  await waitFor(() =>
+    db.platformPostComment
+      .count({ where: { id: saved.id } })
+      .then((n) => n === 1)
+  );
+  await cookieOwner(f.lee);
+  await refresh();
+  const retry = page.getByRole("button", {
+    name: "Retry same request",
+    exact: true
+  });
+  await retry.waitFor();
+  assert.equal(
+    await db.volunteerApplication.count({
+      where: { opportunityId: f.opportunity.id }
+    }),
+    0
+  );
+  for (const status of [503, 403, 404, 409]) {
+    denyRetry = status;
+    const count = bodies.length;
+    await retry.click();
+    await waitFor(() => Promise.resolve(bodies.length === count + 1));
+    await page
+      .getByRole("status")
+      .filter({ hasText: "Fictional temporary original-request denial" })
+      .waitFor();
+    assert.equal(bodies.at(-1), bodies[0]);
+  }
+  // A sibling private application changes the full resource snapshot. The
+  // shared comment recovery must not depend on that application's checksum.
+  const statement =
+    "Fictional private application while comment acknowledgment is uncertain";
+  await volunteerCommand(db, f.lee.token, f.application(statement));
+  await refresh();
+  await retry.waitFor();
+  assert.equal(
+    await page.getByLabel("Comment text", { exact: true }).inputValue(),
+    unsent
+  );
+  denyRetry = null;
+  await retry.click();
+  await page.locator('[data-comment-id="' + saved.id + '"]').waitFor();
+  assert.equal(
+    await db.platformPostComment.count({ where: { id: saved.id } }),
+    1
+  );
+  assert.ok(bodies.every((body) => body === bodies[0]));
+  await page.unroute("**/api/platform/comments", commentRoute);
+  assert.equal(await thread().getByText(statement, { exact: true }).count(), 0);
+  writeFileSync(
+    output + "/original-comment-retries.json",
+    JSON.stringify({ bodies, commentId: saved.id }, null, 2)
+  );
+  ok(
+    "A committed create survives account change, 503/403/404/409 responses and sibling application refresh; original bytes recover exactly one comment"
+  );
+
+  phase = "source revocation and restore";
+  await thread()
+    .getByRole("button", { name: "Write a comment", exact: true })
+    .click();
+  const retained = "Unsent note before source withdrawal";
+  await page.getByLabel("Comment text", { exact: true }).fill(retained);
+  await db.platformPost.update({
+    where: { id: f.opportunityPost.id },
+    data: { status: "WITHDRAWN", withdrawnAt: new Date() }
+  });
+  await refresh();
+  await page
+    .getByRole("region", { name: "Recruitment access", exact: true })
+    .waitFor();
+  assert.equal(
+    await page.getByLabel("Comment text", { exact: true }).isVisible(),
+    false
+  );
+  await db.platformPost.update({
+    where: { id: f.opportunityPost.id },
+    data: { status: "PUBLISHED", withdrawnAt: null }
+  });
+  await refresh();
+  await page.getByLabel("Comment text", { exact: true }).waitFor();
+  assert.equal(
+    await page.getByLabel("Comment text", { exact: true }).inputValue(),
+    retained
+  );
+  ok(
+    "Unavailable-source RSC retains the original working tree and returns it only after current access is restored"
+  );
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.evaluate(() =>
+    document.documentElement.style.setProperty("--gc-reader-size", "24px")
+  );
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1
+    )
+  );
+  await page.screenshot({
+    path: output + "/comment-320-enlarged.png",
+    timeout: 5000
+  });
+  ok("320-pixel enlarged comment editor has no horizontal page overflow");
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   writeFileSync(
@@ -304,7 +482,11 @@ try {
   );
 } catch (error) {
   await page
-    .screenshot({ path: output + "/failure.png", fullPage: true })
+    .screenshot({
+      path: output + "/failure.png",
+      fullPage: true,
+      timeout: 5000
+    })
     .catch(() => {});
   writeFileSync(
     output + "/failure.json",

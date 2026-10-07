@@ -861,7 +861,9 @@ test("quiet hours and transient queue/provider failures reuse the canonical repl
     minute = now.getUTCHours() * 60 + now.getUTCMinutes();
   await preferences(f.b, ["replies"], {
     start: (minute + 1439) % 1440,
-    end: (minute + 60) % 1440,
+    // Keep this provider retry test within the current 30-minute device session.
+    // Idle-session cancellation has its own acceptance coverage.
+    end: (minute + 5) % 1440,
     timeZone: "UTC"
   });
   const sent = await sendComment(f),

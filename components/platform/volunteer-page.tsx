@@ -5,7 +5,10 @@ import { PlatformShell } from "./platform-shell";
 import { SavePostControl } from "./save-post-control";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
-import { RecruitmentConversation } from "./resource-conversation";
+import {
+  RecruitmentConversation,
+  RecruitmentConversationScope
+} from "./resource-conversation";
 import { RegionalTime } from "./regional-presentation";
 import {
   VolunteerApplyForm,
@@ -183,6 +186,11 @@ export async function VolunteerPage({
 }) {
   const user = await getCurrentPlatformUser();
   let content: ReactNode;
+  let discussion: {
+    owner: string | null;
+    opportunityId: string;
+    postId: string;
+  } | null = null;
   try {
     if (
       Object.entries(query).some(
@@ -218,6 +226,12 @@ export async function VolunteerPage({
       });
       const api = `/api/platform/volunteers?${parameters}`;
       let body: ReactNode;
+      if (result.view === "opportunity")
+        discussion = {
+          owner: result.ownerId,
+          opportunityId: result.opportunity.id,
+          postId: result.opportunity.postId
+        };
       if (result.view === "list") {
         const filters = new URLSearchParams({
           ...(result.q ? { q: result.q } : {}),
@@ -430,11 +444,6 @@ export async function VolunteerPage({
                 )}
               </p>
             )}
-            <RecruitmentConversation
-              owner={result.ownerId}
-              opportunityId={result.opportunity.id}
-              postId={result.opportunity.postId}
-            />
           </div>
         );
       else
@@ -533,7 +542,7 @@ export async function VolunteerPage({
       </div>
     );
   }
-  return (
+  const page = (
     <PlatformShell user={user} signInReturnTo={path}>
       <section className="mx-auto w-full max-w-4xl space-y-5 px-4 py-8 max-[359px]:px-0">
         <h1 className="text-4xl">{titles[view]}</h1>
@@ -560,7 +569,19 @@ export async function VolunteerPage({
           </Link>
         </nav>
         {content}
+        {discussion && <RecruitmentConversation {...discussion} />}
       </section>
     </PlatformShell>
+  );
+  return view === "opportunity" && id ? (
+    <RecruitmentConversationScope
+      owner={user?.id ?? null}
+      opportunityId={id}
+      postId={discussion?.postId ?? null}
+    >
+      {page}
+    </RecruitmentConversationScope>
+  ) : (
+    page
   );
 }

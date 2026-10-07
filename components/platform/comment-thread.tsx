@@ -34,11 +34,13 @@ export function CommentThread({
   postId,
   commentId,
   expectedOwner,
+  returnTo,
   initiallyClosed = false
 }: {
   postId: string;
   commentId?: string;
   expectedOwner?: string | null;
+  returnTo?: string;
   initiallyClosed?: boolean;
 }) {
   const sourceVisible = useReadVisibility();
@@ -735,7 +737,8 @@ export function CommentThread({
               className="gc-button gc-button-quiet"
               href={accountEntryHref(
                 "join",
-                `/platform/posts/${postId}${commentId ? `?comment=${commentId}` : ""}`,
+                returnTo ??
+                  `/platform/posts/${postId}${commentId ? `?comment=${commentId}` : ""}`,
                 "comment"
               )}
             >

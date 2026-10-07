@@ -382,7 +382,11 @@ function OpenCommentComposer({
                 onClick={() =>
                   (() => {
                     const seq = privateScope?.accessVersion();
-                    void controller.retry().then((ok) => {
+                    if (privateScope && seq == null) return;
+                    const retry = privateScope
+                      ? controller.retryOriginal()
+                      : controller.retry();
+                    void retry.then((ok) => {
                       if (ok && controller.getSnapshot().createdId) finish(seq);
                     });
                   })()
