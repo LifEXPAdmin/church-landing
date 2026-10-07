@@ -1,3 +1,19 @@
+## Optional reaction-count visibility locally verified, 7 October 2026 UTC
+
+Application `caeff5d12f689308d40f5df2193e8f5dbb2ffb9a`, build
+`UNUHEfl7wT-qJtmlrSGzL`, passes 57 registered checks, 125-migration populated
+upgrade/dump restore, six HTTPS checks and 20 native browser groups. Controlled
+component probes cover 27 race/recovery scenarios. The existing browser display
+choice is shared through Appearance and Privacy; an independent account choice
+suppresses personal-author Like/prayer totals across current server projections.
+Own reactions remain usable, church speech stays independent, and recovery
+quarantines older preferences. Original settings drafts and exact retries survive
+actual account-changing and guest server refreshes. See
+[reaction-count visibility](REACTION_COUNT_VISIBILITY.md) for contract, source
+applicability, migration and rollback constraints. Locally verified only; no
+merge, production migration, deployment, writes or sends. Existing held security,
+combined release, recovery and canonical live gates remain open.
+
 ## Shared recruitment conversations locally verified, 7 October 2026 UTC
 
 Recruitment opportunities now reuse the existing authorized church post discussion.
