@@ -13,6 +13,7 @@ import {
   nativeRequestCredential
 } from "../lib/platform/native-session-boundary";
 import { createSessionToken, hashSessionToken } from "../lib/platform/auth";
+import { AccountError } from "../lib/platform/account-error";
 import {
   readAccountSession,
   loginAccount,
@@ -230,6 +231,28 @@ test("native transport rejects mixed credentials, browser origins, query credent
     nativeRequestCredential(
       new Request("https://foreign.example/api/platform/v1/session")
     )
+  );
+  assert.throws(() =>
+    nativeRequestCredential(
+      new Request(origin + "/api/platform/v1/session", {
+        headers: {
+          Host: "foreign.example",
+          "x-forwarded-host": new URL(origin).host
+        }
+      })
+    )
+  );
+  assert.deepEqual(
+    nativeRequestCredential(
+      new Request(
+        new URL(origin).protocol + "//127.0.0.1:1/api/platform/v1/session",
+        {
+          headers: { Host: new URL(origin).host }
+        }
+      )
+    ),
+    { token: undefined, owner: undefined },
+    "proxy Host survives the framework's internal listen address"
   );
   assert.equal((await call("session")).status, 200);
   assert.equal(
@@ -468,6 +491,23 @@ test("native authenticator enrollment, retry and challenge stay bound to their a
     expectedVersion: 0,
     currentPassword: a.password
   };
+  const mistaken = await execute({
+    ...initial,
+    currentPassword: "Wrong-password"
+  });
+  assert.equal(mistaken.status, 400);
+  assert.equal((await mistaken.json()).error.code, "validation");
+  assert.ok(await readAccountSession(db, token));
+  assert.equal(
+    await db.adminAuthenticator.count({ where: { userId: a.id } }),
+    0
+  );
+  assert.equal(
+    await db.adminOperation.count({
+      where: { actorId: a.id, requestKey: initial.requestKey }
+    }),
+    0
+  );
   assert.equal((await execute(initial, token, "other")).status, 401);
   const setup = await execute(initial),
     value = (await setup.json()).data;
@@ -585,4 +625,33 @@ test("native authenticator enrollment, retry and challenge stay bound to their a
     }),
     0
   );
+});
+
+test("typed notice-scheduling failure after MFA commit stays unconfirmed and exact retry recovers the receipt", async () => {
+  process.env.PRIVILEGED_MFA_MODE = "enforce";
+  const a = await createPortalActor(db, "nativenotice"),
+    token = await signedIn(a);
+  const input = {
+    operation: "mfa-start",
+    requestKey: randomUUID(),
+    expectedVersion: 0,
+    currentPassword: a.password
+  };
+  const response = await handleNativeSessionRequest(
+    db,
+    req("authenticator", token, a.id, input),
+    "authenticator",
+    () => {
+      throw new AccountError("credentials");
+    }
+  );
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error.code, "unconfirmed");
+  assert.equal(
+    await db.adminAuthenticator.count({ where: { userId: a.id } }),
+    1
+  );
+  const retry = await call("authenticator", token, a.id, input);
+  assert.equal(retry.status, 200);
+  assert.ok((await retry.json()).data.enrollment.secret);
 });

@@ -56,8 +56,14 @@ class NativeRequestError extends Error {
 /** Explicit native-only transport. Browser requests retain their existing boundary. */
 export function nativeRequestCredential(request: Request) {
   const url = new URL(request.url);
+  const configured = accountOrigin();
+  // Next's Node adapter can construct request.url with its internal listen port
+  // behind TLS termination. Check the received Host, not x-forwarded-host;
+  // direct Request callers without Host still use their actual URL host.
+  const host = request.headers.get("host") ?? url.host;
   if (
-    url.origin !== accountOrigin().origin ||
+    host.toLowerCase() !== configured.host ||
+    url.protocol !== configured.protocol ||
     url.username ||
     url.password ||
     request.headers.has("origin") ||
@@ -126,7 +132,7 @@ function failure(
     }
   );
 }
-function denied(error: unknown) {
+function denied(error: unknown, operation: Operation) {
   if (error instanceof AccountSessionOwnerError)
     return failure(
       "account_changed",
@@ -140,14 +146,20 @@ function denied(error: unknown) {
         : "Use the supported native account controls."
     );
   if (error instanceof AccountError)
-    return failure(
-      error.code === "session" || error.code === "credentials"
-        ? "unauthenticated"
-        : "validation",
-      error.code === "credentials"
-        ? "The email or password could not be confirmed."
-        : "Your sign-in could not be confirmed."
-    );
+    if (error.code === "credentials" && operation === "authenticator")
+      return failure(
+        "validation",
+        "Confirm your current password and try again."
+      );
+    else
+      return failure(
+        error.code === "session" || error.code === "credentials"
+          ? "unauthenticated"
+          : "validation",
+        error.code === "credentials"
+          ? "The email or password could not be confirmed."
+          : "Your sign-in could not be confirmed."
+      );
   if (error instanceof SyntaxError || error instanceof WireContractError)
     return failure("validation", "Use the supported native account fields.");
   if (error instanceof PortalError) {
@@ -317,9 +329,13 @@ export async function handleNativeSessionRequest(
           : null,
       recoveryCodes: "recoveryCodes" in result ? result.recoveryCodes : null
     });
-    afterNotice?.(owner);
+    try {
+      afterNotice?.(owner);
+    } catch {
+      throw new Error("Native security notice scheduling was not confirmed");
+    }
     return response;
   } catch (error) {
-    return denied(error);
+    return denied(error, operation);
   }
 }

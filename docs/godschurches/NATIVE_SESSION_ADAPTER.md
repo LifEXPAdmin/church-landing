@@ -21,7 +21,10 @@ separate transport, not a second identity or permission system.
 All paths below are under `/api/platform/v1`. Requests use the configured account
 origin over HTTPS, except isolated loopback development. Native requests have no
 Origin or browser Fetch Metadata headers. There is no permissive CORS response.
-The boundary rejects recognized account cookies even when they are empty or
+The boundary checks the received Host and effective protocol against configuration.
+Next.js can place its internal listen address in request.url behind a proxy; that
+internal address is not the public host. Forwarded-host alone cannot substitute
+for the received Host. The boundary rejects recognized account cookies even when they are empty or
 invalid, malformed or combined Authorization values, and all query parameters.
 Clients must not add a fake Origin or copy a browser cookie.
 
@@ -51,7 +54,8 @@ The adapter never clears browser cookies on denial. Unsupported methods return
 405 with `method_not_allowed` and Allow. This adds that code to the v1 vocabulary;
 the existing validation code remains 400. Invalid/expired credentials use 401
 `unauthenticated`; a valid session for a different expected account uses 401
-`account_changed`. Unexpected server failures use 503 `unconfirmed`, without
+`account_changed`. A wrong current password for MFA confirmation is 400 validation
+and preserves the valid bearer session. Unexpected server failures use 503 `unconfirmed`, without
 logging request credentials, bodies or internal exception details.
 
 ## Lifetime and concurrency
@@ -148,8 +152,10 @@ v1 cases and four native credential/command/identity cases. Bounded early review
 corrected canonical request-key grammar, unsupported TypeScript parameter syntax,
 response identity binding and method-error consistency before runtime testing.
 
-Focused database tests, real HTTPS routes, browser login/CSRF regressions, build,
-security checks and final independent review are still pending. The new tests
+The first isolated run passed 68 service/contract checks and the production build.
+Its HTTPS checks reproduced a Next.js proxy-host mismatch, now corrected with a
+regression. Revised HTTPS/build acceptance and final independent review are
+still pending. The new tests
 are discovered by the existing complete support harness. Local targeted evidence
 does not replace combined release and live acceptance. No production migration,
 write, provider activation or deployment is part of this implementation checkpoint.
