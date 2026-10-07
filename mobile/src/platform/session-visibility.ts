@@ -4,18 +4,20 @@ export type SessionVisibilitySource = {
   /** Android requires a window focus source; absence is not proof of focus. */
   requiresFocus: boolean;
   onFocus?: (listener: (focused: boolean) => void) => () => void;
+  /** Optional authoritative native snapshot, queried on each active entry. */
+  currentFocus?: () => Promise<unknown>;
 };
 
 /** Lifecycle observation only. The session authority owns restoration and
  * concealment. No asynchronous activation can delay a later concealment. */
 export function observeSessionVisibility(source: SessionVisibilitySource,
   update: (foreground: boolean) => void | Promise<unknown>) {
-  let disposed = false, revision = 0, active = false, focused = !source.requiresFocus;
+  let disposed = false, revision = 0, focusRevision = 0, active = false, focused = !source.requiresFocus;
   let last: boolean | undefined;
   const stops: (() => void)[] = [];
   function concealAfterFailure(request: number) {
     if (disposed || request !== revision) return;
-    active = false; focused = !source.requiresFocus; last = false; revision++;
+    active = false; focused = !source.requiresFocus; last = false; revision++; focusRevision++;
     try { void Promise.resolve(update(false)).catch(() => {}); } catch { /* Best effort terminal concealment. */ }
   }
   function deliver(value: boolean) {
@@ -26,9 +28,29 @@ export function observeSessionVisibility(source: SessionVisibilitySource,
     catch { concealAfterFailure(request); }
   }
   const publish = () => { if (!disposed) deliver(active && focused); };
+  function refreshFocus() {
+    if (!source.requiresFocus || !source.currentFocus) return;
+    const request = ++focusRevision;
+    const apply = (value: unknown) => {
+      if (disposed || !active || request !== focusRevision) return;
+      focused = value === true;
+      publish();
+    };
+    try { void Promise.resolve(source.currentFocus()).then(apply, () => apply(false)); }
+    catch { apply(false); }
+  }
+  function setActive(value: string | null) {
+    if (disposed) return;
+    const next = value === "active", entered = next && !active;
+    if (!next) { focusRevision++; focused = !source.requiresFocus; }
+    active = next;
+    publish();
+    // Duplicate active events cannot erase a known notification-shade blur.
+    if (entered) refreshFocus();
+  }
   function stop() {
     if (disposed) return;
-    disposed = true; revision++; active = false; focused = false;
+    disposed = true; revision++; focusRevision++; active = false; focused = false;
     // Detach, do not dispose the process-owned runtime. This also survives
     // React StrictMode effect teardown followed by setup with the same runtime.
     try { void Promise.resolve(update(false)).catch(() => {}); } catch { /* Continue removing other subscriptions. */ }
@@ -38,16 +60,20 @@ export function observeSessionVisibility(source: SessionVisibilitySource,
   try {
     if (source.requiresFocus) {
       if (!source.onFocus) { stop(); return stop; }
-      stops.push(source.onFocus(value => { if (!disposed) { focused = value === true; publish(); } }));
+      stops.push(source.onFocus(value => {
+        if (disposed) return;
+        focusRevision++;
+        if (value === true && source.currentFocus) {
+          // A queued positive event is only a prompt to read the current window.
+          if (active) refreshFocus();
+        } else {
+          focused = value === true;
+          publish();
+        }
+      }));
     }
-    stops.push(source.onState(value => {
-      if (disposed) return;
-      active = value === "active";
-      if (!active) focused = !source.requiresFocus;
-      publish();
-    }));
-    active = source.currentState() === "active";
-    publish();
+    stops.push(source.onState(setActive));
+    setActive(source.currentState());
   } catch { stop(); }
   return stop;
 }

@@ -112,9 +112,10 @@ complete the fictional preview, then use the reviewed native wire/vault against
 the accepted staging API for the real journey. Native secure-store cleanup,
 app-link round trips, download/installed-size baselines and device accessibility
 remain open. JavaScript tests, typechecking, exports, source review and web
-preview do not satisfy them. Android focus starts unknown because React Native
-has no initial window-focus snapshot; startup stays concealed until focus is
-known. See [Native first journey](../docs/mobile/NATIVE_JOURNEY.md).
+preview do not satisfy them. Android focus starts unknown. The local native
+visibility module supplies an initial snapshot and each foreground recheck,
+fenced against newer focus/blur events. Its native compilation and device checks
+remain open. See [Native first journey](../docs/mobile/NATIVE_JOURNEY.md).
 
 The initial dependency audit found transitive advisories in development tooling.
 The exact lock and audit are retained for triage. Do not force npm's proposed

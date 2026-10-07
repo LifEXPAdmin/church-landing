@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.gcnativevisibility'
+version = '0.0.1'
+
+android {
+  namespace 'expo.modules.gcnativevisibility'
+  defaultConfig {
+    versionCode 1
+    versionName '0.0.1'
+  }
+}
+
+dependencies {
+  // AppContext's lifecycle types require the selected React Native classpath.
+  implementation 'com.facebook.react:react-android'
+}

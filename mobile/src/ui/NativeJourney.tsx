@@ -5,6 +5,7 @@ import type { createNativeRuntime } from "../session/runtime";
 import type { SessionSnapshot } from "../session/session-controller";
 import type { ReadingSnapshot } from "../reading/read-controller";
 import { observeSessionVisibility } from "../platform/session-visibility";
+import { readNativeWindowFocus } from "../platform/native-visibility";
 import { Button, Card, Input, Screen, Text } from "./primitives";
 import { NativePost } from "./NativePost";
 import { useTheme } from "./theme";
@@ -143,6 +144,7 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
   if (scroll.generation !== state.generation || scroll.page !== page) setScroll({ generation: state.generation, page });
   useEffect(() => observeSessionVisibility({
     requiresFocus: Platform.OS === "android",
+    currentFocus: readNativeWindowFocus,
     currentState: () => AppState.isAvailable ? AppState.currentState : null,
     onState(listener) {
       const subscription = AppState.addEventListener("change", listener);

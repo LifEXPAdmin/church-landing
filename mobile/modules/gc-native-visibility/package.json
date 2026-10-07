@@ -1,0 +1,7 @@
+{
+  "name": "@godschurches/native-visibility",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Native window focus snapshot for shared session visibility",
+  "license": "UNLICENSED"
+}

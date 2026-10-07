@@ -31,9 +31,21 @@ disposing the process-owned runtime, so StrictMode effect remounts can reuse it.
 Stale callbacks and activation failures cannot undo later lifecycle decisions.
 
 React Native exposes Android focus events without an initial focus snapshot.
-If observation starts after the last focus event, this adapter stays concealed
-until another focus event. An accepted native focus source remains necessary
-for dependable Android startup. JavaScript lifecycle handling is also not proof
-of an OS app-switcher privacy cover. Native transport and storage, iOS/Android
+The local `GCNativeVisibility` Android module reads the current activity's window
+focus on the main queue. Startup and each new active epoch query it after event
+subscriptions attach. Only a literal `true` can open the visibility boundary;
+missing modules, absent/destroyed activities and failed reads stay concealed.
+Any newer focus, blur, background or teardown supersedes an outstanding reply.
+Positive focus events prompt a new snapshot instead of opening content directly.
+Duplicate active events cannot erase a known blur. This adds no polling, event
+owner, permissions, storage or network work. iOS never queries this module.
+
+The Android binary must be rebuilt to include the module. Autolink discovery,
+source and race tests do not prove Kotlin compilation or device behavior. Verify
+cold start after the last focus event, resume, notification shade, permission
+dialogs and activity recreation on the actual build. Older binaries without the
+snapshot module remain concealed and need a rebuild.
+JavaScript lifecycle handling is not proof of an OS app-switcher privacy cover.
+Native transport and storage, iOS/Android
 builds, device lifecycle/network behavior, keyboard and assistive-technology
 checks remain separate from source, type and unit-test evidence.

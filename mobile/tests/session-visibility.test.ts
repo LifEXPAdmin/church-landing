@@ -14,6 +14,90 @@ function fixture(requiresFocus = false, initial: string | null = "active") {
     start: (update: (value: boolean) => void | Promise<unknown> = value => { values.push(value); }) => observeSessionVisibility(source, update) };
 }
 const settle = async () => { await Promise.resolve(); await Promise.resolve(); };
+function pendingFocus(f: ReturnType<typeof fixture>) {
+  const requests: { resolve: (value: unknown) => void; reject: (error: Error) => void }[] = [];
+  f.source.currentFocus = () => new Promise((resolve, reject) => { requests.push({ resolve, reject }); });
+  return requests;
+}
+
+test("Android mounted after the last focus event can resume from an authoritative snapshot", async () => {
+  const f = fixture(true);
+  f.source.currentFocus = async () => true;
+  const stop = f.start();
+  assert.deepEqual(f.values, [false], "remain concealed until the native reply");
+  await settle();
+  assert.deepEqual(f.values, [false, true]);
+  stop();
+});
+
+test("newer blur or focus overrides either direction of an in-flight native snapshot", async () => {
+  const f = fixture(true), requests = pendingFocus(f), stop = f.start();
+  f.focus(false); requests[0].resolve(true); await settle();
+  assert.deepEqual(f.values, [false], "late true must not erase notification shade blur");
+  f.state("background"); f.state("active");
+  f.focus(true); requests[1].resolve(false); await settle();
+  assert.deepEqual(f.values, [false], "a positive event needs a current snapshot");
+  requests[2].resolve(true); await settle();
+  assert.deepEqual(f.values, [false, true], "only the newest query can establish focus");
+  stop();
+});
+
+test("a stale positive focus event cannot reopen after a newer snapshot observes blur", async () => {
+  const f = fixture(true), requests = pendingFocus(f), stop = f.start();
+  requests[0].resolve(false); await settle();
+  f.focus(true); assert.deepEqual(f.values, [false]);
+  requests[1].resolve(false); await settle(); assert.deepEqual(f.values, [false]); stop();
+});
+
+test("background and teardown fence pending snapshots; each new active epoch gets its own query", async () => {
+  const f = fixture(true), requests = pendingFocus(f), stop = f.start();
+  f.state("background"); requests[0].resolve(true); await settle();
+  assert.deepEqual(f.values, [false]);
+  f.state("active"); assert.equal(requests.length, 2);
+  requests[1].resolve(true); await settle(); assert.equal(f.values.at(-1), true);
+  f.state("background"); f.state("active"); stop();
+  const count = f.values.length;
+  requests[2].resolve(true); await settle();
+  assert.equal(f.values.at(-1), false); assert.equal(f.values.length, count);
+});
+
+test("an older foreground query cannot reopen a later active epoch", async () => {
+  const f = fixture(true), requests = pendingFocus(f), stop = f.start();
+  f.state("background"); f.state("active");
+  requests[0].resolve(true); await settle(); assert.deepEqual(f.values, [false]);
+  requests[1].resolve(true); await settle(); assert.deepEqual(f.values, [false, true]); stop();
+});
+
+test("duplicate active events do not query away a known blur or cancel the startup snapshot", async () => {
+  const f = fixture(true), requests = pendingFocus(f), stop = f.start();
+  f.state("active"); assert.equal(requests.length, 1);
+  requests[0].resolve(true); await settle(); assert.equal(f.values.at(-1), true);
+  f.focus(false); f.state("active");
+  assert.equal(requests.length, 1); assert.equal(f.values.at(-1), false); stop();
+});
+
+test("missing, invalid, throwing and rejected native snapshots remain concealed", async () => {
+  for (const value of [null, undefined, "true", 1, {}, false]) {
+    const f = fixture(true); f.source.currentFocus = async () => value;
+    const stop = f.start(); await settle(); assert.deepEqual(f.values, [false]); stop();
+  }
+  for (const read of [() => { throw Error("Missing module"); }, () => Promise.reject(Error("No window"))]) {
+    const f = fixture(true); f.source.currentFocus = read;
+    const stop = f.start(); await settle(); assert.deepEqual(f.values, [false]); stop();
+  }
+});
+
+test("iOS does not query the Android module and both subscriptions precede the initial snapshot", async () => {
+  const ios = fixture(); ios.source.currentFocus = () => { assert.fail("iOS must use its own active state"); };
+  const done = ios.start(); assert.deepEqual(ios.values, [false, true]); done();
+  const f = fixture(true), order: string[] = [];
+  const onFocus = f.source.onFocus!, onState = f.source.onState;
+  f.source.onFocus = listener => { order.push("focus"); return onFocus(listener); };
+  f.source.onState = listener => { order.push("state"); return onState(listener); };
+  f.source.currentFocus = async () => { order.push("snapshot"); return true; };
+  const stop = f.start(); await settle();
+  assert.deepEqual(order, ["focus", "state", "snapshot"]); stop();
+});
 
 test("unknown or non-active state stays concealed; iOS active resumes and inactive immediately conceals", () => {
   for (const initial of [null, "unknown", "background", "inactive", "extension"]) {
