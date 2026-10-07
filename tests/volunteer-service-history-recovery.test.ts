@@ -151,6 +151,21 @@ for (const timed of [true, false]) {
       )!;
     assert.equal((await history()).recoveryRequired, true);
     assert.equal((await history()).completed, false);
+    const organizerRecord = async () =>
+      (
+        await readVolunteerApplications(db, f.ada.token, {
+          opportunityId: f.opportunity.id
+        })
+      ).items.find((item) => item.id === f.application.id)!.service!;
+    const fencedRecord = await organizerRecord();
+    assert.equal(fencedRecord.current, true);
+    assert.equal(fencedRecord.recoveryRequired, true);
+    assert.equal(fencedRecord.canCorrect, false);
+    assert.equal(
+      fencedRecord.canComplete,
+      false,
+      "An unreconciled opaque recovery fence must not offer an unusable confirmation action"
+    );
     for (let attempt = 0; attempt < 2; attempt++) {
       const current = await f.row();
       const input = action("service-visibility", {
@@ -183,6 +198,11 @@ for (const timed of [true, false]) {
       assert.deepEqual(await f.row(), after);
     }
     const current = await f.row();
+    assert.equal(
+      (await organizerRecord()).canComplete,
+      true,
+      "Reconciled quarantine must still allow deliberate fresh confirmation"
+    );
     await volunteerCommand(
       db,
       f.ada.token,
