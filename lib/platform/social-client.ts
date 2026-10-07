@@ -1,93 +1,109 @@
-/** Browser transport for existing social APIs. Never caches private responses. */
+/** Browser adapter for the canonical request core. Never caches private responses. */
 import { announcePrivilegedChallenge } from "./privileged-auth-navigation";
-export class SocialClientError extends Error {
-  status: number;
-  retryAfter?: number;
-  needsAuthenticator: boolean;
-  code?: string;
-  constructor(
-    status: number,
-    message: string,
-    retryAfter?: number,
-    needsAuthenticator = false,
-    code?: string
-  ) {
-    super(message);
-    this.status = status;
-    this.retryAfter = retryAfter;
-    this.needsAuthenticator = needsAuthenticator;
-    this.code = code;
-  }
+import {
+  prepareRequest,
+  RequestClientError as SocialClientError,
+  type RequestAdapter,
+  type RequestCancellation
+} from "../../packages/shared-core/src/request-client";
+export { RequestClientError as SocialClientError } from "../../packages/shared-core/src/request-client";
+
+async function browserFetch(path: string, init: RequestInit, cancellation?: RequestCancellation) {
+  const controller = cancellation ? new AbortController() : undefined;
+  const release = cancellation?.subscribe(() => controller?.abort()) ?? (() => {});
+  if (cancellation?.cancelled) controller?.abort();
+  try {
+    const response = await fetch(path, { ...init, ...(controller ? { signal: controller.signal } : {}) });
+    return { response, release };
+  } catch (error) { release(); throw error; }
 }
-export async function currentSocialOwner(): Promise<string | null> {
-  const response = await fetch("/api/platform/profile?view=identity", {
-    cache: "no-store",
-    credentials: "same-origin"
+async function readSocialOwner(cancellation?: RequestCancellation): Promise<string | null> {
+  const { response, release } = await browserFetch("/api/platform/profile?view=identity", {
+    cache: "no-store", credentials: "same-origin"
+  }, cancellation);
+  try {
+    if (!response.ok) {
+      await response.body?.cancel();
+      if (response.status === 401) return null;
+      throw new SocialClientError(response.status,
+        "Your sign-in could not be checked. Reconnect and try again.");
+    }
+    const body: unknown = await response.json();
+    if (!body || typeof body !== "object" || typeof (body as Record<string, unknown>).id !== "string")
+      throw new SocialClientError(503, "Your sign-in could not be checked.");
+    return (body as { id: string }).id;
+  } finally { release(); }
+}
+export function currentSocialOwner(): Promise<string | null> { return readSocialOwner(); }
+const identity = (owner: string | null) => ({ owner, generation: owner ?? "guest" });
+const adapter: RequestAdapter = {
+  async capture(cancellation) {
+    const owner = await readSocialOwner(cancellation);
+    return {
+      identity: identity(owner),
+      async send(request, cancellation) {
+        const { response, release } = await browserFetch(request.path, {
+          method: request.method,
+          cache: "no-store",
+          credentials: "same-origin",
+          headers: {
+            ...(request.body ? { "Content-Type": "application/json" } : {}),
+            ...(request.expectedOwner ? { "X-Expected-Account": request.expectedOwner } : {})
+          },
+          ...(request.body ? { body: request.body } : {})
+        }, cancellation);
+        return {
+          status: response.status,
+          retryAfter: response.headers.get("retry-after"),
+          async read() { try { return await response.json(); } finally { release(); } }
+        };
+      }
+    };
+  },
+  async currentIdentity(cancellation) { return identity(await readSocialOwner(cancellation)); },
+  decodeFailure(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid response");
+    const row = value as Record<string, unknown>;
+    return {
+      message: typeof row.message === "string" ? row.message : "This action could not be confirmed. Your entries are unchanged.",
+      ...(typeof row.code === "string" ? { code: row.code } : {})
+    };
+  },
+  challenge: announcePrivilegedChallenge,
+  now: () => Date.now()
+};
+
+/** Retain this object, not just the current props, when recovering an original save. */
+export function prepareSocialRequest<T>(
+  path: string,
+  body?: string,
+  expectedOwner?: string | null,
+  method: "POST" | "DELETE" = "POST",
+  options: { decode?: (value: unknown) => T; idempotent?: boolean } = {}
+) {
+  return prepareRequest(adapter, {
+    path, method: body ? method : "GET", ...(body ? { body } : {}), expectedOwner,
+    // Existing legacy callers validate their own domain result. Migrated callers
+    // supply the strict decoder here; native adapters must always provide one.
+    decode: options.decode ?? (value => value as T),
+    idempotent: options.idempotent
   });
-  if (!response.ok) {
-    // Identity denials have no payload to use. Release the unread stream before
-    // continuing guest reads or reporting a failure.
-    await response.body?.cancel();
-    if (response.status === 401) return null;
-    throw new SocialClientError(
-      response.status,
-      "Your sign-in could not be checked. Reconnect and try again."
-    );
-  }
-  const body = await response.json();
-  if (typeof body.id !== "string")
-    throw new SocialClientError(503, "Your sign-in could not be checked.");
-  return body.id;
 }
-export async function socialRequest<T>(
+export function socialRequest<T>(
   path: string,
   body?: string,
   expectedOwner?: string | null,
   method: "POST" | "DELETE" = "POST",
   onDispatch?: () => void
 ): Promise<{ owner: string | null; data: T }> {
-  const owner = await currentSocialOwner();
-  if (
-    (expectedOwner !== undefined && owner !== expectedOwner) ||
-    (body && !owner)
-  )
-    throw new SocialClientError(
-      401,
-      "Your sign-in changed. Reload before continuing."
-    );
-  onDispatch?.();
-  const response = await fetch(path, {
-    method: body ? method : "GET",
-    cache: "no-store",
-    credentials: "same-origin",
-    headers: {
-      ...(body ? { "Content-Type": "application/json" } : {}),
-      ...(expectedOwner ? { "X-Expected-Account": expectedOwner } : {})
-    },
-    ...(body ? { body } : {})
+  return prepareSocialRequest<T>(path, body, expectedOwner, method).run({ onDispatch }).catch(error => {
+    // Legacy recovery distinguishes a confirmed server rejection code from
+    // identity/transport uncertainty. The new prepared API retains richer codes.
+    if (error instanceof SocialClientError && !error.responseError)
+      throw new SocialClientError(error.status, error.message, error.retryAfter,
+        error.needsAuthenticator, undefined, error.dispatched);
+    throw error;
   });
-  const data = await response.json();
-  if ((await currentSocialOwner()) !== owner)
-    throw new SocialClientError(
-      401,
-      "Your sign-in changed. Reload before continuing."
-    );
-  if (!response.ok) {
-    const needsAuthenticator =
-      response.status === 403 && announcePrivilegedChallenge(data);
-    throw new SocialClientError(
-      response.status,
-      data.message ??
-        "This action could not be confirmed. Your entries are unchanged.",
-      response.status === 429 &&
-        /^\d+$/.test(response.headers.get("retry-after") ?? "")
-        ? Number(response.headers.get("retry-after"))
-        : undefined,
-      needsAuthenticator,
-      typeof data.code === "string" ? data.code : undefined
-    );
-  }
-  return { owner, data };
 }
 export type CommentAuthor = {
   id: string;

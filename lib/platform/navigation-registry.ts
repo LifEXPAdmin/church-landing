@@ -1,3 +1,7 @@
+import {
+  screenWebPath,
+  type NavigationId
+} from "../../packages/shared-core/src/destinations";
 import { resourceContracts, type ResourceKind } from "./resource-contracts";
 
 // Destinations name working screens, never authority to read or change a source.
@@ -12,7 +16,7 @@ type Destination = {
 };
 export const navigationRegistry = {
   music: {
-    href: "/platform/music",
+    href: screenWebPath("music"),
     title: "Artists and music",
     description:
       "Discover artist profiles and publisher-supplied external releases.",
@@ -21,7 +25,7 @@ export const navigationRegistry = {
     prefetch: false
   },
   artistStudio: {
-    href: "/platform/music/studio",
+    href: screenWebPath("artistStudio"),
     title: "Artist studio",
     description:
       "Manage artist profiles, editor permissions and release drafts.",
@@ -30,7 +34,7 @@ export const navigationRegistry = {
     prefetch: false
   },
   media: {
-    href: "/platform/media",
+    href: screenWebPath("media"),
     title: "Media library",
     description:
       "Browse sermons, podcasts, testimonies, services and teaching.",
@@ -39,7 +43,7 @@ export const navigationRegistry = {
     prefetch: false
   },
   mediaStudio: {
-    href: "/platform/media/studio",
+    href: screenWebPath("mediaStudio"),
     title: "Publishing studio",
     description: "Create private media drafts and review publication.",
     icon: "file",
@@ -47,7 +51,7 @@ export const navigationRegistry = {
     prefetch: false
   },
   mediaPlaylists: {
-    href: "/platform/media/playlists",
+    href: screenWebPath("mediaPlaylists"),
     title: "Media playlists",
     description:
       "Organize finite playlists with each recording's current audience.",
@@ -56,7 +60,7 @@ export const navigationRegistry = {
     prefetch: false
   },
   savedMedia: {
-    href: "/platform/media/saved",
+    href: screenWebPath("savedMedia"),
     title: "Saved media",
     description: "Keep recordings privately without changing their audience.",
     icon: "book",
@@ -64,45 +68,45 @@ export const navigationRegistry = {
     prefetch: false
   },
   home: {
-    href: "/platform",
+    href: screenWebPath("home"),
     title: "Home",
     description: "Read community posts.",
     icon: "home"
   },
   churches: {
-    href: "/platform/churches",
+    href: screenWebPath("churches"),
     title: "Find a church",
     description: "Explore public church pages.",
     icon: "church"
   },
   myChurch: {
-    href: "/platform/my-church",
+    href: screenWebPath("myChurch"),
     title: "My church",
     description: "Your church connection and available church tools.",
     icon: "church"
   },
   explore: {
-    href: "/platform/search",
+    href: screenWebPath("explore"),
     title: "Explore",
     description:
       "Search the community's currently available posts and resources.",
     icon: "search"
   },
   messages: {
-    href: "/platform/messages",
+    href: screenWebPath("messages"),
     title: "Messages",
     description: "Resume your accepted private conversations.",
     icon: "messages",
     prefetch: false
   },
   menu: {
-    href: "/platform/menu",
+    href: screenWebPath("menu"),
     title: "Menu",
     description: "Find your way around God’s Churches.",
     icon: "menu"
   },
   exchange: {
-    href: "/platform/exchange",
+    href: screenWebPath("exchange"),
     title: "Exchange",
     description:
       "Find items, requests and skilled help, or manage your own listings.",
@@ -110,7 +114,7 @@ export const navigationRegistry = {
     resource: "exchangeListing"
   },
   groups: {
-    href: "/platform/groups",
+    href: screenWebPath("groups"),
     title: "Gather groups",
     description:
       "Find an adult group, read its rules and join private discussions.",
@@ -119,88 +123,88 @@ export const navigationRegistry = {
     prefetch: false
   },
   topics: {
-    href: "/platform/topics",
+    href: screenWebPath("topics"),
     title: "Topic communities",
     description: "Read public discussions, join a topic or start your own.",
     icon: "book"
   },
   followedTopics: {
-    href: "/platform/topics/following",
+    href: screenWebPath("followedTopics"),
     title: "Topics I follow",
     description: "Read the latest posts from topics you follow.",
     icon: "book"
   },
   features: {
-    href: "/platform/features",
+    href: screenWebPath("features"),
     title: "Explore features",
     description: "A guide to current capabilities and how to use them.",
     icon: "book"
   },
   releases: {
-    href: "/platform/releases",
+    href: screenWebPath("releases"),
     title: "What’s new",
     description: "Read release notes and app changes.",
     icon: "file"
   },
   feed: {
-    href: "/platform/feed",
+    href: screenWebPath("feed"),
     title: "My feed",
     description:
       "Open a full-screen reader. Swipe left or right between posts.",
     icon: "book"
   },
   profile: {
-    href: "/platform/profile/me",
+    href: screenWebPath("profile"),
     title: "Your profile",
     description: "The profile you share with other members.",
     icon: "person"
   },
   editProfile: {
-    href: "/platform/profile/me",
+    href: screenWebPath("editProfile"),
     title: "Edit your profile",
     description: "Choose your name, bio and profile details.",
     icon: "person"
   },
   activity: {
-    href: "/platform/activity",
+    href: screenWebPath("activity"),
     title: "Notifications",
     description: "See grouped updates and manage what is unread.",
     icon: "bell",
     prefetch: false
   },
   saved: {
-    href: "/platform/saved",
+    href: screenWebPath("saved"),
     title: "Bookmarks",
     description: "Organize posts into private collections.",
     icon: "book"
   },
   drafts: {
-    href: "/platform/drafts",
+    href: screenWebPath("drafts"),
     title: "Your drafts",
     description: "Review and discard your private saved drafts.",
     icon: "file"
   },
   prayers: {
-    href: "/platform/prayers",
+    href: screenWebPath("prayers"),
     title: "My private prayer list",
     description: "Return to saved prayers and choose author updates.",
     icon: "handHeart",
     prefetch: false
   },
   calendars: {
-    href: "/platform/calendars",
+    href: screenWebPath("calendars"),
     title: "My calendars",
     description: "Your personal, church and shared calendars.",
     icon: "calendar"
   },
   commitments: {
-    href: "/platform/commitments",
+    href: screenWebPath("commitments"),
     title: "My commitments",
     description: "Your event responses and private conflict hints.",
     icon: "calendarCheck"
   },
   volunteers: {
-    href: "/platform/serve",
+    href: screenWebPath("volunteers"),
     title: "Volunteer opportunities",
     description: "Explore church opportunities and your private applications.",
     icon: "handHeart",
@@ -208,84 +212,84 @@ export const navigationRegistry = {
     prefetch: false
   },
   settings: {
-    href: "/platform/settings",
+    href: screenWebPath("settings"),
     title: "Account settings",
     description: "Reading, privacy, sign-in methods and account controls.",
     icon: "settings"
   },
   sharing: {
-    href: "/platform/my-church/sharing",
+    href: screenWebPath("sharing"),
     title: "Directory sharing",
     description: "Choose what to share with your approved church.",
     icon: "shield"
   },
   helpRequests: {
-    href: "/platform/help/requests",
+    href: screenWebPath("helpRequests"),
     title: "Your help requests",
     description: "Revisit your private requests and replies.",
     icon: "help"
   },
   feedback: {
-    href: "/platform/feedback",
+    href: screenWebPath("feedback"),
     title: "Feedback",
     description: "Share your website experience and revisit My feedback.",
     icon: "help",
     prefetch: false
   },
   reports: {
-    href: "/platform/reports",
+    href: screenWebPath("reports"),
     title: "Your reports",
     description: "Private receipts for concerns you have submitted.",
     icon: "shield",
     prefetch: false
   },
   contactRequests: {
-    href: "/platform/messages/requests",
+    href: screenWebPath("contactRequests"),
     title: "Contact requests",
     description: "Review private requests to start an adult conversation.",
     icon: "person",
     prefetch: false
   },
   help: {
-    href: "/platform/help",
+    href: screenWebPath("help"),
     title: "Help and contacts",
     description: "Find the right place to ask for help.",
     icon: "circleHelp"
   },
   admin: {
-    href: "/platform/admin",
+    href: screenWebPath("admin"),
     title: "Admin",
     description: "Open your currently permitted requests and operations.",
     icon: "shield",
     prefetch: false
   },
   mission: {
-    href: "/about#our-mission",
+    href: screenWebPath("mission"),
     title: "Our mission",
     description: "Christ’s authority. Our shared calling. Your part to play.",
     icon: "church"
   },
   privacy: {
-    href: "/privacy",
+    href: screenWebPath("privacy"),
     title: "Privacy",
     description: "How information is used and shared.",
     icon: "shield"
   },
   terms: {
-    href: "/terms",
+    href: screenWebPath("terms"),
     title: "Terms",
     description: "The terms for using God’s Churches.",
     icon: "file"
   },
   qr: {
-    href: "/platform/share?qr=1",
+    href: screenWebPath("qr"),
     title: "Share God’s Churches",
     description: "Open the website QR code. Copy, share or save it.",
     icon: "qr"
   }
-} as const satisfies Record<string, Destination>;
+} as const satisfies Record<NavigationId, Destination>;
 
-export type NavigationId = keyof typeof navigationRegistry;
+export type { NavigationId } from "../../packages/shared-core/src/destinations";
 export type NavigationIcon = (typeof navigationRegistry)[NavigationId]["icon"];
 export type NavigationItem = Omit<Destination, "icon"> & {
   id: NavigationId;
@@ -393,7 +397,7 @@ export function navigationItem(
   if (id === "profile" && context.username)
     item.href = `/platform/profile/${encodeURIComponent(context.username)}`;
   if (id === "qr" && context.username) {
-    item.href = "/platform/invitations";
+    item.href = screenWebPath("invitations");
     item.title = "My QR code";
     item.description = "Invite someone to connect with you.";
   }

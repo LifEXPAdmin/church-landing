@@ -193,9 +193,11 @@ try {
     );
   assert.ok(
     !guestLinks.some((href) =>
-      /\/platform\/(media|businesses|foundry)(\/|$)/.test(href)
+      /\/platform\/(businesses|foundry)(\/|$)/.test(href)
     )
   );
+  assert.equal(await menuLink("/platform/media").count(), 1);
+  assert.equal(await menuLink("/platform/media/studio").count(), 0);
   await menu().locator("a").first().focus();
   const visited = new Set();
   for (let i = 0; i < guestLinks.length + 20; i++) {

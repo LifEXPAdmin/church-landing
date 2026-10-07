@@ -365,6 +365,18 @@ const identityRead = (request) =>
 const command = (request) =>
   request.method() === "POST" &&
   new URL(request.url()).pathname === "/api/platform/menu-shortcuts";
+// Current session protection records deliberate foreground activity. Keep every
+// write in the receipt, but do not confuse that bounded renewal with a Menu save.
+const menuWrites = () => receipt.browserWrites.filter((row) => {
+  assert.equal(row.method, "POST");
+  if (row.path === "/api/platform/session") {
+    assert.deepEqual(JSON.parse(row.body), { activity: "foreground" });
+    assert.ok([owner.id, other.id].includes(row.owner));
+    return false;
+  }
+  assert.equal(row.path, "/api/platform/menu-shortcuts", "Unexpected browser mutation");
+  return true;
+});
 const retry = () =>
   page
     .getByRole("button", { name: /^Confirm original (save|request)$/ })
@@ -806,10 +818,10 @@ async function verifyPrivacy() {
   assert.deepEqual(await order().allTextContents(), dirty);
   await confirm("Discard local shortcut edits");
   await enabled("Reset Menu shortcuts");
-  assert.equal(receipt.browserWrites.length, 0);
+  assert.equal(menuWrites().length, 0);
   assert.deepEqual((await prefs()).menuShortcutIds, savedIds);
   pass(
-    "Late queued and failed reads keep Menu choices physically absent; same owner restores its controlled order and explicit discard writes nothing"
+    "Late queued and failed reads keep Menu choices physically absent; same owner restores its controlled order and explicit discard sends no Menu command"
   );
 }
 async function verifyAuthorityRemoval() {
@@ -847,7 +859,7 @@ async function verifyAuthorityRemoval() {
   await confirm("Discard local shortcut edits");
   await button("Remove unavailable shortcut").waitFor();
   assert.equal(await button("Save Menu shortcuts").isDisabled(), true);
-  assert.equal(receipt.browserWrites.length, 0);
+  assert.equal(menuWrites().length, 0);
   assert.deepEqual((await prefs()).menuShortcutIds, savedIds);
   await button("Remove unavailable shortcut").click();
   await enabled("Save Menu shortcuts");
@@ -919,7 +931,7 @@ async function verifyOriginalSave() {
   } finally {
     held.release();
   }
-  const original = receipt.browserWrites.at(-1).body;
+  const original = menuWrites().at(-1).body;
   receipt.originalSaveBody = original;
   await waitPrefs(selected, 3);
   await login(other);
@@ -1000,7 +1012,7 @@ async function verifyOriginalSave() {
     await retry().click();
     await denied;
     await retry().waitFor();
-    assert.equal(receipt.browserWrites.at(-1).body, original);
+    assert.equal(menuWrites().at(-1).body, original);
     assert.equal(await page.locator('a[href="/platform/admin"]').count(), 0);
     assert.equal(
       await editor()
@@ -1043,7 +1055,7 @@ async function verifyOriginalSave() {
   // Receipt adoption deliberately mounts a new version-owned editor. Wait for
   // that accepted list before opening its fresh native details element.
   await openEditor();
-  const attempts = receipt.browserWrites.slice(1);
+  const attempts = menuWrites().slice(1);
   assert.equal(attempts.length, 5);
   for (const r of attempts) {
     assert.equal(r.body, original);
@@ -1208,7 +1220,7 @@ async function verifyConflictAndReset() {
   assert.equal(final.feedVersion, 7);
   assert.equal(final.mentions, "NOBODY");
   assert.equal(final.version, 3);
-  assert.equal(receipt.browserWrites.length, 8);
+  assert.equal(menuWrites().length, 8);
   await exactOperations(6);
   pass(
     "Definitive409 preserves entries until warned reload; clean hidden-choice Reset retains history protection through concealed acceptance until current owner recheck, with unrelated preferences unchanged"
@@ -1221,6 +1233,8 @@ try {
   await verifyAuthorityRemoval();
   await verifyOriginalSave();
   await verifyConflictAndReset();
+  receipt.menuWriteCount = menuWrites().length;
+  receipt.sessionActivityWriteCount = receipt.browserWrites.length - receipt.menuWriteCount;
   assert.deepEqual(receipt.errors, []);
   assert.deepEqual(receipt.externalRequests, []);
 } catch (error) {

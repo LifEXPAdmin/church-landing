@@ -35,6 +35,13 @@ import {
   nativeAuthHeaders
 } from "./native-session-boundary";
 
+import {
+  NativePolicyError,
+  nativeCapabilityPolicy,
+  requireNativeFeature,
+  type NativeFeature
+} from "./native-api-policy";
+
 export type NativeReadOperation =
   | "capabilities"
   | "feed"
@@ -74,6 +81,8 @@ function failure(
   );
 }
 function denied(error: unknown) {
+  if (error instanceof NativePolicyError)
+    return failure(error.code, error.message);
   if (error instanceof AccountSessionOwnerError)
     return failure(
       "account_changed",
@@ -179,38 +188,26 @@ export async function handleNativeReadRequest(
     const search = new URL(request.url).searchParams;
     const cursor = search.get("cursor");
     if (operation === "capabilities") {
+      const policy = nativeCapabilityPolicy();
       const data = await withAccountRead(
         db,
         credential.token,
-        async () => ({
-          supportedVersions: [API_VERSION],
-          features: [
-            ...[
-              "session.read",
-              "session.password",
-              "session.activity",
-              "session.logout",
-              "feed.read",
-              "post.read",
-              "profile.read",
-              "churches.read",
-              "church.read"
-            ].map((name) => ({ name, available: true })),
-            ...[
-              "session.google",
-              "comments.read",
-              "comments.write",
-              "posts.write",
-              "likes.write",
-              "media.read",
-              "push"
-            ].map((name) => ({ name, available: false }))
-          ]
-        }),
+        async () => policy,
         identity
       );
       return success(operation, viewer, data);
     }
+    const feature: Record<
+      Exclude<NativeReadOperation, "capabilities">,
+      NativeFeature
+    > = {
+      feed: "feed.read",
+      post: "post.read",
+      profile: "profile.read",
+      churches: "churches.read",
+      church: "church.read"
+    };
+    requireNativeFeature(feature[operation]);
     if (operation === "feed") {
       const query = apiContracts.feed.query.parse({
         mode: search.get("mode") ?? "latest",
