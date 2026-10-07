@@ -166,17 +166,28 @@ async function refresh(page) {
       page.evaluate(() => {
         if (typeof window.next?.router?.refresh !== "function")
           throw Error("Installed Next router refresh unavailable");
+        // Next's HistoryUpdater replaces this tree in its insertion effect
+        // after the refreshed router state commits. A streaming RSC response
+        // need not finish before that commit, and headers alone prove nothing.
+        const tree = history.state?.__PRIVATE_NEXTJS_INTERNALS_TREE;
+        if (!tree || tree !== history.state.__PRIVATE_NEXTJS_INTERNALS_TREE)
+          throw Error("Installed Next committed router tree unavailable");
+        window.serviceTestRefreshTree = tree;
         window.next.router.refresh();
       }),
       "Router refresh invocation"
     );
     const response = await reply;
     assert.equal(response.status(), 200);
-    assert.equal(
-      await deadline(response.finished(), "Refreshed RSC body"),
-      null
+    await page.waitForFunction(
+      () =>
+        !!history.state?.__PRIVATE_NEXTJS_INTERNALS_TREE &&
+        history.state.__PRIVATE_NEXTJS_INTERNALS_TREE !==
+          window.serviceTestRefreshTree,
+      undefined,
+      { polling: 100 }
     );
-    console.log("BROWSER_REFRESH_BODY_FINISHED");
+    console.log("BROWSER_REFRESH_COMMITTED");
     if (
       await deadline(
         page.evaluate(
