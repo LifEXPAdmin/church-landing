@@ -18,7 +18,7 @@ module.exports = () => {
     userInterfaceStyle: "automatic",
     ios: { bundleIdentifier: "com.godschurches.mobile" + selected.suffix, supportsTablet: false },
     android: { package: "com.godschurches.mobile" + selected.suffix },
-    plugins: [["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: false }], "./plugins/with-fixture-network"],
+    plugins: ["expo-system-ui", ["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: false }], "./plugins/with-fixture-network"],
     extra: { variant, fixtureOnly: true },
     updates: { enabled: false }
   };

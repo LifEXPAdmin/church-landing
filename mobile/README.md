@@ -13,7 +13,8 @@ through their verified handoffs before real account integration.
 
 ## Run on the prepared Mac
 
-Use Node 22.13 or newer. Set `GC_MOBILE_VOLUME_UUID` to the current UUID from the
+Use Node 22.15 or newer. The source test resolver requires Node's `registerHooks`.
+Set `GC_MOBILE_VOLUME_UUID` to the current UUID from the
 private storage policy and `GC_MOBILE_WORKER` to your registered worker. Do not
 put private device identifiers or worker/session records in this repository.
 
@@ -104,3 +105,34 @@ source review and web preview do not satisfy those native checks.
 The initial dependency audit found transitive advisories in development tooling.
 The exact lock and audit are retained for triage. Do not force npm's proposed
 framework downgrades or treat successful exports as dependency-security approval.
+
+## Replaceable native presentation
+
+`src/ui/theme.tsx` consumes the canonical shared-core semantic tokens. It resolves
+light, dark and live device appearance without reading browser cookies or changing
+account settings. The locked `expo-system-ui` package and config plugin preserve
+automatic Android appearance. Status-bar contrast follows the resolved theme.
+The development preview offers temporary appearance, reading-size and additional
+reduced-motion choices. They live only in memory until the app restarts. Its
+sample text is bounded to 1,000 characters and is never persisted or transmitted.
+
+`Button`, `Text`, `Input`, `Card` and `Screen` keep feature logic outside visual
+components. System fonts, uncapped OS text scaling, wrapping, intrinsic height
+and minimum 48-unit control targets support large text. Reader sizing changes
+only reading content. Android selection highlights use the readable selected
+surface independently of cursor and handle colors. The screen observes safe
+areas, obscures content in the background and enables iOS keyboard insets.
+
+Reduced motion starts conservatively enabled until the native query resolves.
+Device events and foreground rechecks supersede older queries; unmount removes
+subscriptions and ignores pending results. Either device or local reduced motion
+sets shared motion durations to zero. The current fixture uses no animated
+transitions. Native motion consumers must also cancel any animation in progress.
+
+The mobile test command uses the repository's existing Node source resolver for
+extensionless shared-core imports and runs files serially. Pure mapping and
+lifecycle tests, typechecking and exports establish source/bundle compatibility.
+Native launch, light/dark/system changes, large-text reflow, keyboard focus and
+selection, TalkBack/VoiceOver, navigation-bar contrast and device lifecycle remain
+separate acceptance checks. These controls do not activate real credentials,
+change API behavior or satisfy release acceptance.

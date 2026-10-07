@@ -1,22 +1,14 @@
-import { StyleSheet, Text, View } from "react-native";
 import { postPreviewText } from "@godschurches/shared-core";
 import type { FixturePost } from "../spike/fixture";
 import { Action } from "./Action";
-import { theme } from "./theme";
+import { Card, Text } from "./primitives";
 
 export function PostPreview({ post, onOpen }: { post: FixturePost; onOpen: () => void }) {
-  return <View style={styles.card}>
-    <Text style={styles.author}>{post.author}</Text>
-    <Text accessibilityRole="header" style={styles.title}>{post.title}</Text>
-    <Text style={styles.body}>{postPreviewText({ content: post.body, contentNote: post.contentNote, safeExcerpt: post.excerpt })}</Text>
-    {post.contentNote ? <Text style={styles.note}>Content note: {post.contentNote}</Text> : null}
+  return <Card>
+    <Text variant="small" tone="muted">{post.author}</Text>
+    <Text variant="heading">{post.title}</Text>
+    <Text variant="reader">{postPreviewText({ content: post.body, contentNote: post.contentNote, safeExcerpt: post.excerpt })}</Text>
+    {post.contentNote ? <Text variant="small" tone="error">Content note: {post.contentNote}</Text> : null}
     <Action label={"Read " + post.title} onPress={onOpen} secondary />
-  </View>;
+  </Card>;
 }
-const styles = StyleSheet.create({
-  card: { padding: theme.space.large, gap: theme.space.medium, borderRadius: theme.radius.card, borderWidth: 1, borderColor: theme.color.border, backgroundColor: theme.color.surface },
-  author: { color: theme.color.muted, fontSize: theme.type.label },
-  title: { color: theme.color.ink, fontSize: theme.type.heading, fontWeight: "600" },
-  body: { color: theme.color.ink, fontSize: theme.type.body, lineHeight: 26 },
-  note: { color: theme.color.alert, fontSize: theme.type.label }
-});
