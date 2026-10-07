@@ -45,7 +45,7 @@ const der = execFileSync("openssl", ["pkey", "-pubin", "-outform", "DER"], {
   input: pub
 });
 const browser = await chromium.launch({
-  headless: true,
+  headless: false,
   executablePath:
     process.env.CHROMIUM_PATH ??
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -59,11 +59,17 @@ const browser = await chromium.launch({
 const context = await browser.newContext({
   viewport: { width: 390, height: 844 }
 });
-await context.route("**/*", (route) =>
-  new URL(route.request().url()).hostname === "mfa-fixture.example.test"
-    ? route.continue()
-    : route.abort()
-);
+await context.route("**/*", async (route) => {
+  try {
+    if (new URL(route.request().url()).hostname === "mfa-fixture.example.test")
+      await route.continue();
+    else await route.abort();
+  } catch (error) {
+    // A navigation may cancel a prefetch before its continuation settles.
+    if (!/Route is already handled/.test(String(error)) || !route.request().failure())
+      throw error;
+  }
+});
 const page = await context.newPage();
 const results = [],
   errors = [];
@@ -117,6 +123,44 @@ const { requestEmailChange } =
   await import("../lib/platform/account-email-change.ts");
 const pulse = (event) =>
   page.evaluate((event) => window.dispatchEvent(new Event(event)), event);
+const refocusNatively = async () => {
+  const browserCdp = await browser.newBrowserCDPSession();
+  const pageCdp = await context.newCDPSession(page);
+  await pageCdp.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+  await page.bringToFront();
+  await page.waitForFunction(() => document.hasFocus());
+  await page.evaluate(() => {
+    window.credentialFocusEvents = [];
+    for (const event of ["blur", "focus"])
+      window.addEventListener(event, (e) =>
+        window.credentialFocusEvents.push({ type: e.type, trusted: e.isTrusted })
+      );
+  });
+  const { targetInfo } = await pageCdp.send("Target.getTargetInfo");
+  const created = context.waitForEvent("page");
+  await browserCdp.send("Target.createTarget", {
+    url: "about:blank",
+    browserContextId: targetInfo.browserContextId,
+    newWindow: true,
+    background: false
+  });
+  const other = await created;
+  try {
+    const otherCdp = await context.newCDPSession(other);
+    await otherCdp.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+    await other.bringToFront();
+    await page.waitForFunction(() => !document.hasFocus());
+    await page.bringToFront();
+    await page.waitForFunction(() => document.hasFocus());
+    const events = await page.evaluate(() => window.credentialFocusEvents);
+    for (const type of ["blur", "focus"])
+      assert.ok(events.some((event) => event.type === type && event.trusted));
+  } finally {
+    await other.close();
+    await pageCdp.detach();
+    await browserCdp.detach();
+  }
+};
 const waitFor = async (predicate) => {
   for (let n = 0; n < 100; n++) {
     if (await predicate()) return;
@@ -222,7 +266,9 @@ const forward = async (route) => {
           resolve({
             status: res.statusCode,
             headers: Object.fromEntries(
-              Object.entries(res.headers).map(([k, v]) => [
+              Object.entries(res.headers).filter(([name]) =>
+                !["connection", "transfer-encoding", "content-length"].includes(name)
+              ).map(([k, v]) => [
                 k,
                 Array.isArray(v) ? v.join("\n") : String(v)
               ])
@@ -404,15 +450,25 @@ try {
     let count = 0;
     const arrived = new Promise((r) => (delivered = r)),
       held = new Promise((r) => (release = r));
+    const fulfilled = Promise.withResolvers();
     const intercept = async (route) => {
-      count++;
-      response = await forward(route);
-      assert.equal(response.status, 200);
-      delivered();
-      await held;
-      await route.fulfill(response);
+      try {
+        count++;
+        response = await forward(route);
+        assert.equal(response.status, 200);
+        delivered();
+        await held;
+        await route.fulfill(response);
+        fulfilled.resolve();
+      } catch (error) {
+        fulfilled.reject(error);
+      }
     };
     await page.route("**/api/platform/account", intercept);
+    const browserReply = page.waitForResponse((reply) =>
+      new URL(reply.url()).pathname === "/api/platform/account" &&
+      reply.request().postDataJSON()?.operation === operation
+    );
     await page.getByRole("button", { name: f.button, exact: true }).click();
     await arrived;
     await pulse("blur");
@@ -420,7 +476,8 @@ try {
     await signIn(replacement);
     const before = page.url();
     release();
-    await page.waitForTimeout(200);
+    await fulfilled.promise;
+    assert.equal(await (await browserReply).finished(), null);
     assert.equal(response.headers["set-cookie"], undefined);
     assert.equal(
       (await context.cookies()).find(
@@ -431,12 +488,29 @@ try {
     assert.equal(page.url(), before);
     await concealed(f.fields);
     await pulse("focus");
+    // The global session monitor deliberately conceals again when it detects
+    // the replacement account. Let that check settle before testing recovery.
+    await page.getByText("The signed-in account changed.", { exact: false }).waitFor();
+    if (operation === "change-password") {
+      // Settings conceal their entire workspace, including its recheck button.
+      // Native focus can recover the retained outcome without bypassing inert.
+      await refocusNatively();
+    } else {
+      await page.getByRole("button", { name: "Recheck current account", exact: true }).click();
+    }
     await page
       .getByText("The change was confirmed.", { exact: false })
       .waitFor({ state: "attached" });
+    // Attached is intentional: the password workspace remains concealed.
     await concealed(f.fields);
     assert.equal(page.url(), before);
     assert.equal(count, 1);
+    assert.equal((await context.cookies()).find((cookie) =>
+      cookie.name === sessionCookieFixtureName(config.origin))?.value, replacement.token);
+    const changed = await db.platformUser.findUniqueOrThrow({ where: { id: a.id } });
+    assert.equal(changed.credentialVersion, 1);
+    assert.equal(await db.platformSession.count({ where: { userId: a.id } }), 0);
+    if (operation === "confirm-email-change") assert.equal(changed.email, f.newEmail);
     await page.unroute("**/api/platform/account", intercept);
     ok(
       operation +
@@ -551,7 +625,7 @@ try {
         productionWrites: 0,
         externalSends: 0,
         limits: [
-          "Synthetic lifecycle events and local fictional accounts; no physical-device or Google-provider acceptance",
+          "Synthetic lifecycle events plus trusted native refocus and local fictional accounts; no physical-device or Google-provider acceptance",
           "Concealment removes DOM, not memory or operating-system snapshots"
         ]
       },
