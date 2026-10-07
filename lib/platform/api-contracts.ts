@@ -180,7 +180,7 @@ export const apiFeed = object({
   mode: feedMode,
   scope: text(100, 1),
   pageCursor: apiCursor,
-  page: page(apiPost, 24),
+  page: page(apiPost, 30),
   notice: nullable(text(1000))
 });
 export const apiProfile = object({

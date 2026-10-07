@@ -72,8 +72,9 @@ permission from client flags.
   Never interpret IDs as authority or assume UUIDs. Date values are canonical
   UTC ISO strings with milliseconds. Missing data uses explicit `null`, not
   fabricated zero, empty objects or omitted required fields.
-- Feed pages contain at most 24 posts, profile/church post pages 30, church
-  discovery 100. Transport adapters enforce 16 KiB request and 2 MiB response
+- Feed pages contain at most 30 posts, profile/church post pages 30, church
+  discovery 100. Preserve the existing feed service page size and cursor boundary.
+  Transport adapters enforce 16 KiB request and 2 MiB response
   byte limits as well as schema limits. Reject or reduce a server-selected page
   before emission; do not truncate a member's text or leak partial JSON.
 - A post includes the safe author identity, current authorized text/link fields,

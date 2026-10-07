@@ -276,7 +276,7 @@ test("response pages and nested text have finite hard bounds; missing required v
         ...response,
         data: {
           ...response.data,
-          page: { items: Array(25).fill(examplePost), nextCursor: null }
+          page: { items: Array(31).fill(examplePost), nextCursor: null }
         }
       }),
     WireContractError
