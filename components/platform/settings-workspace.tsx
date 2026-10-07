@@ -23,6 +23,7 @@ import { SettingsHelp } from "./settings-help";
 import { SettingsChurch } from "./settings-church";
 import { SettingsMedia } from "./settings-media";
 import { SettingsCalendar } from "./settings-calendar";
+import { useReadVisibility } from "./read-visibility";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -37,6 +38,7 @@ export function SettingsWorkspace({
   setting?: string;
 }) {
   const originalOwner = useRef(sourceOwner).current;
+  const parentVisible = useReadVisibility();
   const retainedReading = folder === "display" && setting === "reading";
   const owner = retainedReading ? originalOwner : sourceOwner;
   const router = useRouter(),
@@ -62,6 +64,11 @@ export function SettingsWorkspace({
     pathname + (initialQuery ? "?q=" + encodeURIComponent(initialQuery) : "");
   const load = useCallback(async () => {
     const seq = ++generation.current;
+    if (!parentVisible) {
+      setHidden(true);
+      setBusy(false);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -118,7 +125,7 @@ export function SettingsWorkspace({
     } finally {
       if (seq === generation.current) setBusy(false);
     }
-  }, [owner, router, folder, preserveOriginalDraft]);
+  }, [owner, router, folder, preserveOriginalDraft, parentVisible]);
   useEffect(() => {
     if (positionOwner !== owner) {
       positions.clear();
@@ -313,9 +320,9 @@ export function SettingsWorkspace({
         )}
         {data && (
           <div
-            inert={hidden ? true : undefined}
-            aria-hidden={hidden ? true : undefined}
-            style={hidden ? { visibility: "hidden" } : undefined}
+            inert={hidden || !parentVisible ? true : undefined}
+            aria-hidden={hidden || !parentVisible ? true : undefined}
+            style={hidden || !parentVisible ? { visibility: "hidden" } : undefined}
           >
             <GoogleAccountOptions enabled={data.googleAvailable}>
               {!folder && (
