@@ -11,6 +11,8 @@ import {
   discoveryMode,
   DISCOVERY_RADII,
   DISCOVERY_TYPES,
+  DISCOVERY_RESOURCE_KINDS,
+  discoveryResourceLabels,
   discoveryLanguages,
   GUEST_DISCOVERY_COOKIE,
   guestDiscoveryPreferences,
@@ -491,6 +493,38 @@ function DiscoverySettingsForm({
             </option>
           ))}
         </select>
+        <fieldset aria-describedby={`${id}-resources-description`}>
+          <legend className="font-semibold">Posts sharing resources</legend>
+          <p
+            id={`${id}-resources-description`}
+            className="text-sm text-gc-muted"
+          >
+            These choices apply to all Home feeds. Turn off a kind to hide posts
+            sharing it, including posts sharing several kinds. Posts without
+            available resource cards stay in the feed. Each resource keeps its
+            existing access rules.
+          </p>
+          <div className="flex flex-wrap gap-x-4">
+            {DISCOVERY_RESOURCE_KINDS.map((kind) => (
+              <label key={kind} className="flex min-h-11 items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={prefs.filters.resources.includes(kind)}
+                  onChange={(e) =>
+                    filters({
+                      resources: e.target.checked
+                        ? [...prefs.filters.resources, kind]
+                        : prefs.filters.resources.filter(
+                            (item) => item !== kind
+                          )
+                    })
+                  }
+                />
+                {discoveryResourceLabels[kind]}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <details open={!!advanced} className="space-y-4">
           <summary className="min-h-11 cursor-pointer py-2 font-semibold">
             Discovery filters and interests
@@ -498,8 +532,8 @@ function DiscoverySettingsForm({
           <p className="text-sm text-gc-muted">
             These advanced filters apply to For You, Following, Your Church,
             Churches, Local, Public and Favorites. Latest, Friends, Top This
-            Week and Trending keep their existing ordering. Hidden words and
-            topics below apply to all Home feeds.
+            Week and Trending keep their existing ordering. Resource choices,
+            hidden words and hidden topics apply to all Home feeds.
           </p>
           <label className="block font-semibold" htmlFor={`${id}-church`}>
             Your selected approved church

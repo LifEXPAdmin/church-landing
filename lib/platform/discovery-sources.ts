@@ -2,6 +2,10 @@ import type { PostContext, PostTx } from "./post-access";
 import { repostSourceWhere } from "./repost-policy";
 import { discoveryHiddenWhere } from "./discovery-policy";
 import type { DiscoveryPreferences } from "./discovery-options";
+import {
+  discoveryResourceHiddenIds,
+  hasDiscoveryResourceExclusions
+} from "./discovery-resource-preferences";
 // Mirror the canonical reader's current original-source and between-author block
 // boundary before using any source classification or hidden-word signal.
 export async function discoverySources(
@@ -89,6 +93,25 @@ export async function discoverySources(
       continue;
     byEntry.set(entry.id, source);
     if (!allowedHidden.has(source.id)) hiddenEntries.add(entry.id);
+  }
+  if (hasDiscoveryResourceExclusions(prefs)) {
+    const resourceHidden = await discoveryResourceHiddenIds(
+      tx,
+      context,
+      [
+        ...entries.map((entry) => entry.id),
+        ...[...byEntry.values()].map((source) => source.id)
+      ],
+      prefs
+    );
+    for (const entry of entries) {
+      const source = byEntry.get(entry.id);
+      if (
+        resourceHidden.has(entry.id) ||
+        (source && resourceHidden.has(source.id))
+      )
+        hiddenEntries.add(entry.id);
+    }
   }
   return { byEntry, hiddenEntries };
 }

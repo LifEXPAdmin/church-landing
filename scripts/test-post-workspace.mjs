@@ -12,7 +12,7 @@ const clusterRoot = mkdtempSync(join(tmpdir(), "godschurches-security-"));
 const databaseDirectory = join(clusterRoot, "pg");
 writeFileSync(
   join(dir, "cluster.json"),
-  JSON.stringify({ databaseDirectory }),
+  JSON.stringify({ databaseDirectory, runnerPid: process.pid }),
   { mode: 0o600 }
 );
 const socket = createServer();
@@ -20,8 +20,7 @@ await new Promise((r) => socket.listen(0, "127.0.0.1", r));
 const port = socket.address().port;
 await new Promise((r) => socket.close(r));
 const database = `postgresql://fixture@127.0.0.1:${port}/godschurches_security_test`;
-const env = {
-  ...process.env,
+const fixtureEnv = {
   DATABASE_URL: database,
   DIRECT_URL: database,
   NODE_ENV: "test",
@@ -47,6 +46,8 @@ const env = {
   CHURCH_CLAIM_POLICY_VERSION: "manual-review-v1",
   SUPPORT_INTAKE_ENABLED: "false"
 };
+const env = { ...process.env, ...fixtureEnv };
+writeFileSync(join(dir, "test-env.json"), JSON.stringify(fixtureEnv), { mode: 0o600 });
 function run(cmd, args, extra = {}) {
   const r = spawnSync(cmd, args, { env, encoding: "utf8", ...extra });
   if (r.status !== 0) {
@@ -185,6 +186,7 @@ try {
     : process.argv.includes("--discovery")
       ? [
           "tests/discovery-options.test.ts",
+          "tests/discovery-resource-preferences.test.ts",
           "tests/discovery-feeds.test.ts",
           "tests/four-feeds.test.ts",
           "tests/post-workspace.test.ts",
@@ -316,6 +318,15 @@ try {
   console.log(
     "PASS: workspace dump/restore preserves drafts, tombstones, collections, saved items, retry receipts and constraints. Production writes: 0."
   );
+  if (process.argv.includes("--preview")) {
+    console.log(`Fictional database remains available for browser checks: ${dir}`);
+    await new Promise((resolve) => {
+      const alive = setInterval(() => {}, 60000);
+      const stop = () => { clearInterval(alive); resolve(); };
+      process.once("SIGINT", stop);
+      process.once("SIGTERM", stop);
+    });
+  }
 } finally {
   if (started)
     run(join(pg, "pg_ctl"), [

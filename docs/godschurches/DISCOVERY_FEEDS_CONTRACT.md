@@ -1,5 +1,13 @@
 # Discovery feeds and private preferences
 
+## Resource preferences, 7 October 2026
+
+Independent listing, event, media and opportunity choices extend the existing
+private and guest preference owner across Home feeds. See
+[resource feed preferences](RESOURCE_FEED_PREFERENCES.md) for current filtering,
+backward compatibility and acceptance. The original discovery ordering contract
+below remains in force.
+
 Implementation contract · September 15, 2026 UTC · verified in 2026.09.15.1.
 
 This extends the existing bounded Home/My feed reader. Latest, Friends, Top This

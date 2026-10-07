@@ -9,6 +9,7 @@ import { readDiscoveryFeedIn } from "./discovery-feed";
 import { storedDiscoveryPreferences } from "./discovery-preferences";
 import { discoveryHiddenWhere } from "./discovery-policy";
 import { discoverySources } from "./discovery-sources";
+import { hasDiscoveryResourceExclusions } from "./discovery-resource-preferences";
 import { gzipSync, gunzipSync } from "node:zlib";
 import { expireFeedSnapshots } from "./feed-snapshot-retention";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
@@ -197,10 +198,19 @@ export async function legacyVisibleIds(
   prefs: DiscoveryPreferences,
   now: Date
 ) {
-  if ((!prefs.hiddenWords.length && !prefs.hiddenTopics.length) || !ids.length)
+  const resourceExclusions = hasDiscoveryResourceExclusions(prefs);
+  if (
+    (!prefs.hiddenWords.length &&
+      !prefs.hiddenTopics.length &&
+      !resourceExclusions) ||
+    !ids.length
+  )
     return ids;
   const entries = await tx.platformPost.findMany({
-    where: { id: { in: ids }, repostSourceId: { not: null } },
+    where: {
+      id: { in: ids },
+      ...(resourceExclusions ? {} : { repostSourceId: { not: null } })
+    },
     select: { id: true, authorId: true, repostSourceId: true }
   });
   const sources = await discoverySources(tx, context, entries, now, prefs);
@@ -210,7 +220,10 @@ export function legacyFeedFilterKey(
   ownerId: string | null,
   prefs: DiscoveryPreferences
 ) {
-  return !prefs.hiddenWords.length && !prefs.hiddenTopics.length
+  const resourceExclusions = hasDiscoveryResourceExclusions(prefs);
+  return !prefs.hiddenWords.length &&
+    !prefs.hiddenTopics.length &&
+    !resourceExclusions
     ? ""
     : createHmac("sha256", accountConfig().rateSecret)
         .update(
@@ -218,7 +231,8 @@ export function legacyFeedFilterKey(
             "hidden-feed-v1",
             ownerId,
             prefs.hiddenWords,
-            prefs.hiddenTopics
+            prefs.hiddenTopics,
+            ...(resourceExclusions ? [prefs.filters.resources] : [])
           ])
         )
         .digest("hex");
@@ -485,7 +499,9 @@ export function readFeed(
           beforeId = cursor.id,
           scanned = 0;
         const batch =
-          prefs.hiddenWords.length || prefs.hiddenTopics.length
+          prefs.hiddenWords.length ||
+          prefs.hiddenTopics.length ||
+          hasDiscoveryResourceExclusions(prefs)
             ? 120
             : PAGE + 1;
         while (rows.length <= PAGE) {

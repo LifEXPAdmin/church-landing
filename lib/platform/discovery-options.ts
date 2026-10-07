@@ -2,6 +2,7 @@ import countries from "../../data/discovery/countries.json" with { type: "json" 
 import languages from "../../data/discovery/languages.json" with { type: "json" };
 import { POST_TOPICS } from "./post-options";
 import { PortalError } from "./portal-policy";
+import type { PostResourceKind } from "./post-resource-input";
 
 export { countries as discoveryCountries, languages as discoveryLanguages };
 export const discoveryLanguageLabel = (id: string) =>
@@ -33,6 +34,18 @@ export const DISCOVERY_TYPES = [
   "NEED",
   "EVENT"
 ] as const;
+export const DISCOVERY_RESOURCE_KINDS = [
+  "exchangeListing",
+  "eventOccurrence",
+  "mediaCatalogItem",
+  "volunteerOpportunity"
+] as const satisfies readonly PostResourceKind[];
+export const discoveryResourceLabels: Record<PostResourceKind, string> = {
+  exchangeListing: "Listings",
+  eventOccurrence: "Events",
+  mediaCatalogItem: "Media",
+  volunteerOpportunity: "Opportunities"
+};
 export const DISCOVERY_DENOMINATIONS = [
   "Anglican",
   "Baptist",
@@ -62,6 +75,7 @@ export type DiscoveryFilters = {
   includeUnknownLanguage: boolean;
   topics: string[];
   types: (typeof DISCOVERY_TYPES)[number][];
+  resources: PostResourceKind[];
 };
 export type DiscoveryPreferences = {
   filters: DiscoveryFilters;
@@ -89,7 +103,8 @@ export function defaultDiscoveryFilters(): DiscoveryFilters {
     languages: [],
     includeUnknownLanguage: true,
     topics: [],
-    types: []
+    types: [],
+    resources: [...DISCOVERY_RESOURCE_KINDS].sort()
   };
 }
 export function defaultDiscoveryPreferences(): DiscoveryPreferences {
@@ -237,7 +252,18 @@ export function parseDiscoveryFilters(value: unknown): DiscoveryFilters {
     topics: list(p.topics, 10, topic),
     types: list(p.types, DISCOVERY_TYPES.length, (item) =>
       choice(item, DISCOVERY_TYPES, "UPDATE")
-    ) as DiscoveryFilters["types"]
+    ) as DiscoveryFilters["types"],
+    resources:
+      p.resources === undefined
+        ? base.resources
+        : (list(p.resources, DISCOVERY_RESOURCE_KINDS.length, (item) => {
+            if (
+              typeof item !== "string" ||
+              !DISCOVERY_RESOURCE_KINDS.includes(item as PostResourceKind)
+            )
+              problem("Choose an available resource kind.");
+            return item as PostResourceKind;
+          }) as PostResourceKind[])
   };
   if (result.placeId && !result.country)
     problem("Choose the country for this town or area.");
