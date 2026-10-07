@@ -204,7 +204,7 @@ const setBrowserHide = async (hide) => {
   if (await save.isEnabled()) await save.click();
   await waitFor(
     async () =>
-      (await page.locator(`[data-hide-reaction-counts="${hide}"]`).count()) ===
+      (await page.locator(`div[data-hide-reaction-counts="${hide}"]`).count()) ===
       1
   );
 };
@@ -228,7 +228,7 @@ try {
   });
   await local.check();
   assert.equal(
-    await page.locator('[data-hide-reaction-counts="false"]').count(),
+    await page.locator('div[data-hide-reaction-counts="false"]').count(),
     1
   );
   await page
@@ -252,7 +252,7 @@ try {
     await go(path);
     await waitFor(
       async () =>
-        (await page.locator('[data-hide-reaction-counts="true"]').count()) === 1
+        (await page.locator('div[data-hide-reaction-counts="true"]').count()) === 1
     );
     assert.equal(await totalCount(), 0, path);
   }
