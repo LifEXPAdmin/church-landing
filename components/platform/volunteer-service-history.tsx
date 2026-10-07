@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -41,6 +41,13 @@ function useServiceAction(
   const original = useRef({ owner, target: record.target }).current;
   const held = useRef<PreparedRequest<ServiceReceipt> | null>(null),
     flight = useRef(false);
+  const mounted = useRef(false);
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const [pending, setPending] = useState<string | null>(null),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -72,6 +79,7 @@ function useServiceAction(
     async (body: string) => {
       const generation = access();
       if (flight.current || generation === null) return;
+      const address = location.pathname + location.search;
       const input = JSON.parse(body) as {
         targetId: string;
         expectedVersion: number;
@@ -123,8 +131,15 @@ function useServiceAction(
           latest.current.clearReason();
         });
         await settlePhotoNavigation();
-        if (access() === generation) router.refresh();
-        else latest.current.scope?.refresh();
+        // Clearing confirmed work can adopt a retained pre-save frame and
+        // advance its access generation. The receipt was checked above; this
+        // read refresh must still fetch the saved controls. The pinned scope
+        // continues to conceal background or replacement-account responses.
+        if (
+          mounted.current &&
+          location.pathname + location.search === address
+        )
+          router.refresh();
       } catch {
         setMessage(
           "This save could not be confirmed. Keep the original request and confirm it before another change. If access or the record changed, review current details before discarding local entries."
