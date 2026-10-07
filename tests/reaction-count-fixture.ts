@@ -34,6 +34,7 @@ export async function seedReactionCounts(db: PrismaClient) {
     data: {
       authorId: a.id,
       authorChurchId: church.id,
+      audienceChurchId: church.id,
       content: "Fictional church voice source",
       publishedAt: new Date(Date.now() - 1000)
     }

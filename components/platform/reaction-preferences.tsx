@@ -72,7 +72,7 @@ export function ReactionPreferences({
           body &&
           (data.id !== owner ||
             !Number.isSafeInteger(data.version) ||
-            data.version < 1)
+            data.version !== JSON.parse(body).expectedVersion + 1)
         )
           throw new Error(
             "The saved request could not be confirmed. Keep the original change and retry it."
