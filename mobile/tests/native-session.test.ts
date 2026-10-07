@@ -13,7 +13,7 @@ const ticket = { isCurrent: () => true };
 const origin = "https://fictional.example.invalid";
 const scope = "staging|" + origin;
 const body = (value: unknown, status = 200): NativeWireResponse => ({
-  status, body: JSON.stringify(value), contentType: "application/json", cacheControl: "private, no-store", retryAfter: null
+  status, apiVersion: "1", body: JSON.stringify(value), contentType: "application/json", cacheControl: "private, no-store", retryAfter: null
 });
 const rejected = (code = "unauthenticated", status = 401) => body({ apiVersion: "1", error: { code, message: "A fictional failure.", retryAfterSeconds: null } }, status);
 function deferred() {

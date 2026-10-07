@@ -1,0 +1,7 @@
+{
+  "name": "@godschurches/native-json",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Bounded native JSON transport for the shared development app",
+  "license": "UNLICENSED"
+}

@@ -12,7 +12,7 @@ const owner = apiResponseExamples.feed.viewerId;
 const query = { mode: "latest", cursor: null, scope: null } as const;
 const token = "a".repeat(43);
 const response = (value: unknown): NativeWireResponse => ({
-  status: 200, contentType: "application/json", cacheControl: "private, no-store", retryAfter: null, body: JSON.stringify(value)
+  status: 200, apiVersion: "1", contentType: "application/json", cacheControl: "private, no-store", retryAfter: null, body: JSON.stringify(value)
 });
 function harness() {
   const state = {
@@ -41,6 +41,7 @@ test("typed core read sends only the captured bearer to a fixed HTTPS origin", a
   assert.equal(request.headers.Authorization, "Bearer " + token);
   assert.equal(request.headers["X-Expected-Account"], owner);
   assert.equal(request.headers["Cache-Control"], "no-store");
+  assert.equal(request.headers["X-API-Version"], "1");
   for (const name of ["Cookie", "Origin", "Sec-Fetch-Site"]) assert.equal(request.headers[name], undefined);
   assert.equal(request.body, undefined);
   assert.equal(request.maximumResponseBytes, 2 * 1024 * 1024);
@@ -110,7 +111,7 @@ test("late same-account replacement cannot return a feed or expose a failure", a
 
 test("non-JSON, redirects, cacheable, oversized and malformed replies are not exposed", async () => {
   for (const changed of [
-    { contentType: "text/html" }, { status: 302 }, { cacheControl: "private, max-age=30" },
+    { contentType: "text/html" }, { apiVersion: null }, { apiVersion: "2" }, { status: 302 }, { cacheControl: "private, max-age=30" },
     { body: " ".repeat(API_MAX_RESPONSE_BYTES + 1) }, { body: "€".repeat(Math.floor(API_MAX_RESPONSE_BYTES / 3) + 1) },
     { body: "{" }, { body: JSON.stringify({ ...apiResponseExamples.feed, viewerId: "other" }) }
   ]) {

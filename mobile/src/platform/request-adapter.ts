@@ -1,5 +1,5 @@
 import {
-  API_MAX_REQUEST_BYTES, API_MAX_RESPONSE_BYTES, apiFailure, apiId,
+  API_VERSION, API_MAX_REQUEST_BYTES, API_MAX_RESPONSE_BYTES, apiFailure, apiId,
   type RequestAdapter, type RequestCancellation, type RequestData, type RequestIdentity
 } from "@godschurches/shared-core";
 import type { Credential } from "../session/credential-vault.ts";
@@ -18,6 +18,7 @@ export type NativeWireRequest = Readonly<{
 }>;
 export type NativeWireResponse = Readonly<{
   status: number;
+  apiVersion: string | null;
   contentType: string | null;
   cacheControl: string | null;
   retryAfter: string | null;
@@ -26,7 +27,9 @@ export type NativeWireResponse = Readonly<{
 /**
  * Implement in the native bridge, not stock Expo fetch. The port must enforce
  * the byte cap BEFORE buffering/bridging, strict UTF-8, a native deadline, no
- * redirects/retries/cache/cookies/ambient HTTP credentials, and bounded flights.
+ * redirects/cache/cookies/ambient HTTP credentials, and bounded flights. Writes
+ * must not replay and the app adds no retry loop. URLSession can internally
+ * retry idempotent reads; see NATIVE_TRANSPORT.md and its acceptance limits.
  * Abort must cancel the actual native task. Tests may inject a fictional port;
  * that is not native transport acceptance.
  */
@@ -109,7 +112,7 @@ export function createNativeRequestAdapter(
           if (body !== undefined && (body.length > API_MAX_REQUEST_BYTES || new TextEncoder().encode(body).byteLength > API_MAX_REQUEST_BYTES)) throw fail();
           if (body !== undefined && url.pathname.startsWith("/api/platform/v1/session/") && new TextEncoder().encode(body).byteLength > 128) throw fail();
           if (inFlight >= 4) throw fail();
-          const headers: Record<string, string> = { Accept: "application/json", "Cache-Control": "no-store", Pragma: "no-cache" };
+          const headers: Record<string, string> = { Accept: "application/json", "Cache-Control": "no-store", Pragma: "no-cache", "X-API-Version": API_VERSION };
           if (body !== undefined) headers["Content-Type"] = "application/json";
           if (captured.credential) {
             headers.Authorization = "Bearer " + captured.credential.token;
@@ -128,7 +131,7 @@ export function createNativeRequestAdapter(
               timeoutMs: 15000, signal: controller.signal
             }));
             if (controller.signal.aborted || cancellation?.cancelled || !current(source, captured)) throw fail();
-            if (!Number.isInteger(response.status) || response.status < 200 || response.status > 599 ||
+            if (response.apiVersion !== API_VERSION || !Number.isInteger(response.status) || response.status < 200 || response.status > 599 ||
               response.status >= 300 && response.status < 400 ||
               typeof response.contentType !== "string" || response.contentType.length > 128 ||
               !/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(response.contentType) ||
