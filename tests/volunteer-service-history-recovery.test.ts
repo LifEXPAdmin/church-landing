@@ -614,7 +614,7 @@ test("reconfirmation after service replay cannot re-expose restored completion o
   );
 });
 
-async function linkedNeedService() {
+async function linkedNeedService(legacy = false) {
   const f = await seedVolunteerApplications(db, true, 3);
   for (const [userId, capability] of [
     [f.ada.id, "MANAGE_EXCHANGE_LISTINGS"],
@@ -765,6 +765,18 @@ async function linkedNeedService() {
       text: unrelated
     })
   );
+  if (legacy) {
+    // Before service history, the participation audit used action.toUpperCase()
+    // on hyphenated command names. Keep that actual historical representation.
+    for (const [current, prior] of [
+      ["VOLUNTEER_COMPLETED", "VOLUNTEER-COMPLETED"],
+      ["VOLUNTEER_COMPLETION_CORRECTED", "VOLUNTEER-COMPLETION-CORRECTED"]
+    ])
+      await db.exchangeNeedEvent.updateMany({
+        where: { needId: need.id, action: current },
+        data: { action: prior }
+      });
+  }
   const events = await db.exchangeNeedEvent.findMany({
     where: { needId: need.id },
     orderBy: { version: "asc" }
@@ -795,117 +807,119 @@ async function linkedNeedService() {
   };
 }
 
-test("linked Need completion notes are scrubbed during service replay without touching unrelated Need history", async () => {
-  const f = await linkedNeedService();
-  // The public Need update DTO already excludes completion-event actions. This
-  // assertion concerns retained private text, not a claimed public-feed leak.
-  const detail = await readExchangeNeeds(db, f.val.token, {
-    view: "need",
-    listingId: f.listing.id
-  });
-  assert.ok("need" in detail && detail.need);
-  assert.ok(
-    !f.completionNotes.some((note) => JSON.stringify(detail).includes(note))
-  );
-  const source = await db.postVolunteerSignup.findUniqueOrThrow({
-    where: { id: f.subject.id }
-  });
-  const control = await db.retentionControl.findFirstOrThrow({
-    where: { kind: "VOLUNTEER_SERVICE_SIGNUP", sourceId: source.id },
-    orderBy: { version: "desc" }
-  });
-  const protectedEntry = {
-    ...(control.payload as unknown as RetentionControlEntry),
-    id: randomUUID(),
-    version: source.serviceVersion + 2
-  };
-  await replayRetentionControls(db, [protectedEntry]);
-  const restored = await db.postVolunteerSignup.findUniqueOrThrow({
-    where: { id: source.id }
-  });
-  assert.equal(
-    restored.completedAt?.toISOString(),
-    source.completedAt?.toISOString()
-  );
-  assert.equal(restored.state, source.state);
-  assert.equal(restored.serviceRecoveryRequired, true);
-  const retained = await db.exchangeNeedEvent.findMany({
-    where: { id: { in: f.privateEvents.map((entry) => entry.id) } },
-    orderBy: { version: "asc" }
-  });
-  const unaffected = await db.exchangeNeedEvent.findMany({
-    where: { id: { in: f.unaffected.map((entry) => entry.id) } },
-    orderBy: { version: "asc" }
-  });
-  assert.deepEqual(unaffected, f.unaffected);
-  assert.deepEqual(
-    retained.map((entry) => entry.text),
-    ["", "", ""],
-    "Quarantine must scrub copied service notes, not merely the canonical signup field"
-  );
-  const freshNote = "Fictional new linked confirmation survives older replay";
-  await volunteerCommand(
-    db,
-    f.ada.token,
-    action("complete", {
-      targetKind: "signup",
-      targetId: source.id,
-      expectedVersion: restored.version,
-      completed: true,
-      reason: freshNote
-    })
-  );
-  const newlyConfirmed = await db.postVolunteerSignup.findUniqueOrThrow({
-    where: { id: source.id }
-  });
-  await replayRetentionControls(db, [protectedEntry]);
-  assert.deepEqual(
-    await db.postVolunteerSignup.findUniqueOrThrow({
+for (const legacy of [false, true])
+  test(`linked Need completion notes are scrubbed during service replay without touching unrelated Need history${legacy ? " (legacy hyphen actions)" : ""}`, async () => {
+    const f = await linkedNeedService(legacy);
+    // The public Need update DTO already excludes completion-event actions. This
+    // assertion concerns retained private text, not a claimed public-feed leak.
+    const detail = await readExchangeNeeds(db, f.val.token, {
+      view: "need",
+      listingId: f.listing.id
+    });
+    assert.ok("need" in detail && detail.need);
+    assert.ok(
+      !f.completionNotes.some((note) => JSON.stringify(detail).includes(note))
+    );
+    const source = await db.postVolunteerSignup.findUniqueOrThrow({
+      where: { id: f.subject.id }
+    });
+    const control = await db.retentionControl.findFirstOrThrow({
+      where: { kind: "VOLUNTEER_SERVICE_SIGNUP", sourceId: source.id },
+      orderBy: { version: "desc" }
+    });
+    const protectedEntry = {
+      ...(control.payload as unknown as RetentionControlEntry),
+      id: randomUUID(),
+      version: source.serviceVersion + 2
+    };
+    await replayRetentionControls(db, [protectedEntry]);
+    const restored = await db.postVolunteerSignup.findUniqueOrThrow({
       where: { id: source.id }
-    }),
-    newlyConfirmed
-  );
-  assert.equal(
-    await db.exchangeNeedEvent.count({
-      where: { targetId: source.id, text: freshNote }
-    }),
-    1
-  );
-});
+    });
+    assert.equal(
+      restored.completedAt?.toISOString(),
+      source.completedAt?.toISOString()
+    );
+    assert.equal(restored.state, source.state);
+    assert.equal(restored.serviceRecoveryRequired, true);
+    const retained = await db.exchangeNeedEvent.findMany({
+      where: { id: { in: f.privateEvents.map((entry) => entry.id) } },
+      orderBy: { version: "asc" }
+    });
+    const unaffected = await db.exchangeNeedEvent.findMany({
+      where: { id: { in: f.unaffected.map((entry) => entry.id) } },
+      orderBy: { version: "asc" }
+    });
+    assert.deepEqual(unaffected, f.unaffected);
+    assert.deepEqual(
+      retained.map((entry) => entry.text),
+      ["", "", ""],
+      "Quarantine must scrub copied service notes, not merely the canonical signup field"
+    );
+    const freshNote = "Fictional new linked confirmation survives older replay";
+    await volunteerCommand(
+      db,
+      f.ada.token,
+      action("complete", {
+        targetKind: "signup",
+        targetId: source.id,
+        expectedVersion: restored.version,
+        completed: true,
+        reason: freshNote
+      })
+    );
+    const newlyConfirmed = await db.postVolunteerSignup.findUniqueOrThrow({
+      where: { id: source.id }
+    });
+    await replayRetentionControls(db, [protectedEntry]);
+    assert.deepEqual(
+      await db.postVolunteerSignup.findUniqueOrThrow({
+        where: { id: source.id }
+      }),
+      newlyConfirmed
+    );
+    assert.equal(
+      await db.exchangeNeedEvent.count({
+        where: { targetId: source.id, text: freshNote }
+      }),
+      1
+    );
+  });
 
-test("account erasure scrubs organizer-authored linked service notes and preserves unrelated Need events", async () => {
-  const f = await linkedNeedService();
-  const journal = { async recordAccount() {}, async completeAccount() {} };
-  await requestPermanentAccountDeletion(
-    db,
-    f.lee.token,
-    f.lee.password,
-    true,
-    createSessionToken(),
-    journal
-  );
-  const deletion = await db.accountDeletion.findUniqueOrThrow({
-    where: { userId: f.lee.id }
+for (const legacy of [false, true])
+  test(`account erasure scrubs organizer-authored linked service notes and preserves unrelated Need events${legacy ? " (legacy hyphen actions)" : ""}`, async () => {
+    const f = await linkedNeedService(legacy);
+    const journal = { async recordAccount() {}, async completeAccount() {} };
+    await requestPermanentAccountDeletion(
+      db,
+      f.lee.token,
+      f.lee.password,
+      true,
+      createSessionToken(),
+      journal
+    );
+    const deletion = await db.accountDeletion.findUniqueOrThrow({
+      where: { userId: f.lee.id }
+    });
+    await eraseRequestedAccountData(db, deletion.id, journal);
+    const receipt = await db.postVolunteerSignup.findUniqueOrThrow({
+      where: { id: f.subject.id }
+    });
+    assert.ok(receipt.completedAt);
+    assert.equal(receipt.serviceRecoveryRequired, true);
+    assert.equal(receipt.completionNote, "");
+    const retained = await db.exchangeNeedEvent.findMany({
+      where: { id: { in: f.privateEvents.map((entry) => entry.id) } },
+      orderBy: { version: "asc" }
+    });
+    const unaffected = await db.exchangeNeedEvent.findMany({
+      where: { id: { in: f.unaffected.map((entry) => entry.id) } },
+      orderBy: { version: "asc" }
+    });
+    assert.deepEqual(unaffected, f.unaffected);
+    assert.deepEqual(
+      retained.map((entry) => entry.text),
+      ["", "", ""],
+      "Deleting the volunteer must clear service notes even when their actor is the organizer"
+    );
   });
-  await eraseRequestedAccountData(db, deletion.id, journal);
-  const receipt = await db.postVolunteerSignup.findUniqueOrThrow({
-    where: { id: f.subject.id }
-  });
-  assert.ok(receipt.completedAt);
-  assert.equal(receipt.serviceRecoveryRequired, true);
-  assert.equal(receipt.completionNote, "");
-  const retained = await db.exchangeNeedEvent.findMany({
-    where: { id: { in: f.privateEvents.map((entry) => entry.id) } },
-    orderBy: { version: "asc" }
-  });
-  const unaffected = await db.exchangeNeedEvent.findMany({
-    where: { id: { in: f.unaffected.map((entry) => entry.id) } },
-    orderBy: { version: "asc" }
-  });
-  assert.deepEqual(unaffected, f.unaffected);
-  assert.deepEqual(
-    retained.map((entry) => entry.text),
-    ["", "", ""],
-    "Deleting the volunteer must clear service notes even when their actor is the organizer"
-  );
-});
