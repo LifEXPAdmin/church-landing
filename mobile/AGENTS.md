@@ -29,6 +29,10 @@ shared work, or accept an explicit handoff, using that original task and exclusi
 scope. Consume committed, verified receipts; do not copy server policy, invent a
 second account system or implement a parallel typed transport.
 
+Follow the [shared-core feature recipe](../docs/godschurches/SHARED_CORE.md#add-a-feature-through-the-existing-boundaries)
+for the service, contract, adapter, UI and verification sequence. Its first-journey
+source map identifies existing owners; it does not replace native device proof.
+
 Keep pure state separate from UI, semantic design tokens separate from layouts,
 and storage/link/lifecycle adapters separate from domain contracts. Do not import
 Next, Prisma, server-only modules or browser globals into native runtime code.

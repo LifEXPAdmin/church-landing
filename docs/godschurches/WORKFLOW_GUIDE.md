@@ -168,6 +168,12 @@ invent permissions, counts, policy or a replacement backend. Preserve stable
 IDs, existing role/privilege boundaries and version/retry behavior. Defer future
 UI, tables, workers and dependencies until their owning task is authorized.
 
+For a feature shared with the native apps, follow the
+[shared-core feature recipe](SHARED_CORE.md#add-a-feature-through-the-existing-boundaries).
+It maps service/policy, contracts, adapters, UI and verification to their existing
+owners. Consume exact canonical receipts and keep native device proof separate
+from source preparation and JavaScript exports.
+
 Resolve required technical contracts and regressions within the active authorized
 feature. If an actual external prerequisite blocks completion, record the exact
 missing evidence and continue independent work. Clear a dependency only after its
@@ -414,6 +420,11 @@ test evidence in their appropriate private systems. The exact page titles above
 allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
+
+- **Documentation addendum, 7 October 2026 UTC:** Linked the shared-core feature
+  recipe and its separate native acceptance boundaries. The workflow version
+  and pending release-evidence revision remain unchanged. This is implementation
+  guidance, not new release permission or proof that the native journey passed.
 
 - **5.1, 26 September 2026 UTC:** Adopted local task completion and named release
   batches, deliberate publication, suppressed intermediate Git deployments,
