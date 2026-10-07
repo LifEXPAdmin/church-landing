@@ -9,6 +9,7 @@ const person = {
 export const examplePost: ApiPost = {
   id: "fictional-post",
   type: "PRAYER",
+  audience: "PUBLIC",
   author: { kind: "person", identity: person },
   body: {
     text: "Please pray for our community.",
@@ -42,12 +43,12 @@ const church = {
   website: null,
   representativeVerified: false
 };
-const member = <T>(data: T) => ({
+const member = <T,>(data: T) => ({
   apiVersion: "1" as const,
   viewerId: person.id,
   data
 });
-const guest = <T>(data: T) => ({
+const guest = <T,>(data: T) => ({
   apiVersion: "1" as const,
   viewerId: null,
   data
@@ -88,6 +89,8 @@ export const apiResponseExamples = {
     serviceTimes: "",
     accessibilityInfo: "",
     connectionsAvailable: false,
+    pinnedPosts: [],
+    requiresWeb: true,
     posts: { items: [], nextCursor: null }
   }),
   like: member({ id: examplePost.id, liked: true, version: 2, count: null }),
