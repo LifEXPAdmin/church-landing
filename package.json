@@ -20,7 +20,9 @@
     "test:support": "node scripts/test-account-security.mjs --support",
     "preview:support": "node scripts/test-account-security.mjs --support --preview",
     "test:social-foundations": "node scripts/test-post-workspace.mjs --social",
-    "test:post-workspace": "node scripts/test-post-workspace.mjs"
+    "test:post-workspace": "node scripts/test-post-workspace.mjs",
+    "check:types": "tsc --noEmit --incremental false",
+    "check:release-evidence": "node scripts/verify-release-evidence.mjs"
   },
   "dependencies": {
     "@js-temporal/polyfill": "0.5.1",

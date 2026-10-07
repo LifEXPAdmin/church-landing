@@ -1,3 +1,52 @@
+## Prepared CI safeguards integrated locally, 7 October 2026 UTC
+
+The continuation incorporates the previously prepared CI and receipt sources
+from `c92d7d4`, `8ab33a1` and `a746cfa`. Application dependencies retain the
+separately verified compatible repairs described in
+[dependency remediation](DEPENDENCY_REMEDIATION.md).
+
+The workflow runs every standalone `tests/*.test.mjs` guard, authored copy,
+explicit Prisma client generation and whole-project types without incremental
+output. Install still disables dependency lifecycle scripts. Independent
+checks have explicit prerequisite/status conditions so an advisory failure
+does not hide signature, lint or secret-scan evidence. Each failed check still
+fails the job. Cancellation and failed prerequisites prevent dependent work.
+No provider credentials, production database, deploy step or audit exception is
+added.
+
+The history scanner rejects any root `.gitleaksignore` path, including an empty
+file, directory or symlink, before invoking the scanner. This preserves the
+existing explicit empty ignore file and fully redacted output because Gitleaks
+can also load an implicit ignore path from its target checkout. Actions and the
+scanner archive remain pinned. Hosted execution remains a separate gate.
+
+### Candidate release evidence
+
+From the clean product candidate checkout, run:
+
+```sh
+npm run check:release-evidence -- --candidate <full-commit-sha> --receipt <private-json-path>
+```
+
+The private JSON uses `schema: 1`, `sourceSha` equal to the candidate HEAD, and
+exactly one check for each of `static`, `services`, `https`, `build` and `browser`.
+Each check names the same `sourceSha`, `status: "passed"`, `exitCode: 0`, actual
+nonempty `command`, ordered UTC `startedAt`/`finishedAt`, and one or more
+`artifacts` with relative `path` and SHA256. Timestamps cannot be in the future.
+Service, HTTPS and browser checks also require `environment: "isolated-fictional"`,
+a positive integer `passed` and `failed: 0`. The build check includes `buildId`.
+Logs must be nonempty regular files resolving inside the receipt directory;
+their hashes must match. The validator checks checkout cleanliness again after
+reading the artifacts. Rejected receipts produce only stable error codes.
+
+This checks receipt consistency, not whether the reported commands ran or
+whether their scope is sufficient. It grants no release ownership and does not
+replace CI, migration/recovery or live acceptance. Retain actual logs and
+review them. Never manufacture a complete receipt from partial checks. The
+compatible dependency slice remains a partial handoff, with the full advisory
+gate explicitly failing. Documentation and CI-only changes need no product
+deployment or invented application receipt.
+
 ## Current hosting-plan correction, 26 September 2026 UTC
 
 Authenticated provider inspection confirms active Vercel Pro. The older Hobby
