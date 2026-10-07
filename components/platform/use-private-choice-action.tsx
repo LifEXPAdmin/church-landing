@@ -3,7 +3,8 @@ import { flushSync } from "react-dom";
 import { settlePhotoNavigation } from "./use-photo-back-guard";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
+import { prepareSocialRequest, SocialClientError } from "@/lib/platform/social-client";
+import type { PreparedRequest } from "@/packages/shared-core/src/request-client";
 import { usePrivateRecovery } from "./private-snapshot-guard";
 import { useReadVisibility } from "./read-visibility";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
@@ -32,8 +33,9 @@ export function usePrivateChoiceAction(
     [message, setMessage] = useState(""),
     [saved, setSaved] = useState(false);
   const [confirmation, setConfirmation] = useState<ChoiceReceipt | null>(null);
-  const latest = useRef({ privacy, onSaved });
-  latest.current = { privacy, onSaved };
+  const latest = useRef({ privacy, onSaved, owner, endpoint });
+  latest.current = { privacy, onSaved, owner, endpoint };
+  const original = useRef<PreparedRequest<ChoiceReceipt> | null>(null);
   const flight = useRef(false);
   useEffect(() => {
     if (confirmation && privacy?.currentAccess) setSaved(true);
@@ -70,11 +72,23 @@ export function usePrivateChoiceAction(
       setPending(body);
       setMessage("Saving your private choice…");
       try {
-        const { data } = await socialRequest<{
-          id: string;
-          version: number;
-          message: string;
-        }>(endpoint, body, owner);
+        original.current ??= prepareSocialRequest<ChoiceReceipt>(endpoint, body, owner, "POST", {
+          idempotent: true,
+          decode(value) {
+            if (!value || typeof value !== "object" || Array.isArray(value)) throw Error();
+            const row = value as Record<string, unknown>;
+            if (typeof row.id !== "string" || !Number.isInteger(row.version) || typeof row.message !== "string") throw Error();
+            return { id: row.id, version: row.version as number, message: row.message };
+          }
+        });
+        const request = original.current;
+        const sameTarget = () => request.request.path === latest.current.endpoint &&
+          request.request.expectedOwner === latest.current.owner;
+        if (!sameTarget()) throw new SocialClientError(503,
+          "Return to the original account and choice before confirming this save.");
+        const { data } = await request.run();
+        if (!sameTarget()) throw new SocialClientError(503,
+          "Return to the original account and choice before confirming this save.");
         if (
           typeof data.id !== "string" ||
           !Number.isInteger(data.version) ||
@@ -86,6 +100,7 @@ export function usePrivateChoiceAction(
             "The response could not be confirmed. Confirm the original save before another change."
           );
         flushSync(() => {
+          original.current = null;
           setPending(null);
           setBusy(false);
           setConflict(false);
@@ -101,12 +116,14 @@ export function usePrivateChoiceAction(
       } catch (error) {
         if (
           error instanceof SocialClientError &&
+          error.responseError &&
           !error.needsAuthenticator &&
           (latest.current.privacy
             ? [400, 409]
             : [400, 403, 404, 409, 429]
           ).includes(error.status)
         ) {
+          original.current = null;
           setPending(null);
           setConflict([403, 404, 409].includes(error.status));
         }
