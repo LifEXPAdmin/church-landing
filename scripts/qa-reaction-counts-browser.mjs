@@ -495,6 +495,22 @@ try {
   await refresh();
   assert.equal(new URL(page.url()).pathname, settingPath);
   assert.equal(await authorControl.isVisible(), false);
+  const openedSignIn = context.waitForEvent("page");
+  await page
+    .getByRole("link", {
+      name: "Sign in in another tab to recover settings",
+      exact: true
+    })
+    .click();
+  const signInPage = await openedSignIn;
+  await signInPage.waitForURL("**/platform/login?*");
+  await signInPage.waitForLoadState("domcontentloaded");
+  assert.equal(new URL(page.url()).pathname, settingPath);
+  await signInPage.close();
+  await page.bringToFront();
+  ok(
+    "Guest recovery opens sign-in in another tab without discarding the original unsaved settings"
+  );
   await cookieOwner(f.a);
   await page
     .getByRole("button", {

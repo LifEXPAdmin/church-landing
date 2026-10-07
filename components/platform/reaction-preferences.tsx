@@ -148,8 +148,10 @@ function OriginalReactionFrame({
           <a
             className="gc-button gc-button-quiet"
             href="/platform/login?next=%2Fplatform%2Fsettings%2Fdisplay%2Freading"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            Sign in to recover settings
+            Sign in in another tab to recover settings
           </a>
           <button
             type="button"
