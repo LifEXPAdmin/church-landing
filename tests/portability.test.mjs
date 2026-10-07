@@ -9,7 +9,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const scratch = process.env.GC_SHARED_CORE_TMP;
 assert.ok(scratch && isAbsolute(scratch), "Set GC_SHARED_CORE_TMP to existing task-owned generated storage");
 const scratchRoot = realpathSync(scratch);
-const wireFile = "lib/platform/api-contracts.ts";
+const wireFile = "packages/shared-core/src/api-contracts.ts";
+const webForwards = ["lib/platform/api-contracts.ts", "lib/platform/native-auth-contracts.ts"];
 const sourceFile = "packages/shared-core/src/boundary-probe.ts";
 
 // Each mutation runs in its own small generated copy. Never mutate a checkout,
@@ -17,7 +18,7 @@ const sourceFile = "packages/shared-core/src/boundary-probe.ts";
 function fixture(t) {
   const directory = mkdtempSync(join(scratchRoot, "portability-check-"));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
-  for (const file of ["packages/shared-core", wireFile, "tests/fixtures"]) {
+  for (const file of ["packages/shared-core", ...webForwards, "tests/fixtures"]) {
     mkdirSync(dirname(join(directory, file)), { recursive: true });
     cpSync(join(root, file), join(directory, file), { recursive: true });
   }
@@ -41,11 +42,33 @@ async function rejected(directory, code) {
   return result;
 }
 
-test("reviewed package and all frozen v1 requests pass", async () => {
+test("reviewed package and explicitly named initial native v1 baseline pass", async () => {
   const result = await checkPortability(root);
   assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.baseline, "initial-native-v1-64e2106");
+  assert.ok(result.checks.includes("pre-native-evidence-preserved"));
+  assert.ok(result.checks.includes("web-contract-forwards"));
   assert.ok(result.checks.includes("v1-request-values-and-endpoints"));
 });
+
+for (const file of webForwards) test(`only the exact export-only web forward is permitted: ${file}`, async t => {
+  const directory = fixture(t);
+  writeFileSync(join(directory, file), readFileSync(join(directory, file), "utf8") + "\nexport const additionalRuntime = 1;\n");
+  await rejected(directory, /^WEB_CONTRACT_FORWARD_CHANGED$/);
+});
+
+test("a web forward cannot redirect contracts to another source", async t => {
+  const directory = fixture(t);
+  edit(directory, webForwards[0], "src/api-contracts", "src/post-contracts");
+  await rejected(directory, /^WEB_CONTRACT_FORWARD_CHANGED$/);
+});
+
+for (const file of ["api-v1-pre-native-compatibility.ts.txt", "api-v1-requests.json"])
+  test(`historical preactivation evidence cannot be silently rewritten: ${file}`, async t => {
+    const directory = fixture(t);
+    writeFileSync(join(directory, "tests/fixtures", file), "changed evidence");
+    await rejected(directory, /^HISTORICAL_CONTRACT_EVIDENCE_CHANGED$/);
+  });
 
 test("pure local transitive modules and additive response fields remain compatible", async t => {
   const directory = fixture(t);
@@ -135,11 +158,14 @@ test("source symlinks cannot smuggle files from outside the reviewed package", a
 
 for (const [name, before, after, finding] of [
   ["unknown post discriminator", '["TESTIMONY", "PRAYER", "TEACHING", "UPDATE", "NEED"]', '["TESTIMONY", "PRAYER", "TEACHING", "UPDATE", "NEED", "ANNOUNCEMENT"]', /^WIRE_COMPATIBILITY_TS/],
+  ["unsupported error discriminator", 'method_not_allowed: { status: 405, action: "correct_request" },', 'method_not_allowed: { status: 405, action: "correct_request" },\n  future_error: { status: 422, action: "correct_request" },', /^WIRE_COMPATIBILITY_TS/],
+  ["missing required audience", '  audience: oneOf(["PUBLIC", "CHURCH", "GROUP"]),\n', '', /^WIRE_COMPATIBILITY_TS/],
   ["changed response field type", "commentCount: integer(),", "commentCount: text(30),", /^WIRE_COMPATIBILITY_TS/],
   ["new required write input", "object({ mutationId, expectedVersion: version, desired: boolean })", "object({ mutationId, expectedVersion: version, desired: boolean, confirmed: boolean })", /^WIRE_COMPATIBILITY_TS/],
   ["moved endpoint", '"/capabilities",', '"/new-capabilities",', /^WIRE_ENDPOINT_CHANGED$/],
   ["narrowed input validator", "export const apiId = text(100,", "export const apiId = text(5,", /^WIRE_REQUEST_INCOMPATIBLE$/],
-  ["widened response cursor bound", "export const apiCursor = text(2000,", "export const apiCursor = text(4096,", /^WIRE_RESPONSE_BOUND_CHANGED$/]
+  ["widened response cursor bound", "export const apiCursor = text(4096,", "export const apiCursor = text(8192,", /^WIRE_RESPONSE_BOUND_CHANGED$/],
+  ["narrowed request cursor bound", "export const apiCursor = text(4096,", "export const apiCursor = text(2000,", /^WIRE_REQUEST_PRIMITIVE_NARROWED$/]
 ]) test(`rejects v1 ${name}`, async t => {
   const directory = fixture(t);
   edit(directory, wireFile, before, after);

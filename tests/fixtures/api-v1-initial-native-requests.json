@@ -1,0 +1,143 @@
+{
+  "source": "Initial native v1 baseline, reviewed canonical contract 64e2106. Historical e02ab5d probes remain byte-preserved; the 4096 cursor and method_not_allowed error are explicit preactivation differences, not old-client compatibility.",
+  "apiVersion": "1",
+  "responsePrimitives": {
+    "apiId": {
+      "maximumLength": 100,
+      "character": "a",
+      "rejected": [
+        "",
+        "id with space",
+        "id/path"
+      ]
+    },
+    "apiUsername": {
+      "maximumLength": 24,
+      "character": "a",
+      "rejected": [
+        "",
+        "a",
+        "aa",
+        "member-name"
+      ]
+    },
+    "apiCursor": {
+      "maximumLength": 4096,
+      "character": "a",
+      "rejected": [
+        "",
+        "cursor with space",
+        "cursor/path"
+      ]
+    }
+  },
+  "operations": {
+    "capabilities": {
+      "method": "GET",
+      "path": "/api/platform/v1/capabilities",
+      "params": {},
+      "query": {},
+      "body": {}
+    },
+    "session": {
+      "method": "GET",
+      "path": "/api/platform/v1/session",
+      "params": {},
+      "query": {},
+      "body": {}
+    },
+    "feed": {
+      "method": "GET",
+      "path": "/api/platform/v1/feed",
+      "params": {},
+      "query": {
+        "mode": "latest",
+        "cursor": null,
+        "scope": null
+      },
+      "body": {}
+    },
+    "post": {
+      "method": "GET",
+      "path": "/api/platform/v1/posts/:postId",
+      "params": {
+        "postId": "fictional-post"
+      },
+      "query": {},
+      "body": {}
+    },
+    "profile": {
+      "method": "GET",
+      "path": "/api/platform/v1/profiles/:username",
+      "params": {
+        "username": "example_member"
+      },
+      "query": {
+        "cursor": null
+      },
+      "body": {}
+    },
+    "churches": {
+      "method": "GET",
+      "path": "/api/platform/v1/churches",
+      "params": {},
+      "query": {
+        "query": "",
+        "cursor": null
+      },
+      "body": {}
+    },
+    "church": {
+      "method": "GET",
+      "path": "/api/platform/v1/churches/:churchId",
+      "params": {
+        "churchId": "fictional-church"
+      },
+      "query": {
+        "cursor": null
+      },
+      "body": {}
+    },
+    "like": {
+      "method": "GET",
+      "path": "/api/platform/v1/posts/:postId/like",
+      "params": {
+        "postId": "fictional-post"
+      },
+      "query": {},
+      "body": {}
+    },
+    "setLike": {
+      "method": "POST",
+      "path": "/api/platform/v1/posts/:postId/like",
+      "params": {
+        "postId": "fictional-post"
+      },
+      "query": {},
+      "body": {
+        "mutationId": "fictional-like-1",
+        "expectedVersion": 1,
+        "desired": true
+      }
+    },
+    "reactionPreferences": {
+      "method": "GET",
+      "path": "/api/platform/v1/reaction-preferences",
+      "params": {},
+      "query": {},
+      "body": {}
+    },
+    "setReactionPreferences": {
+      "method": "POST",
+      "path": "/api/platform/v1/reaction-preferences",
+      "params": {},
+      "query": {},
+      "body": {
+        "mutationId": "fictional-choice-1",
+        "expectedVersion": 3,
+        "hideAuthoredReactionCounts": true
+      }
+    }
+  },
+  "baseline": "initial-native-v1-64e2106"
+}

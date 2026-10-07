@@ -2,6 +2,7 @@ import { lstatSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import ts from "typescript";
 
 const options = {
@@ -20,6 +21,14 @@ const beneath = (parent, file) => {
   return path !== ".." && !path.startsWith(`..${sep}`) && !isAbsolute(path);
 };
 const readJson = file => JSON.parse(readFileSync(file, "utf8"));
+const baselineId = "initial-native-v1-64e2106";
+// Keep the first reviewed, incompatible preactivation evidence byte-for-byte.
+// Its TypeScript fixture is archived as text so root compilation cannot treat it
+// as a supported consumer. This is not a waiver for an installed client.
+const historicalEvidence = {
+  "api-v1-pre-native-compatibility.ts.txt": "9248af0dad5510151f23e6a49d752c94328994daf8ef943ce1911bd6236ad691",
+  "api-v1-requests.json": "cb002ec613317550115d49d4b05f27041089b6981d08ed1d0b73cc83c1c1e06f"
+};
 
 class BoundaryError extends Error {
   constructor(code, file) {
@@ -132,26 +141,52 @@ function packageBoundary(root) {
   return files;
 }
 
+function webContractForwards(root, shared) {
+  const forwards = ["api-contracts", "native-auth-contracts"].map(name => {
+    const file = join(root, `lib/platform/${name}.ts`);
+    if (lstatSync(file).isSymbolicLink()) reject("SOURCE_SYMLINK", file);
+    const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.ES2022, true);
+    const statement = source.statements[0];
+    if (source.parseDiagnostics.length || source.statements.length !== 1 || !ts.isExportDeclaration(statement) ||
+        statement.isTypeOnly || statement.exportClause || statement.attributes ||
+        !statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier) ||
+        statement.moduleSpecifier.text !== `../../packages/shared-core/src/${name}`)
+      reject("WEB_CONTRACT_FORWARD_CHANGED", file);
+    return file;
+  });
+  const allowed = new Set([...shared, ...forwards]);
+  portableGraph(forwards, file => allowed.has(file));
+  typecheck(forwards, "WIRE_PORTABLE_TYPES");
+  return forwards;
+}
+
 /** Lightweight source/contract gate. Does not run an SDK, database, app or deployment. */
 export async function checkPortability(root, { requests = true } = {}) {
   root = realpathSync(root);
-  const report = { ok: true, sourceFiles: [], checks: [], findings: [] };
+  const report = { ok: true, baseline: baselineId, sourceFiles: [], checks: [], findings: [] };
   try {
+    for (const [name, hash] of Object.entries(historicalEvidence)) {
+      const file = join(root, "tests/fixtures", name);
+      if (lstatSync(file).isSymbolicLink() || createHash("sha256").update(readFileSync(file)).digest("hex") !== hash)
+        reject("HISTORICAL_CONTRACT_EVIDENCE_CHANGED", file);
+    }
+    report.checks.push("pre-native-evidence-preserved");
     const shared = packageBoundary(root);
     report.sourceFiles.push(...shared.map(file => relative(root, file)));
     report.checks.push("shared-exports", "shared-import-closure", "shared-no-dom");
-    const wire = join(root, "lib/platform/api-contracts.ts");
-    portableGraph([wire], file => file === wire);
-    typecheck([wire], "WIRE_PORTABLE_TYPES");
-    report.sourceFiles.push(relative(root, wire));
+    const forwards = webContractForwards(root, shared);
+    const wire = join(root, "packages/shared-core/src/api-contracts.ts");
+    report.sourceFiles.push(...forwards.map(file => relative(root, file)));
+    report.checks.push("web-contract-forwards");
     report.checks.push("wire-no-dom");
-    const fixture = join(root, "tests/fixtures/api-v1-compatibility.ts");
+    const fixture = join(root, "tests/fixtures/api-v1-initial-native-compatibility.ts");
     typecheck([fixture, wire], "WIRE_COMPATIBILITY");
     report.checks.push("v1-response-and-request-types");
     if (requests) {
       const currentModule = await import(pathToFileURL(wire).href);
       const { apiContracts, API_VERSION } = currentModule;
-      const baseline = readJson(join(root, "tests/fixtures/api-v1-requests.json"));
+      const baseline = readJson(join(root, "tests/fixtures/api-v1-initial-native-requests.json"));
+      if (baseline.baseline !== baselineId) reject("WIRE_BASELINE_CHANGED", fixture);
       if (API_VERSION !== baseline.apiVersion) reject("WIRE_VERSION_CHANGED", wire);
       for (const [name, previous] of Object.entries(baseline.operations)) {
         const current = apiContracts[name];
@@ -168,6 +203,9 @@ export async function checkPortability(root, { requests = true } = {}) {
       for (const [name, previous] of Object.entries(baseline.responsePrimitives)) {
         const current = currentModule[name];
         if (!current || typeof current.parse !== "function") reject("WIRE_RESPONSE_PRIMITIVE_MISSING", wire);
+        const maximum = previous.character.repeat(previous.maximumLength);
+        try { assert.equal(current.parse(maximum), maximum); }
+        catch { reject("WIRE_REQUEST_PRIMITIVE_NARROWED", wire); }
         const rejected = [...previous.rejected, previous.character.repeat(previous.maximumLength + 1)];
         for (const value of rejected) {
           let accepted = false;

@@ -51,6 +51,29 @@ The core keeps only its original request and identity, not a history or response
 cache. The mounting owner must drop private pending objects on its chosen clear,
 logout or unmount boundary; there is no automatic persistent storage.
 
+## Initial native password issuance
+
+`issueNativePasswordCredential(adapter, credentials, initiatingIdentity, options)`
+is a single canonical `POST /api/platform/v1/auth/password` attempt. It snapshots
+the initiating guest identity synchronously, validates exact password bytes with
+`nativePasswordInput`, and requires that same guest generation after capture,
+before dispatch and after reading the response. Ordinary prepared writes still
+require an authenticated owner. There is no public guest-write option.
+
+The adapter must omit bearer, cookie and expected-account headers for this guest
+request, bind its send closure to the initiating generation, and recheck that
+local generation immediately before network dispatch. The response uses
+`decodeNativePasswordResponse` to validate its new account, envelope and activity
+owner together. Canonical error codes are preserved with a fixed safe message;
+untrusted server text cannot echo the submitted password through this entry point.
+
+The caller receives only a promise for the decoded issuance result, never a
+password-bearing prepared request or retry object. There is one dispatch per
+invocation and no automatic, idempotent or Retry-After replay. A lost or malformed
+reply remains uncertain. The mobile session owner must recheck the initiating
+generation before storing/adopting the credential, clear the password entry, and
+handle any possible orphaned server credential through the canonical auth policy.
+
 ## Preserved browser behavior
 
 `lib/platform/social-client.ts` retains the existing `socialRequest` signature
@@ -83,6 +106,12 @@ work when its owner changes; that policy differs intentionally from recoverable
 private choices. Each mount owns one controller and calls `dispose()` to cancel
 its timer. Browser events remain in the existing provider.
 
+An inherited teardown limitation remains to be fixed before native drafts: a
+save already in flight can finish verification and schedule another autosave
+after `dispose()` if newer edits exist. The extraction preserves this behavior;
+disposal alone is not a native continuation-invalidation boundary. Keep draft
+activation gated on a held-save/dispose regression and reviewed lifecycle repair.
+
 This extraction does not activate native draft writes. The controller's logical
 legacy paths need a reviewed native transport mapping and equivalent endpoint
 contracts before enabling native compose or publish. Existing native auth/read
@@ -106,7 +135,7 @@ while validating and separating foreground session renewal from preference saves
 
 Native app integration must consume the tested canonical commit and current API
 schemas, connect the credential/lifecycle adapter, and verify the complete native
-flow. This work does not change the API compatibility baseline, resolve an active
-dependency-security hold, or establish SDK/device/store acceptance. Reconcile
-the documented pre-activation API error-code and cursor-bound changes before
-combining the newer native API handoff with the frozen compatibility gate.
+flow. The canonical decoders and shared client are combined with the explicitly
+named preactivation baseline described in `PORTABILITY_CHECKS.md`. This source
+integration does not resolve an active dependency-security hold or establish
+SDK/device/store acceptance.
