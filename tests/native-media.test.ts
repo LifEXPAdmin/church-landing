@@ -252,6 +252,30 @@ test("delivery honors current private audience and never forwards storage, range
       store
     )
   );
+  await db.mediaAsset.update({
+    where: { id: image.id },
+    data: { position: 1001 }
+  });
+  const later = await uploaded(
+    await send(
+      f.ada,
+      { ...details(f.post.id), purpose: "POST_PHOTO" },
+      bytes,
+      store
+    )
+  );
+  assert.equal(later.position, 1002);
+  const positions = await handleNativeImageRequest(
+    db,
+    request(f.lee, "GET", `?purpose=POST_PHOTO&targetId=${f.post.id}`)
+  );
+  assert.equal(positions.status, 200);
+  assert.deepEqual(
+    nativeImageEnvelope("list")
+      .parse(await positions.json())
+      .data.images.map((item) => item.position),
+    [1001, 1002]
+  );
   const good = await get(f.lee, image.id, store, {
     Range: "bytes=0-1",
     "If-None-Match": "*"
@@ -579,10 +603,6 @@ test("authorized saved personal photos remain readable in post galleries without
       id,
       expectedVersion: 1
     })) as { postId: string };
-    await db.postPhotoReference.updateMany({
-      where: { postId: result.postId, assetId: photo.id },
-      data: { position: 1001 }
-    });
     const listed = await handleNativeImageRequest(
       db,
       request(f.lee, "GET", `?purpose=POST_PHOTO&targetId=${result.postId}`)
@@ -592,7 +612,7 @@ test("authorized saved personal photos remain readable in post galleries without
       .images;
     assert.equal(images[0].id, photo.id);
     assert.equal(images[0].purpose, "PROFILE_PHOTO");
-    assert.equal(images[0].position, 1001);
+    assert.equal(images[0].position, 0);
     assert.equal((await get(f.lee, photo.id, store)).status, 200);
     assert.equal((await get(f.blake, photo.id, store)).status, 404);
   } finally {
