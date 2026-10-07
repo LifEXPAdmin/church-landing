@@ -868,10 +868,11 @@ async function connectionsAvailable(
   return hasChurchReviewer(db, churchId, viewerId);
 }
 export async function publicChurches(
-  db: PrismaClient,
+  db: PrismaClient | Tx,
   churchId?: string,
   cursor?: string,
-  query = ""
+  query = "",
+  viewerId = ""
 ): Promise<Array<
   Prisma.ChurchGetPayload<{ select: typeof churchSelect }> &
   Partial<Prisma.ChurchGetPayload<{ select: typeof churchDetailSelect }>> &
@@ -912,7 +913,7 @@ export async function publicChurches(
   return [
     {
       ...projected[0],
-      connectionsAvailable: await connectionsAvailable(db, churchId)
+      connectionsAvailable: await connectionsAvailable(db, churchId, viewerId)
     }
   ];
 }

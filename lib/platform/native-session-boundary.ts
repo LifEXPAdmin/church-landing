@@ -45,7 +45,7 @@ export const nativeAuthHeaders = {
   "X-Content-Type-Options": "nosniff",
   Vary: "Authorization, Cookie, X-Expected-Account"
 };
-class NativeRequestError extends Error {
+export class NativeRequestError extends Error {
   readonly code: ApiErrorCode;
   constructor(code: ApiErrorCode) {
     super(code);
@@ -54,7 +54,10 @@ class NativeRequestError extends Error {
 }
 
 /** Explicit native-only transport. Browser requests retain their existing boundary. */
-export function nativeRequestCredential(request: Request) {
+export function nativeRequestCredential(
+  request: Request,
+  allowedQuery: readonly string[] = []
+) {
   const url = new URL(request.url);
   const configured = accountOrigin();
   // Next's Node adapter can construct request.url with its internal listen port
@@ -70,7 +73,14 @@ export function nativeRequestCredential(request: Request) {
     [...request.headers.keys()].some((k) => k.startsWith("sec-fetch-"))
   )
     throw new NativeRequestError("forbidden");
-  if (url.search || url.hash) throw new NativeRequestError("validation");
+  if (
+    url.hash ||
+    [...url.searchParams.keys()].some((key) => !allowedQuery.includes(key)) ||
+    [...new Set(url.searchParams.keys())].some(
+      (key) => url.searchParams.getAll(key).length !== 1
+    )
+  )
+    throw new NativeRequestError("validation");
   if (
     (request.headers.get("cookie") ?? "")
       .split(";")

@@ -1,3 +1,4 @@
+import type { ReadIdentity } from "./account-read";
 import { photoLibraryEnabled } from "./personal-photo-policy";
 import { socialUserWhere } from "./social-policy";
 import type { PrismaClient } from "@prisma/client";
@@ -46,7 +47,8 @@ export function getMemberProfile(
     cursor?: string | null;
     preview?: string;
     photos?: boolean;
-  } = {}
+  } = {},
+  identity?: ReadIdentity
 ) {
   return withPostRead(db, token, async (tx, context) => {
     if (!context.actorId)
@@ -175,7 +177,7 @@ export function getMemberProfile(
       memberPreview,
       photoLibraryEnabled: photoLibraryEnabled()
     };
-  });
+  }, identity);
 }
 export function getProfileEditor(db: PrismaClient, token: unknown) {
   return withPostRead(db, token, async (tx, context) => {

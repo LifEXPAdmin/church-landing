@@ -1,3 +1,4 @@
+import type { ReadIdentity } from "./account-read";
 import {
   resolvePostResourcesIn,
   resourceCards
@@ -502,27 +503,36 @@ export function getChurchPostFeed(
   churchId: string,
   query: Pick<PostQuery, "before" | "cursor"> = {}
 ) {
-  return withPostRead(db, token, async (tx, context) => {
-    const now = new Date();
-    const pinned = await listPostsIn(
-      tx,
-      context,
-      { churchId, pinned: true, limit: 3 },
-      now
-    );
-    const posts = await listPostsIn(
-      tx,
-      context,
-      { ...query, churchId, pinned: false },
-      now
-    );
-    return {
-      pinned,
-      posts,
-      viewerId: context.actorId,
-      canShare: context.churches.includes(churchId)
-    };
-  });
+  return withPostRead(db, token, (tx, context) =>
+    getChurchPostFeedIn(tx, context, churchId, query)
+  );
+}
+/** Reuse the same authorized church feed inside an existing read transaction. */
+export async function getChurchPostFeedIn(
+  tx: PostTx,
+  context: PostContext,
+  churchId: string,
+  query: Pick<PostQuery, "before" | "cursor"> = {}
+) {
+  const now = new Date();
+  const pinned = await listPostsIn(
+    tx,
+    context,
+    { churchId, pinned: true, limit: 3 },
+    now
+  );
+  const posts = await listPostsIn(
+    tx,
+    context,
+    { ...query, churchId, pinned: false },
+    now
+  );
+  return {
+    pinned,
+    posts,
+    viewerId: context.actorId,
+    canShare: context.churches.includes(churchId)
+  };
 }
 /** Bounded retained-detail check: current source permission/version, no body or counts. */
 export function getPostAvailability(
@@ -638,22 +648,36 @@ export function getPost(
   db: PrismaClient,
   token: unknown,
   id: string,
-  query: { before?: Date | null; cursor?: string | null } = {}
+  query: {
+    before?: Date | null;
+    cursor?: string | null;
+    comments?: boolean;
+  } = {},
+  identity?: ReadIdentity
 ) {
-  return withPostRead(db, token, async (tx, context) => {
-    const now = new Date();
-    const row = await tx.platformPost.findFirst({
-      where: { AND: [{ id: postId(id) }, postReadableWhere(context, now)] },
-      include: include(
-        context,
-        [postId(id)],
-        31,
-        query.before ?? undefined,
-        query.cursor ?? undefined
-      )
-    });
-    return row ? (await projectRows(tx, [row], context, now))[0] : null;
-  });
+  return withPostRead(
+    db,
+    token,
+    async (tx, context) => {
+      const now = new Date();
+      const row = await tx.platformPost.findFirst({
+        where: { AND: [{ id: postId(id) }, postReadableWhere(context, now)] },
+        include: include(
+          context,
+          [postId(id)],
+          query.comments === false ? 0 : 31,
+          query.before ?? undefined,
+          query.cursor ?? undefined
+        )
+      });
+      return row
+        ? (
+            await projectRows(tx, [row], context, now, query.comments !== false)
+          )[0]
+        : null;
+    },
+    identity
+  );
 }
 export function getProfilePosts(
   db: PrismaClient,

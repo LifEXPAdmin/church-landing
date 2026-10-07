@@ -1,5 +1,5 @@
 /**
- * Proposed v1 wire contracts, not active HTTP routes or authorization rules.
+ * Versioned v1 wire contracts, independent of HTTP activation and authorization.
  * No browser, framework, database, credential or server runtime imports.
  * Services must authorize and explicitly project before encode; never pass rows.
  */
@@ -23,7 +23,7 @@ export class WireContractError extends Error {
 const fail = (): never => {
   throw new WireContractError();
 };
-const schema = <T>(parse: WireSchema<T>["parse"]): WireSchema<T> =>
+const schema = <T,>(parse: WireSchema<T>["parse"]): WireSchema<T> =>
   Object.freeze({ parse });
 const text = (max: number, min = 0, pattern?: RegExp) =>
   schema<string>((value) =>
@@ -54,11 +54,11 @@ const oneOf = <const T extends readonly string[]>(choices: T) =>
       ? (value as T[number])
       : fail()
   );
-const nullable = <T>(child: WireSchema<T>) =>
+const nullable = <T,>(child: WireSchema<T>) =>
   schema<T | null>((value, mode) =>
     value === null ? null : child.parse(value, mode)
   );
-const array = <T>(child: WireSchema<T>, max: number) =>
+const array = <T,>(child: WireSchema<T>, max: number) =>
   schema<T[]>((value, mode) =>
     Array.isArray(value) && value.length <= max
       ? Array.from(value, (entry) => child.parse(entry, mode))
@@ -147,6 +147,7 @@ const postBody = object({
 const postBase = {
   id: apiId,
   type: oneOf(["TESTIMONY", "PRAYER", "TEACHING", "UPDATE", "NEED"]),
+  audience: oneOf(["PUBLIC", "CHURCH", "GROUP"]),
   author: apiAuthor,
   body: postBody,
   publishedAt: apiDate,
@@ -172,7 +173,7 @@ export const apiPost = object({
   )
 });
 export type ApiPost = WireValue<typeof apiPost>;
-const page = <T>(item: WireSchema<T>, max: number) =>
+const page = <T,>(item: WireSchema<T>, max: number) =>
   object({
     items: array(item, max),
     nextCursor: nullable(apiCursor)
@@ -311,7 +312,7 @@ export const apiFailure = schema<ApiFailure>((value, mode) => {
   return result as ApiFailure;
 });
 
-const envelope = <T>(data: WireSchema<T>) =>
+const envelope = <T,>(data: WireSchema<T>) =>
   object({
     apiVersion: literal(API_VERSION),
     viewerId: nullable(apiId),

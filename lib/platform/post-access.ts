@@ -1,4 +1,5 @@
 export { postField, postId } from "./post-input";
+import type { ReadIdentity } from "./account-read";
 import {
   socialPolicy,
   socialUserWhere,
@@ -262,9 +263,13 @@ export const postInclude = {
 export async function withPostRead<T>(
   db: PrismaClient,
   token: unknown,
-  work: (tx: PostTx, context: PostContext) => Promise<T>
+  work: (tx: PostTx, context: PostContext) => Promise<T>,
+  identity?: ReadIdentity
 ) {
-  return withAccountRead(db, token, async (tx, ownerId) =>
-    work(tx, await postContext(tx, ownerId))
+  return withAccountRead(
+    db,
+    token,
+    async (tx, ownerId) => work(tx, await postContext(tx, ownerId)),
+    identity
   );
 }

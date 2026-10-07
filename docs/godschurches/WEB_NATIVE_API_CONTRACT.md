@@ -1,3 +1,12 @@
+## Core read adapter implementation, 7 October 2026
+
+The selected capabilities/feed/post/profile/church adapters now reuse the
+canonical service transactions. [Native core reads](NATIVE_CORE_READS.md)
+describes strict owner binding, explicit audience, privacy projections and signed
+pagination. Their local implementation does not establish deployment or device
+acceptance. Generic `state: "contract-only"` descriptors remain schema metadata;
+consult the actual capability endpoint after release for implemented operations.
+
 # Shared website and native API contract
 
 The local native authentication adapter now implements session discovery plus

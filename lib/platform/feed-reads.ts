@@ -1,3 +1,4 @@
+import { requireReadIdentity, type ReadIdentity } from "./account-read";
 import { readerDate, readerId } from "./reader-navigation";
 import {
   discoveryMode,
@@ -237,12 +238,14 @@ export function readFeed(
     legacyBefore?: unknown;
     legacyCursor?: unknown;
   } = {},
-  now = new Date()
+  now = new Date(),
+  identity?: ReadIdentity
 ) {
   return db.$transaction(
     async (tx) => {
       await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock_shared(730221, 2)`;
       const actor = await readAccountSession(tx as PrismaClient, token);
+      requireReadIdentity(actor?.id ?? null, identity);
       const context = await postContext(tx, actor?.id);
       const preference = context.actorId
         ? await tx.socialPreferences.findUnique({
@@ -262,6 +265,8 @@ export function readFeed(
         .digest("hex")
         .slice(0, 24);
       const sameOwner = !input.scope || input.scope === scope;
+      if (identity && !sameOwner)
+        throw new PortalError(409, "Reopen this feed from its first page.");
       const mode =
         feedMode(sameOwner ? input.mode : undefined) ??
         feedMode(context.actorId ? preference?.feedMode : input.guestMode) ??
