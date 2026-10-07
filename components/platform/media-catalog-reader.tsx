@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
 import type { MediaPublic } from "@/lib/platform/media-catalog-reads";
 import { MediaTopicLinks } from "./media-topic-links";
+import { PublicShareControls } from "./public-share-controls";
 import { SavePostControl } from "./save-post-control";
 import {
   scriptureLabel,
@@ -73,6 +74,14 @@ export function MediaReader({
             resourceKind="mediaCatalogItem"
             accountId={owner}
           />
+          {item.audience === "PUBLIC" && (
+            <PublicShareControls
+              key={`${owner ?? "guest"}:media:${item.id}`}
+              kind="media"
+              id={item.id}
+              accountId={owner}
+            />
+          )}
           <p className="whitespace-pre-wrap">{item.description}</p>
           {Array.isArray(item.scriptureRanges) &&
             item.scriptureRanges.length > 0 && (

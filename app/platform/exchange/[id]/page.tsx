@@ -12,6 +12,7 @@ import { TopicReadBoundary } from "@/components/platform/topic-read-boundary";
 import { PrivateSnapshotGuard } from "@/components/platform/private-snapshot-guard";
 import { RelationshipControls } from "@/components/platform/relationship-controls";
 import { ExchangeFavoriteButton } from "@/components/platform/exchange-saved-controls";
+import { PublicShareControls } from "@/components/platform/public-share-controls";
 import { SavePostControl } from "@/components/platform/save-post-control";
 import { ExchangePhotos } from "@/components/platform/exchange-photos";
 import { RegionalWallTime } from "@/components/platform/regional-presentation";
@@ -240,6 +241,15 @@ export default async function Page({
             />
           )}
         </section>
+        {listing.audience === "PUBLIC" &&
+          (listing.state === "ACTIVE" || listing.state === "RESERVED") && (
+            <PublicShareControls
+              key={`${user?.id ?? "guest"}:listing:${listing.id}`}
+              kind="listing"
+              id={listing.id}
+              accountId={user?.id ?? null}
+            />
+          )}
         <SavePostControl
           key={`${user?.id ?? "guest"}:${listing.id}`}
           postId={listing.id}

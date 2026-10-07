@@ -1,5 +1,14 @@
 # Gallery and public sharing foundations
 
+## Public resource controls, 7 October 2026
+
+Public listing and media detail pages now reuse the existing canonical preview
+service for copy, native sharing and QR controls. QR downloads recheck current
+eligibility, and retained or pending controls clear when their source access is
+lost. See [public resource sharing](PUBLIC_RESOURCE_SHARING.md) for the current
+control contract, source boundaries, verification and integration gates. The
+foundation receipts below remain historical.
+
 ## Current public image integration — 15 September 2026
 
 The existing preview endpoint now accepts `format=png`; eligible public
