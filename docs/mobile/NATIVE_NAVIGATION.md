@@ -3,8 +3,10 @@
 The native navigation adapter consumes `AppDestination`, `ScreenId`,
 `parseDestinationPath` and `destinationWebPath` from the canonical shared core.
 It introduces no router, transport, session implementation or dependency. The
-existing fictional App journey stays unchanged until real session integration
-has its own verified receipt.
+current App connects `NativeJourney` screens to the shared session, navigation
+and reading runtime through `createNativeFixture`. Its responses and credential
+vault remain fictional and in memory; this is prepared source, not real-network
+or native-device acceptance.
 
 ## Presentation and availability
 
@@ -83,6 +85,9 @@ Type and import checks cover the actual native package. These establish source
 contracts, not native navigation, authenticated return, system Back, modal/dirty
 entry dismissal, process death, screen-reader focus or device link acceptance.
 
-Next, connect authorized bounded resource reads and the canonical app's native
-screens to this session-bound destination state, render native controls, and verify the first
-real sign-in/feed/post/sign-out journey before enabling broader feature screens.
+The shared runtime and native controls are already composed in the fictional
+journey. Next, use a verified nonproduction HTTPS endpoint and fictional account
+data to connect the prepared native wire and secure vault. Compile identified
+iOS and Android builds, then verify the real sign-in/feed/post/sign-out journey
+and the platform behaviors above before enabling broader feature screens. See
+[verification](VERIFICATION.md) for the distinct source, native and device gates.

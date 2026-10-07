@@ -4,8 +4,10 @@ The private native runtime composes the existing credential vault, sole session
 controller, canonical typed client and session-bound navigation. It accepts an
 injected wire and explicit implemented-renderer availability. Importing the
 module starts no networking and activates no native module. The current App
-remains the fictional spike; real transport, screens and device acceptance are
-separate integration gates.
+connects `NativeJourney` screens to this runtime through `createNativeFixture`,
+using fictional responses and an in-memory credential vault. The prepared native
+wire and secure vault are not active in that composition. Native builds,
+real-network integration and device acceptance remain separate gates.
 
 ## Canonical ownership
 
