@@ -1,5 +1,13 @@
 # Public discoverability
 
+## October 7, 2026 local resource extension
+
+The [listing and media report](PUBLIC_RESOURCE_METADATA.md) records the current
+public-resource projection and lifecycle extension. It adds eligible listing and
+media detail pages, bounded sitemap children and supplied WebPage facts while
+retaining private exclusions. Integration and live acceptance for that extension
+remain open. The September live receipts below describe their original scope.
+
 September 15, 2026 UTC · Engineering verified live; provider and physical acceptance open
 
 ## Final canonical acceptance

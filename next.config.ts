@@ -47,9 +47,11 @@ const nextConfig: NextConfig = {
       ? [
           "/api/:path*",
           "/admin/:path*",
-          "/platform/:path((?!$|churches$|churches/[^/]+$|posts/[^/]+$|events/[^/]+$|topics$|topics/[^/]+$).*)",
+          "/platform/:path((?!$|churches$|churches/[^/]+$|posts/[^/]+$|events/[^/]+$|topics$|topics/[^/]+$|exchange/[^/]+$|media/[^/]+$).*)",
           "/platform/topics/new",
-          "/platform/topics/following"
+          "/platform/topics/following",
+          "/platform/exchange/:section(defaults|handoffs|help|mine|needs|new|saved)",
+          "/platform/media/:section(new|playlists|saved|studio)"
         ]
       : ["/:path*"];
     return [
@@ -61,7 +63,8 @@ const nextConfig: NextConfig = {
           // prefetch, errors and admin denials; asset caching stays independent.
           {
             key: "Content-Security-Policy",
-            value: "script-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
+            value:
+              "script-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
           },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" }

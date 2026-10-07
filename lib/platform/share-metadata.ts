@@ -45,7 +45,9 @@ export async function publicResourceMetadata(
           ? ["before", "cursor"]
           : [];
     const identityQuery = { ...query };
-    delete identityQuery.comment;
+    // Listing/media readers have no comment focus query. Unknown parameters
+    // keep those variants out of the index, matching their structured data.
+    if (kind !== "listing" && kind !== "media") delete identityQuery.comment;
     if (kind === "event" && validEventDisplayZone(identityQuery.timeZone))
       delete identityQuery.timeZone;
     const identity = publicPageIdentity(path, identityQuery, pagination);

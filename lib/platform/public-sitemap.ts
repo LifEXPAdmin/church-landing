@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import { indexingEnvironment } from "../indexing-policy";
 import { publicPreviewHeaders } from "./public-sharing";
 import {
@@ -9,6 +9,10 @@ import {
 import { withPostRead } from "./post-access";
 import { topicPublicWhere } from "./topic-policy";
 import { PortalError } from "./portal-policy";
+import {
+  publicListingWhere,
+  publicMediaSql
+} from "./public-resource-discovery";
 
 export const sitemapPageSize = 500;
 export const staticPublicPaths = [
@@ -23,7 +27,15 @@ export const staticPublicPaths = [
   "/privacy",
   "/terms"
 ];
-const kinds = ["site", "churches", "posts", "events", "topics"] as const;
+const kinds = [
+  "site",
+  "churches",
+  "posts",
+  "events",
+  "topics",
+  "listings",
+  "media"
+] as const;
 const escapeXml = (s: string) =>
   s
     .replace(/&/g, "&amp;")
@@ -67,12 +79,20 @@ export async function publicSitemapResponse(
       throw new PortalError(400, "Invalid sitemap page.");
     return await withPostRead(db, null, async (tx, context) => {
       const postWhere = publicDiscoverablePostWhere(context);
+      const listingWhere = publicListingWhere(context);
+      const mediaWhere = publicMediaSql(context, new Date());
       if (!kind) {
         const counts = await Promise.all([
           tx.church.count({ where: publicChurchWhere }),
           tx.platformPost.count({ where: postWhere }),
           tx.calendarOccurrence.count({ where: publicEventWhere }),
-          tx.topicCommunity.count({ where: topicPublicWhere })
+          tx.topicCommunity.count({ where: topicPublicWhere }),
+          tx.exchangeListing.count({ where: listingWhere }),
+          tx
+            .$queryRaw<
+              { total: bigint }[]
+            >(Prisma.sql`SELECT count(*) AS total FROM "MediaCatalogItem" m WHERE ${mediaWhere}`)
+            .then((rows) => Number(rows[0].total))
         ]);
         const pages = [
           1,
@@ -147,7 +167,7 @@ export async function publicSitemapResponse(
             skip
           })
         ).map((row) => ({ path: "/platform/events/" + row.id }));
-      else
+      else if (kind === "topics")
         entries = (
           await tx.topicCommunity.findMany({
             where: topicPublicWhere,
@@ -160,6 +180,23 @@ export async function publicSitemapResponse(
           path: "/platform/topics/" + row.slug,
           modified: row.updatedAt
         }));
+      else if (kind === "listings")
+        entries = (
+          await tx.exchangeListing.findMany({
+            where: listingWhere,
+            select: { id: true },
+            orderBy: { id: "asc" },
+            take: sitemapPageSize,
+            skip
+          })
+        ).map((row) => ({ path: "/platform/exchange/" + row.id }));
+      else
+        entries = (
+          await tx.$queryRaw<{ id: string }[]>(
+            Prisma.sql`SELECT m.id FROM "MediaCatalogItem" m WHERE ${mediaWhere}
+              ORDER BY m.id ASC LIMIT ${sitemapPageSize} OFFSET ${skip}`
+          )
+        ).map((row) => ({ path: "/platform/media/" + row.id }));
       if (!entries.length && page > 0)
         throw new PortalError(404, "Sitemap page unavailable.");
       return xml(

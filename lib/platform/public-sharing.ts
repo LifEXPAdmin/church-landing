@@ -9,6 +9,7 @@ import type { PrismaClient } from "@prisma/client";
 import { topicPublicWhere } from "./topic-policy";
 import { shareCardLabel } from "../share-card";
 import { publicChurchWhere, publicEventWhere } from "./public-discovery-policy";
+import { publicResourceProjection } from "./public-resource-discovery";
 
 export type ShareKind =
   | "post"
@@ -16,16 +17,25 @@ export type ShareKind =
   | "church"
   | "event"
   | "profile"
-  | "topic";
+  | "topic"
+  | "listing"
+  | "media";
 export function canonicalSharePath(
   kind: unknown,
   id: unknown,
   commentId?: unknown
 ) {
   if (
-    !["post", "comment", "church", "event", "profile", "topic"].includes(
-      String(kind)
-    )
+    ![
+      "post",
+      "comment",
+      "church",
+      "event",
+      "profile",
+      "topic",
+      "listing",
+      "media"
+    ].includes(String(kind))
   )
     throw new PortalError(400, "Choose a supported sharing destination.");
   const safeId = postId(id);
@@ -40,6 +50,8 @@ export function canonicalSharePath(
   }
   if (kind === "comment")
     return `/platform/posts/${safeId}?comment=${postId(commentId)}`;
+  if (kind === "listing") return `/platform/exchange/${safeId}`;
+  if (kind === "media") return `/platform/media/${safeId}`;
   return `/platform/${kind === "post" ? "posts" : kind === "church" ? "churches" : kind === "event" ? "events" : "profile"}/${safeId}`;
 }
 const short = (text: string, max: number) =>
@@ -83,6 +95,22 @@ export async function publicSharePreview(
   // narrow it; a session or crawler never expands the public preview audience.
   const preview = await withPostRead(db, token, async (tx, context) => {
     if (query.kind === "profile") return fallback;
+    if (query.kind === "listing" || query.kind === "media") {
+      const row = await publicResourceProjection(
+        tx,
+        context,
+        query.kind,
+        postId(query.id)
+      );
+      return row
+        ? {
+            ...fallback,
+            available: true,
+            title: short(row.title, 110),
+            description: short(row.description, 160)
+          }
+        : fallback;
+    }
     if (query.kind === "topic") {
       const topic = await tx.topicCommunity.findFirst({
         where: { ...topicPublicWhere, slug: String(query.id) },
