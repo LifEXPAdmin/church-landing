@@ -66,9 +66,23 @@ their full native journey is supported.
 
 ## Verification status
 
-Implementation is under isolated verification. No hosted CI, combined package
-integration, device/provider, production migration or live acceptance is claimed.
-The unchanged API decoder bytes match the canonical shared-core handoff; the
-combined package import integration remains a release step. There are no schema
-or dependency changes. Existing security and designated release-owner gates
-remain open.
+Application and tested source `1f389eacd37b9d7d6383b521d47fd05df4e05494`,
+production build `b4-E-7SgzHK03pGzLuIMe`: 31 policy/service checks and 12 actual
+local HTTPS checks pass with all 125 migrations in an isolated fictional database.
+Full types, lint (zero errors and 39 existing warnings), source/copy checks,
+production build, hydration, runtime traces and public-build security pass.
+The three owned ports are closed and the fixture database is stopped.
+
+The current checks exercise concurrent and historical receipts, original-account
+binding before new writes and replay, plain-repost identity, private/withdrawn
+sources, hidden totals, recovery uncertainty and exact recovery retry, quarantine
+projection, strict transport, shared rate buckets and pause/rollback without
+side effects. Existing group, topic, concurrency, reaction-count and browser
+session regressions pass. HTTPS confirms web/native service parity and one
+durable notification intent; it does not establish provider delivery.
+
+No browser UI, hosted CI, combined package integration, device/provider,
+production migration or live acceptance is claimed. The unchanged API decoder
+bytes match the canonical shared-core handoff; combined package import
+integration remains a release step. There are no schema or dependency changes.
+Existing security and designated release-owner gates remain open.
