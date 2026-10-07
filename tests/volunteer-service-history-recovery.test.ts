@@ -115,6 +115,70 @@ async function confirmed(timed: boolean) {
 }
 
 for (const timed of [true, false]) {
+  test(`owned withdrawal keeps restored ${timed ? "timed" : "untimed"} service quarantined after an absent-source fence`, async () => {
+    const f = await confirmed(timed);
+    const protectedEntry = {
+      ...f.controls.at(-1)!,
+      id: randomUUID(),
+      version: f.current.serviceVersion + 1
+    };
+    if (timed) {
+      const snapshot = await db.postVolunteerSignup.findUniqueOrThrow({
+        where: { id: f.target.targetId }
+      });
+      await db.postVolunteerSignup.delete({ where: { id: snapshot.id } });
+      await replayRetentionControls(db, [protectedEntry]);
+      await db.postVolunteerSignup.create({ data: snapshot });
+      await db.volunteerApplication.update({
+        where: { id: f.application.id },
+        data: { signupId: snapshot.id }
+      });
+    } else {
+      const snapshot = await db.volunteerApplication.findUniqueOrThrow({
+        where: { id: f.target.targetId }
+      });
+      await db.volunteerApplication.delete({ where: { id: snapshot.id } });
+      await replayRetentionControls(db, [protectedEntry]);
+      await db.volunteerApplication.create({ data: snapshot });
+    }
+    const history = async () =>
+      (await readVolunteerServiceHistory(db, f.lee.token)).items.find(
+        (item) => item.target.id === f.target.targetId
+      )!;
+    assert.equal((await history()).recoveryRequired, true);
+    assert.equal((await history()).completed, false);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const current = await f.row();
+      const input = action("service-visibility", {
+        ...f.target,
+        expectedVersion: current.serviceVersion,
+        completionVersion: current.completionVersion,
+        shared: false
+      });
+      const receipt = await volunteerCommand(db, f.lee.token, input);
+      assert.equal(receipt.version, current.serviceVersion + 1);
+      const after = await f.row();
+      assert.equal(after.serviceSharedAt, null);
+      assert.equal(after.serviceRecoveryRequired, true);
+      assert.equal((await history()).completed, false);
+      assert.equal((await history()).canShare, false);
+      await assert.rejects(
+        volunteerCommand(
+          db,
+          f.lee.token,
+          action("service-visibility", {
+            ...f.target,
+            expectedVersion: after.serviceVersion,
+            completionVersion: after.completionVersion,
+            shared: true
+          })
+        )
+      );
+      await volunteerCommand(db, f.lee.token, input);
+      assert.deepEqual(await f.row(), after);
+    }
+  });
+
   test(`${timed ? "timed" : "untimed"} service replay quarantines disclosure without changing completion, assignment or capacity`, async () => {
     const f = await confirmed(timed);
     assert.equal(f.controls.length, 2);
