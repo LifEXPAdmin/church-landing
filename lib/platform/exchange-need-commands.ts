@@ -138,13 +138,31 @@ async function authorized(
   } else {
     const need = await needRow(tx, input.needId);
     await requireNeedCoordinator(tx, need, ownerId);
-    if (op === "complete-volunteer")
+    if (op === "complete-volunteer") {
+      // Preserve the existing Need receipt's explicit duty-denial response.
+      // Bind the signup to this managed Need before checking its post authority.
+      const signup = await tx.postVolunteerSignup.findFirst({
+        where: {
+          id: postId(input.signupId),
+          slot: { exchangeNeedSlot: { needId: need.id } }
+        },
+        select: { slot: { select: { postId: true } } }
+      });
+      if (!signup) throw unavailableNeed();
+      const context = await postContext(tx, ownerId);
+      const post = await participationPost(tx, context, signup.slot.postId);
+      if (!canOrganize(context, post))
+        throw new PortalError(
+          403,
+          "A current volunteer organizer must confirm completed help."
+        );
       await authorizeVolunteerServiceIn(tx, ownerId, {
         ...input,
         operation: "complete",
         targetKind: "signup",
         targetId: input.signupId
       });
+    }
   }
 }
 export async function needSlotCounts(tx: PostTx, slotId: string) {
