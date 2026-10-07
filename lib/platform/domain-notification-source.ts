@@ -80,14 +80,16 @@ export async function domainNotificationSources(
     category: NotificationSource["category"],
     href: string,
     group: string,
-    summary?: string
+    summary?: string,
+    expiresAt?: Date
   ) => {
     if (e.notificationCategory === category)
       result.set(e.id, {
         category,
         href,
         group,
-        ...(summary ? { summary } : {})
+        ...(summary ? { summary } : {}),
+        ...(expiresAt ? { expiresAt } : {})
       });
   };
   const context = suppliedContext ?? (await postContext(tx, ownerId));
@@ -693,17 +695,19 @@ export async function domainNotificationSources(
         event = slot?.post.eventOccurrence,
         bell = p?.authorChurchId
           ? bells.find((b) => b.churchId === p.authorChurchId)
-          : null;
+          : null,
+        shift = slot && event ? volunteerShift(slot, event) : null;
       if (
         slot &&
         p?.authorChurchId &&
         context.churches.includes(p.authorChurchId) &&
         !mutedPost(p) &&
         event &&
+        shift &&
         !slot.opportunity?.recoveryRequired &&
         !slot.opportunity?.closedAt &&
-        !volunteerShift(slot, event).conflict &&
-        volunteerShift(slot, event).endAt > now &&
+        !shift.conflict &&
+        shift.endAt > now &&
         !event.canceledAt &&
         !event.event.canceledAt &&
         event.endAt > now &&
@@ -718,7 +722,9 @@ export async function domainNotificationSources(
           slot.opportunity
             ? `/platform/serve/${slot.opportunity.id}`
             : `/platform/posts/${p.id}#volunteer-${slot.id}`,
-          `slot:${slot.id}`
+          `slot:${slot.id}`,
+          undefined,
+          new Date(Math.min(shift.endAt.getTime(), event.endAt.getTime()))
         );
     }
   }

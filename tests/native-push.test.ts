@@ -31,6 +31,12 @@ import {
   notificationPreferenceCommand,
   readNotificationPreferences
 } from "../lib/platform/notification-preferences";
+import { seedParticipation } from "./seed-post-participation";
+import {
+  relationshipCommand,
+  readRelationships
+} from "../lib/platform/relationships";
+import { processNotificationFanoutBatch } from "../lib/platform/notification-fanout";
 
 const db = new PrismaClient();
 const names = [
@@ -216,6 +222,122 @@ test("native delivery recomputes its remaining TTL immediately after a slow clai
     observed > 0 && observed <= remaining,
     `${observed} must not exceed the current ${remaining} seconds`
   );
+});
+
+async function nativeVolunteerRequest(boundary: "shift" | "event") {
+  const f = await seedParticipation(db);
+  const { input } = await device(f.morgan);
+  const prefs = (await readNotificationPreferences(db, f.morgan.token))
+    .preferences;
+  await notificationPreferenceCommand(db, f.morgan.token, {
+    operation: "preferences",
+    ownerId: f.morgan.id,
+    mutationId: randomUUID(),
+    expectedVersion: prefs.version,
+    inApp: prefs.inApp,
+    quietHours: prefs.quietHours,
+    pushCategories: ["commitments"]
+  });
+  const status = (await readRelationships(db, f.morgan.token, {
+    view: "status",
+    kind: "church",
+    targetId: f.churchA.id
+  })) as { version: number };
+  await relationshipCommand(db, f.morgan.token, {
+    operation: "author-bell",
+    mutationId: randomUUID(),
+    kind: "church",
+    targetId: f.churchA.id,
+    desired: true,
+    expectedVersion: status.version
+  });
+  const slot = await f.slot();
+  const start = new Date(Date.now() - 60000),
+    deadline = new Date(Date.now() + 30000);
+  await db.calendarOccurrence.update({
+    where: { id: f.occurrence.id },
+    data: {
+      startAt: start,
+      endAt: new Date(deadline.getTime() + (boundary === "shift" ? 60000 : 0))
+    }
+  });
+  if (boundary === "shift")
+    await db.postVolunteerSlot.update({
+      where: { id: slot.id },
+      data: { shiftStartAt: start, shiftEndAt: deadline }
+    });
+  const job = await db.notificationFanoutJob.findFirstOrThrow({
+    where: { kind: "VOLUNTEER_REQUEST", sourceId: slot.id }
+  });
+  await processNotificationFanoutBatch(db, job.id);
+  const row = await db.notificationDelivery.findFirstOrThrow({
+    where: {
+      event: { kind: "VOLUNTEER_REQUEST", sourceId: slot.id },
+      subscriptionId: input.id
+    }
+  });
+  return { f, slot, row, deadline };
+}
+
+test("native volunteer requests carry their shift deadline and refresh a shortened source TTL", async () => {
+  const { slot, row, deadline } = await nativeVolunteerRequest("shift");
+  assert.equal(row.expiresAt.getTime(), deadline.getTime());
+  const shorter = new Date(Date.now() + 10000);
+  await db.postVolunteerSlot.update({
+    where: { id: slot.id },
+    data: { shiftEndAt: shorter }
+  });
+  let sends = 0,
+    observed = 0,
+    remaining = 0;
+  await deliverNotification(
+    delayedClaim(2250),
+    row.id,
+    noWeb,
+    new Date(),
+    undefined,
+    undefined,
+    {
+      ...accepted(),
+      send: async (_token, _payload, ttl) => {
+        sends++;
+        observed = ttl;
+        remaining = Math.floor((shorter.getTime() - Date.now()) / 1000);
+        return { kind: "ticket", ticketId: randomUUID(), statusCode: 200 };
+      }
+    }
+  );
+  assert.equal(sends, 1);
+  assert.ok(
+    observed > 0 && observed <= remaining,
+    `${observed} exceeds remaining source lifetime ${remaining}`
+  );
+});
+
+test("native volunteer requests never send after their event ends during claim commit", async () => {
+  const { f, row } = await nativeVolunteerRequest("event");
+  await db.calendarOccurrence.update({
+    where: { id: f.occurrence.id },
+    data: { endAt: new Date(Date.now() + 2000) }
+  });
+  let sends = 0;
+  const result = await deliverNotification(
+    delayedClaim(2250),
+    row.id,
+    noWeb,
+    new Date(),
+    undefined,
+    undefined,
+    {
+      ...accepted(),
+      send: async () => {
+        sends++;
+        return { kind: "ticket", ticketId: randomUUID(), statusCode: 200 };
+      }
+    }
+  );
+  assert.equal(sends, 0);
+  assert.deepEqual(result, { done: true, outcome: "cancelled" });
 });
 
 test("concurrent receipt workers lease a captured ticket once", async () => {
