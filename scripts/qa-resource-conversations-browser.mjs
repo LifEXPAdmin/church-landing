@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { request as httpsRequest } from "node:https";
 import { resolve } from "node:path";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixture = process.argv[2];
@@ -135,24 +136,107 @@ const cookieOwner = async (actor) => {
       }
     ]);
 };
-const refresh = async () => {
-  const rsc = page.waitForResponse(
-    (r) =>
-      new URL(r.url()).pathname === "/platform/serve/" + f.opportunity.id &&
-      !!r.headers()["content-type"]?.includes("text/x-component")
-  );
-  await page.evaluate(() => {
-    if (!window.next?.router?.refresh)
-      throw Error("Actual Next router unavailable");
-    window.next.router.refresh();
+async function forwarded(route) {
+  const request = route.request(),
+    url = new URL(request.url());
+  assert.equal(url.origin, config.origin);
+  const headers = { ...(await request.allHeaders()) };
+  delete headers["accept-encoding"];
+  return new Promise((resolveResponse, reject) => {
+    const outgoing = httpsRequest(
+      url,
+      {
+        method: request.method(),
+        headers,
+        ca: readFileSync(config.certificate),
+        agent: false,
+        timeout: 20000
+      },
+      (incoming) => {
+        const chunks = [];
+        incoming.on("data", (chunk) => chunks.push(chunk));
+        incoming.on("error", reject);
+        incoming.on("end", () => {
+          const responseHeaders = Object.fromEntries(
+            Object.entries(incoming.headers)
+              .filter(
+                ([name]) =>
+                  ![
+                    "connection",
+                    "transfer-encoding",
+                    "content-length"
+                  ].includes(name)
+              )
+              .map(([name, value]) => [
+                name,
+                Array.isArray(value) ? value.join(", ") : String(value)
+              ])
+          );
+          resolveResponse({
+            status: incoming.statusCode,
+            headers: responseHeaders,
+            body: Buffer.concat(chunks)
+          });
+        });
+      }
+    );
+    outgoing.on("timeout", () =>
+      outgoing.destroy(new Error("Local forwarded response timeout"))
+    );
+    outgoing.on("error", reject);
+    outgoing.end(request.postDataBuffer() ?? undefined);
   });
-  await (await rsc).finished();
-  await page.evaluate(
-    () =>
-      new Promise((done) =>
-        requestAnimationFrame(() => requestAnimationFrame(done))
-      )
-  );
+}
+const bounded = async (promise, label, milliseconds = 20000) => {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(label)), milliseconds);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+const refresh = async () => {
+  console.log("PHASE refresh " + phase);
+  const completed = Promise.withResolvers();
+  const match = (u) => u.pathname === "/platform/serve/" + f.opportunity.id;
+  const handler = async (route) => {
+    if (route.request().headers().rsc !== "1") return route.fallback();
+    try {
+      const r = await forwarded(route);
+      assert.equal(r.status, 200);
+      await route.fulfill(r);
+      completed.resolve();
+    } catch (e) {
+      completed.reject(e);
+      await route.abort().catch(() => {});
+    }
+  };
+  await page.route(match, handler);
+  try {
+    await page.evaluate(() => {
+      if (!window.next?.router?.refresh)
+        throw Error("Actual Next router unavailable");
+      window.next.router.refresh();
+    });
+    await bounded(completed.promise, "Actual RSC refresh failed to settle");
+    await bounded(
+      page.evaluate(
+        () =>
+          new Promise((done) =>
+            requestAnimationFrame(() => requestAnimationFrame(done))
+          )
+      ),
+      "Refreshed render did not settle"
+    );
+  } finally {
+    await page.unroute(match, handler);
+  }
+  console.log("PHASE refreshed " + phase);
 };
 const thread = () =>
   page.getByRole("region", { name: "Full discussion", exact: true });

@@ -254,11 +254,18 @@ test("current membership, blocking and source withdrawal govern every page and f
     1
   );
   await db.socialRelationship.create({
-    data: { ownerId: f.lee.id, targetUserId: f.ada.id, blocked: true }
+    data: { ownerId: f.val.id, targetUserId: f.lee.id, blocked: true }
   });
-  await concealed();
+  const blocked = await thread(f.val.token, f.opportunityPost.id);
+  assert.equal(blocked.visibleCount, 0);
+  assert.deepEqual(blocked.items, []);
+  assert.equal(
+    (await readVolunteerOpportunity(db, f.val.token, f.opportunity.id))
+      .opportunity.id,
+    f.opportunity.id
+  );
   await db.socialRelationship.deleteMany({
-    where: { ownerId: f.lee.id, targetUserId: f.ada.id }
+    where: { ownerId: f.val.id, targetUserId: f.lee.id }
   });
   await db.platformPost.update({
     where: { id: f.opportunityPost.id },
