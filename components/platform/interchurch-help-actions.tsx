@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { reportEntryHref } from "@/lib/platform/community-report-types";
 import { useState } from "react";
+import { HelpScheduleLink } from "./interchurch-help-schedule";
 import { EXCHANGE_ITEM_POLICY } from "@/lib/platform/exchange-options";
 import {
   helpOfferStates,
@@ -265,16 +266,20 @@ export function HelpRequestActions({
 }
 type Offer = Extract<HelpPageData, { view: "offers" }>["offers"][number];
 export function HelpOfferCard({
+  owner,
   row,
   visible,
   blocked,
   command,
+  onAccessDenied,
   onDirty
 }: {
+  owner: string;
   row: Offer;
   visible: boolean;
   blocked: boolean;
   command: HelpCommand;
+  onAccessDenied: () => void;
   onDirty: (v: boolean) => void;
 }) {
   const [accepted, accept] = useState(false),
@@ -461,6 +466,18 @@ export function HelpOfferCard({
                 </p>
                 {!["COMPLETED", "CANCELED", "REVOKED"].includes(a.state) && (
                   <>
+                    <HelpScheduleLink
+                      owner={owner}
+                      offerId={row.id}
+                      expectedVersion={row.agreement.version}
+                      requestTermsVersion={row.requestTermsVersion}
+                      current={row.agreement.schedule}
+                      visible={visible}
+                      blocked={blocked}
+                      command={command}
+                      onAccessDenied={onAccessDenied}
+                      onDirty={onDirty}
+                    />
                     <HelpCheck
                       checked={accepted}
                       onChange={(v) => {
@@ -484,6 +501,7 @@ export function HelpOfferCard({
                     <button
                       type="button"
                       className={helpButton}
+                      disabled={!!row.agreement.schedule?.changed}
                       onClick={() =>
                         action("acknowledge", {
                           termsVersion: row.agreement!.termsVersion,
@@ -497,6 +515,13 @@ export function HelpOfferCard({
                     </button>
                     <details>
                       <summary>Propose a material amendment</summary>
+                      {row.agreement.schedule && (
+                        <p>
+                          Keep the linked event or shift times. To propose
+                          different times, explicitly remove the schedule link
+                          first.
+                        </p>
+                      )}
                       <HelpTermsEditor
                         value={terms}
                         onChange={(v) => {

@@ -84,7 +84,7 @@ export function InterchurchHelpPage({
     generation.current++;
     setVisible(false);
     setNotice(
-      "Your private information is concealed. Local entries and any original request are retained."
+      "Your private information is concealed. Offer entries and any original request are retained. Schedule choices are cleared and must be selected again."
     );
   }, []);
   const load = useCallback(async () => {
@@ -216,7 +216,10 @@ export function InterchurchHelpPage({
       window.removeEventListener("focus", recheck);
       window.removeEventListener("online", recheck);
       window.removeEventListener("pageshow", recheck);
-      window.removeEventListener("social-relationships-changed", backgroundRefresh);
+      window.removeEventListener(
+        "social-relationships-changed",
+        backgroundRefresh
+      );
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [hide, recheck, load]);
@@ -573,11 +576,13 @@ export function InterchurchHelpPage({
           )}
           {page.offers.map((row) => (
             <HelpOfferCard
+              owner={page.owner}
               key={row.id + ":" + (refresh[row.id] ?? 0)}
               row={row}
               visible={visible}
               blocked={blocked}
               command={(v) => command(v, row.id)}
+              onAccessDenied={hide}
               onDirty={markDirty(row.id)}
             />
           ))}

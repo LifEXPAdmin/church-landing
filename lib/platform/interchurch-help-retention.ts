@@ -9,8 +9,29 @@ import {
   recordHelpChange,
   revokeHelpOffers
 } from "./interchurch-help-lifecycle";
-import { helpTermsFields, parseHelpTerms } from "./interchurch-help-input";
+import {
+  helpTermsFields,
+  parseHelpTerms,
+  parseHelpAgreementTerms
+} from "./interchurch-help-input";
+import { readHelpSchedule } from "./interchurch-help-schedule";
 type Tx = Prisma.TransactionClient;
+function selectedAgreementEvidence(input: unknown) {
+  try {
+    const parsed = parseHelpAgreementTerms(input);
+    const fields = helpTermsFields(parsed.terms);
+    if (!parsed.schedule) return fields;
+    // A report captures the selected agreement, not a durable copy of another
+    // source's private identifiers, title or current calendar/shift details.
+    const { startLocal, endLocal, timeZone, ...scope } = fields;
+    void startLocal;
+    void endLocal;
+    void timeZone;
+    return { ...scope, schedule: "Linked schedule details omitted" };
+  } catch {
+    return null;
+  }
+}
 export function helpOfferEvidence(
   row: InterchurchHelpOffer & { agreement: InterchurchHelpAgreement | null }
 ) {
@@ -28,7 +49,8 @@ export function helpOfferEvidence(
     `Offer state: ${row.state}`,
     terms ? JSON.stringify(terms) : "Offer text unavailable",
     row.agreement && `Agreement state: ${row.agreement.state}`,
-    row.agreement && JSON.stringify(row.agreement.terms),
+    row.agreement &&
+      JSON.stringify(selectedAgreementEvidence(row.agreement.terms)),
     row.agreement?.completionNote
   ]
     .filter(Boolean)
@@ -55,16 +77,55 @@ export async function exportHelp(tx: Tx, userId: string, limit: number) {
     const current = pairs.get(row.id),
       own = row.responderId === userId,
       a = row.agreement;
+    let agreementFields = null;
+    let scheduleChanged = false;
+    if (current && a?.authorityKey === row.authorityKey) {
+      let parsed: ReturnType<typeof parseHelpAgreementTerms> | undefined;
+      try {
+        parsed = parseHelpAgreementTerms(a.terms);
+      } catch {
+        /* Unknown stored terms cannot enter an export. */
+      }
+      if (parsed) {
+        const source =
+          parsed.schedule &&
+          row.coordinatorId &&
+          row.responderId &&
+          current.request.listing?.ownerChurchId
+            ? await readHelpSchedule(
+                tx,
+                {
+                  coordinatorId: row.coordinatorId,
+                  responderId: row.responderId,
+                  ownerChurchId: current.request.listing.ownerChurchId
+                },
+                parsed.schedule
+              )
+            : null;
+        scheduleChanged = !!source?.changed;
+        if (!parsed.schedule || source)
+          agreementFields = helpTermsFields(parsed.terms);
+      }
+    }
     result.push({
       id: row.id,
       state: row.state,
       ...(own ? { authoredOffer: row.terms, kind: row.kind } : {}),
-      ownContact: a ? (own ? a.responderContact : a.requesterContact) : "",
-      ...(current && a?.authorityKey === row.authorityKey
+      ownContact:
+        a && !scheduleChanged
+          ? own
+            ? a.responderContact
+            : a.requesterContact
+          : "",
+      ...(agreementFields && a
         ? {
             agreement: {
-              state: a.state,
-              terms: a.terms,
+              state:
+                scheduleChanged &&
+                ["CONFIRMED", "NEEDS_REVIEW"].includes(a.state)
+                  ? "NEEDS_REVIEW"
+                  : a.state,
+              terms: agreementFields,
               termsVersion: a.termsVersion,
               completionNote: a.completionNote,
               completedAt: a.completedAt,
@@ -77,6 +138,7 @@ export async function exportHelp(tx: Tx, userId: string, limit: number) {
   return result;
 }
 export async function eraseHelp(tx: Tx, userId: string) {
+  await tx.$executeRaw`SELECT set_config('gc.interchurch_schedule_writer', 'v1', true)`;
   await revokeHelpOffers(
     tx,
     { OR: [{ responderId: userId }, { coordinatorId: userId }] },
@@ -87,6 +149,19 @@ export async function eraseHelp(tx: Tx, userId: string) {
     include: { agreement: true }
   });
   for (const row of rows) {
+    if (row.agreement) {
+      let parsed: ReturnType<typeof parseHelpAgreementTerms> | undefined;
+      try {
+        parsed = parseHelpAgreementTerms(row.agreement.terms);
+      } catch {
+        /* Existing erasure below owns malformed or cleared receipts. */
+      }
+      if (parsed?.schedule)
+        await tx.interchurchHelpAgreement.update({
+          where: { id: row.agreement.id },
+          data: { terms: helpTermsFields(parsed.terms) }
+        });
+    }
     const reported = await tx.communityReport.findFirst({
       where: { targetType: "INTERCHURCH_OFFER", targetId: row.id },
       select: { id: true }

@@ -22,12 +22,17 @@ import {
   helpCategory,
   helpTermsFields,
   parseHelpTerms,
+  parseHelpAgreementTerms,
   type HelpTerms
 } from "./interchurch-help-input";
 import { postId, postField } from "./post-input";
 import { PortalError } from "./portal-policy";
 import { effectiveChurchGrants } from "./church-permissions";
 import { requirePrivilegedAuthentication } from "./privileged-auth-policy";
+import {
+  helpScheduleChoices,
+  readHelpSchedule
+} from "./interchurch-help-schedule";
 
 export function publicHelp(row: InterchurchHelpRequest, management = false) {
   return {
@@ -49,7 +54,54 @@ export function readInterchurchHelp(
   return withPostRead(db, token, async (tx, context) => {
     const actor = context.actorId ? { id: context.actorId } : null,
       view = q.view ?? "list";
-    const after = q.after ? postId(q.after) : undefined;
+    const after = q.after
+      ? view === "schedule"
+        ? typeof q.after === "string" && q.after.length <= 800
+          ? q.after
+          : (() => {
+              throw new PortalError(
+                400,
+                "Refresh the current schedule choices."
+              );
+            })()
+        : postId(q.after)
+      : undefined;
+    if (view === "schedule") {
+      requireExchangeActor(context);
+      const offer = await tx.interchurchHelpOffer.findUnique({
+        where: { id: postId(q.id) },
+        include: { agreement: true }
+      });
+      if (
+        !offer ||
+        ![offer.coordinatorId, offer.responderId].includes(actor!.id) ||
+        !offer.agreement ||
+        !["NEEDS_REVIEW", "CONFIRMED"].includes(offer.agreement.state)
+      )
+        throw helpUnavailable();
+      const pair = (await currentHelpOffers(tx, [offer])).get(offer.id);
+      if (
+        !pair?.request.listing?.ownerChurchId ||
+        !offer.coordinatorId ||
+        !offer.responderId
+      )
+        throw helpUnavailable();
+      if (offer.coordinatorId === actor!.id || offer.kind === "ORGANIZATION")
+        await requirePrivilegedAuthentication(tx, actor!.id);
+      if (q.category !== "EVENT" && q.category !== "VOLUNTEER_SLOT")
+        throw new PortalError(400, "Choose events or volunteer shifts.");
+      const choices = await helpScheduleChoices(
+        tx,
+        {
+          coordinatorId: offer.coordinatorId,
+          responderId: offer.responderId,
+          ownerChurchId: pair.request.listing.ownerChurchId
+        },
+        q.category,
+        after
+      );
+      return { view: "schedule" as const, owner: actor!.id, ...choices };
+    }
     if (view === "context") {
       requireExchangeActor(context);
       const authority = await exchangeAuthority(tx, context);
@@ -303,7 +355,45 @@ export function readInterchurchHelp(
       } catch {
         continue;
       }
-      const currentAgreement = a && a.authorityKey === row.authorityKey;
+      let agreementTerms: ReturnType<typeof parseHelpAgreementTerms> | null =
+        null;
+      let scheduleSource: Awaited<ReturnType<typeof readHelpSchedule>> = null;
+      if (a && a.authorityKey === row.authorityKey) {
+        try {
+          agreementTerms = parseHelpAgreementTerms(a.terms);
+          if (
+            agreementTerms.schedule &&
+            row.coordinatorId &&
+            row.responderId &&
+            pair.request.listing?.ownerChurchId
+          )
+            scheduleSource = await readHelpSchedule(
+              tx,
+              {
+                coordinatorId: row.coordinatorId,
+                responderId: row.responderId,
+                ownerChurchId: pair.request.listing.ownerChurchId
+              },
+              agreementTerms.schedule
+            );
+        } catch {
+          agreementTerms = null;
+        }
+        if (!agreementTerms || (agreementTerms.schedule && !scheduleSource)) {
+          projected.push({
+            id: row.id,
+            version: row.version,
+            available: false as const,
+            own,
+            state: row.state,
+            agreement: { version: a.version, state: a.state }
+          });
+          continue;
+        }
+      }
+      const currentAgreement =
+        a && a.authorityKey === row.authorityKey && agreementTerms;
+      const scheduleChanged = !!scheduleSource?.changed;
       projected.push({
         id: row.id,
         version: row.version,
@@ -330,15 +420,42 @@ export function readInterchurchHelp(
               version: a.version,
               termsVersion: a.termsVersion,
               requestTermsVersion: a.requestTermsVersion,
-              state: a.state,
-              terms: a.terms,
-              requesterAcknowledged: a.requesterAcknowledged,
-              responderAcknowledged: a.responderAcknowledged,
+              state:
+                scheduleChanged &&
+                ["CONFIRMED", "NEEDS_REVIEW"].includes(a.state)
+                  ? "NEEDS_REVIEW"
+                  : a.state,
+              terms: helpTermsFields(currentAgreement.terms),
+              schedule: scheduleSource
+                ? {
+                    kind: scheduleSource.binding.kind,
+                    id: scheduleSource.binding.id,
+                    fingerprint: scheduleSource.binding.fingerprint,
+                    title: scheduleSource.title,
+                    href: scheduleSource.href,
+                    startLocal: scheduleSource.startLocal,
+                    endLocal: scheduleSource.endLocal,
+                    timeZone: scheduleSource.timeZone,
+                    allDay: scheduleSource.allDay,
+                    changed: scheduleChanged
+                  }
+                : null,
+              requesterAcknowledged: scheduleChanged
+                ? null
+                : a.requesterAcknowledged,
+              responderAcknowledged: scheduleChanged
+                ? null
+                : a.responderAcknowledged,
               completionNote: a.completionNote,
               contactVersion: a.contactVersion,
-              ownContact: own ? a.responderContact : a.requesterContact,
+              ownContact: scheduleChanged
+                ? ""
+                : own
+                  ? a.responderContact
+                  : a.requesterContact,
               otherContact:
                 a.state === "CONFIRMED" &&
+                !scheduleChanged &&
                 a.requestTermsVersion === pair.request.termsVersion
                   ? own
                     ? a.requesterContact

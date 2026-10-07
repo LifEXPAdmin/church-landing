@@ -1,4 +1,5 @@
 import { recordDomainActivity, recordFanout } from "./domain-activity";
+import { invalidateHelpSchedule } from "./interchurch-help-schedule";
 import { recordNeedChange } from "./exchange-need-lifecycle";
 import { needSource, requireNeedOpen } from "./exchange-need-policy";
 import type { PrismaClient, PlatformPost } from "@prisma/client";
@@ -462,6 +463,7 @@ export async function participationCommandIn(
       : await tx.postVolunteerSlot.create({
           data: { ...data, postId: post.id, requestKey }
         });
+    if (prior) await invalidateHelpSchedule(tx, actorId, { slotId: saved.id });
     await audit(
       tx,
       post.id,

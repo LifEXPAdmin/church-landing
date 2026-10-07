@@ -34,10 +34,24 @@ export async function interchurchHelpNotificationSources(
       event.notificationCategory !== "needs" ||
       event.sourceVersion !== row.version ||
       ![row.responderId, row.coordinatorId].includes(context.actorId) ||
-      ![row.responderId, row.coordinatorId].includes(event.actorId) ||
       !pairs.has(row.id)
     )
       continue;
+    if (![row.responderId, row.coordinatorId].includes(event.actorId)) {
+      // A canonical calendar/shift organizer may differ from the private pair.
+      // Only the latest recorded schedule invalidation can authorize that
+      // generic update; it reveals no actor identity or source logistics.
+      const change = await tx.interchurchHelpEvent.findFirst({
+        where: { requestId: row.requestId, targetId: row.id },
+        orderBy: { version: "desc" },
+        select: { actorId: true, action: true }
+      });
+      if (
+        change?.action !== "SCHEDULE_CHANGED" ||
+        change.actorId !== event.actorId
+      )
+        continue;
+    }
     const consent =
       context.actorId === row.responderId
         ? row.agreement

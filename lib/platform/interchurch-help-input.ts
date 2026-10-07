@@ -4,6 +4,7 @@ import { exchangeCurrencies } from "./exchange-options";
 import { postField } from "./post-input";
 import { socialInput } from "./social-operations";
 import { PortalError } from "./portal-policy";
+import { parseHelpSchedule } from "./interchurch-help-schedule";
 import {
   helpCategories,
   helpDutyClasses,
@@ -105,6 +106,22 @@ export function parseHelpTerms(schema: unknown, input: unknown) {
   };
 }
 export type HelpTerms = ReturnType<typeof parseHelpTerms>;
+
+// Schedule references belong only to accepted agreements. The existing request
+// and offer parser deliberately continues to reject them.
+export function parseHelpAgreementTerms(input: unknown) {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new PortalError(400, "This agreement needs a current terms review.");
+  const { schedule, ...fields } = input as Record<string, unknown>;
+  return {
+    terms: parseHelpTerms(HELP_SCHEMA, fields),
+    schedule: schedule === undefined ? null : parseHelpSchedule(schedule)
+  };
+}
+
+export function helpAgreementFields(input: unknown) {
+  return helpTermsFields(parseHelpAgreementTerms(input).terms);
+}
 export function helpTermsFields(
   t: Omit<HelpTerms, "startAt" | "endAt">
 ): HelpTermsFields {
