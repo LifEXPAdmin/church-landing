@@ -37,13 +37,20 @@ import {
   type NativeResponseOperation
 } from "./native-auth-contracts";
 
+import {
+  NativePolicyError,
+  requireNativeProtocol,
+  requireNativeFeature
+} from "./native-api-policy";
+
 export const nativeAuthHeaders = {
   "Cache-Control": "private, no-store",
   "CDN-Cache-Control": "no-store",
   "Vercel-CDN-Cache-Control": "no-store",
   "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
-  Vary: "Authorization, Cookie, X-Expected-Account"
+  "X-API-Version": API_VERSION,
+  Vary: "Authorization, Cookie, X-Expected-Account, X-API-Version"
 };
 export class NativeRequestError extends Error {
   readonly code: ApiErrorCode;
@@ -96,6 +103,7 @@ export function nativeRequestCredential(
   if (owner !== null) apiId.parse(owner);
   if (owner !== null && raw === null)
     throw new NativeRequestError("unauthenticated");
+  requireNativeProtocol(url.pathname, request.headers.get("x-api-version"));
   return { token: raw?.slice(7), owner: owner ?? undefined };
 }
 function member(credential: ReturnType<typeof nativeRequestCredential>) {
@@ -143,6 +151,8 @@ function failure(
   );
 }
 function denied(error: unknown, operation: Operation) {
+  if (error instanceof NativePolicyError)
+    return failure(error.code, error.message);
   if (error instanceof AccountSessionOwnerError)
     return failure(
       "account_changed",
@@ -234,6 +244,7 @@ export async function handleNativeSessionRequest(
       });
     }
     if (operation === "password") {
+      requireNativeFeature("session.password");
       if (credential.token || credential.owner)
         throw new NativeRequestError("validation");
       const input = nativePasswordInput.parse(

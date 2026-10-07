@@ -122,3 +122,10 @@ clearing, real storage providers and the combined production release still need
 their respective acceptance. The full dependency security gate remains blocked
 as recorded in `DEPENDENCY_REMEDIATION.md`. This receipt does not establish a
 schema-1 complete product release or canonical live acceptance.
+
+## Compatibility admission
+
+The [native compatibility policy](NATIVE_API_COMPATIBILITY.md) can separately
+pause image reads, listing, upload or removal without deleting assets or receipts.
+Disabled requests stop before body/database/storage work. Already admitted uploads
+may finish; retain exact retry inputs and reconcile after admission is restored.

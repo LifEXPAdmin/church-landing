@@ -39,6 +39,8 @@ import {
   type NativeImageOperation
 } from "./native-media-contracts";
 
+import { NativePolicyError, requireNativeFeature } from "./native-api-policy";
+
 const headers = {
   ...nativeAuthHeaders,
   "Cross-Origin-Resource-Policy": "same-origin",
@@ -64,6 +66,8 @@ function failure(
   );
 }
 function denied(error: unknown) {
+  if (error instanceof NativePolicyError)
+    return failure(error.code, error.message);
   if (error instanceof AccountSessionOwnerError)
     return failure(
       "account_changed",
@@ -178,6 +182,15 @@ export async function handleNativeImageRequest(
     );
     if (!credential.token) throw new NativeRequestError("unauthenticated");
     if (!credential.owner) throw new NativeRequestError("validation");
+    requireNativeFeature(
+      delivery
+        ? "media.images.read"
+        : request.method === "GET"
+          ? "media.images.list"
+          : request.method === "POST"
+            ? "media.images.upload"
+            : "media.images.remove"
+    );
     const { token, owner } = credential;
     const identity = { expectedOwner: owner, credentialSupplied: true };
     if (request.method === "GET") {

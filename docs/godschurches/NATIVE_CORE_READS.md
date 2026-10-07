@@ -86,3 +86,10 @@ are retained alongside the reproduced cursor defect and its passing regression.
 All owned fictional runtimes were stopped and their ports checked closed.
 Final independent review of `1e2d983` found no remaining concrete issues.
 Ready for local integration. No integration or live acceptance claimed.
+
+## Compatibility admission
+
+The [native compatibility policy](NATIVE_API_COMPATIBILITY.md) defines explicit
+protocol headers and reversible feature pauses. Capability discovery reports
+the same admission policy used by the endpoints. Existing header-free v1 readers
+remain supported; capability availability never replaces audience authorization.
