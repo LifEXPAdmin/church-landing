@@ -95,9 +95,12 @@ permission from client flags.
   account security data. This first read does not expose editor/presentation/media
   internals; preserve the website handoff for omitted modules.
 - Church listing/detail fields are public listing data and bounded readable
-  posts. Representative verification does not mean software permission. Keep
+  posts, plus up to three separately projected pinned notices from the canonical
+  church feed. Preserve pins separately from unpinned pagination. Representative
+  verification does not mean software permission. Keep
   membership records, directory consent/contact data, review queues and operator
-  grants out of these DTOs. Omitted listing modules can use the website.
+  grants out of these DTOs. Omitted listing modules use the explicit `requiresWeb`
+  handoff on the detail response.
 
 Wire queries are normalized into their explicit schema fields before parsing:
 omitted cursors/scopes become null; omitted church search becomes an empty string;

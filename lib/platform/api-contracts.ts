@@ -215,6 +215,8 @@ export const apiChurchDetail = object({
   serviceTimes: text(3000),
   accessibilityInfo: text(3000),
   connectionsAvailable: boolean,
+  pinnedPosts: array(apiPost, 3),
+  requiresWeb: boolean,
   posts: page(apiPost, 30)
 });
 export const apiSession = union(
@@ -479,7 +481,10 @@ function bindApiResponse<K extends ApiOperation>(
     if (operation === "feed")
       (result as ApiResponse<"feed">).data.page.items.forEach(guestPost);
     if (operation === "church")
-      (result as ApiResponse<"church">).data.posts.items.forEach(guestPost);
+      [
+        ...(result as ApiResponse<"church">).data.posts.items,
+        ...(result as ApiResponse<"church">).data.pinnedPosts
+      ].forEach(guestPost);
     if (operation === "like") {
       const state = (result as ApiResponse<"like">).data;
       if (state.liked || state.version !== 0) fail();

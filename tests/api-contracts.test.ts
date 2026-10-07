@@ -270,6 +270,31 @@ test("wire identifiers, cursors, canonical dates and path parameters are bounded
 
 test("response pages and nested text have finite hard bounds; missing required values never default", () => {
   const response = apiResponseExamples.feed;
+  const church = apiResponseExamples.church;
+  const guestPost = { ...examplePost, ownReaction: null };
+  assert.equal(
+    encodeApiResponse("church", {
+      ...church,
+      data: { ...church.data, pinnedPosts: [guestPost] }
+    }).data.pinnedPosts.length,
+    1
+  );
+  assert.throws(
+    () =>
+      encodeApiResponse("church", {
+        ...church,
+        data: { ...church.data, pinnedPosts: Array(4).fill(guestPost) }
+      }),
+    WireContractError
+  );
+  assert.throws(
+    () =>
+      encodeApiResponse("church", {
+        ...church,
+        data: { ...church.data, pinnedPosts: [examplePost] }
+      }),
+    WireContractError
+  );
   assert.throws(
     () =>
       encodeApiResponse("feed", {

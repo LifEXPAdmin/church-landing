@@ -88,6 +88,8 @@ export const apiResponseExamples = {
     serviceTimes: "",
     accessibilityInfo: "",
     connectionsAvailable: false,
+    pinnedPosts: [],
+    requiresWeb: true,
     posts: { items: [], nextCursor: null }
   }),
   like: member({ id: examplePost.id, liked: true, version: 2, count: null }),
