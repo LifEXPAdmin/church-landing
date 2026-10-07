@@ -2,8 +2,9 @@
 
 The v1 image routes call the same media services as the website. They add native
 credential transport and bounded descriptors, without copying permission,
-processing, storage, retry or garbage-collection logic. Implementation and
-verification are separate; the current candidate is undergoing isolated checks.
+processing, storage, retry or garbage-collection logic. The adapter has passed
+isolated local service, production-build and HTTPS checks. Integration, device,
+real-provider and live acceptance remain separate.
 
 ## Transport and supported operations
 
@@ -37,7 +38,7 @@ image endpoints, not a general media-library or audio/video player capability.
 
 `X-Image-Details` is URI-encoded JSON containing exactly `purpose`, `targetId`,
 `requestKey`, `replacesId`, `expectedVersion`, `caption`, `alt` and `crop`.
-The request key is a UUID v4. New uploads use null replacement ID/version;
+The request key is a lowercase UUID v4. New uploads use null replacement ID/version;
 replacement requires both the prior asset ID and version. Crop is null for the
 default framing, or finite x/y from zero to one and zoom from one to four for
 cropped identity pictures. Post/listing images use null crop. Caption and alt
@@ -53,7 +54,8 @@ The existing decoder removes source metadata and creates WebP variants.
 The authenticated account and existing image rate budget are checked before
 consuming the body. Native size/format/input failures use the v1 `validation`
 error with HTTP 400; the browser's existing HTTP 413 behavior is unchanged.
-Native privileged challenges use `authenticator_required`. Unexpected failures
+Explicit native privileged challenges use `authenticator_required`; canonical
+services can instead deny an unavailable privileged action with `forbidden`. Unexpected failures
 return `unconfirmed` without provider, database or input details.
 
 The canonical upload receipt binds the acting uploader and request key to
@@ -93,11 +95,30 @@ viewer; no preference, database schema or storage provider is replaced.
 
 ## Verification boundary
 
-The focused checks cover native contract rejection, body/metadata limits,
-account consistency, exact replay, version conflicts, private audiences,
-revocation during storage access, uncertain writes and cancellation. Existing
-media, personal-photo, recovery, abuse-budget and web HTTPS suites provide
-regression coverage when run against the candidate. Report actual outcomes and
-source/build identity separately. Device, real-provider, combined release and
-canonical live acceptance remain separate gates. The full dependency security
-gate is still blocked as recorded in `DEPENDENCY_REMEDIATION.md`.
+Application source `6976a72cad06bdae1448ba4c443058074def23c6`, production build
+`3XOVMPDcXSfgfEou7COuz`: 63 contract/service checks and 6 actual local HTTPS
+checks pass against an isolated fictional database with all 125 migrations.
+Full TypeScript, lint, source/copy security, build, hydration and runtime-trace
+checks pass. Lint retains 39 existing warnings and no errors. The build scan
+covers 270 traces, 67,427 entries and 663 server JavaScript files.
+
+Focused checks cover native contract rejection, body/metadata limits, account
+consistency, exact replay, version conflicts, private audiences, revocation
+during storage access, uncertain writes and cancellation. Canonical media,
+personal-photo, recovery, abuse-budget and browser HTTPS regressions pass.
+A saved personal-photo reference is readable through its current post audience;
+its database position is separately bounded from an ordinary media asset.
+
+Retained failed attempts exposed a dependency-copy resolution error and two
+fixture assumptions: missing church MFA produces a canonical permission denial,
+and saved-photo references have a database position limit. Those fixtures were
+corrected before the passing run. All owned runtime processes stopped gracefully
+and their three ports were checked closed. A later test-only correction makes
+uppercase UUID rejection deterministic; it does not change application code.
+
+No browser or physical-device acceptance was performed for this server adapter.
+Native picker behavior, HEIC conversion, local-file cleanup, account-cache
+clearing, real storage providers and the combined production release still need
+their respective acceptance. The full dependency security gate remains blocked
+as recorded in `DEPENDENCY_REMEDIATION.md`. This receipt does not establish a
+schema-1 complete product release or canonical live acceptance.

@@ -56,8 +56,13 @@ public fields and existing post reader in one read transaction, avoiding the
 portal writer and its unrelated account maintenance. Native GET does not renew
 session activity. Ranked feeds retain their existing bounded snapshot writes.
 
-Native comment/reaction/post writes, Google sign-in, media and push remain
-unavailable in the capability response. The current session endpoint provides
+Native comment/reaction/post writes, Google sign-in, general media-library
+access and push remain unavailable in the capability response. The subsequent
+[native private image adapter](NATIVE_PRIVATE_MEDIA.md) adds explicit
+`media.images.read`, `media.images.list`, `media.images.upload` and
+`media.images.remove` capabilities. Core post cards still conservatively require
+the website for their richer content; these image capabilities do not change
+those projections or enable audio/video and personal-library commands. The current session endpoint provides
 account discovery. Clients must also reject late responses from an earlier local
 account generation. Shared mobile/device acceptance and deployment are separate
 from these server contracts.

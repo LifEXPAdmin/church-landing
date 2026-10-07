@@ -30,7 +30,7 @@ test("native image commands reject unsupported destinations, hidden authority an
     { replacesId: "old" },
     { expectedVersion: 1 },
     { requestKey: "not-a-request-id" },
-    { requestKey: base.requestKey.toUpperCase() },
+    { requestKey: "A" + base.requestKey.slice(1).toUpperCase() },
     { replacesId: "old", expectedVersion: -1 },
     { alt: "a".repeat(301) },
     { crop: { x: 0.5, y: 0.5, zoom: Infinity } },
