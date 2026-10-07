@@ -1,4 +1,4 @@
-## Native core reads locally verified, 7 October 2026
+## Native core reads ready for integration, 7 October 2026
 
 Selected GET adapters reuse canonical feed, post, member-profile and church
 services with identity checked inside their authorization transaction. Explicit
@@ -9,7 +9,8 @@ Application `b9da150`, build `5gnNJQZKJ5Ov5U2i0OuFb`: 32 current contract/servic
 and 7 HTTPS checks pass, plus 25 unchanged canonical reader regressions. Type,
 lint, no-DOM and build checks pass. The reproduced large discovery-cursor
 limitation is fixed with distinct 2500/4096 internal/outer bounds; consumers must
-update the preactivation schema. Final independent review remains.
+update the preactivation schema. Final independent review of `1e2d983` found
+no remaining concrete issues; this is a ready local handoff.
 No merge, deployment, production migration or live acceptance is claimed.
 
 ## Native session adapter locally verified, 7 October 2026

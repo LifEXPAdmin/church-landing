@@ -79,4 +79,5 @@ all 11 ordinary current fictional examples; its documented large-cursor limit
 still applies. Initial fixture-label/repost-opt-in and TLS-host setup failures
 are retained alongside the reproduced cursor defect and its passing regression.
 All owned fictional runtimes were stopped and their ports checked closed.
-Final independent review is pending. No integration or live acceptance claimed.
+Final independent review of `1e2d983` found no remaining concrete issues.
+Ready for local integration. No integration or live acceptance claimed.
