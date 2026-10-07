@@ -521,6 +521,22 @@ const endpoint = <Q, B, R>(
   });
 
 export const apiContracts = Object.freeze({
+  createComment: endpoint(
+    "POST",
+    "/posts/:postId/comments",
+    empty,
+    object({
+      mutationId,
+      // Preserve raw CRLF bytes for the canonical fingerprint. The service
+      // normalizes line endings before its existing 1,500-character limit.
+      content: text(3000, 2),
+      replyToId: nullable(apiId),
+      authorChurchId: nullable(apiId),
+      mentionIds: array(apiId, 5)
+    }),
+    apiMutationReceipt,
+    "member"
+  ),
   setCommentLike: endpoint(
     "POST",
     "/posts/:postId/comments/:commentId/like",

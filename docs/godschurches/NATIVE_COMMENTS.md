@@ -1,9 +1,10 @@
-# Native comment reading and Likes
+# Native comment reading, publication and Likes
 
 The versioned `GET /api/platform/v1/posts/:postId/comments` adapter calls the
 same `readComments` service as the website. It introduces no discussion store,
-schema or notification owner. `comments.read` is an optional capability;
-`comments.write` remains unavailable for comment text and discussion controls.
+schema or notification owner. `comments.read`, `comments.create` and
+`commentLikes.write` are separate optional capabilities. `comments.write`
+remains unavailable for drafts, editing and other discussion controls.
 
 The default view is `roots`, ordered `oldest`; roots also support `newest`.
 `replies` requires `rootId`, while `context` requires `commentId`. Replies and
@@ -60,8 +61,43 @@ thread for current Like state, version and visible count. Exact old retries neve
 restore a state that a later change replaced. A lost response keeps the original
 request reference and intended state; a different command needs a new reference.
 Post-commit handoff or projection failures remain unconfirmed. Requests are
-bounded to 16 KiB and receipts retain the response bound above. Comment text,
+bounded to 16 KiB and receipts retain the response bound above. Editing,
 private drafts, prayer, pins and conversation settings still use the website.
+
+## Direct comment publication
+
+`POST /api/platform/v1/posts/:postId/comments` publishes a root comment or reply
+through `comments.create`. Its strict body requires `mutationId`, `content`,
+nullable `replyToId`, nullable `authorChurchId` and `mentionIds` (at most five).
+It accepts no private draft identity, draft version, owner or operation override.
+Publication calls the existing `commentCommand`; it creates no implicit draft,
+new storage or separate notification pipeline. Clients must keep unsent text and
+the immutable original request until the outcome is known, with bounded local
+retention and separate acceptance for any native draft UI.
+
+The shared contract admits raw text up to 3,000 characters so canonical valid
+CRLF text is not prematurely rejected. The canonical service normalizes line
+endings, enforces its 1,500-character limit before trimming and requires at least
+two non-whitespace characters. Raw text stays in the command fingerprint. An
+exact retry must retain the same text, target, identity, ordered mentions and
+request reference; an equivalent normalized text is a different request.
+Native direct publication can replay an identical direct website command, while
+the website composer's explicit draft publication retains its own draft fields.
+
+The common native write boundary checks the original owner before body access
+and again under the canonical lock, shares the website's comment rate bucket,
+and retains current audience, reply, mention and church-speaking permissions.
+Replying to a child keeps that child as parent and the canonical top-level root.
+Ordinary receipts are historical; Topic and group replay retain their existing
+current participation gates. A receipt never proves continuing read access.
+
+The route schedules `advanceCommentFollowers` and, when needed,
+`dispatchCommentFollowers` after publication, exactly as the website does.
+Existing recipient deduplication, bounded follower batches, private delivery
+payloads and delivery-time access checks remain authoritative. A failed handoff
+leaves the committed outbox and continuation available to existing recovery.
+Local browser acceptance proves interoperability with the website; app UI,
+device lifecycle, provider delivery and release acceptance remain separate.
 
 ## Verification
 
@@ -89,3 +125,10 @@ checks and canonical comment notification regressions. The corresponding HTTP
 and browser checks compare native changes with the website's existing Like
 controls, immutable lost-response retry and current access. A source receipt
 does not complete the separate mobile UI or native device journey.
+
+`--native-comment-publishing` adds direct publication, reply structure, raw-text
+retry identity, mention and church permissions, session races, rate admission
+and existing follower/outbox integration. The HTTP checks cover the production
+route over trusted local HTTPS; `qa-native-comment-publishing-browser.mjs`
+checks native roots and replies on the actual website, website publication in
+native reads, and immutable retry after a lost website acknowledgement.

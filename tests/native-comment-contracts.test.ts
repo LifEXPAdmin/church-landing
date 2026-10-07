@@ -7,7 +7,10 @@ import {
   decodeApiResponse,
   WireContractError
 } from "../lib/platform/api-contracts";
-import { apiResponseExamples } from "../lib/platform/api-contract-examples";
+import {
+  apiResponseExamples,
+  apiWriteExamples
+} from "../lib/platform/api-contract-examples";
 
 const structure = {
   id: "fictional-comment",
@@ -40,6 +43,76 @@ const visible = {
 const response = (item: object) => ({
   ...apiResponseExamples.comments,
   data: { ...apiResponseExamples.comments.data, items: [item] }
+});
+
+test("direct publication keeps raw text and exact target fields without opening private drafts or actor injection", () => {
+  const c = apiContracts.createComment,
+    input = apiWriteExamples.createComment;
+  assert.equal(c.method, "POST");
+  assert.equal(c.path, "/api/platform/v1/posts/:postId/comments");
+  assert.deepEqual(c.params.parse({ postId: "post" }), { postId: "post" });
+  assert.deepEqual(c.body.parse(input), input);
+  const raw = "a\r\n".repeat(750);
+  assert.equal(c.body.parse({ ...input, content: raw }).content, raw);
+  assert.deepEqual(
+    c.body.parse({
+      ...input,
+      replyToId: "child",
+      authorChurchId: "church",
+      mentionIds: ["person"]
+    }),
+    {
+      ...input,
+      replyToId: "child",
+      authorChurchId: "church",
+      mentionIds: ["person"]
+    }
+  );
+  for (const fields of [
+    { content: "x".repeat(3001) },
+    { content: 12 },
+    { content: "x" },
+    { mentionIds: Array(6).fill("person") },
+    { mentionIds: null },
+    { replyToId: "../post" },
+    { authorChurchId: "" },
+    { draftId: "draft" },
+    { draftVersion: 1 },
+    { ownerId: "other" },
+    { actorId: "other" },
+    { postId: "other" },
+    { operation: "edit" },
+    { mutationId: "a".repeat(81) }
+  ])
+    assert.throws(
+      () => c.body.parse({ ...input, ...fields }),
+      WireContractError
+    );
+  const missing: Record<string, unknown> = { ...input };
+  delete missing.replyToId;
+  assert.throws(() => c.body.parse(missing), WireContractError);
+  assert.throws(() => c.query.parse({ view: "drafts" }), WireContractError);
+  const response = apiResponseExamples.createComment;
+  assert.deepEqual(
+    decodeApiResponse("createComment", response, response.viewerId),
+    response
+  );
+  assert.throws(
+    () => decodeApiResponse("createComment", response, "other"),
+    WireContractError
+  );
+  assert.throws(
+    () => encodeApiResponse("createComment", { ...response, viewerId: null }),
+    WireContractError
+  );
+  assert.throws(
+    () =>
+      encodeApiResponse("createComment", {
+        ...response,
+        data: { ...response.data, content: "private" }
+      }),
+    WireContractError
+  );
 });
 
 test("native comment Likes bind both path targets and accept only a bounded immutable intended state", () => {

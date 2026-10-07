@@ -150,7 +150,9 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  const files = process.argv.includes("--native-comment-likes")
+  const files = process.argv.includes("--native-comment-publishing")
+    ? ["tests/native-comment-publishing.test.ts", "tests/native-comment-likes.test.ts", "tests/native-comments.test.ts", "tests/social-foundations.test.ts", "tests/topic-communities.test.ts", "tests/comment-notifications.test.ts"]
+    : process.argv.includes("--native-comment-likes")
     ? ["tests/native-comment-likes.test.ts", "tests/native-comments.test.ts", "tests/comment-visibility-projection.test.ts", "tests/social-foundations.test.ts", "tests/topic-communities.test.ts", "tests/comment-notifications.test.ts"]
     : process.argv.includes("--native-comments")
     ? ["tests/comment-visibility-projection.test.ts", "tests/native-comments.test.ts", "tests/social-foundations.test.ts", "tests/topic-communities.test.ts", "tests/resource-conversations.test.ts"]

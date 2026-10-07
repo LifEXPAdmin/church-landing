@@ -13,7 +13,8 @@ import { handleNativeReactionRequest } from "../lib/platform/native-reaction-bou
 import { handleNativeBookmarkRequest } from "../lib/platform/native-bookmark-boundary";
 import {
   handleNativeCommentReadRequest,
-  handleNativeCommentLikeRequest
+  handleNativeCommentLikeRequest,
+  handleNativeCommentCreateRequest
 } from "../lib/platform/native-comment-boundary";
 import { decodeApiResponse, apiFailure } from "../lib/platform/api-contracts";
 
@@ -80,6 +81,68 @@ async function denied(response: Response, status: number, code: string) {
   assert.equal(response.headers.get("set-cookie"), null);
   assert.equal(response.headers.get("location"), null);
 }
+
+test("direct comment publication can pause before body or database work without opening other comment writes", async () => {
+  const { db, calls } = unusedDatabase();
+  for (const reason of ["version", "pause", "invalid"]) {
+    process.env.NATIVE_API_DISABLED_FEATURES =
+      reason === "version"
+        ? ""
+        : reason === "pause"
+          ? "comments.create"
+          : "unknown.feature";
+    const probe = request(
+      "posts/post/comments",
+      "POST",
+      {
+        ...credentials,
+        ...(reason === "version" ? { "X-API-Version": "2" } : {})
+      },
+      true
+    );
+    await denied(
+      await handleNativeCommentCreateRequest(db, probe.value, {
+        postId: "post"
+      }),
+      reason === "version" ? 426 : 503,
+      reason === "version" ? "unsupported_version" : "feature_unavailable"
+    );
+    assert.equal(probe.pulls(), 0);
+  }
+  await denied(
+    await handleNativeCommentCreateRequest(
+      db,
+      request(
+        "posts/post/comments",
+        "POST",
+        { ...credentials, Origin: origin },
+        true
+      ).value,
+      { postId: "post" }
+    ),
+    403,
+    "forbidden"
+  );
+  const method = await handleNativeCommentCreateRequest(
+    db,
+    request("posts/post/comments").value,
+    { postId: "post" }
+  );
+  assert.equal(method.headers.get("allow"), "POST");
+  await denied(method, 405, "method_not_allowed");
+  assert.equal(calls(), 0);
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.create")
+      ?.available,
+    true
+  );
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.write")
+      ?.available,
+    false
+  );
+});
 
 test("path selects the major; absent and exact headers retain v1 while unsupported or ambiguous versions fail", () => {
   for (const h of [null, "1"])
@@ -257,7 +320,7 @@ test("bookmark admission stops before database and body access while preserving 
   );
 });
 
-test("comment reading can be paused before database access and never activates native writes", async () => {
+test("comment reading can pause before database access while broader discussion writes remain unavailable", async () => {
   const { db, calls } = unusedDatabase();
   for (const reason of ["version", "pause", "invalid"]) {
     process.env.NATIVE_API_DISABLED_FEATURES =
@@ -304,7 +367,7 @@ test("comment reading can be paused before database access and never activates n
   );
 });
 
-test("comment Like admission stops before database and body use without enabling comment text writes", async () => {
+test("comment Like admission stops before database and body use while broader discussion writes remain unavailable", async () => {
   const { db, calls } = unusedDatabase();
   const params = { postId: "post", commentId: "comment" };
   const path = "posts/post/comments/comment/like";

@@ -54,6 +54,11 @@ const guest = <T,>(data: T) => ({
   data
 });
 export const apiResponseExamples = {
+  createComment: member({
+    id: "fictional-new-comment",
+    version: 1,
+    message: "Comment published."
+  }),
   setCommentLike: member({
     id: "fictional-comment",
     version: 1,
@@ -175,6 +180,13 @@ export const apiResponseExamples = {
 } satisfies { [K in ApiOperation]: ApiResponse<K> };
 
 export const apiWriteExamples = {
+  createComment: {
+    mutationId: "fictional-comment-create-1",
+    content: "Fictional comment text.",
+    replyToId: null,
+    authorChurchId: null,
+    mentionIds: []
+  },
   setCommentLike: {
     mutationId: "fictional-comment-like-1",
     expectedVersion: 0,

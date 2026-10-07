@@ -104,18 +104,23 @@ function denied(error: unknown, writing = false) {
   );
 }
 
-/** The receipt is historical; read the thread again for current state and access. */
-export async function handleNativeCommentLikeRequest(
+/** Both writes use the same admission, owner and uncertain-receipt boundary. */
+async function handleNativeCommentWriteRequest(
   db: PrismaClient,
   request: Request,
   params: unknown,
-  afterLike?: (commentId: string) => void
+  operation: "createComment" | "setCommentLike",
+  afterWrite?: (commentId: string) => void
 ) {
   try {
+    const creating = operation === "createComment";
+    const contract = apiContracts[operation];
     if (request.method !== "POST") {
       const result = failure(
         "method_not_allowed",
-        "Use POST to change a comment Like."
+        creating
+          ? "Use POST to publish a comment."
+          : "Use POST to change a comment Like."
       );
       result.headers.set("Allow", "POST");
       return result;
@@ -124,12 +129,10 @@ export async function handleNativeCommentLikeRequest(
     const credential = nativeRequestCredential(request);
     if (!credential.token) throw new NativeRequestError("unauthenticated");
     if (!credential.owner) throw new NativeRequestError("validation");
-    requireNativeFeature("commentLikes.write");
-    const { postId, commentId } = apiContracts.setCommentLike.params.parse(
-      params
-    ) as {
+    requireNativeFeature(creating ? "comments.create" : "commentLikes.write");
+    const target = contract.params.parse(params) as {
       postId: string;
-      commentId: string;
+      commentId?: string;
     };
     // Check before charging/consuming input and again under the canonical lock.
     await readNativeSession(db, credential.token, credential.owner);
@@ -147,7 +150,7 @@ export async function handleNativeCommentLikeRequest(
       );
     let input;
     try {
-      input = apiContracts.setCommentLike.body.parse(
+      input = contract.body.parse(
         await readBody(request, Math.min(API_MAX_REQUEST_BYTES, 16384))
       );
     } catch {
@@ -156,15 +159,15 @@ export async function handleNativeCommentLikeRequest(
     const data = await commentCommand(
       db,
       credential.token,
-      { operation: "like", ...input, postId, commentId },
+      { operation: creating ? "create" : "like", ...input, ...target },
       credential.owner
     );
     // The route schedules the existing durable outbox, including exact retries.
-    afterLike?.(data.id);
+    afterWrite?.(data.id);
     let body: string;
     try {
       body = JSON.stringify(
-        encodeApiResponse("setCommentLike", {
+        encodeApiResponse(operation, {
           apiVersion: API_VERSION,
           viewerId: credential.owner,
           data
@@ -180,6 +183,38 @@ export async function handleNativeCommentLikeRequest(
   } catch (error) {
     return denied(error, true);
   }
+}
+
+/** Direct publication has no implicit private draft or secondary comment store. */
+export function handleNativeCommentCreateRequest(
+  db: PrismaClient,
+  request: Request,
+  params: unknown,
+  afterCreate?: (commentId: string) => void
+) {
+  return handleNativeCommentWriteRequest(
+    db,
+    request,
+    params,
+    "createComment",
+    afterCreate
+  );
+}
+
+/** The receipt is historical; read the thread again for current state and access. */
+export function handleNativeCommentLikeRequest(
+  db: PrismaClient,
+  request: Request,
+  params: unknown,
+  afterLike?: (commentId: string) => void
+) {
+  return handleNativeCommentWriteRequest(
+    db,
+    request,
+    params,
+    "setCommentLike",
+    afterLike
+  );
 }
 
 /** Read transport only. Canonical web and native callers share one locked reader. */
