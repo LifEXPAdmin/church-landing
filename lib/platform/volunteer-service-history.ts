@@ -401,6 +401,11 @@ export async function recordVolunteerCompletionIn(
     !record.row.serviceRecoveryRequired
   )
     throw new PortalError(409, "This service has no completion to correct.");
+  // Legacy writers can quarantine a receipt without replay changing its equal
+  // service revision. Remove protected historical copies before a deliberate
+  // correction/confirmation ends quarantine and adds its fresh note.
+  if (record.row.serviceRecoveryRequired)
+    await clearVolunteerServiceNotesIn(tx, controlKind(target), record.row.id);
   const data = {
     completedAt: completed ? new Date() : null,
     completionNote: reason,

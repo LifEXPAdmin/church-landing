@@ -26,7 +26,8 @@ import {
   retentionDate
 } from "./messaging-retention";
 type Tx = Prisma.TransactionClient;
-// Call only after matching the service source and owner to a recovery control.
+// Call only after matching the service source and owner to a recovery control
+// or authorizing a deliberate change to that owner's quarantined receipt.
 // Older participation writers used hyphenated event names.
 export async function clearVolunteerServiceNotesIn(
   tx: Tx,

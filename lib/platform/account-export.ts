@@ -14,7 +14,10 @@ import { validImageCrop } from "./image-crop";
 import { isEligible } from "./portal-policy";
 import { adultMemberWhere } from "./adult-message-policy";
 import { METRIC_RAW_DAYS } from "./metric-policy";
-import { exportVolunteerApplications } from "./volunteer-privacy";
+import {
+  exportVolunteerApplications,
+  exportVolunteerSignups
+} from "./volunteer-privacy";
 
 const EXPORT_SECONDS = 60;
 const MAX_ROWS = 2000;
@@ -823,26 +826,7 @@ export async function downloadAccountExport(
           updatedAt: true
         }
       }),
-      volunteerSignups: await tx.postVolunteerSignup.findMany({
-        where: { userId },
-        orderBy: { id: "asc" },
-        take: MAX_ROWS + 1,
-        select: {
-          id: true,
-          slotId: true,
-          state: true,
-          completedAt: true,
-          version: true,
-          eventVersion: true,
-          occurrenceVersion: true,
-          completionVersion: true,
-          serviceVersion: true,
-          serviceSharedAt: true,
-          serviceSharedCompletionVersion: true,
-          serviceRecoveryRequired: true,
-          updatedAt: true
-        }
-      }),
+      volunteerSignups: await exportVolunteerSignups(tx, userId, MAX_ROWS),
       volunteerApplications: await exportVolunteerApplications(
         tx,
         userId,
