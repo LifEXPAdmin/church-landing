@@ -408,9 +408,11 @@ try {
   await applicant.context.addCookies([cookie(f.val)]);
   await applicant.page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await applicant.page
-    .getByText("Your sign-in changed. Reload before continuing.", {
-      exact: false
-    })
+    .getByRole("region", { name: "Recruitment access", exact: true })
+    .getByText(
+      "This recruitment page is unavailable to the original account. Your local working copy is retained.",
+      { exact: true }
+    )
     .waitFor();
   assert.equal(
     await applicant.page
@@ -419,8 +421,16 @@ try {
       .isVisible(),
     false
   );
+  await applicant.page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await applicant.context.clearCookies();
+  await applicant.context.addCookies([cookie(f.lee)]);
+  await applicant.page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await applicant.page
+    .getByRole("main")
+    .getByText("Your application note:", { exact: false })
+    .waitFor();
   ok(
-    "Retained application details are concealed when the signed-in account changes."
+    "Retained application details are concealed on account change and restored only for the original account."
   );
 
   phase = "current coordinator revocation";
