@@ -114,7 +114,7 @@ literal-root lint derivative, bounded Tailwind source comparisons and formatter
 backend proof are incomplete proposals. They do not establish actual package,
 watch, configuration, editor or physical dependency closure.
 
-Next steps are to finish the compatible patch's application checks, retain the
-remaining advisory failures, and review a complete maintainable remedy for the
-remaining toolchain. Current CI advisory, signature, source, secret, combined
-application and live-release acceptance requirements remain in force.
+Next steps are to retain the remaining advisory failures and review a complete
+maintainable remedy for the remaining toolchain. Linux CI, combined browser and
+application release checks, and actual live acceptance remain open. Current
+advisory, signature, source and secret requirements remain in force.
