@@ -8,8 +8,14 @@ import {
   type ReactNode
 } from "react";
 import type { ReactionPreferencesState } from "@/lib/platform/reaction-preferences";
+import { useRouter } from "next/navigation";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
+
+const foreground = () =>
+  document.hasFocus() &&
+  document.visibilityState !== "hidden" &&
+  navigator.onLine;
 
 /** Preserve the working tree above the account-keyed shell while separately
  * checking each fresh server identity and current browser access. */
@@ -44,6 +50,7 @@ function OriginalReactionFrame({
   original: { owner: string; frame: ReactNode };
   revision: ReactNode;
 }) {
+  const router = useRouter();
   const [visible, setVisible] = useState(false),
     [notice, setNotice] = useState("Checking current settings access…");
   const generation = useRef(0),
@@ -60,14 +67,8 @@ function OriginalReactionFrame({
       setNotice(
         "This page keeps the original account and unsaved choices. Return to that account to continue."
       );
-      return;
     }
-    if (
-      !document.hasFocus() ||
-      document.visibilityState === "hidden" ||
-      !navigator.onLine
-    )
-      return;
+    if (!foreground()) return;
     const seq = generation.current,
       abort = new AbortController();
     flight.current = abort;
@@ -84,14 +85,14 @@ function OriginalReactionFrame({
         throw Error(
           "Return to the original account to recover your unsaved settings."
         );
-      if (
-        seq !== generation.current ||
-        !matches.current ||
-        !document.hasFocus() ||
-        document.visibilityState === "hidden" ||
-        !navigator.onLine
-      )
+      if (seq !== generation.current || !foreground()) return;
+      if (!matches.current) {
+        setNotice(
+          "The original account is back. Checking the current page before restoring your choices…"
+        );
+        router.refresh();
         return;
+      }
       setVisible(true);
       setNotice("");
     } catch (error) {
@@ -104,7 +105,7 @@ function OriginalReactionFrame({
     } finally {
       clearTimeout(timer);
     }
-  }, [hide, original.owner]);
+  }, [hide, original.owner, router]);
   useLayoutEffect(() => {
     matches.current = owner === original.owner;
     void check();

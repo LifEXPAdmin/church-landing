@@ -459,7 +459,6 @@ try {
   await cookieOwner(f.a);
   await otherWindow.bringToFront();
   await page.bringToFront();
-  await refresh();
   await authorControl.waitFor({ state: "visible" });
   assert.equal(await authorControl.isChecked(), false);
   assert.equal(
@@ -480,7 +479,12 @@ try {
   await refresh();
   assert.equal(await authorControl.isVisible(), false);
   await cookieOwner(f.a);
-  await refresh();
+  await page
+    .getByRole("button", {
+      name: "Recheck original settings access",
+      exact: true
+    })
+    .click();
   await authorControl.waitFor({ state: "visible" });
   assert.equal(await authorControl.isChecked(), false);
   ok(
@@ -492,7 +496,12 @@ try {
   assert.equal(new URL(page.url()).pathname, settingPath);
   assert.equal(await authorControl.isVisible(), false);
   await cookieOwner(f.a);
-  await refresh();
+  await page
+    .getByRole("button", {
+      name: "Recheck original settings access",
+      exact: true
+    })
+    .click();
   await authorControl.waitFor({ state: "visible" });
   assert.equal(await authorControl.isChecked(), false);
   ok(
@@ -522,6 +531,17 @@ try {
     exact: true
   });
   await retry.waitFor({ state: "visible" });
+  await cookieOwner(null);
+  await refresh();
+  assert.equal(await retry.isVisible(), false);
+  await cookieOwner(f.a);
+  await page
+    .getByRole("button", {
+      name: "Recheck original settings access",
+      exact: true
+    })
+    .click();
+  await retry.waitFor({ state: "visible" });
   await retry.click();
   await page
     .getByText("Your reaction-count choice is saved.", { exact: true })
@@ -538,7 +558,7 @@ try {
     false
   );
   ok(
-    "Lost real POST response retries identical bytes and confirms the single saved version"
+    "Lost real POST response survives guest server refresh and retries identical bytes"
   );
 
   await authorControl.check();
