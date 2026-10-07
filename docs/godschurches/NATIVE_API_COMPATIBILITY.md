@@ -26,8 +26,12 @@ Capability availability describes implemented server admission; it does not prov
 current account authorization, provider availability or MFA readiness.
 
 Retain required v1 fields, types, enum meaning, null semantics, identity binding
-and retry/version behavior. Additive response fields and capability names can be
-ignored by earlier decoders. A missing/false feature is unavailable. A breaking
+and retry/version behavior. Additive response fields require verified tolerant
+consumer decoding. The core response decoder strips unknown fields, while prior
+image parsers using the default strict mode require unchanged envelopes until
+explicit strip-mode consumer acceptance. New capability names fit the existing
+bounded list and may be ignored by earlier clients. A missing/false feature is
+unavailable. A breaking
 change requires a separately implemented path major with a recorded owner,
 affected released clients, migration window, dates and compatibility fixtures.
 Keep the previous major until its installed-client acceptance is complete.
@@ -89,14 +93,30 @@ checks and actual serving identity still govern production deployment.
 
 ## Verification status
 
-Five focused policy checks pass, including zero database/body accesses on rejected
-requests and the existing header-free session behavior. Full TypeScript passes.
-A baseline probe showed an explicit unsupported version previously returned a v1
-success; the new test requires 426. An initial test fixture omitted the decoder's
-required expected-viewer argument and was corrected without relaxing identity.
+Tested source `524faf461aa3b20e8c2402bc587a31a4abf7b78d`, application
+`eb1ac523e6d94d37f2e960f54a2ceed81e9fcddd`, production build
+`aQPeM2w6XE_LP26d3N1f_`: 39 policy/service checks and 17 actual local HTTPS
+checks pass against an isolated fictional database with all 125 migrations.
+Full TypeScript, lint (zero errors, 39 existing warnings), source/copy, production
+build, hydration and runtime-trace/security checks pass.
 
-The next acceptance run covers canonical session/read/image regressions, a real
-local production build, prior/current decoders, disabled/invalid configuration
-and rollback over HTTPS, preserved upload/removal receipts, and admitted uploads
-finishing during a pause. Those runtime results are pending. Real providers,
-physical devices, hosted CI, integration and canonical live release remain open.
+Policy checks prove zero database/body accesses on rejected requests. Service
+checks retain exact upload and removal receipts across pauses, prevent extra
+provider writes on replay, and verify that already admitted uploads can finish.
+Canonical session, reader, image and browser routes retain their tested behavior.
+Four production-server HTTPS phases exercise enabled, paused, invalid-config and
+restored admission. Preserved prior decoder bytes from
+`ae7d0aec6e8d3051def1bae7eafbc5fd508ec472` parse the current unchanged read and
+image responses. Invalid/unsupported versions cause no asset or rate-budget
+changes. Session discovery, activity, authenticator state and logout remain
+usable during pauses. Re-enabling returns the same image and permits removal.
+
+Retained failed checks include an omitted expected-viewer fixture argument and
+an incorrect 409 expectation for canonical 401/account_changed. The assertions
+were corrected without changing identity or permission policy. The earlier
+baseline unsupported-version probe returned v1 success and now receives 426.
+All owned fixture processes stopped and all six ports were checked closed.
+
+No browser UI, physical-device, real-provider, hosted CI, combined integration or
+canonical live acceptance is claimed. The dependency security release gate stays
+open. These bounded API checks are not a complete product-release receipt.
