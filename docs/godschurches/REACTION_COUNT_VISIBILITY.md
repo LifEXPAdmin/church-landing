@@ -78,9 +78,13 @@ Application `caeff5d12f689308d40f5df2193e8f5dbb2ffb9a`, production build
 checks and 20 native Chrome groups passed with MFA enforcement enabled. The
 browser cases include 15 count/settings groups and five existing comment-reader
 regressions, actual focused account-changing server refreshes, guest recovery,
-sign-in in another tab, identical uncertain POST retry bytes, prayer and Like
+opening sign-in in another tab, identical uncertain POST retry bytes, prayer and Like
 actions, shared settings persistence and a 320-pixel layout check. Captured page
 errors and external requests were empty.
+
+The recovery case opens the actual login page in another tab, then restores the
+original fictional session cookie. It verifies navigation and draft recovery;
+it does not claim credential submission or provider login inside that popup.
 
 All 57 registered checks and the 125-migration populated upgrade and actual
 PostgreSQL dump/restore passed on `0ac02e3`. Later changes are confined to the
