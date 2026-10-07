@@ -135,10 +135,7 @@ function useServiceAction(
         // advance its access generation. The receipt was checked above; this
         // read refresh must still fetch the saved controls. The pinned scope
         // continues to conceal background or replacement-account responses.
-        if (
-          mounted.current &&
-          location.pathname + location.search === address
-        )
+        if (mounted.current && location.pathname + location.search === address)
           router.refresh();
       } catch {
         setMessage(
@@ -350,9 +347,9 @@ export function VolunteerServiceCard({
       </p>
       {(!record.current || record.recoveryRequired) && (
         <p>
-          Current service details are unavailable. Sharing is concealed until
-          current access and the completion record can be confirmed. You can
-          still remove your sharing choice.
+          {!record.current && record.canCorrect
+            ? "Current volunteer details are concealed. You can correct this retained completion. A new confirmation requires the volunteer's current source access."
+            : "Current service details are unavailable. Sharing is concealed until current access and the completion record can be confirmed. You can still remove your sharing choice."}
         </p>
       )}
       {record.current && record.postId && (

@@ -226,9 +226,12 @@ export async function volunteerServiceRecordIn(
   } catch (error) {
     if (!(error instanceof PortalError && error.status === 404)) throw error;
   }
-  if (current) {
+  if (current || record.row.completedAt) {
     try {
-      await coordinator(tx, context, record, checkedPost);
+      // A retained receipt can be corrected without reopening the former
+      // volunteer's private source details. Actor and Need authority still
+      // apply; only the volunteer's source access may be absent.
+      await coordinator(tx, context, record, checkedPost, !current);
       canOrganizeRecord = true;
     } catch (error) {
       if (!(error instanceof PortalError && [403, 404].includes(error.status)))
@@ -236,8 +239,8 @@ export async function volunteerServiceRecordIn(
     }
   }
   if (!own && !canOrganizeRecord) throw unavailableVolunteer();
-  const recoveryRequired =
-    record.row.serviceRecoveryRequired || (await recoveryFence(tx, record));
+  const fenced = await recoveryFence(tx, record);
+  const recoveryRequired = record.row.serviceRecoveryRequired || fenced;
   const completed = !!record.row.completedAt && !recoveryRequired;
   return {
     target,
@@ -253,8 +256,11 @@ export async function volunteerServiceRecordIn(
     postId: current ? record.postId : null,
     opportunityId: current ? record.opportunityId : null,
     canComplete:
-      canOrganizeRecord && record.active && (!completed || recoveryRequired),
-    canCorrect: canOrganizeRecord && !!record.row.completedAt,
+      current &&
+      canOrganizeRecord &&
+      record.active &&
+      (!completed || recoveryRequired),
+    canCorrect: canOrganizeRecord && !!record.row.completedAt && !fenced,
     canShare: own && current && record.active && completed,
     canHide: own && (!!record.row.serviceSharedAt || recoveryRequired)
   };

@@ -135,8 +135,9 @@ function Application({ row }: { row: VolunteerApplicationView }) {
       </p>
       {!row.current && (
         <p>
-          The source is unavailable to this account. Only your minimal
-          application status and available withdrawal action are shown.
+          {!row.own && row.service?.canCorrect
+            ? "The volunteer's current source access is unavailable. You can correct the retained completion, but private applicant details remain concealed."
+            : "The source is unavailable to this account. Only your minimal application status and available withdrawal action are shown."}
         </p>
       )}
       {row.statement && (

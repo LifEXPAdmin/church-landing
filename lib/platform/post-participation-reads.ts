@@ -199,20 +199,23 @@ export function getVolunteerRoster(
     });
     const people = [];
     for (const row of rows.slice(0, pageSize)) {
-      if (slot.opportunity) {
-        if (!row.application) continue;
-        try { await reviewedVolunteerApplication(tx, context, row.application.id); }
-        catch (error) { if (error instanceof PortalError && error.status === 404) continue; throw error; }
-      }
       let service = null;
       try {
         service = await volunteerServiceRecordIn(tx, context, { kind: "signup", id: row.id });
       } catch (error) {
         if (!(error instanceof PortalError && error.status === 404)) throw error;
       }
+      if (slot.opportunity) {
+        if (!row.application) continue;
+        try { await reviewedVolunteerApplication(tx, context, row.application.id); }
+        catch (error) {
+          if (!(error instanceof PortalError && error.status === 404)) throw error;
+          if (!service?.canCorrect) continue;
+        }
+      }
       people.push({
         id: row.id,
-        name: row.user.suspendedAt || row.user.deactivatedAt ? "Unavailable account" : row.user.name,
+        name: !service?.current || row.user.suspendedAt || row.user.deactivatedAt ? "Unavailable account" : row.user.name,
         service
       });
     }

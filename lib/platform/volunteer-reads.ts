@@ -134,9 +134,11 @@ async function applicationView(
     !signup?.completedAt &&
     !row.completedAt;
   const history = current
-    ? row.events.filter((event) =>
-        !service?.recoveryRequired ||
-        !["COMPLETED", "COMPLETION_CORRECTED"].includes(event.action))
+    ? row.events.filter(
+        (event) =>
+          !service?.recoveryRequired ||
+          !["COMPLETED", "COMPLETION_CORRECTED"].includes(event.action)
+      )
     : [];
   const detailsChanged =
     !!source &&
@@ -362,7 +364,11 @@ export function readVolunteerApplications(
           opportunityId: source.row.id,
           userId: { notIn: context.blockedIds ?? [] },
           recoveryRequired: false,
-          user: { is: volunteerApplicantWhere(source) }
+          OR: [
+            { user: { is: volunteerApplicantWhere(source) } },
+            { completedAt: { not: null } },
+            { signup: { is: { completedAt: { not: null } } } }
+          ]
         }
       : { userId: context.actorId };
     const rows = await tx.volunteerApplication.findMany({
@@ -374,11 +380,26 @@ export function readVolunteerApplications(
       orderBy: { id: "asc" },
       take: PAGE + 1
     });
+    // Keep the candidate page bounded. Former applicants enter it only for a
+    // retained completion, and never regain their private application details.
+    const currentIds = source
+      ? new Set(
+          (
+            await tx.volunteerApplication.findMany({
+              where: {
+                id: { in: rows.slice(0, PAGE).map((row) => row.id) },
+                user: { is: volunteerApplicantWhere(source) }
+              },
+              select: { id: true }
+            })
+          ).map((row) => row.id)
+        )
+      : null;
     const items = [];
     for (const row of rows.slice(0, PAGE)) {
       let currentSource: Source | null = null;
       try {
-        if (source) currentSource = source;
+        if (source) currentSource = currentIds!.has(row.id) ? source : null;
         else if (row.opportunityId) {
           const found = await opportunitySource(tx, context, row.opportunityId);
           if (await canParticipate(tx, context, found.post))
@@ -388,9 +409,10 @@ export function readVolunteerApplications(
         if (!(error instanceof PortalError && error.status === 404))
           throw error;
       }
-      if (source && !currentSource) continue;
+      const view = await applicationView(tx, row, currentSource, context);
+      if (source && !currentSource && !view.service?.canCorrect) continue;
       items.push({
-        ...(await applicationView(tx, row, currentSource, context)),
+        ...view,
         applicantName:
           source && currentSource
             ? (row.user?.name ?? "Unavailable account")
@@ -430,7 +452,11 @@ export async function readVolunteers(
       return {
         view: "service-roster" as const,
         ...(await getVolunteerRoster(
-          db, token, postId(query.id), query.after ?? undefined, identity
+          db,
+          token,
+          postId(query.id),
+          query.after ?? undefined,
+          identity
         ))
       };
     case "list":
