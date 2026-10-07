@@ -38,9 +38,9 @@ const personalIds = Array.from({ length: 31 }, () => randomUUID())
   .reverse();
 before(async () => {
   await assertPortalTestDatabase(db);
-  a = await createPortalActor(db, "nreadA");
-  b = await createPortalActor(db, "nreadB");
-  c = await createPortalActor(db, "nreadC");
+  a = await createPortalActor(db, "nreada");
+  b = await createPortalActor(db, "nreadb");
+  c = await createPortalActor(db, "nreadc");
   church = await db.church.create({
     data: {
       name: "Native reading church",
