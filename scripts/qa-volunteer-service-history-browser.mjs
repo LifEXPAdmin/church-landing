@@ -669,6 +669,26 @@ try {
   );
   console.log("Browser evidence:", output);
 } catch (error) {
+  const pages = [];
+  for (const context of contexts) {
+    for (const page of context.pages()) {
+      pages.push(
+        await deadline(
+          page.evaluate(() => ({
+            url: location.pathname,
+            focused: document.hasFocus(),
+            visibility: document.visibilityState,
+            text: document.body.innerText,
+            statuses: [...document.querySelectorAll('[role="status"]')].map(
+              (element) => element.textContent
+            )
+          })),
+          "Failure page diagnostics",
+          3000
+        ).catch((failure) => ({ error: failure.message }))
+      );
+    }
+  }
   writeFileSync(
     output + "/failure.json",
     JSON.stringify(
@@ -676,6 +696,7 @@ try {
         phase,
         message: error.message,
         stack: error.stack,
+        pages,
         groups,
         errors,
         external
