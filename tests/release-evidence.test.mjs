@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   releaseChecks,
@@ -277,8 +278,9 @@ test("CLI fails closed without exposing malformed private receipt contents", (t)
   const result = spawnSync(
     process.execPath,
     [
-      new URL("../scripts/verify-release-evidence.mjs", import.meta.url)
-        .pathname,
+      fileURLToPath(
+        new URL("../scripts/verify-release-evidence.mjs", import.meta.url)
+      ),
       "--candidate",
       f.options.candidate,
       "--receipt",
