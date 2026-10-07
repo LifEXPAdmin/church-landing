@@ -150,7 +150,9 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  const files = process.argv.includes("--reaction-counts")
+  const files = process.argv.includes("--native-bookmarks")
+    ? ["tests/native-bookmarks.test.ts", "tests/post-workspace.test.ts", "tests/saved-resources.test.ts", "tests/reposts.test.ts"]
+    : process.argv.includes("--reaction-counts")
     ? ["tests/reaction-counts.test.ts", "tests/reaction-counts-restore.test.ts", "tests/reading-preferences.test.ts", "tests/settings-contract.test.ts", "tests/social-foundations.test.ts", "tests/prayer.test.ts", "tests/reposts.test.ts", "tests/profile-pin.test.ts"]
     : process.argv.includes("--resource-conversations")
     ? ["tests/resource-conversations.test.ts", "tests/social-foundations.test.ts", "tests/comment-draft-controller.test.ts", "tests/comment-notifications.test.ts", "tests/comment-preview-capacity.test.ts", "tests/volunteer-applications.test.ts", "tests/gather-groups.test.ts", "tests/post-reader.test.ts"]

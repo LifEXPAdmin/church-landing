@@ -47,7 +47,7 @@ const boolean = schema<boolean>((value) =>
   typeof value === "boolean" ? value : fail()
 );
 const literal = <const T extends string | boolean>(expected: T) =>
-  schema<T>((value) => (value === expected ? expected : fail()));
+  schema<T,>((value) => (value === expected ? expected : fail()));
 const oneOf = <const T extends readonly string[]>(choices: T) =>
   schema<T[number]>((value) =>
     typeof value === "string" && choices.includes(value)
@@ -260,6 +260,86 @@ export const apiMutationReceipt = object({
   message: text(1000)
 });
 
+const bookmarkKey = text(80, 1, /^[A-Za-z0-9_-]+$/);
+const bookmarkFields = {
+  id: bookmarkKey,
+  version,
+  collectionId: nullable(bookmarkKey)
+};
+const resourceCard = object({
+  kind: oneOf([
+    "exchangeListing",
+    "eventOccurrence",
+    "volunteerOpportunity",
+    "mediaCatalogItem"
+  ]),
+  id: apiId,
+  title: text(300),
+  href: text(240, 1),
+  state: text(100, 1),
+  requiresWeb: literal(true),
+  event: nullable(
+    object({
+      startAt: apiDate,
+      endAt: apiDate,
+      timeZone: text(100, 1),
+      allDay: boolean,
+      startLocal: text(32, 1),
+      endLocal: text(32, 1)
+    })
+  )
+});
+const bookmarkResource = schema<WireValue<typeof resourceCard>>((v, mode) => {
+  const card = resourceCard.parse(v, mode);
+  const paths = {
+    exchangeListing: ["/platform/exchange/", "/platform/exchange/help/"],
+    eventOccurrence: ["/platform/events/"],
+    volunteerOpportunity: ["/platform/serve/"],
+    mediaCatalogItem: ["/platform/media/"]
+  };
+  if (
+    !paths[card.kind].some((path) => card.href === path + card.id) ||
+    (card.kind === "eventOccurrence") !== (card.event !== null)
+  )
+    return fail();
+  return card;
+});
+const bookmarkPostShape = object({
+  id: apiId,
+  excerpt: text(300),
+  contentNote: nullable(text(120, 1)),
+  type: oneOf(["TESTIMONY", "PRAYER", "TEACHING", "UPDATE", "NEED"]),
+  publishedAt: nullable(apiDate),
+  href: text(240, 1)
+});
+const bookmarkPost = schema<WireValue<typeof bookmarkPostShape>>((v, mode) => {
+  const post = bookmarkPostShape.parse(v, mode);
+  return post.href === "/platform/posts/" + post.id ? post : fail();
+});
+// Unavailable saved items expose only the owner's bookmark, never its source.
+export const apiBookmark = union(
+  object({ ...bookmarkFields, available: literal(false) }),
+  union(
+    object({
+      ...bookmarkFields,
+      available: literal(true),
+      post: bookmarkPost
+    }),
+    object({
+      ...bookmarkFields,
+      available: literal(true),
+      resource: bookmarkResource
+    })
+  )
+);
+const bookmarkCollection = object({
+  id: bookmarkKey,
+  name: text(80, 1),
+  version,
+  createdAt: apiDate,
+  updatedAt: apiDate
+});
+
 // Unknown future names can be ignored by old clients. They never grant authority.
 const capability = text(80, 1, /^[a-z][A-Za-z0-9.]*$/);
 export const apiCapabilities = object({
@@ -345,6 +425,64 @@ const endpoint = <Q, B, R>(
   });
 
 export const apiContracts = Object.freeze({
+  bookmarks: endpoint(
+    "GET",
+    "/bookmarks",
+    object({
+      cursor: nullable(apiCursor),
+      collectionId: nullable(bookmarkKey)
+    }),
+    empty,
+    page(apiBookmark, 20),
+    "member"
+  ),
+  bookmarkCollections: endpoint(
+    "GET",
+    "/bookmark-collections",
+    object({ cursor: nullable(apiCursor) }),
+    empty,
+    page(bookmarkCollection, 20),
+    "member"
+  ),
+  bookmarkStatus: endpoint(
+    "GET",
+    "/posts/:postId/bookmark",
+    empty,
+    empty,
+    object({ item: nullable(object(bookmarkFields)) }),
+    "member"
+  ),
+  bookmarkCommand: endpoint(
+    "POST",
+    "/bookmarks",
+    empty,
+    union(
+      object({
+        operation: literal("save-item"),
+        mutationId,
+        expectedVersion: version,
+        postId: apiId,
+        collectionId: nullable(bookmarkKey)
+      }),
+      union(
+        object({
+          operation: literal("move-item"),
+          mutationId,
+          expectedVersion: version,
+          id: bookmarkKey,
+          collectionId: nullable(bookmarkKey)
+        }),
+        object({
+          operation: literal("remove-item"),
+          mutationId,
+          expectedVersion: version,
+          id: bookmarkKey
+        })
+      )
+    ),
+    apiMutationReceipt,
+    "member"
+  ),
   capabilities: endpoint(
     "GET",
     "/capabilities",

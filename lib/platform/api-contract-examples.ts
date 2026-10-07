@@ -54,6 +54,37 @@ const guest = <T,>(data: T) => ({
   data
 });
 export const apiResponseExamples = {
+  bookmarks: member({
+    items: [
+      {
+        id: "fictional-bookmark",
+        version: 1,
+        collectionId: null,
+        available: false
+      }
+    ],
+    nextCursor: null
+  }),
+  bookmarkCollections: member({
+    items: [
+      {
+        id: "fictional-collection",
+        name: "Private reading",
+        version: 1,
+        createdAt: "2026-10-07T00:00:00.000Z",
+        updatedAt: "2026-10-07T00:00:00.000Z"
+      }
+    ],
+    nextCursor: null
+  }),
+  bookmarkStatus: member({
+    item: { id: "fictional-bookmark", version: 1, collectionId: null }
+  }),
+  bookmarkCommand: member({
+    id: "fictional-bookmark",
+    version: 1,
+    message: "Post saved privately."
+  }),
   capabilities: guest({
     supportedVersions: ["1"],
     features: [{ name: "session.read", available: false }]

@@ -20,7 +20,7 @@ import {
 import { savedPhotoReferences } from "./post-photo-references";
 import { createHash } from "node:crypto";
 import { Prisma, PlatformPostType, type PrismaClient } from "@prisma/client";
-import { withOwnedSession } from "./account-sessions";
+import { requireSessionOwner, withOwnedSession } from "./account-sessions";
 import { expected, PortalError } from "./portal-policy";
 import { postContext, postReadableWhere, type PostTx } from "./post-access";
 import { postId } from "./post-input";
@@ -213,12 +213,14 @@ export function readPostWorkspace(
     resourceId?: unknown;
     collectionId?: unknown;
     after?: unknown;
-  }
+  },
+  expectedOwner?: string
 ) {
   return withOwnedSession(
     db,
     token,
     async (tx, session) => {
+      requireSessionOwner(session, expectedOwner);
       const ownerId = session.userId;
       const draftContext = await postContext(tx, ownerId);
       const permittedDraft: Prisma.PrivatePostDraftWhereInput = {
@@ -306,19 +308,13 @@ export function readPostWorkspace(
         };
       }
       if (query.view === "saved-status") {
-        const requested = postId(query.postId);
-        const entry = await tx.platformPost.findUnique({
-          where: { id: requested },
-          select: { repostKind: true }
-        });
-        const id =
-          entry?.repostKind === "PLAIN"
-            ? await postInteractionIdIn(
-                tx,
-                await postContext(tx, ownerId),
-                requested
-              )
-            : requested;
+        // Every source must still be readable, including ordinary posts.
+        // Keep the visibility check and saved metadata read under this lock.
+        const id = await postInteractionIdIn(
+          tx,
+          draftContext,
+          postId(query.postId)
+        );
         return {
           item: await tx.savedPostItem.findFirst({
             where: { ownerId, postId: id },
@@ -423,7 +419,8 @@ type Receipt = {
 export async function postWorkspaceCommand(
   db: PrismaClient,
   token: unknown,
-  value: Record<string, unknown>
+  value: Record<string, unknown>,
+  expectedOwner?: string
 ): Promise<Receipt> {
   const input = plain(value);
   if (
@@ -542,6 +539,7 @@ export async function postWorkspaceCommand(
   let preparedLink: PostLink | undefined;
   if (op === "publish-draft") {
     const preflight = await withOwnedSession(db, token, async (tx, session) => {
+      requireSessionOwner(session, expectedOwner);
       const receipt = await tx.postWorkspaceOperation.findUnique({
         where: { ownerId_key: { ownerId: session.userId, key: mutationId } }
       });
@@ -584,6 +582,7 @@ export async function postWorkspaceCommand(
     db,
     token,
     async (tx, session) => {
+      requireSessionOwner(session, expectedOwner);
       const ownerId = session.userId;
       const receipt = await tx.postWorkspaceOperation.findUnique({
         where: { ownerId_key: { ownerId, key: mutationId } }

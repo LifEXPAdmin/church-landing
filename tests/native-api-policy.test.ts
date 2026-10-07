@@ -10,6 +10,7 @@ import { handleNativeSessionRequest } from "../lib/platform/native-session-bound
 import { handleNativeReadRequest } from "../lib/platform/native-read-boundary";
 import { handleNativeImageRequest } from "../lib/platform/native-media-boundary";
 import { handleNativeReactionRequest } from "../lib/platform/native-reaction-boundary";
+import { handleNativeBookmarkRequest } from "../lib/platform/native-bookmark-boundary";
 import { decodeApiResponse, apiFailure } from "../lib/platform/api-contracts";
 
 const priorOrigin = process.env.ACCOUNT_ORIGIN;
@@ -177,6 +178,73 @@ test("reaction controls reject unsupported versions and paused reads/writes with
   }
   assert.equal(calls(), 0);
   delete process.env.NATIVE_API_DISABLED_FEATURES;
+});
+
+test("bookmark admission stops before database and body access while preserving transport checks", async () => {
+  const { db, calls } = unusedDatabase();
+  for (const resource of [
+    "bookmarks",
+    "bookmarkCollections",
+    "bookmarkStatus"
+  ] as const) {
+    for (const method of resource === "bookmarks" ? ["GET", "POST"] : ["GET"]) {
+      for (const reason of ["version", "pause", "invalid"]) {
+        process.env.NATIVE_API_DISABLED_FEATURES =
+          reason === "version"
+            ? ""
+            : reason === "pause"
+              ? "bookmarks.read,bookmarks.write"
+              : "unknown.feature";
+        const probe = request(
+          "bookmarks",
+          method,
+          {
+            ...credentials,
+            ...(reason === "version" ? { "X-API-Version": "2" } : {})
+          },
+          method === "POST"
+        );
+        await denied(
+          await handleNativeBookmarkRequest(
+            db,
+            probe.value,
+            resource,
+            resource === "bookmarkStatus" ? { postId: "fictional-post" } : {}
+          ),
+          reason === "version" ? 426 : 503,
+          reason === "version" ? "unsupported_version" : "feature_unavailable"
+        );
+        assert.equal(probe.pulls(), 0);
+      }
+    }
+  }
+  process.env.NATIVE_API_DISABLED_FEATURES = "bookmarks.write";
+  await denied(
+    await handleNativeBookmarkRequest(
+      db,
+      request("bookmarks", "POST", { ...credentials, Origin: origin }, true)
+        .value,
+      "bookmarks"
+    ),
+    403,
+    "forbidden"
+  );
+  await denied(
+    await handleNativeBookmarkRequest(
+      db,
+      request("bookmarks", "POST", {}, true).value,
+      "bookmarks"
+    ),
+    401,
+    "unauthenticated"
+  );
+  assert.equal(calls(), 0);
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "bookmarks.write")
+      ?.available,
+    true
+  );
 });
 
 test("unsupported version reaches no database or request body through session, core read or image adapters", async () => {

@@ -18,6 +18,8 @@ const optional = [
   "likes.write",
   "reactionPreferences.read",
   "reactionPreferences.write",
+  "bookmarks.read",
+  "bookmarks.write",
   "media.images.read",
   "media.images.list",
   "media.images.upload",
