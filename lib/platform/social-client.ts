@@ -109,7 +109,7 @@ export type CommentItem = {
   isPostAuthor: boolean;
   replyTo: { id: string; name: string | null } | null;
   mentions: { id: string; name: string; username: string }[];
-  likeCount: number;
+  likeCount: number | null;
   liked: boolean;
   likeVersion: number;
   replyCount: number;

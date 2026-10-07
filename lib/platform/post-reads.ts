@@ -36,6 +36,10 @@ import {
   type PostTx
 } from "./post-access";
 import { postId } from "./post-input";
+import {
+  projectedReactionCount,
+  reactionCountAuthorSelect
+} from "./reaction-counts";
 
 const commentSelect = {
   id: true,
@@ -55,6 +59,9 @@ function include(
 ) {
   return {
     ...postInclude,
+    author: {
+      select: { ...communityAuthorSelect, ...reactionCountAuthorSelect }
+    },
     exchangeNeed: {
       where: {
         recoveryRequired: false,
@@ -88,7 +95,10 @@ function include(
           }
         },
         photoReferences: {
-          where: { postId: { in: postIds }, asset: readableAssetWhere(context) }
+          where: {
+            postId: { in: postIds },
+            asset: readableAssetWhere(context)
+          }
         },
         comments: {
           where: {
@@ -183,7 +193,12 @@ function project(
           username: null,
           role: "CHURCH" as const
         }
-      : { ...post.author, churchId: null },
+      : {
+          id: post.author.id,
+          name: post.author.name,
+          username: post.author.username,
+          churchId: null
+        },
     eventOccurrenceId: post.eventOccurrenceId,
     ...(post.type === "NEED" &&
     post.exchangeNeed?.listingId &&
@@ -194,7 +209,7 @@ function project(
     replyAudience: post.replyAudience,
     allowReposts: post.allowReposts,
     pinned: !!post.pinUntil && post.pinUntil > now,
-    likeCount: post._count.likes,
+    likeCount: projectedReactionCount(post, post._count.likes),
     liked: post.likes[0]?.active ?? false,
     likeVersion: post.likes[0]?.version ?? 0,
     commentCount: post._count.comments,
@@ -584,6 +599,8 @@ export function getPostAvailabilityBatch(
         id: true,
         version: true,
         resourceReferences: true,
+        authorChurchId: true,
+        author: { select: reactionCountAuthorSelect },
         _count: {
           select: {
             comments: { where: commentVisibleWhere(context) },
@@ -611,7 +628,7 @@ export function getPostAvailabilityBatch(
           entryVersion: row?.version ?? null,
           ...(cards.length ? { resources: cards } : {}),
           commentCount: row?._count.comments ?? null,
-          likeCount: row?._count.likes ?? null
+          likeCount: row ? projectedReactionCount(row, row._count.likes) : null
         };
       })
     };

@@ -6,12 +6,13 @@ import {
 } from "./private-post-workspace";
 
 import { Heart } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ReactionCount } from "./reaction-count";
 import { useRouter } from "next/navigation";
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 
-type LikeState = { liked: boolean; version: number; count: number };
+type LikeState = { liked: boolean; version: number; count: number | null };
 export function PostLikeControl({
   postId,
   owner,
@@ -30,8 +31,10 @@ export function PostLikeControl({
     [message, setMessage] = useState(""),
     [refreshNeeded, setRefreshNeeded] = useState(false);
   const flight = useRef(false);
+  const generation = useRef(0);
+  const pendingCommand = useRef<string | null>(null);
   const lastInitial = useRef(initial);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previous = lastInitial.current;
     if (
       previous.count === initial.count &&
@@ -40,12 +43,19 @@ export function PostLikeControl({
     )
       return;
     lastInitial.current = initial;
+    generation.current++;
     // Fresh permitted counts must replace a retained count without dropping an
     // in-flight choice or its exact retry key.
     setState((current) =>
       pending || flight.current ? { ...current, count: initial.count } : initial
     );
   }, [initial, pending]);
+  useEffect(
+    () => () => {
+      generation.current++;
+    },
+    []
+  );
   const path = `/api/platform/post-likes?postId=${encodeURIComponent(postId)}`;
   useUnsavedSocialWork(
     { dirty: false, saving: !!pending, conflict: false },
@@ -58,14 +68,25 @@ export function PostLikeControl({
     )
       return;
     flight.current = true;
+    const seq = generation.current;
+    const access = privateScope?.accessVersion();
+    const current = () =>
+      seq === generation.current &&
+      (!privateScope || privateScope.accessVersion() === access);
     setBusy(true);
-    if (body) setPending(body);
+    if (body) {
+      pendingCommand.current = body;
+      setPending(body);
+    }
     try {
       if (body) {
         await socialRequest("/api/platform/post-likes", body, owner);
+        if (!current()) return;
+        pendingCommand.current = null;
         setPending(null);
       }
       const result = await socialRequest<LikeState>(path, undefined, owner);
+      if (!current()) return;
       setState(result.data);
       setRefreshNeeded(false);
       setMessage(
@@ -76,9 +97,12 @@ export function PostLikeControl({
           : "Like status checked. Choose Like or Unlike to change it."
       );
     } catch (error) {
+      if (!current()) return;
       const status = error instanceof SocialClientError ? error.status : 503;
-      if (!privateScope && [400, 401, 403, 404, 409, 429].includes(status))
+      if (!privateScope && [400, 401, 403, 404, 409, 429].includes(status)) {
+        pendingCommand.current = null;
         setPending(null);
+      }
       setRefreshNeeded(true);
       setMessage(
         error instanceof SocialClientError
@@ -91,6 +115,11 @@ export function PostLikeControl({
       }
     } finally {
       flight.current = false;
+      // A newer server frame may arrive between a confirmed command and its
+      // refresh read. Once that stale read ends, adopt its own-state as well as
+      // its redacted total. An uncertain command still keeps its original bytes.
+      if (!pendingCommand.current && seq !== generation.current)
+        setState(lastInitial.current);
       setBusy(false);
     }
   }
@@ -124,7 +153,7 @@ export function PostLikeControl({
         <span className="gc-post-action-label">
           {state.liked ? "Liked" : "Like"}
         </span>
-        <span className="gc-reaction-count">{state.count}</span>
+        <ReactionCount count={initial.count === null ? null : state.count} />
       </button>
       <span role="status" className={refreshNeeded ? "text-sm" : "sr-only"}>
         {busy ? "Checking Like…" : message}

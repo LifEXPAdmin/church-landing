@@ -449,6 +449,17 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     )
   ),
   entry(
+    "privacy.reaction-counts",
+    "privacy",
+    "Reaction counts",
+    "Hide totals on this browser or on your personal contributions. These shortcuts use the same saved choices as Appearance and reading.",
+    ["likes", "prayer", "reactions", "counts", "totals"],
+    { href: "/platform/settings/display/reading#hide-reaction-counts" },
+    linked(
+      "godschurches_reading browser cookie and SocialPreferences reaction-count choice"
+    )
+  ),
+  entry(
     "privacy.relationships",
     "privacy",
     "Mentions and relationship visibility",

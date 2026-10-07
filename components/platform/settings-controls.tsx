@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import type { SettingsContext } from "@/lib/platform/settings-context";
 import type { SettingsControl } from "@/lib/platform/settings-registry";
 import { ReadingSettings } from "./reading-preferences";
+import { ReactionPreferences } from "./reaction-preferences";
 import { RelationshipPrivacy } from "./relationship-privacy";
 import { AccountSessions } from "./account-sessions";
 import { AccountEmailChange } from "./account-email-change";
@@ -64,7 +65,12 @@ export function SettingsControls({
     case "discovery":
       return <DiscoverySettings owner={data.ownerId} />;
     case "reading":
-      return <ReadingSettings allowReset />;
+      return (
+        <>
+          <ReadingSettings allowReset />
+          <ReactionPreferences owner={data.ownerId} />
+        </>
+      );
     case "privacy":
       return <RelationshipPrivacy owner={data.ownerId} />;
     case "contact":

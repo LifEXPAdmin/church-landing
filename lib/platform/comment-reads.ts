@@ -6,6 +6,10 @@ import { withOwnedSession } from "./account-sessions";
 import { PortalError } from "./portal-policy";
 import { communityAuthorSelect } from "./public-profile";
 import {
+  projectedReactionCount,
+  reactionCountAuthorSelect
+} from "./reaction-counts";
+import {
   postCanReply,
   postContext,
   postReadableWhere,
@@ -79,6 +83,7 @@ function include(context: PostContext) {
     author: {
       select: {
         ...communityAuthorSelect,
+        ...reactionCountAuthorSelect,
         suspendedAt: true,
         deactivatedAt: true
       }
@@ -174,7 +179,9 @@ async function project(
             }
           : null,
       mentions: available ? row.mentions.map((m) => m.recipient) : [],
-      likeCount: available ? row._count.likes : 0,
+      likeCount: available
+        ? projectedReactionCount(row, row._count.likes)
+        : null,
       liked: available && (row.likes[0]?.active ?? false),
       likeVersion: available ? (row.likes[0]?.version ?? 0) : 0,
       replyCount: row._count.replies,

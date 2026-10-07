@@ -3044,6 +3044,9 @@ model SocialPreferences {
   quietEnd Int?
   quietTimeZone String?
   showRelationships Boolean @default(true)
+  hideAuthoredReactionCounts Boolean @default(false)
+  reactionCountVersion Int @default(0)
+  reactionCountRecoveryRequired Boolean @default(false)
   updatedAt DateTime @updatedAt
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   @@index([profilePinPostId])

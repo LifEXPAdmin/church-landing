@@ -1,4 +1,5 @@
 "use client";
+import { ReactionCount } from "./reaction-count";
 import Link from "next/link";
 import {
   usePrivatePostWorkspace,
@@ -408,9 +409,11 @@ export default function PrayerPanel({
               </p>
             </section>
             <section className="space-y-2" aria-label="Prayer participants">
-              <p className="gc-reaction-count">
-                {state.count} {state.count === 1 ? "person has" : "people have"}{" "}
-                chosen I prayed.
+              <p>
+                <ReactionCount
+                  count={state.count}
+                  suffix={` ${state.count === 1 ? "person has" : "people have"} chosen I prayed.`}
+                />
               </p>
               <p className="text-sm">
                 People who chose to share their names:{" "}

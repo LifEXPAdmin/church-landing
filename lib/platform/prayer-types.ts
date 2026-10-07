@@ -34,7 +34,7 @@ export type PrayerTargetState = {
   canUpdate: boolean;
   guide: { accepted: boolean; version: number; required: string };
   choice: PrayerChoice;
-  count: number;
+  count: number | null;
   names: Array<{ name: string; username: string }>;
   moreNames: boolean;
 };

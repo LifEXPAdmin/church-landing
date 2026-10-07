@@ -919,6 +919,9 @@ export async function downloadAccountExport(
             quietEnd: true,
             quietTimeZone: true,
             showRelationships: true,
+            hideAuthoredReactionCounts: true,
+            reactionCountVersion: true,
+            reactionCountRecoveryRequired: true,
             version: true,
             updatedAt: true
           },

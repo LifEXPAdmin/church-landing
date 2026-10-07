@@ -18,6 +18,7 @@ import { CommentThread } from "./comment-thread";
 import type { PostView } from "@/lib/platform/post-reads";
 import { PostLink } from "./post-link";
 import { PostLikeControl } from "./post-like-control";
+import { ReactionCount } from "./reaction-count";
 import { PrayerControl } from "./prayer-workspace";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import Link from "next/link";
@@ -405,7 +406,7 @@ function PostCardBody({
               >
                 <Heart aria-hidden="true" />
                 <span className="gc-post-action-label">Like</span>
-                <span className="gc-reaction-count">{post.likeCount}</span>
+                <ReactionCount count={post.likeCount} />
               </Link>
             )
           )}

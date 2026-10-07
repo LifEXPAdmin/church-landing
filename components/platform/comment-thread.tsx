@@ -1,4 +1,5 @@
 "use client";
+import { ReactionCount } from "./reaction-count";
 import { RegionalTime } from "@/components/platform/regional-presentation";
 import { MoreActions } from "./action-popover";
 import { AuthorAvatar } from "./author-avatar";
@@ -450,6 +451,7 @@ export function CommentThread({
                 <button
                   type="button"
                   className="gc-button gc-button-quiet"
+                  aria-pressed={row.liked}
                   disabled={!!mutation}
                   onClick={() =>
                     void act(
@@ -466,7 +468,7 @@ export function CommentThread({
                   }
                 >
                   {row.liked ? "Unlike" : "Like"}
-                  <span className="gc-reaction-count"> ({row.likeCount})</span>
+                  <ReactionCount count={row.likeCount} prefix=" (" suffix=")" />
                 </button>
                 {row.canReply && (
                   <button

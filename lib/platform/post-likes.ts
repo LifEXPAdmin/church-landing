@@ -8,6 +8,10 @@ import { postInteractionIdIn } from "./post-reads";
 import { socialCommand, socialInput } from "./social-operations";
 import { socialUserWhere } from "./social-policy";
 import {
+  projectedReactionCount,
+  reactionCountAuthorSelect
+} from "./reaction-counts";
+import {
   requireUnrestrictedTopicPost,
   topicPostReference
 } from "./topic-policy";
@@ -19,7 +23,7 @@ export function readPostLike(
 ) {
   return withPostRead(db, token, async (tx, context) => {
     const id = await postInteractionIdIn(tx, context, parsePostId(postId));
-    const [own, count] = await Promise.all([
+    const [own, count, source] = await Promise.all([
       context.actorId
         ? tx.platformPostLike.findUnique({
             where: { postId_userId: { postId: id, userId: context.actorId } }
@@ -27,13 +31,20 @@ export function readPostLike(
         : null,
       tx.platformPostLike.count({
         where: { postId: id, active: true, user: socialUserWhere(context) }
+      }),
+      tx.platformPost.findUniqueOrThrow({
+        where: { id },
+        select: {
+          authorChurchId: true,
+          author: { select: reactionCountAuthorSelect }
+        }
       })
     ]);
     return {
       id,
       liked: own?.active ?? false,
       version: own?.version ?? 0,
-      count
+      count: projectedReactionCount(source, count)
     };
   });
 }

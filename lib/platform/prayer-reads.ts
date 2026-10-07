@@ -11,6 +11,10 @@ import { PortalError } from "./portal-policy";
 import { postId } from "./post-input";
 import { communityAuthorSelect } from "./public-profile";
 import {
+  projectedReactionCount,
+  reactionCountAuthorSelect
+} from "./reaction-counts";
+import {
   prayerChoice,
   prayerParticipantWhere,
   prayerTargetIn,
@@ -67,6 +71,13 @@ export function readPrayerTarget(
     const ownerId = await requirePrayerOwner(tx, actorId);
     const context = await postContext(tx, ownerId);
     const target = await prayerTargetIn(tx, context, input);
+    const source = target.comment ?? target.post;
+    const author = source.authorChurchId
+      ? { socialPreferences: null }
+      : await tx.platformUser.findUniqueOrThrow({
+          where: { id: source.authorId },
+          select: reactionCountAuthorSelect
+        });
     const visible = prayerParticipantWhere(context, target);
     const [guide, own, count, named] = await Promise.all([
       tx.prayerGuideReceipt.findUnique({ where: { ownerId } }),
@@ -94,7 +105,10 @@ export function readPrayerTarget(
         required: PRAYER_GUIDE_VERSION
       },
       choice: prayerChoice(own),
-      count,
+      count: projectedReactionCount(
+        { authorChurchId: source.authorChurchId, author },
+        count
+      ),
       names: named.slice(0, 30).map((row) => row.owner),
       moreNames: named.length > 30
     };

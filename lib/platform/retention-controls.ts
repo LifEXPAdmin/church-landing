@@ -62,6 +62,7 @@ export type RetentionControlEntry = {
     | "FOLLOWING_LISTS"
     | "PROFILE_LOCATION"
     | "PROFILE_MODULES"
+    | "REACTION_COUNT_PREFERENCES"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
     | "PHOTO_TAG"
@@ -114,9 +115,12 @@ function validate(value: unknown): RetentionControlEntry {
     !Number.isSafeInteger(r.version) ||
     r.version < 1 ||
     r.policy !== policy ||
-    (["PROFILE_LOCATION", "PROFILE_MODULES", "FOLLOWING_LISTS"].includes(
-      r.kind
-    ) &&
+    ([
+      "PROFILE_LOCATION",
+      "PROFILE_MODULES",
+      "FOLLOWING_LISTS",
+      "REACTION_COUNT_PREFERENCES"
+    ].includes(r.kind) &&
       (r.sourceId !== r.targetId || r.operatorId !== r.targetId)) ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
@@ -146,6 +150,7 @@ function validate(value: unknown): RetentionControlEntry {
       "FOLLOWING_LISTS",
       "PROFILE_LOCATION",
       "PROFILE_MODULES",
+      "REACTION_COUNT_PREFERENCES",
       "NOTIFICATION_PREFERENCES",
       "AUTHOR_BELL",
       "PHOTO_TAG",
@@ -500,6 +505,7 @@ export async function recordDiscoveryControl(
     | "FOLLOWING_LISTS"
     | "PROFILE_LOCATION"
     | "PROFILE_MODULES"
+    | "REACTION_COUNT_PREFERENCES"
     | "NOTIFICATION_PREFERENCES"
     | "AUTHOR_BELL"
     | "PHOTO_TAG"
@@ -1164,6 +1170,43 @@ export async function replayRetentionControls(
                 followingLists: Prisma.DbNull,
                 followingListsVersion: entry.version,
                 followingListsRecoveryRequired: true
+              }
+            });
+          }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "REACTION_COUNT_PREFERENCES") {
+          // The journal carries a version, never the personal choice. An older
+          // restored snapshot must hide totals until the owner reviews it.
+          const owner = await tx.platformUser.findFirst({
+            where: { id: entry.sourceId, erasedAt: null },
+            select: { id: true }
+          });
+          if (owner) {
+            await tx.socialPreferences.upsert({
+              where: { ownerId: owner.id },
+              create: {
+                ownerId: owner.id,
+                hideAuthoredReactionCounts: true,
+                reactionCountVersion: entry.version,
+                reactionCountRecoveryRequired: true
+              },
+              update: {}
+            });
+            await tx.socialPreferences.updateMany({
+              where: {
+                ownerId: owner.id,
+                reactionCountVersion: { lt: entry.version }
+              },
+              data: {
+                hideAuthoredReactionCounts: true,
+                reactionCountVersion: entry.version,
+                reactionCountRecoveryRequired: true
               }
             });
           }

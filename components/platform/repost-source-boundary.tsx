@@ -33,7 +33,7 @@ export function RepostSourceBoundary({
   originalPost?: boolean;
   preserveMounted?: boolean;
   commentCount?: number;
-  likeCount?: number;
+  likeCount?: number | null;
   feedMode?: FeedMode;
   feedKey?: string;
   children: ReactNode;
@@ -206,7 +206,7 @@ export function PostReadBoundary({
   version: number;
   accountId: string | null;
   commentCount?: number;
-  likeCount?: number;
+  likeCount?: number | null;
   feedMode?: FeedMode;
   feedKey?: string;
   children: ReactNode;

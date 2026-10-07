@@ -1,4 +1,5 @@
 "use client";
+import { ReactionCount } from "./reaction-count";
 
 import { useState } from "react";
 import type { ReadingPreferences } from "@/lib/platform/reading-preferences";
@@ -44,7 +45,13 @@ export function DisplayPreview({
             <h4>{sample.title}</h4>
             <p className="gc-reader-sample">{sample.text}</p>
             <p className="text-sm">
-              Like<span className="gc-reaction-count"> · 4</span> · Pray
+              Like
+              <ReactionCount
+                count={4}
+                prefix=" · "
+                hide={preferences.hideReactionCounts}
+              />{" "}
+              · Pray
             </p>
           </article>
         ))}
