@@ -9,16 +9,162 @@ import {
 } from "react";
 import type { ReactionPreferencesState } from "@/lib/platform/reaction-preferences";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
-/** This API-backed editor retains its original shell through server refreshes.
- * Its current-account reads still conceal and reject a different account.
- * Explicit navigation or reload starts a new working copy. */
+/** Preserve the working tree above the account-keyed shell while separately
+ * checking each fresh server identity and current browser access. */
 export function RetainedReactionSettings({
+  owner,
   children
 }: {
+  owner: string | null;
   children: ReactNode;
 }) {
-  return useRef(children).current;
+  const [original, setOriginal] = useState(
+    owner ? { owner, frame: children } : null
+  );
+  if (!original) {
+    if (owner) setOriginal({ owner, frame: children });
+    return children;
+  }
+  return (
+    <OriginalReactionFrame
+      owner={owner}
+      original={original}
+      revision={children}
+    />
+  );
+}
+function OriginalReactionFrame({
+  owner,
+  original,
+  revision
+}: {
+  owner: string | null;
+  original: { owner: string; frame: ReactNode };
+  revision: ReactNode;
+}) {
+  const [visible, setVisible] = useState(false),
+    [notice, setNotice] = useState("Checking current settings access…");
+  const generation = useRef(0),
+    matches = useRef(owner === original.owner);
+  const flight = useRef<AbortController | null>(null);
+  const hide = useCallback(() => {
+    generation.current++;
+    flight.current?.abort();
+    setVisible(false);
+  }, []);
+  const check = useCallback(async () => {
+    hide();
+    if (!matches.current) {
+      setNotice(
+        "This page keeps the original account and unsaved choices. Return to that account to continue."
+      );
+      return;
+    }
+    if (
+      !document.hasFocus() ||
+      document.visibilityState === "hidden" ||
+      !navigator.onLine
+    )
+      return;
+    const seq = generation.current,
+      abort = new AbortController();
+    flight.current = abort;
+    const timer = setTimeout(() => abort.abort(), 10000);
+    try {
+      const response = await fetch("/api/platform/profile?view=identity", {
+        credentials: "same-origin",
+        cache: "no-store",
+        signal: abort.signal,
+        headers: { "X-Expected-Account": original.owner }
+      });
+      const data = await response.json();
+      if (!response.ok || data.id !== original.owner)
+        throw Error(
+          "Return to the original account to recover your unsaved settings."
+        );
+      if (
+        seq !== generation.current ||
+        !matches.current ||
+        !document.hasFocus() ||
+        document.visibilityState === "hidden" ||
+        !navigator.onLine
+      )
+        return;
+      setVisible(true);
+      setNotice("");
+    } catch (error) {
+      if (seq === generation.current)
+        setNotice(
+          error instanceof Error
+            ? error.message
+            : "Reconnect to check your original settings access."
+        );
+    } finally {
+      clearTimeout(timer);
+    }
+  }, [hide, original.owner]);
+  useLayoutEffect(() => {
+    matches.current = owner === original.owner;
+    void check();
+    return hide;
+  }, [owner, original.owner, check, hide, revision]);
+  useEffect(() => {
+    const restore = () => void check();
+    const visibility = () =>
+      document.visibilityState === "hidden" ? hide() : restore();
+    for (const event of ["blur", "offline", "pagehide"])
+      window.addEventListener(event, hide);
+    for (const event of ["focus", "online", "pageshow"])
+      window.addEventListener(event, restore);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      hide();
+      for (const event of ["blur", "offline", "pagehide"])
+        window.removeEventListener(event, hide);
+      for (const event of ["focus", "online", "pageshow"])
+        window.removeEventListener(event, restore);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [check, hide]);
+  const allowed = visible && owner === original.owner;
+  return (
+    <>
+      {!allowed && (
+        <section
+          className="container-shell space-y-3 py-8"
+          aria-label="Original settings access"
+        >
+          <p role="status">{notice || "Checking current settings access…"}</p>
+          <button
+            type="button"
+            className="gc-button"
+            onClick={() => void check()}
+          >
+            Recheck original settings access
+          </button>
+          <a
+            className="gc-button gc-button-quiet"
+            href="/platform/login?next=%2Fplatform%2Fsettings%2Fdisplay%2Freading"
+          >
+            Sign in to recover settings
+          </a>
+          <a
+            className="gc-button gc-button-quiet"
+            href="/platform/settings/display/reading"
+          >
+            Reload settings and discard retained entries
+          </a>
+        </section>
+      )}
+      <ReadVisibility.Provider value={allowed}>
+        <div hidden={!allowed} inert={!allowed}>
+          {original.frame}
+        </div>
+      </ReadVisibility.Provider>
+    </>
+  );
 }
 
 export function ReactionPreferences({
@@ -27,6 +173,9 @@ export function ReactionPreferences({
   owner: string;
 }) {
   const owner = useRef(currentOwner).current;
+  const readVisible = useReadVisibility();
+  const currentVisibility = useRef(readVisible);
+  currentVisibility.current = readVisible;
   const [state, setState] = useState({
     saved: null as ReactionPreferencesState | null,
     draft: false,
@@ -115,6 +264,7 @@ export function ReactionPreferences({
   );
   const active = useCallback(
     (seq: number) =>
+      currentVisibility.current &&
       sourceMatches.current &&
       seq === generation.current &&
       document.hasFocus() &&
@@ -131,6 +281,7 @@ export function ReactionPreferences({
     conceal();
     if (
       flight.current ||
+      !currentVisibility.current ||
       !sourceMatches.current ||
       !document.hasFocus() ||
       !navigator.onLine ||
@@ -177,7 +328,7 @@ export function ReactionPreferences({
     conceal();
     if (sourceMatches.current) void load();
     return conceal;
-  }, [currentOwner, owner, load, conceal]);
+  }, [currentOwner, owner, load, conceal, readVisible]);
   useEffect(() => {
     const restore = () => void load();
     const visibility = () =>
@@ -278,7 +429,7 @@ export function ReactionPreferences({
         void load();
     }
   }
-  const visible = state.visible && currentOwner === owner;
+  const visible = readVisible && state.visible && currentOwner === owner;
   return (
     <section
       aria-labelledby="authored-reaction-count-heading"

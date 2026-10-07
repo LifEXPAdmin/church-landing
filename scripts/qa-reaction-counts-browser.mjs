@@ -257,7 +257,6 @@ const refresh = async () => {
   } finally {
     await page.unroute(match, handler);
   }
-  console.log("PHASE refreshed " + phase);
 };
 
 let otherWindow;
@@ -452,8 +451,7 @@ try {
   await cookieOwner(f.b);
   await page.bringToFront();
   await page
-    .getByText(/sign-in changed/)
-    .first()
+    .getByRole("region", { name: "Original settings access", exact: true })
     .waitFor();
   assert.equal(await authorControl.isVisible(), false);
   await refresh();
@@ -476,6 +474,29 @@ try {
   otherWindow = null;
   ok(
     "Native blur and actual A-to-B-to-A server refreshes conceal the editor and retain A's unsaved choice"
+  );
+
+  await cookieOwner(f.b);
+  await refresh();
+  assert.equal(await authorControl.isVisible(), false);
+  await cookieOwner(f.a);
+  await refresh();
+  await authorControl.waitFor({ state: "visible" });
+  assert.equal(await authorControl.isChecked(), false);
+  ok(
+    "A focused account-changing server refresh invalidates the retained editor without a blur event"
+  );
+
+  await cookieOwner(null);
+  await refresh();
+  assert.equal(new URL(page.url()).pathname, settingPath);
+  assert.equal(await authorControl.isVisible(), false);
+  await cookieOwner(f.a);
+  await refresh();
+  await authorControl.waitFor({ state: "visible" });
+  assert.equal(await authorControl.isChecked(), false);
+  ok(
+    "Guest server refresh preserves the original draft for the returning account"
   );
 
   const bodies = [];

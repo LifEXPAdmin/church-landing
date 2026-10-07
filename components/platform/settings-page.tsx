@@ -17,7 +17,24 @@ export async function SettingsPage({
     "/platform/settings" +
     (folder ? "/" + folder : "") +
     (setting ? "/" + setting : "");
-  if (!user) redirect(accountEntryHref("join", next, "settings"));
+  if (!user) {
+    if (folder === "display" && setting === "reading")
+      return (
+        <RetainedReactionSettings key={next} owner={null}>
+          <section className="container-shell space-y-3 py-8">
+            <h1>Reading preferences</h1>
+            <p>Sign in to review your display and contribution choices.</p>
+            <a
+              className="gc-button"
+              href={accountEntryHref("join", next, "settings")}
+            >
+              Sign in or join
+            </a>
+          </section>
+        </RetainedReactionSettings>
+      );
+    redirect(accountEntryHref("join", next, "settings"));
+  }
   const frame = (
     <PlatformShell user={user}>
       <section className="container-shell py-8 sm:py-10">
@@ -31,7 +48,9 @@ export async function SettingsPage({
     </PlatformShell>
   );
   return folder === "display" && setting === "reading" ? (
-    <RetainedReactionSettings key={next}>{frame}</RetainedReactionSettings>
+    <RetainedReactionSettings key={next} owner={user.id}>
+      {frame}
+    </RetainedReactionSettings>
   ) : (
     frame
   );
