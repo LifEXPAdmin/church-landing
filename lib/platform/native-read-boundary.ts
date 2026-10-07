@@ -194,7 +194,11 @@ export async function handleNativeReadRequest(
               "post.read",
               "profile.read",
               "churches.read",
-              "church.read"
+              "church.read",
+              "media.images.read",
+              "media.images.list",
+              "media.images.upload",
+              "media.images.remove"
             ].map((name) => ({ name, available: true })),
             ...[
               "session.google",

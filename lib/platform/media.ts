@@ -6,7 +6,8 @@ import { FEEDBACK_ATTACHMENT_LIMIT, FEEDBACK_UPLOAD_LIFETIME } from "./feedback-
 import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import type { MediaAsset, Prisma, PrismaClient } from "@prisma/client";
-import { withOwnedSession } from "./account-sessions";
+import { withOwnedSession, requireSessionOwner } from "./account-sessions";
+import type { ReadIdentity } from "./account-read";
 import { postContext, withPostRead, type PostTx } from "./post-access";
 import { postField, postId } from "./post-input";
 import { PortalError } from "./portal-policy";
@@ -80,12 +81,16 @@ export type ImageView = ReturnType<typeof projectImage>;
 function mutation<T>(
   db: PrismaClient,
   token: unknown,
-  work: (tx: PostTx, actorId: string) => Promise<T>
+  work: (tx: PostTx, actorId: string) => Promise<T>,
+  expectedOwner?: string
 ) {
   return withOwnedSession(
     db,
     token,
-    (tx, session) => work(tx, session.userId),
+    (tx, session) => {
+      requireSessionOwner(session, expectedOwner);
+      return work(tx, session.userId);
+    },
     true
   );
 }
@@ -128,10 +133,12 @@ export async function listImages(
   db: PrismaClient,
   token: unknown,
   purpose: unknown,
-  targetId: unknown
+  targetId: unknown,
+  identity?: ReadIdentity
 ) {
   return withPostRead(db, token, (tx, context) =>
-    listImagesIn(tx, context, purpose, targetId)
+    listImagesIn(tx, context, purpose, targetId),
+    identity
   );
 }
 export async function uploadImage(
@@ -142,6 +149,7 @@ export async function uploadImage(
     targetId: unknown;
     requestKey: unknown;
     replacesId?: unknown;
+    expectedVersion?: unknown;
     caption?: unknown;
     alt?: unknown;
     crop?: unknown;
@@ -150,7 +158,8 @@ export async function uploadImage(
   },
   bytes: Buffer,
   store: ImageStorage = imageStorage(),
-  signal = AbortSignal.timeout(45_000)
+  signal = AbortSignal.timeout(45_000),
+  expectedOwner?: string
 ) {
   const target = imageTarget(input.purpose, input.targetId);
   const direct = target.purpose === "PROFILE_PHOTO";
@@ -181,6 +190,10 @@ export async function uploadImage(
   if (!/^[a-f0-9-]{36}$/.test(requestKey))
     throw new PortalError(400, "Use a new image request reference.");
   const replacesId = input.replacesId ? postId(input.replacesId) : null;
+  if (input.expectedVersion !== undefined &&
+      (!replacesId || !Number.isSafeInteger(input.expectedVersion) ||
+       Number(input.expectedVersion) < 0))
+    throw new PortalError(400, "Check the replacement image version.");
   if ((direct || attachment) && replacesId)
     throw new PortalError(
       400,
@@ -193,6 +206,7 @@ export async function uploadImage(
       JSON.stringify({
         target,
         replacesId,
+        ...(input.expectedVersion !== undefined ? { expectedVersion: input.expectedVersion } : {}),
         caption,
         alt,
         crop,
@@ -233,7 +247,7 @@ export async function uploadImage(
           where: { id: replacesId, ...currentTarget, status: "READY" }
         })
       : null;
-    if (replacesId && !old)
+    if (replacesId && (!old || (input.expectedVersion !== undefined && old.version !== input.expectedVersion)))
       throw new PortalError(
         409,
         "The image changed. Refresh before replacing it."
@@ -331,7 +345,7 @@ export async function uploadImage(
           }
         });
     return { asset, ready: false };
-  });
+  }, expectedOwner);
   if (reserved.ready) return projectImage(reserved.asset);
   const asset = reserved.asset;
   try {
@@ -350,6 +364,7 @@ export async function uploadImage(
       signal.throwIfAborted();
     }
     return await mutation(db, token, async (tx, actorId) => {
+      signal.throwIfAborted();
       const context = await postContext(tx, actorId);
       await writableImageTarget(tx, context, target);
       if (privacy) checkPhotoAudience(context, privacy);
@@ -370,7 +385,7 @@ export async function uploadImage(
             where: { id: replacesId, ...currentTarget, status: "READY" }
           })
         : null;
-      if (replacesId && !old)
+      if (replacesId && (!old || (input.expectedVersion !== undefined && old.version !== input.expectedVersion)))
         throw new PortalError(
           409,
           "The image changed while uploading. Refresh before replacing it."
@@ -428,7 +443,7 @@ export async function uploadImage(
         });
       if (target.exchangeListingId) await recordExchangeImageChange(tx, target.exchangeListingId, actorId);
       return projectImage(ready);
-    });
+    }, expectedOwner);
   } catch (error) {
     // Renew the ledger after an uncertain failure: an expired attempt may have
     // raced cleanup while its provider was still completing a write.
@@ -461,7 +476,8 @@ export function removeImage(
   db: PrismaClient,
   token: unknown,
   id: unknown,
-  expectedVersion: unknown
+  expectedVersion: unknown,
+  expectedOwner?: string
 ) {
   return mutation(db, token, async (tx, actorId) => {
     const asset = await tx.mediaAsset.findUnique({ where: { id: postId(id) } });
@@ -514,7 +530,7 @@ export function removeImage(
       });
     if (asset.exchangeListingId) await recordExchangeImageChange(tx, asset.exchangeListingId, actorId);
     return { removed: true };
-  });
+  }, expectedOwner);
 }
 export async function readImage(
   db: PrismaClient,
@@ -522,7 +538,8 @@ export async function readImage(
   id: unknown,
   variantValue: unknown,
   store: ImageStorage = imageStorage(),
-  signal = AbortSignal.timeout(15_000)
+  signal = AbortSignal.timeout(15_000),
+  identity?: ReadIdentity
 ) {
   const variant = imageVariant(variantValue),
     assetId = postId(id);
@@ -540,7 +557,7 @@ export async function readImage(
       if (!ownedListingImage) throw new PortalError(404, "Image unavailable.");
       await readableImageTarget(tx, context, targetOf(ownedListingImage));
       return ownedListingImage;
-    });
+    }, identity);
   return readCheckedImage(check, variant, store, signal);
 }
 export async function readCheckedImage(check: () => Promise<MediaAsset>, variant: ReturnType<typeof imageVariant>, store: ImageStorage, signal: AbortSignal) {
