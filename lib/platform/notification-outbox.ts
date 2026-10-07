@@ -207,9 +207,6 @@ export async function deliverNotification(
   nativeTransport: NativePushTransport = nativePushTransport
 ): Promise<PushWorkResult> {
   const claim = await notificationWrite(db, async (tx) => {
-    // The permission gate may have blocked. Never admit an idle session using
-    // the earlier caller timestamp; retain future test/scheduler clock input.
-    const sessionNow = new Date(Math.max(now.getTime(), Date.now()));
     const row = await tx.notificationDelivery.findUnique({
       where: { id },
       include: {
@@ -229,6 +226,10 @@ export async function deliverNotification(
         }
       }
     });
+    // Permission and database reads may wait. Recheck every time-bound source
+    // against current time while retaining future test/scheduler clock input.
+    now = new Date(Math.max(now.getTime(), Date.now()));
+    const sessionNow = now;
     if (!row || row.state === "FINISHED")
       return { done: true, outcome: "finished" } as const;
     const sub = row.subscription;
@@ -307,6 +308,12 @@ export async function deliverNotification(
       where: { ownerId: row.ownerId }
     });
     const preferences = projectNotificationPreferences(settings);
+    now = new Date(Math.max(now.getTime(), Date.now()));
+    const deliveryDeadline = Math.min(
+      row.expiresAt.getTime(),
+      source.expiresAt?.getTime() ?? Infinity
+    );
+    if (deliveryDeadline <= now.getTime()) return finish("CANCELLED");
     if (
       email
         ? source.category !== emailCategory ||
@@ -395,6 +402,7 @@ export async function deliverNotification(
             }
           : null,
       subscriptionId: sub?.id ?? null,
+      deliveryDeadline,
       sessionDeadline:
         !email && sub?.session
           ? accountSessionDeadline(sub.session).getTime()
@@ -407,7 +415,7 @@ export async function deliverNotification(
         0,
         Math.min(
           300,
-          Math.floor((row.expiresAt.getTime() - now.getTime()) / 1000),
+          Math.floor((deliveryDeadline - now.getTime()) / 1000),
           !email && sub?.session
             ? Math.floor(
                 (accountSessionDeadline(sub.session).getTime() -
@@ -425,39 +433,43 @@ export async function deliverNotification(
   // Admission may precede expiry while its transaction/commit finishes. An
   // already-expired browser session must not submit even a zero-TTL push.
   // Email remains account-owned and has its separate durable lifetime.
+  const dispatchNow = Math.max(Date.now(), now.getTime());
   const remainingSessionSeconds =
     claim.sessionDeadline == null
       ? null
-      : Math.floor(
-          (claim.sessionDeadline - Math.max(Date.now(), now.getTime())) / 1000
-        );
+      : Math.floor((claim.sessionDeadline - dispatchNow) / 1000);
   const idleBeforeDispatch =
     remainingSessionSeconds != null && remainingSessionSeconds <= 0;
+  const ttl = Math.min(
+    claim.ttl,
+    remainingSessionSeconds ?? claim.ttl,
+    Math.floor((claim.deliveryDeadline - dispatchNow) / 1000)
+  );
+  const expiredBeforeDispatch =
+    claim.deliveryDeadline <= dispatchNow ||
+    (!!claim.subscriptionId && ttl <= 0);
+  const skipProvider = idleBeforeDispatch || expiredBeforeDispatch;
   let status = 0;
   let nativeResult: NativePushSendResult | NativePushReceiptResult | null =
     null;
   try {
-    if (claim.nativeIntent && !idleBeforeDispatch) {
+    if (claim.nativeIntent && !skipProvider) {
       nativeResult = claim.nativeIntent.ticketId
         ? await nativeTransport.receipt(claim.nativeIntent.ticketId)
         : await nativeTransport.send(
             claim.nativeIntent.token,
             claim.payload,
-            Math.min(claim.ttl, remainingSessionSeconds ?? claim.ttl)
+            ttl
           );
     } else
-      status = idleBeforeDispatch
+      status = skipProvider
         ? 0
         : claim.socialIntent
           ? await socialTransport(claim.socialIntent)
           : claim.emailIntent
             ? await emailTransport(claim.emailIntent)
             : claim.subscription
-              ? await transport(
-                  claim.subscription,
-                  claim.payload,
-                  Math.min(claim.ttl, remainingSessionSeconds ?? claim.ttl)
-                )
+              ? await transport(claim.subscription, claim.payload, ttl)
               : 400;
   } catch {
     /* Diagnostics must not retain a provider exception with endpoint/key material. */
@@ -479,7 +491,8 @@ export async function deliverNotification(
         kind: "retry" as const,
         statusCode: null
       };
-      const inactive = idleBeforeDispatch || row.expiresAt <= finished;
+      const inactive =
+        skipProvider || claim.deliveryDeadline <= finished.getTime();
       const invalid = result.kind === "invalid";
       const accepted = result.kind === "accepted" && !inactive;
       const polling = claim.nativeIntent.ticketId !== null;
@@ -501,6 +514,7 @@ export async function deliverNotification(
           result.kind === "retry-delivery");
       const deadline = Math.min(
         row.expiresAt.getTime(),
+        claim.deliveryDeadline,
         claim.sessionDeadline ?? Infinity,
         ticketCreatedAt ? ticketCreatedAt.getTime() + DAY : Infinity
       );
@@ -571,7 +585,7 @@ export async function deliverNotification(
         !claim.emailIntent &&
         (status === 404 || status === 410);
     const retry =
-      !idleBeforeDispatch &&
+      !skipProvider &&
       !accepted &&
       !expired &&
       (status === 0 || status === 408 || status === 429 || status >= 500) &&
@@ -580,7 +594,7 @@ export async function deliverNotification(
     await tx.pushDeliveryAttempt.update({
       where: { deliveryId_attempt: { deliveryId: id, attempt: claim.attempt } },
       data: {
-        outcome: idleBeforeDispatch
+        outcome: skipProvider
           ? "EXPIRED"
           : accepted
             ? "ACCEPTED"
@@ -612,12 +626,12 @@ export async function deliverNotification(
         where: { id },
         data: terminal(
           finished,
-          idleBeforeDispatch ? "CANCELLED" : accepted ? "ACCEPTED" : "FAILED"
+          skipProvider ? "CANCELLED" : accepted ? "ACCEPTED" : "FAILED"
         )
       });
     return {
       done: true,
-      outcome: idleBeforeDispatch
+      outcome: skipProvider
         ? "cancelled"
         : accepted
           ? "accepted"

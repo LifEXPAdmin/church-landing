@@ -120,6 +120,104 @@ const accepted = (): NativePushTransport => ({
 const isConflict = (e: unknown) =>
   e instanceof Error && "status" in e && e.status === 409;
 
+function delayedClaim(milliseconds: number) {
+  return new Proxy(db, {
+    get(target, key, receiver) {
+      if (key === "$transaction")
+        return async (...args: Parameters<typeof db.$transaction>) => {
+          const result = await Reflect.apply(target.$transaction, target, args);
+          if (result && typeof result === "object" && "nativeIntent" in result)
+            await delay(milliseconds);
+          return result;
+        };
+      return Reflect.get(target, key, receiver);
+    }
+  });
+}
+for (const phase of ["permission lock", "committed claim"]) {
+  test(`native delivery expiry during a ${phase} wait never reaches the provider`, async () => {
+    const a = await actor(),
+      { input } = await device(a),
+      row = await queue(a, input.id);
+    await db.notificationDelivery.update({
+      where: { id: row.id },
+      data: { expiresAt: new Date(Date.now() + 2000) }
+    });
+    let sends = 0;
+    const transport: NativePushTransport = {
+      ...accepted(),
+      send: async () => {
+        sends++;
+        return { kind: "ticket", ticketId: randomUUID(), statusCode: 200 };
+      }
+    };
+    let held = Promise.resolve();
+    if (phase === "permission lock") {
+      let entered!: () => void;
+      const locked = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      held = notificationWrite(db, async () => {
+        entered();
+        await delay(2250);
+      });
+      await locked;
+    }
+    const result = await deliverNotification(
+      phase === "permission lock" ? db : delayedClaim(2250),
+      row.id,
+      noWeb,
+      new Date(),
+      undefined,
+      undefined,
+      transport
+    );
+    await held;
+    assert.equal(sends, 0);
+    assert.deepEqual(result, { done: true, outcome: "cancelled" });
+    assert.equal(
+      (await db.pushSubscription.findUniqueOrThrow({ where: { id: input.id } }))
+        .revokedAt,
+      null
+    );
+  });
+}
+test("native delivery recomputes its remaining TTL immediately after a slow claim", async () => {
+  const a = await actor(),
+    { input } = await device(a),
+    row = await queue(a, input.id);
+  const deadline = new Date(Date.now() + 10000);
+  await db.notificationDelivery.update({
+    where: { id: row.id },
+    data: { expiresAt: deadline }
+  });
+  let sends = 0,
+    observed = 0,
+    remaining = 0;
+  await deliverNotification(
+    delayedClaim(2250),
+    row.id,
+    noWeb,
+    new Date(),
+    undefined,
+    undefined,
+    {
+      ...accepted(),
+      send: async (_token, _payload, ttl) => {
+        sends++;
+        observed = ttl;
+        remaining = Math.floor((deadline.getTime() - Date.now()) / 1000);
+        return { kind: "ticket", ticketId: randomUUID(), statusCode: 200 };
+      }
+    }
+  );
+  assert.equal(sends, 1);
+  assert.ok(
+    observed > 0 && observed <= remaining,
+    `${observed} must not exceed the current ${remaining} seconds`
+  );
+});
+
 test("concurrent receipt workers lease a captured ticket once", async () => {
   const a = await actor(),
     { input } = await device(a),
