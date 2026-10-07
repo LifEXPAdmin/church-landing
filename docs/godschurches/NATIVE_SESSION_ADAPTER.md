@@ -147,15 +147,42 @@ verified.
 
 ## Verification status
 
-The pure contract suite currently passes 14 checks, including the original ten
-v1 cases and four native credential/command/identity cases. Bounded early review
-corrected canonical request-key grammar, unsupported TypeScript parameter syntax,
-response identity binding and method-error consistency before runtime testing.
+Application source `d44adceb0586e1c7dcfa6ce6cb8dab6f0edbdddd`, production build
+`hDekz_MT_3klWnep7sDPC`, passed the isolated verification run on 7 October 2026.
+The current source passed 14 native contract/service checks and 26 session/HTTPS
+integration checks. The latter includes four native HTTPS cases under production
+settings with delivery disabled, nine session-rotation regressions, nine account
+session regressions, and the same four native HTTPS cases with an explicitly
+enabled fictional MFA sink. The enabled phase requires its declared availability;
+it cannot silently pass by exercising the disabled branch.
 
-The first isolated run passed 68 service/contract checks and the production build.
-Its HTTPS checks reproduced a Next.js proxy-host mismatch, now corrected with a
-regression. Revised HTTPS/build acceptance and final independent review are
-still pending. The new tests
-are discovered by the existing complete support harness. Local targeted evidence
-does not replace combined release and live acceptance. No production migration,
-write, provider activation or deployment is part of this implementation checkpoint.
+Another 55 applicable checks passed at the initial `df8f9e0` checkpoint: ten
+shared wire contracts, five cookie cases, seven lifetime-policy cases, eleven
+activity cases, ten privileged-authentication cases and twelve Google boundary
+cases. Their tested source and services are unchanged by the subsequent native
+boundary repair. Initial native checks also passed, but are superseded by the
+14 current native checks. The first real HTTPS run failed all four native cases
+because Next.js exposed its internal listen address in request.url. The corrected
+boundary checks received Host and effective protocol; current real HTTPS checks
+pass. Both the failed evidence and repair are retained privately.
+
+Type checking, focused lint, website copy, build hydration/runtime trace/security
+checks and an ES2022-only compile with no DOM or Node types passed. No new
+migration or dependency is required. The tests are discoverable by the existing
+complete support harness; this feature run is targeted and is not a new passing
+complete-support or combined-release gate. Owned fixture server, HTTPS proxy and
+PostgreSQL processes closed, with their three ports verified unavailable.
+
+Native-specific coverage includes mixed/invalid credentials, expected-account
+binding, pure session reads, coalesced activity, expiry while waiting on a lock,
+shared web/native rate budgets, current-session logout, delayed old logout,
+canonical revocation/password/deactivation/deletion, factor enrollment and exact
+retry, MFA isolation across sessions, one-use purpose and changed authority,
+recovery/replacement retirement, and recovery after an after-commit notice
+scheduling failure. A wrong current password for MFA preserves the valid session.
+
+Final independent review and the private ready-for-integration receipt follow
+this checkpoint. The implementation is not merged or live. Actual native device
+storage/UI/lifecycle acceptance, actual provider delivery, native OAuth and the
+combined release remain separate gates. No production migration, write, provider
+activation or deployment occurred in this local verification.

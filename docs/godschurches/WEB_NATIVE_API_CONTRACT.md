@@ -1,5 +1,13 @@
 # Shared website and native API contract
 
+The local native authentication adapter now implements session discovery plus
+password, activity/logout and authenticator routes. See
+[NATIVE_SESSION_ADAPTER.md](NATIVE_SESSION_ADAPTER.md) for exact transport,
+verification and deployment status. The remaining read/write adapters below
+remain planned. The `contract-only` schema marker describes declarative
+definitions; it is not runtime capability or deployment evidence. Clients must
+use the specific implemented adapter receipt and eventual capability response.
+
 This initial contract is ready for adapter implementation. It does not activate
 new routes, native sign-in, capabilities or website behavior. The canonical
 runtime schema and inferred TypeScript exports are in

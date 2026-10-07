@@ -1,12 +1,16 @@
-## Native session adapter implementation, 7 October 2026
+## Native session adapter locally verified, 7 October 2026
 
-The native password, session discovery/activity/logout and authenticator routes
-are implemented locally on the accepted v1 contract. They reuse canonical account
-sessions, rate limits, expiry and session-bound MFA; browser cookie/Origin rules
-are unchanged. No schema or dependency changes. Pure contracts, type checking,
-focused lint and copy checks pass. Isolated database, HTTPS/build and final review
-are pending; this checkpoint is not merged or live. Native OAuth remains disabled
-and actual mobile-client/device acceptance is separate. See
+Native password, session discovery/activity/logout and authenticator routes reuse
+canonical account sessions, shared rate limits, expiry and session-bound MFA.
+Browser cookie and Origin protections remain unchanged. Application `d44adce`,
+build `hDekz_MT_3klWnep7sDPC`, passed 14 current native checks and 26 session/HTTPS
+checks, including disabled and explicitly enabled fictional MFA. Another 55
+unchanged canonical regressions passed at the initial checkpoint. The first HTTPS
+run reproduced and led to a repair of Next.js internal-address host validation.
+Type/lint/copy, production build/security and ES2022-only portable contracts pass.
+All owned runtimes are closed. No schema or dependency changes. Final independent
+review is pending; this work is not merged or live. Native OAuth and actual
+mobile-client/device acceptance remain separate. See
 [NATIVE_SESSION_ADAPTER.md](NATIVE_SESSION_ADAPTER.md).
 
 ## Initial web/native wire contract, 7 October 2026
