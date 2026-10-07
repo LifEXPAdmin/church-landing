@@ -116,9 +116,11 @@ test("lost replies keep exact receipts and concurrent versioned edits have one w
 
 test("forbidden or unavailable destinations cannot be saved or replayed into access; restored IDs are reprojected", async () => {
   const a = await createPortalActor(db, "cutgrant");
+  const unavailableId = "fixture_unavailable_shortcut";
   for (const ids of [
     ["admin"],
     ["mediaCatalogItem"],
+    [unavailableId],
     ["https://untrusted.invalid"],
     ["__proto__"]
   ])
@@ -157,11 +159,13 @@ test("forbidden or unavailable destinations cannot be saved or replayed into acc
   await denied(() => saveMenuShortcuts(db, a.token, command), 403);
   await db.socialPreferences.update({
     where: { ownerId: a.id },
-    data: { menuShortcutIds: ["admin", "mediaCatalogItem", "settings"] }
+    data: { menuShortcutIds: ["admin", "mediaCatalogItem", unavailableId, "settings"] }
   });
   page = await readMenuShortcuts(db, a.token);
   assert.deepEqual(page.ids, ["settings"]);
-  assert.ok(!JSON.stringify(page).includes("mediaCatalogItem"));
+  // A valid media choice may name this resource kind as metadata, never as its ID.
+  assert.ok(!page.choices.some((item) => String(item.id) === "mediaCatalogItem"));
+  assert.ok(!JSON.stringify(page).includes(unavailableId));
   await saveMenuShortcuts(db, a.token, choice([], page.version));
   assert.deepEqual(
     (await db.socialPreferences.findUniqueOrThrow({ where: { ownerId: a.id } }))
