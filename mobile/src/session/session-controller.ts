@@ -215,6 +215,13 @@ export function createNativeSessionController(ports: SessionPorts) {
     retryVerification(): Promise<void> {
       return state.phase === "unavailable" ? restore() : Promise.resolve();
     },
+    /** Private read composition reports only a confirmed canonical rejection.
+     * A late read from an older credential cannot invalidate its replacement. */
+    reportReadRejection(error: unknown, owner: string, epoch: number): Promise<void> {
+      if (!active(epoch) || state.phase !== "ready" || credential?.ownerId !== owner || !candidate || !deniedSession(error))
+        return Promise.resolve();
+      return rejectCurrentSession(candidate);
+    },
     async signIn(input: WireValue<typeof nativePasswordInput>): Promise<void> {
       if (disposed || !foreground || state.phase !== "signed-out") return;
       const previouslyEmpty = noKnownSession;

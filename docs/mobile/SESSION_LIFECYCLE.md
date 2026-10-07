@@ -102,6 +102,12 @@ when no token can be captured. Cancellation converts pending revocation to
 uncertainty across foreground transitions. Failed persistent cleanup also keeps
 its warning when a lifecycle change invalidates the initiating screen.
 
+The private read composition can report a confirmed canonical session rejection
+with its original owner and generation. The same session controller checks that
+binding before candidate-bound clearing. A late read cannot sign out a replacement
+account or a newer credential for the same account. See
+[bounded reading](BOUNDED_READING.md) for the native consumer and retention rules.
+
 At most one detached revocation is retained, with no credential retry queue.
 A second rapid logout still clears local state and reports remote uncertainty.
 An abandoned save uses its original random credential binding for any delayed

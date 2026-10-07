@@ -58,15 +58,25 @@ export function createNativeClient(adapter: RequestAdapter) {
       for (const [key, value] of Object.entries(query)) if (value !== null) parameters.set(key, value);
       return (await prepareRequest(adapter, {
         path: apiContracts.feed.path + "?" + parameters.toString(), method: "GET", expectedOwner: owner,
-        decode: (value, original) => decodeApiResponse("feed", value, original.owner)
+        decode: (value, original) => {
+          const response = decodeApiResponse("feed", value, original.owner);
+          if (response.data.mode !== query.mode || query.scope !== null && response.data.scope !== query.scope)
+            throw new Error("Feed selection did not match the request.");
+          return response;
+        }
       }).run({ cancellation: cancellation(signal) })).data;
     },
     async post(owner: string, postId: string, signal?: AbortSignal) {
       apiId.parse(owner);
-      const path = apiContracts.post.path.replace(":postId", encodeURIComponent(apiId.parse(postId)));
+      const id = apiId.parse(postId);
+      const path = apiContracts.post.path.replace(":postId", encodeURIComponent(id));
       return (await prepareRequest(adapter, {
         path, method: "GET", expectedOwner: owner,
-        decode: (value, original) => decodeApiResponse("post", value, original.owner)
+        decode: (value, original) => {
+          const response = decodeApiResponse("post", value, original.owner);
+          if (response.data.id !== id) throw new Error("Post identity did not match the request.");
+          return response;
+        }
       }).run({ cancellation: cancellation(signal) })).data;
     }
   };
