@@ -91,6 +91,9 @@ export function ExchangeEditor({
     [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState(""),
     [confirmed, setConfirmed] = useState(false);
+  const resultRef = useRef<HTMLParagraphElement>(null),
+    resultFocus = useRef<number | null>(null);
+  const [focusRequest, setFocusRequest] = useState(0);
   const [accessNotice, setAccessNotice] = useState(
     "Checking your current listing access…"
   );
@@ -100,6 +103,20 @@ export function ExchangeEditor({
     recordRef = useRef(record),
     changedRef = useRef(false);
   recordRef.current = record;
+  useEffect(() => {
+    const request = resultFocus.current;
+    if (request === null || busy) return;
+    resultFocus.current = null;
+    if (
+      request === generation.current &&
+      !changedRef.current &&
+      visible &&
+      document.hasFocus() &&
+      document.visibilityState === "visible" &&
+      navigator.onLine
+    )
+      resultRef.current?.focus();
+  }, [focusRequest, busy, visible]);
   const dirty =
     !sameFields(fields, record?.fields ?? emptyExchangeFields()) ||
     (!record && !!ownerChurchId);
@@ -227,12 +244,14 @@ export function ExchangeEditor({
 
   async function send(request: Pending) {
     if (flight.current || changedRef.current) return false;
-    generation.current++;
+    const actionGeneration = ++generation.current;
+    resultFocus.current = null;
     flight.current = true;
     setBusy(true);
     setPending(request);
     setNotice("");
     let receiptConfirmed = false;
+    let navigating = false;
     try {
       const result = await socialRequest<{
         id?: string;
@@ -281,7 +300,10 @@ export function ExchangeEditor({
       });
       if (navigate) {
         await settlePhotoNavigation();
-        router.replace(`/platform/exchange/${encodeURIComponent(id)}/edit`);
+        navigating = true;
+        router.replace(
+          `/platform/exchange/${encodeURIComponent(id)}/edit#listing-editor-heading`
+        );
       }
       return true;
     } catch (error) {
@@ -308,6 +330,12 @@ export function ExchangeEditor({
     } finally {
       flight.current = false;
       setBusy(false);
+      // The existing read generation cancels focus after blur, lost access or
+      // account replacement. Background checks never request result focus.
+      if (!navigating && actionGeneration === generation.current) {
+        resultFocus.current = actionGeneration;
+        setFocusRequest((value) => value + 1);
+      }
     }
   }
   async function command(input: Record<string, unknown>) {
@@ -424,7 +452,13 @@ export function ExchangeEditor({
   return (
     <ReadVisibility.Provider value={visible}>
       <div className="space-y-5">
-        <p role="status" aria-live="polite">
+        <p
+          ref={resultRef}
+          role="status"
+          aria-live="polite"
+          tabIndex={-1}
+          className="focus:outline-none focus:ring-2 focus:ring-gc-focus"
+        >
           {busy
             ? "Confirming this listing change…"
             : visible

@@ -197,6 +197,24 @@ function choice<T extends object>(
   return value as keyof T;
 }
 
+function listingText(
+  label: string,
+  value: unknown,
+  maximum: number,
+  minimum = 0
+) {
+  try {
+    return postField(value, maximum, minimum);
+  } catch (error) {
+    if (!(error instanceof PortalError)) throw error;
+    throw new PortalError(
+      error.status,
+      `${label}: ${error.message}`,
+      error.retryAfter
+    );
+  }
+}
+
 export function exchangePriceMinor(
   value: unknown,
   currency: unknown,
@@ -307,8 +325,13 @@ export function parseExchangeFields(
       "Send the complete listing form. Keep your unsent entries."
     );
   const intent = choice(value.intent, exchangeIntentLabels, "listing type");
-  const title = postField(value.title, 120, publication ? 3 : 0);
-  const description = postField(value.description, 5000, publication ? 1 : 0);
+  const title = listingText("Title", value.title, 120, publication ? 3 : 0);
+  const description = listingText(
+    "Description",
+    value.description,
+    5000,
+    publication ? 1 : 0
+  );
   const service = intent === "SERVICE",
     request = intent === "WANTED" || intent === "CHURCH_NEED";
   const category =
@@ -331,7 +354,8 @@ export function parseExchangeFields(
       400,
       "A service cannot carry an item condition. Clear the old item fields deliberately."
     );
-  const requestedItems = postField(
+  const requestedItems = listingText(
+    "Requested items",
     value.requestedItems,
     2000,
     publication && request ? 1 : 0
@@ -343,17 +367,20 @@ export function parseExchangeFields(
       400,
       "Only Wanted and Church need listings carry requested items and a needed-by date. Clear the previous type's fields deliberately."
     );
-  const serviceArea = postField(
+  const serviceArea = listingText(
+    "Service area",
     value.serviceArea,
     500,
     publication && service ? 1 : 0
   );
-  const availability = postField(
+  const availability = listingText(
+    "Availability",
     value.availability,
     1000,
     publication && service ? 1 : 0
   );
-  const qualifications = postField(
+  const qualifications = listingText(
+    "Self-stated qualifications",
     value.qualifications,
     2000,
     publication && service ? 1 : 0

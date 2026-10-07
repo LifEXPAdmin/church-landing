@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { accountEntryHref } from "@/lib/platform/account-entry";
 import { mediaTopicSuggestions } from "@/lib/platform/media-topic-options";
@@ -95,6 +95,14 @@ export function MediaEditor({
     [retry, setRetry] = useState<string | null>(null),
     [message, setMessage] = useState(""),
     [removed, setRemoved] = useState(false);
+  const feedbackId = useId(),
+    resultRef = useRef<HTMLParagraphElement>(null),
+    sourceRef = useRef<HTMLInputElement>(null),
+    focusEpoch = useRef(0),
+    resultFocus = useRef<{ target: "source" | "status"; epoch: number } | null>(
+      null
+    );
+  const [focusRequest, setFocusRequest] = useState(0);
   const originalOwner = useRef(owner);
   const locked = useRef(false),
     { data, error, reload } = useMediaRead<View>(
@@ -103,6 +111,52 @@ export function MediaEditor({
     );
   const conflict = !!(data?.item && loaded && data.item.version !== version),
     concealed = owner !== originalOwner.current || !data || !loaded || removed;
+  // Only a deliberate action requests focus. Background reads never do.
+  useEffect(() => {
+    const cancel = () => {
+      focusEpoch.current++;
+      resultFocus.current = null;
+    };
+    const visibility = () => {
+      if (document.visibilityState === "hidden") cancel();
+    };
+    cancel();
+    for (const event of ["blur", "offline", "pagehide"])
+      window.addEventListener(event, cancel);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      cancel();
+      for (const event of ["blur", "offline", "pagehide"])
+        window.removeEventListener(event, cancel);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [owner]);
+  function requestResultFocus(target: "source" | "status", epoch: number) {
+    if (epoch !== focusEpoch.current) return;
+    resultFocus.current = { target, epoch };
+    setFocusRequest((value) => value + 1);
+  }
+  useEffect(() => {
+    const request = resultFocus.current;
+    if (!request) return;
+    if (
+      request.epoch !== focusEpoch.current ||
+      owner !== originalOwner.current ||
+      !document.hasFocus() ||
+      document.visibilityState !== "visible" ||
+      !navigator.onLine
+    ) {
+      resultFocus.current = null;
+      return;
+    }
+    // An own save conceals and remounts the editor until its fresh read settles.
+    if (busy || (concealed && !removed) || data?.actorId !== owner) return;
+    const target =
+      request.target === "source" ? sourceRef.current : resultRef.current;
+    if (!target) return;
+    resultFocus.current = null;
+    target.focus();
+  }, [focusRequest, busy, concealed, removed, data, owner]);
   function load(item?: Item) {
     setScriptureDrafts(
       (item?.scriptureRanges ?? []).map((r) => ({
@@ -177,30 +231,36 @@ export function MediaEditor({
     source = catalogSource(f.sourceUrl);
   } catch {
     sourceProblem =
-      "Use a canonical public item link without extra options or private tokens.";
+      "Public source URL: use a canonical public item link without extra options or private tokens.";
   }
   const act = async (operation: string, original?: string) => {
     if (locked.current || !owner || owner !== originalOwner.current) return;
+    const actionFocusEpoch = focusEpoch.current;
+    resultFocus.current = null;
     let body = original;
     if (!body) {
       if (conflict) {
         setMessage(
           "This item changed. Keep your edits until you choose to reload."
         );
+        requestResultFocus("status", actionFocusEpoch);
         return;
       }
       if (["save", "publish"].includes(operation) && sourceProblem) {
         setMessage(sourceProblem);
+        requestResultFocus("source", actionFocusEpoch);
         return;
       }
       if (["save", "publish"].includes(operation) && scriptureProblem) {
         setMessage(scriptureProblem);
+        requestResultFocus("status", actionFocusEpoch);
         return;
       }
       if (["save", "publish"].includes(operation) && source && !ack) {
         setMessage(
           "Acknowledge the displayed source and audience before saving."
         );
+        requestResultFocus("status", actionFocusEpoch);
         return;
       }
       const payload: Record<string, unknown> = {
@@ -266,6 +326,7 @@ export function MediaEditor({
       setVersion(result.version);
       setActiveId(result.id);
       setMessage(result.message);
+      requestResultFocus("status", actionFocusEpoch);
       setAck(false);
       setRightsReviewed(false);
       if (JSON.parse(body).operation === "remove") {
@@ -280,6 +341,7 @@ export function MediaEditor({
           ? e.message
           : "The result is uncertain. Retry the original request."
       );
+      requestResultFocus("status", actionFocusEpoch);
       if (e instanceof SocialClientError && [401, 403].includes(e.status))
         reload();
       if (
@@ -325,7 +387,12 @@ export function MediaEditor({
         <MediaReadNotice error={error} reload={reload} />
       )}
       {(!concealed || removed) && (
-        <p role="status" className="whitespace-pre-wrap">
+        <p
+          ref={resultRef}
+          role="status"
+          tabIndex={-1}
+          className="whitespace-pre-wrap focus:outline-none focus:ring-2 focus:ring-gc-focus"
+        >
           {message}
         </p>
       )}
@@ -361,7 +428,7 @@ export function MediaEditor({
               void act("save");
             }}
           >
-            <fieldset disabled={busy || !!retry} className="space-y-4">
+            <fieldset disabled={busy || !!retry} className="min-w-0 space-y-4">
               {!activeId ? (
                 <label className="block">
                   Publish as
@@ -413,6 +480,9 @@ export function MediaEditor({
               </label>
               <section
                 aria-label="Scripture tags"
+                aria-describedby={
+                  scriptureProblem ? `${feedbackId}-scripture-error` : undefined
+                }
                 className="space-y-3 rounded-lg border p-4"
               >
                 <h2 className="text-lg font-semibold">Scripture passages</h2>
@@ -514,7 +584,9 @@ export function MediaEditor({
                   Add Scripture passage
                 </button>
                 {scriptureProblem ? (
-                  <p role="alert">{scriptureProblem}</p>
+                  <p id={`${feedbackId}-scripture-error`} role="alert">
+                    {scriptureProblem}
+                  </p>
                 ) : (
                   scriptureRanges.length > 0 && (
                     <div aria-label="Normalized Scripture tags">
@@ -825,6 +897,9 @@ export function MediaEditor({
                 <input
                   className={fieldClass}
                   type="url"
+                  ref={sourceRef}
+                  aria-invalid={!!sourceProblem || undefined}
+                  aria-describedby={`${feedbackId}-source-help${sourceProblem ? ` ${feedbackId}-source-error` : ""}`}
                   value={f.sourceUrl ?? ""}
                   maxLength={2048}
                   placeholder="https://www.youtube.com/watch?v=…"
@@ -833,12 +908,16 @@ export function MediaEditor({
                   }
                 />
               </label>
-              <p className="text-sm">
+              <p id={`${feedbackId}-source-help`} className="text-sm">
                 YouTube video, Vimeo video or SoundCloud track. Use the
                 canonical public recording link, without timestamps, playlists
                 or private access tokens.
               </p>
-              {sourceProblem && <p role="alert">{sourceProblem}</p>}
+              {sourceProblem && (
+                <p id={`${feedbackId}-source-error`} role="alert">
+                  {sourceProblem}
+                </p>
+              )}
               <section
                 className="space-y-3 rounded-xl border p-5"
                 aria-label="Audience and source preview"

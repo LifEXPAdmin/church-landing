@@ -325,7 +325,26 @@ function DiscoverySettingsForm({
 }) {
   const id = useId(),
     form = useRef<HTMLFormElement>(null),
+    feedback = useRef<HTMLParagraphElement>(null),
+    focusEpoch = useRef(0),
     flight = useRef(false);
+  useEffect(() => {
+    const cancelFocus = () => {
+      focusEpoch.current++;
+    };
+    const visibility = () => {
+      if (document.visibilityState === "hidden") cancelFocus();
+    };
+    for (const event of ["blur", "offline", "pagehide"])
+      window.addEventListener(event, cancelFocus);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      cancelFocus();
+      for (const event of ["blur", "offline", "pagehide"])
+        window.removeEventListener(event, cancelFocus);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, []);
   const [prefs, setPrefs] = useState(data.preferences),
     [mode, setMode] = useState(initialMode ?? data.mode),
     [dirty, setDirty] = useState(false),
@@ -371,6 +390,7 @@ function DiscoverySettingsForm({
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (flight.current || conflict) return;
+    const actionFocusEpoch = focusEpoch.current;
     flight.current = true;
     setBusy(true);
     setMessage("");
@@ -438,11 +458,27 @@ function DiscoverySettingsForm({
         setPending(null);
         if ([403, 404, 409].includes(error.status)) setConflict(true);
       }
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Your choices could not be confirmed. Retry the same save."
-      );
+      // Focus only this submitted result, including a repeated identical error.
+      // Keep concealed or interrupted private work outside the focus order.
+      flushSync(() => {
+        setBusy(false);
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Your choices could not be confirmed. Retry the same save."
+        );
+      });
+      const target = feedback.current;
+      if (
+        actionFocusEpoch === focusEpoch.current &&
+        document.hasFocus() &&
+        document.visibilityState === "visible" &&
+        navigator.onLine &&
+        target &&
+        target.getClientRects().length > 0 &&
+        !target.closest("[hidden], [inert]")
+      )
+        target.focus();
     } finally {
       flight.current = false;
       setBusy(false);
@@ -924,7 +960,14 @@ function DiscoverySettingsForm({
           </p>
         </details>
       </fieldset>
-      <p role="status">{busy ? "Confirming your feed choices…" : message}</p>
+      <p
+        ref={feedback}
+        role="status"
+        tabIndex={-1}
+        className="focus:outline-none focus:ring-2 focus:ring-gc-focus"
+      >
+        {busy ? "Confirming your feed choices…" : message}
+      </p>
       <div className="flex flex-wrap gap-2">
         <button type="submit" className="gc-button" disabled={busy || conflict}>
           {pending ? "Retry the same feed settings" : "Save feed settings"}

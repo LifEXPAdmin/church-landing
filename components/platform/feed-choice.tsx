@@ -131,7 +131,7 @@ export function FeedChoice({
     <div
       id="feed-choice"
       tabIndex={-1}
-      className="mb-2 space-y-2"
+      className="mb-2 space-y-2 focus:outline-none focus:ring-2 focus:ring-gc-focus"
       data-reader-busy={!ready || busy}
       data-reader-dirty={!!pending.current}
     >
@@ -154,11 +154,11 @@ export function FeedChoice({
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <label className="flex flex-wrap items-center gap-2 text-sm">
+        <label className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-sm">
           More feeds
           <select
             aria-label="Choose feed"
-            className="min-h-11 max-w-full rounded-lg border border-gc-border bg-gc-surface px-3 py-2"
+            className="min-h-11 min-w-0 max-w-full rounded-lg border border-gc-border bg-gc-surface px-3 py-2"
             value={FEED_MODES.slice(4).includes(value.mode) ? value.mode : ""}
             disabled={!ready || busy || !!pending.current}
             onChange={(event) => void choose(event.target.value as FeedMode)}
@@ -203,7 +203,7 @@ export function FeedChoice({
           initialMode={value.mode}
           onSaved={(mode) => {
             setSettingsOpen(false);
-            onNavigate(destination(mode));
+            onNavigate(`${destination(mode)}#feed-choice`);
           }}
         />
       )}
