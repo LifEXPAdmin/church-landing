@@ -1,8 +1,10 @@
 # Native push through the existing notification outbox
 
-Implementation is undergoing local acceptance. Provider, portable-package,
-service, account-erasure, restoration and populated-migration checks have passed.
-Actual HTTPS, browser, final review and release acceptance remain open.
+Local verification is complete for the application identified below, including
+the delivery and volunteer source deadline repairs found during review. Final
+independent local review is clear. Integration and release acceptance remain
+open. Native provider delivery stays disabled until its external activation gates
+are satisfied.
 
 Native installations extend `PushSubscription` and use the existing
 `SocialEvent`, `NotificationDelivery`, source checks, dated notification consent,
@@ -118,17 +120,61 @@ provider intake but before ticket persistence can cause a repeated generic push.
 The existing lease and collapse tag limit duplication but cannot promise exactly
 one provider delivery.
 
+Delivery admission refreshes the clock after database waits. Immediately before
+calling a provider, the worker bounds the remaining TTL by the captured delivery,
+source and session deadlines. Expiry during lock acquisition or claim commit
+cancels that delivery without revoking a still-valid device association.
+Volunteer requests expose the earlier of their effective shift and event end as
+their source deadline. Later shortening of that source also bounds an already
+queued delivery.
+
 Expo documents the distinction and timing in
 [sending notifications](https://docs.expo.dev/push-notifications/sending-notifications/)
 and the [push FAQ](https://docs.expo.dev/push-notifications/faq/).
 
 ## Verification and release
 
+Application `01e9955bcc859ce82d190dc19c10d3a3a57cd809`, production build
+`8HYVfnIbzgllRFJaE9Sng`, passed types, lint, authored-copy checks, source security,
+hydration verification and runtime-trace checks. Lint retains 39 existing warnings
+and no errors. No provider networking or production data was used.
+
+| Boundary | Observed local evidence |
+| --- | --- |
+| Portable package | 106 checks, including seven native push wire checks; ES2022 consumer compiles without browser, Node or framework types |
+| Focused services and provider | 77 checks at `3d2c65b`: 14 provider, six wire, eight policy, 24 native lifecycle/outbox, six native recovery, one populated migration, seven browser subscription, nine existing outbox and two queue consumer checks |
+| Additional existing behavior | 28 notification integration, batching, Activity, browser worker, session, protected restore and crash/fanout recovery checks |
+| Actual HTTPS | Seven checks against `01e9955` in configured and default-off modes, including canonical mixed browser/native labels, strict receipts, account replacement, opening, rate limits and cleanup |
+| Website controls | Ten browser groups at `3d2c65b` / `HI60Gmf8SHj3fNZ80P4y6`, covering native-only and disabled configuration, explicit consent, keyboard removal, phone/desktop layout and account navigation |
+
+The latest repairs change the outbox's deadline checks and volunteer source
+deadline projection in addition to the native response label schema and its
+wire/HTTPS tests. Website components and their notification settings web
+API are unchanged. The final portable run includes the added seventh
+wire case; do not add overlapping contract checks as separate acceptance results.
+The mixed-label defect was reproduced before repair. Native enrollment still
+rejects multiline labels; descriptors preserve existing canonical browser labels.
+The crash-worker send-budget fixture explicitly outlasts all eight backoffs,
+while separate idle-expiry cases retain the actual cancellation requirement.
+The deadline repair passed 51 affected service checks: 27 native lifecycle/outbox,
+nine existing outbox, five notification integration, six crash recovery and four
+session cases. Those overlap the earlier suites and are not additive totals.
+Three new PostgreSQL cases cover expiry under the permission lock, expiry after
+claim commit and reduced TTL after a slow claim. The injected-transaction failure
+was reproduced before the repair; it is separate from the real database checks.
+The volunteer source repair then passed 40 affected checks: 29 native, two existing
+volunteer-request and nine existing outbox cases. Both new source cases failed
+against the actual database before repair: a natural queue expiry exceeded the
+shift deadline, and a delayed claim submitted after event expiry. The repaired
+cases verify natural queue expiry, reduced TTL after a source is shortened, and
+zero submissions when the event ends during claim commit.
+
 The provider and portable-contract tests use fictional tokens and injected
 transports. Real provider networking, store/native builds and device acceptance
-are separate from these checks. Complete local migration, restoration, service,
-HTTP, browser, existing web-push regressions and independent review before marking
-this implementation ready for integration.
+are separate from these checks. Local migration, restoration, service, HTTPS,
+browser, existing web-push regression and independent review evidence supports
+this implementation's integration handoff. It does not certify the combined
+release or provider/device activation.
 
 Run the focused service suite with `npm run test:post-workspace -- --native-push`.
 The normal portable check includes native push wire contracts and compiles a
