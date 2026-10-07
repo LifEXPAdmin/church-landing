@@ -1,7 +1,7 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { request as httpsRequest } from "node:https";
-import { createHmac, randomUUID } from "node:crypto";
+import { createECDH, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { assertPortalTestDatabase, createPortalActor } from "./seed-portal";
 import { createSessionToken } from "../lib/platform/auth";
@@ -13,6 +13,7 @@ import {
   decodeNativePushRevocation
 } from "../lib/platform/native-push-contracts";
 import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
+import { pushSubscriptionCommand } from "../lib/platform/push-subscriptions";
 import {
   notificationWrite,
   enqueueNotification
@@ -113,6 +114,77 @@ async function input(a: Actor, installationSecret = createSessionToken()) {
   };
 }
 if (process.env.NATIVE_PUSH_HTTP_ENABLED === "1") {
+  test("HTTPS native listing preserves a mixed account's canonically registered browser labels", async () => {
+    const a = await createPortalActor(db, "pushmixed"),
+      body = await input(a);
+    assert.equal((await send(path("register"), a, body)).status, 200);
+    const keys = createECDH("prime256v1");
+    keys.generateKeys();
+    const names = [
+      "PUSH_ENABLED",
+      "PUSH_VAPID_PUBLIC_KEY",
+      "PUSH_VAPID_PRIVATE_KEY",
+      "PUSH_VAPID_SUBJECT"
+    ];
+    const prior = names.map((name) => process.env[name]);
+    let webId: string;
+    try {
+      Object.assign(process.env, {
+        PUSH_ENABLED: "true",
+        PUSH_VAPID_PUBLIC_KEY: keys.getPublicKey().toString("base64url"),
+        PUSH_VAPID_PRIVATE_KEY: keys.getPrivateKey().toString("base64url"),
+        PUSH_VAPID_SUBJECT: "mailto:fixture@example.invalid"
+      });
+      const saved = await pushSubscriptionCommand(db, a.token, {
+        operation: "subscribe",
+        ownerId: a.id,
+        mutationId: randomUUID(),
+        binding: createSessionToken(),
+        label: "Phone\r\nSafari",
+        subscription: {
+          endpoint: `https://fcm.googleapis.com/fcm/send/${randomUUID()}`,
+          keys: {
+            p256dh: keys.getPublicKey().toString("base64url"),
+            auth: randomBytes(16).toString("base64url")
+          }
+        }
+      });
+      webId = saved.id;
+    } finally {
+      names.forEach((name, i) => {
+        if (prior[i] === undefined) delete process.env[name];
+        else process.env[name] = prior[i];
+      });
+    }
+    const listed = await send(path("devices"), a);
+    assert.equal(listed.status, 200, JSON.stringify(listed.body));
+    const devices = decodeNativePushResponse("list", listed.body, a.id).data
+      .devices;
+    assert.equal(devices.length, 2);
+    assert.equal(
+      devices.find((device) => device.id === webId)?.label,
+      "Phone\nSafari"
+    );
+    assert.equal(
+      devices.find((device) => device.id === body.id)?.provider,
+      "EXPO"
+    );
+    assert.equal(
+      (
+        await send(path("revoke"), a, {
+          id: webId,
+          expectedVersion: 1,
+          mutationId: randomUUID()
+        })
+      ).status,
+      200
+    );
+    assert.equal(
+      (await db.pushSubscription.findUniqueOrThrow({ where: { id: body.id } }))
+        .revokedAt,
+      null
+    );
+  });
   test("HTTPS native registration, exact retry, current listing and removal share strict receipts", async () => {
     const a = await createPortalActor(db, "pushhttp"),
       body = await input(a);

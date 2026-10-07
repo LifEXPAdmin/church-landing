@@ -66,7 +66,8 @@ const descriptor = wire.object({
   version,
   provider: wire.oneOf(["WEB_PUSH", "EXPO"]),
   platform: wire.nullable(wire.oneOf(["IOS", "ANDROID"])),
-  label,
+  // Existing browser labels use canonical multiline postField normalization.
+  label: wire.text(80, 1),
   createdAt: apiDate,
   expiresAt: apiDate,
   isCurrentSession: wire.boolean
@@ -75,6 +76,7 @@ export const nativePushDevice = wire.schema((value, mode) => {
   const parsed = descriptor.parse(value, mode);
   if ((parsed.provider === "WEB_PUSH") !== (parsed.platform === null))
     throw new WireContractError();
+  if (parsed.provider === "EXPO") label.parse(parsed.label, mode);
   return parsed;
 });
 export const nativePushPrepared = wire.object({

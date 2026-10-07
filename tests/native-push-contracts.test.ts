@@ -21,6 +21,28 @@ const input = () => ({
   token: "ExpoPushToken[fictional_token]",
   label: "Fictional phone"
 });
+test("device responses preserve canonical browser labels without weakening native registration input", () => {
+  const device = {
+    id: "browser-device",
+    version: 1,
+    provider: "WEB_PUSH",
+    platform: null,
+    label: "Phone\nSafari",
+    createdAt: "2026-10-07T20:00:00.000Z",
+    expiresAt: "2026-10-08T20:00:00.000Z",
+    isCurrentSession: true
+  };
+  const value = {
+    apiVersion: "1",
+    viewerId: "owner",
+    data: { devices: [device] }
+  };
+  assert.deepEqual(encodeNativePushResponse("list", value), value);
+  assert.deepEqual(decodeNativePushResponse("list", value, "owner"), value);
+  assert.throws(() =>
+    nativePushRegisterInput.parse({ ...input(), label: device.label })
+  );
+});
 test("portable native registration admits only bounded canonical fields", () => {
   const body = input();
   assert.deepEqual(nativePushRegisterInput.parse(body), body);
