@@ -1,5 +1,22 @@
 # Dependency review
 
+## Current dependency disposition, 7 October 2026 UTC
+
+The September zero-advisory checkpoint below is historical. A fresh scan of the
+prepared website branch reports new findings. The compatible patch candidate
+`535778a` updates Sharp to 0.35.5, source-map-js to 1.2.2, and the three
+brace-expansion copies to 1.1.21, 2.1.7 and 5.0.12. All other locked packages and
+optional-platform entries are preserved.
+
+Clean locked installation and registry signature verification pass. The full
+advisory gate still fails because braces and postcss-selector-parser remain
+affected. Local verification passed 55 service checks, five HTTPS checks,
+32 guard checks, the production build, lint, TypeScript and copy/source checks.
+The production-only audit has zero findings, with the physical-bundle and Linux
+boundaries still explicit. This is not a security clearance or a published
+release. See [dependency remediation](DEPENDENCY_REMEDIATION.md)
+for current source inspection, exact remaining boundaries and repair references.
+
 ## Current dependency disposition, 26 September 2026 UTC
 
 The current locked graph supersedes the September 8 exception below. Full and
