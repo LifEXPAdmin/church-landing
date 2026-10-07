@@ -9,7 +9,8 @@ unchanged canonical regressions passed at the initial checkpoint. The first HTTP
 run reproduced and led to a repair of Next.js internal-address host validation.
 Type/lint/copy, production build/security and ES2022-only portable contracts pass.
 All owned runtimes are closed. No schema or dependency changes. Final independent
-review is pending; this work is not merged or live. Native OAuth and actual
+review of `272884b` found no concrete defects. This work is ready for local
+integration, not merged or live. Native OAuth and actual
 mobile-client/device acceptance remain separate. See
 [NATIVE_SESSION_ADAPTER.md](NATIVE_SESSION_ADAPTER.md).
 
