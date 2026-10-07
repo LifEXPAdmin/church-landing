@@ -453,6 +453,54 @@ test("deleting a collection unfiles only its owner's items once and delayed retr
   );
 });
 
+test("reserved unfiled collection creation is rejected below capacity and existing references remain removable", async () => {
+  const actor = await createPortalActor(db, "ncolreserved");
+  const input = create("Fictional reserved collection", "unfiled");
+  denied(await native(actor, input), 400, "validation");
+  denied(await native(actor, input), 400, "validation");
+  assert.equal(
+    await db.savedPostCollection.count({ where: { ownerId: actor.id } }),
+    0
+  );
+  assert.equal(
+    await db.postWorkspaceOperation.count({ where: { ownerId: actor.id } }),
+    0
+  );
+  // Retain cleanup access for an existing reference from another transport.
+  const legacy = await db.savedPostCollection.create({
+    data: {
+      ownerId: actor.id,
+      id: "unfiled",
+      name: "Fictional legacy collection"
+    }
+  });
+  const renamed = ok(
+    await native(
+      actor,
+      mutation("rename-collection", {
+        id: legacy.id,
+        expectedVersion: legacy.version,
+        name: "Fictional cleanup choice"
+      })
+    ),
+    actor.id
+  );
+  assert.equal((await row(actor, legacy.id)).name, "Fictional cleanup choice");
+  const deletion = mutation("delete-collection", {
+    id: legacy.id,
+    expectedVersion: renamed.version
+  });
+  const removed = ok(await native(actor, deletion), actor.id);
+  assert.deepEqual(ok(await native(actor, deletion), actor.id), removed);
+  assert.ok((await row(actor, legacy.id)).deletedAt);
+  assert.equal(
+    await db.savedPostCollection.count({
+      where: { ownerId: actor.id, deletedAt: null }
+    }),
+    0
+  );
+});
+
 test("collection limits, tombstones and strict input preserve the existing library without unintended writes", async () => {
   const actor = await createPortalActor(db, "ncolbound");
   const prefix = randomUUID();
@@ -502,6 +550,23 @@ test("collection limits, tombstones and strict input preserve the existing libra
   );
   assert.deepEqual(ok(await native(actor, edge), actor.id), hundredth);
   assert.equal((await row(actor, hundredth.id)).version, renamed.version);
+  // Leave capacity available so its limit cannot mask deleted-ID reuse.
+  ok(
+    await native(
+      actor,
+      mutation("delete-collection", {
+        id: fixtures[1].id,
+        expectedVersion: 1
+      })
+    ),
+    actor.id
+  );
+  assert.equal(
+    await db.savedPostCollection.count({
+      where: { ownerId: actor.id, deletedAt: null }
+    }),
+    99
+  );
   for (const input of [
     create("Fictional reuse", deleted.id),
     {

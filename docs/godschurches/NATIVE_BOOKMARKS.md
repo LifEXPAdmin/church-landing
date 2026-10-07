@@ -22,6 +22,10 @@ library. Resource bookmarking and drafts remain website operations.
   collection ID and mutation ID, the expected version, and the unchanged name
   for create or rename. Delete has no name field.
 
+The `unfiled` ID is reserved for the saved-list filter and is rejected when
+creating a native collection. Rename and delete still accept an existing
+reference with that ID so prior data can be cleaned up.
+
 All routes require a bearer session and `X-Expected-Account`. Native transport
 rejects browser credentials, Origin/Fetch Metadata, duplicate or unknown query
 fields and unsupported methods. Responses are private, noncacheable JSON with

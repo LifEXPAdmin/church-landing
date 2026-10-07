@@ -558,6 +558,7 @@ test("HTTPS collection admission preserves account binding and strict bounded re
       "validation"
     );
   for (const fields of [
+    { id: "unfiled" },
     { name: "n".repeat(81) },
     { name: "   " },
     { ownerId: f.author.id },

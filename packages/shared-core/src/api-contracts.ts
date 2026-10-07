@@ -339,6 +339,23 @@ const bookmarkCollection = object({
   createdAt: apiDate,
   updatedAt: apiDate
 });
+const namedBookmarkCollectionShape = object({
+  operation: oneOf(["create-collection", "rename-collection"]),
+  mutationId,
+  id: bookmarkKey,
+  expectedVersion: version,
+  name: text(80, 1)
+});
+const namedBookmarkCollection = schema<
+  WireValue<typeof namedBookmarkCollectionShape>
+>((value, mode) => {
+  const command = namedBookmarkCollectionShape.parse(value, mode);
+  // The canonical reader reserves this ID for items outside any collection.
+  // Existing references still support rename/delete so they can be cleaned up.
+  return command.operation === "create-collection" && command.id === "unfiled"
+    ? fail()
+    : command;
+});
 
 // Unknown future names can be ignored by old clients. They never grant authority.
 const capability = text(80, 1, /^[a-z][A-Za-z0-9.]*$/);
@@ -488,13 +505,7 @@ export const apiContracts = Object.freeze({
     "/bookmark-collections",
     empty,
     union(
-      object({
-        operation: oneOf(["create-collection", "rename-collection"]),
-        mutationId,
-        id: bookmarkKey,
-        expectedVersion: version,
-        name: text(80, 1)
-      }),
+      namedBookmarkCollection,
       object({
         operation: literal("delete-collection"),
         mutationId,

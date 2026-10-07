@@ -235,6 +235,44 @@ test("collection commands preserve original names and IDs while rejecting unrela
   assert.equal(apiContracts.bookmarkCollectionCommand.method, "POST");
 });
 
+test("collection creation rejects the reserved unfiled filter but keeps existing reference cleanup compatible", () => {
+  const body = apiContracts.bookmarkCollectionCommand.body;
+  const fields = {
+    mutationId: "reserved-filter",
+    id: "unfiled",
+    expectedVersion: 0
+  };
+  assert.throws(
+    () =>
+      body.parse({
+        ...fields,
+        operation: "create-collection",
+        name: "Private choices"
+      }),
+    WireContractError
+  );
+  const rename = {
+    ...fields,
+    operation: "rename-collection",
+    expectedVersion: 1,
+    name: "Renamed choices"
+  };
+  const deletion = {
+    ...fields,
+    operation: "delete-collection",
+    expectedVersion: 2
+  };
+  assert.deepEqual(body.parse(rename), rename);
+  assert.deepEqual(body.parse(deletion), deletion);
+  assert.deepEqual(
+    apiContracts.bookmarks.query.parse({
+      cursor: null,
+      collectionId: "unfiled"
+    }),
+    { cursor: null, collectionId: "unfiled" }
+  );
+});
+
 test("collection and status envelopes are private, bounded and strictly projected", () => {
   const collection = {
     id: "collection",
