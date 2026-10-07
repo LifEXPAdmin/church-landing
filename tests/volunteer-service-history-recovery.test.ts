@@ -114,7 +114,121 @@ async function confirmed(timed: boolean) {
   };
 }
 
+async function restoreBehindServiceFence(
+  f: Awaited<ReturnType<typeof confirmed>>,
+  protectedEntry: RetentionControlEntry
+) {
+  if (f.target.targetKind === "signup") {
+    const snapshot = await db.postVolunteerSignup.findUniqueOrThrow({
+      where: { id: f.target.targetId }
+    });
+    await db.postVolunteerSignup.delete({ where: { id: snapshot.id } });
+    await replayRetentionControls(db, [protectedEntry]);
+    await db.postVolunteerSignup.create({ data: snapshot });
+    await db.volunteerApplication.update({
+      where: { id: f.application.id },
+      data: { signupId: snapshot.id }
+    });
+  } else {
+    const snapshot = await db.volunteerApplication.findUniqueOrThrow({
+      where: { id: f.target.targetId }
+    });
+    const events = await db.volunteerApplicationEvent.findMany({
+      where: { applicationId: snapshot.id }
+    });
+    await db.volunteerApplication.delete({ where: { id: snapshot.id } });
+    await replayRetentionControls(db, [protectedEntry]);
+    await db.volunteerApplication.create({ data: snapshot });
+    await db.volunteerApplicationEvent.createMany({ data: events });
+  }
+}
+
+async function serviceAccountExport(
+  actor: Awaited<ReturnType<typeof createPortalActor>>
+) {
+  const secret = accountConfig().rateSecret;
+  const proof = await prepareAccountExport(
+    db,
+    actor.token,
+    actor.password,
+    secret
+  );
+  return JSON.parse(
+    await downloadAccountExport(db, actor.token, proof.authorization, secret)
+  ) as {
+    volunteerSignups: Record<string, unknown>[];
+    volunteerApplications: Record<string, unknown>[];
+  };
+}
+
 for (const timed of [true, false]) {
+  test(`opaque export fence conceals restored ${timed ? "timed" : "untimed"} sharing before any owned withdrawal`, async () => {
+    const f = await confirmed(timed);
+    const protectedEntry = {
+      ...f.controls.at(-1)!,
+      id: randomUUID(),
+      version: f.current.serviceVersion + 1
+    };
+    await restoreBehindServiceFence(f, protectedEntry);
+    const restored = await f.row();
+    // This is a populated older source restored after an absent-source replay,
+    // not an already-quarantined row or a projection following a Hide command.
+    assert.equal(restored.serviceRecoveryRequired, false);
+    assert.ok(restored.serviceSharedAt);
+    assert.ok(restored.serviceVersion < protectedEntry.version);
+    const history = await readVolunteerServiceHistory(db, f.lee.token);
+    const receipt = history.items.find(
+      (item) => item.target.id === f.target.targetId
+    )!;
+    assert.equal(receipt.recoveryRequired, true);
+    assert.equal(receipt.completed, false);
+    const exported = await serviceAccountExport(f.lee);
+    const own = (
+      timed ? exported.volunteerSignups : exported.volunteerApplications
+    ).find((row) => row.id === f.target.targetId)!;
+    assert.ok(own);
+    assert.equal(own.completedAt, restored.completedAt!.toISOString());
+    assert.equal(own.state, restored.state);
+    assert.equal(own.version, restored.version);
+    assert.equal(own.completionVersion, restored.completionVersion);
+    assert.equal(own.serviceVersion, restored.serviceVersion);
+    for (const key of ["userId", "ownerId", "actorId", "coordinatorId"])
+      assert.ok(!(key in own));
+    // Export must project the effective owner-bound fence without mutating the
+    // restored completion, assignment or revisions to make the test pass.
+    assert.deepEqual(await f.row(), restored);
+    assert.deepEqual(
+      {
+        recoveryRequired: own.serviceRecoveryRequired,
+        sharedAt: own.serviceSharedAt,
+        sharedCompletionVersion: own.serviceSharedCompletionVersion,
+        ...(!timed
+          ? {
+              note: own.completionNote,
+              serviceEvents: (
+                own.history as { action: string; note: string }[]
+              ).filter((event) =>
+                ["COMPLETED", "COMPLETION_CORRECTED"].includes(event.action)
+              )
+            }
+          : {})
+      },
+      {
+        recoveryRequired: true,
+        sharedAt: null,
+        sharedCompletionVersion: null,
+        ...(!timed ? { note: "", serviceEvents: [] } : {})
+      },
+      "Downloaded export must respect a higher opaque service control even before the owner performs Hide"
+    );
+    if (!timed)
+      assert.ok(
+        !JSON.stringify(own).includes(
+          "Fictional private completion confirmation"
+        )
+      );
+  });
+
   test(`owned withdrawal keeps restored ${timed ? "timed" : "untimed"} service quarantined after an absent-source fence`, async () => {
     const f = await confirmed(timed);
     const protectedEntry = {
@@ -122,29 +236,7 @@ for (const timed of [true, false]) {
       id: randomUUID(),
       version: f.current.serviceVersion + 1
     };
-    if (timed) {
-      const snapshot = await db.postVolunteerSignup.findUniqueOrThrow({
-        where: { id: f.target.targetId }
-      });
-      await db.postVolunteerSignup.delete({ where: { id: snapshot.id } });
-      await replayRetentionControls(db, [protectedEntry]);
-      await db.postVolunteerSignup.create({ data: snapshot });
-      await db.volunteerApplication.update({
-        where: { id: f.application.id },
-        data: { signupId: snapshot.id }
-      });
-    } else {
-      const snapshot = await db.volunteerApplication.findUniqueOrThrow({
-        where: { id: f.target.targetId }
-      });
-      const events = await db.volunteerApplicationEvent.findMany({
-        where: { applicationId: snapshot.id }
-      });
-      await db.volunteerApplication.delete({ where: { id: snapshot.id } });
-      await replayRetentionControls(db, [protectedEntry]);
-      await db.volunteerApplication.create({ data: snapshot });
-      await db.volunteerApplicationEvent.createMany({ data: events });
-    }
+    await restoreBehindServiceFence(f, protectedEntry);
     const history = async () =>
       (await readVolunteerServiceHistory(db, f.lee.token)).items.find(
         (item) => item.target.id === f.target.targetId
@@ -731,6 +823,160 @@ test("reconfirmation after service replay cannot re-expose restored completion o
   );
 });
 
+test("legacy quarantine after untimed withdrawal cannot restore old service notes on reapplication and fresh confirmation", async () => {
+  const f = await confirmed(false);
+  const oldNotes = [
+    "Fictional private completion confirmation",
+    "Fictional old untimed correction before legacy withdrawal",
+    "Fictional old untimed reconfirmation before legacy withdrawal"
+  ];
+  for (const [completed, reason] of [
+    [false, oldNotes[1]],
+    [true, oldNotes[2]]
+  ] as const)
+    await volunteerCommand(
+      db,
+      f.ada.token,
+      action("complete", {
+        ...f.target,
+        expectedVersion: (await f.row()).version,
+        completed,
+        reason
+      })
+    );
+  const other = await volunteerCommand(
+    db,
+    f.val.token,
+    f.applicationInput("Fictional unrelated volunteer's application")
+  );
+  await volunteerCommand(
+    db,
+    f.ada.token,
+    action("accept", {
+      id: other.id,
+      expectedVersion: other.version,
+      ...f.snapshot
+    })
+  );
+  const otherRow = await db.volunteerApplication.findUniqueOrThrow({
+    where: { id: other.id }
+  });
+  await volunteerCommand(
+    db,
+    f.ada.token,
+    action("complete", {
+      targetKind: "application",
+      targetId: other.id,
+      expectedVersion: otherRow.version,
+      completed: true,
+      reason: "Fictional unrelated volunteer's confirmation remains"
+    })
+  );
+  const unaffected = await db.volunteerApplicationEvent.findMany({
+    where: { applicationId: other.id },
+    orderBy: { version: "asc" }
+  });
+  // An older untimed writer knew assignment state, not completedAt. Exercise
+  // its real withdrawal shape, retaining the new columns and live trigger.
+  const withdrawn = await db.volunteerApplication.update({
+    where: { id: f.application.id },
+    data: { state: "WITHDRAWN", availability: "", version: { increment: 1 } }
+  });
+  assert.equal(withdrawn.serviceRecoveryRequired, true);
+  assert.equal(withdrawn.completionNote, "");
+  const withdrawnControl = await db.retentionControl.findFirstOrThrow({
+    where: { kind: f.kind, sourceId: f.application.id },
+    orderBy: { version: "desc" }
+  });
+  assert.equal(withdrawnControl.version, withdrawn.serviceVersion);
+  await replayRetentionControls(db, [
+    withdrawnControl.payload as unknown as RetentionControlEntry
+  ]);
+  const reapplied = await volunteerCommand(db, f.lee.token, {
+    ...f.applicationInput("Fictional deliberately renewed application"),
+    expectedVersion: withdrawn.version
+  });
+  await volunteerCommand(
+    db,
+    f.ada.token,
+    action("accept", {
+      id: reapplied.id,
+      expectedVersion: reapplied.version,
+      ...f.snapshot
+    })
+  );
+  const accepted = await f.row();
+  assert.equal(accepted.state, "ACCEPTED");
+  assert.equal(accepted.serviceRecoveryRequired, true);
+  const latestControl = await db.retentionControl.findFirstOrThrow({
+    where: { kind: f.kind, sourceId: f.application.id },
+    orderBy: { version: "desc" }
+  });
+  assert.equal(latestControl.version, accepted.serviceVersion);
+  const entry = latestControl.payload as unknown as RetentionControlEntry;
+  assert.equal(entry.targetId, f.lee.id);
+  await replayRetentionControls(db, [entry]);
+  const unrelatedHistory = await db.volunteerApplicationEvent.findMany({
+    where: {
+      applicationId: f.application.id,
+      action: { notIn: ["COMPLETED", "COMPLETION_CORRECTED"] }
+    },
+    orderBy: { version: "asc" }
+  });
+  const freshNote =
+    "Fictional fresh untimed confirmation after legacy quarantine";
+  await volunteerCommand(
+    db,
+    f.ada.token,
+    action("complete", {
+      ...f.target,
+      expectedVersion: accepted.version,
+      completed: true,
+      reason: freshNote
+    })
+  );
+  const newlyConfirmed = await f.row();
+  assert.equal(newlyConfirmed.serviceRecoveryRequired, false);
+  assert.equal(newlyConfirmed.serviceSharedAt, null);
+  await replayRetentionControls(db, [entry]);
+  assert.deepEqual(await f.row(), newlyConfirmed);
+  assert.deepEqual(
+    await db.volunteerApplicationEvent.findMany({
+      where: { applicationId: other.id },
+      orderBy: { version: "asc" }
+    }),
+    unaffected
+  );
+  assert.deepEqual(
+    await db.volunteerApplicationEvent.findMany({
+      where: { id: { in: unrelatedHistory.map((event) => event.id) } },
+      orderBy: { version: "asc" }
+    }),
+    unrelatedHistory
+  );
+  const own = (await readVolunteerApplications(db, f.lee.token, {})).items.find(
+    (row) => row.id === f.application.id
+  )!;
+  const exported = (await serviceAccountExport(f.lee)).volunteerApplications;
+  const stored = await db.volunteerApplicationEvent.findMany({
+    where: { applicationId: f.application.id },
+    orderBy: { version: "asc" }
+  });
+  for (const value of [own, exported, stored])
+    assert.ok(JSON.stringify(value).includes(freshNote));
+  assert.deepEqual(
+    {
+      read: oldNotes.filter((note) => JSON.stringify(own).includes(note)),
+      export: oldNotes.filter((note) =>
+        JSON.stringify(exported).includes(note)
+      ),
+      stored: oldNotes.filter((note) => JSON.stringify(stored).includes(note))
+    },
+    { read: [], export: [], stored: [] },
+    "Leaving legacy quarantine must not restore old copied notes after equal-version journal replay"
+  );
+});
+
 async function linkedNeedService(legacy = false) {
   const f = await seedVolunteerApplications(db, true, 3);
   for (const [userId, capability] of [
@@ -923,6 +1169,91 @@ async function linkedNeedService(legacy = false) {
     unaffected
   };
 }
+
+for (const legacy of [false, true])
+  test(`legacy quarantine after a linked Need correction scrubs copied notes before fresh confirmation${legacy ? " (legacy hyphen actions)" : ""}`, async () => {
+    const f = await linkedNeedService(legacy);
+    const before = await db.postVolunteerSignup.findUniqueOrThrow({
+      where: { id: f.subject.id }
+    });
+    // The old timed completion writer changed completedAt and ordinary
+    // version. The live compatibility trigger must quarantine that update.
+    const corrected = await db.postVolunteerSignup.update({
+      where: { id: f.subject.id },
+      data: { completedAt: null, version: { increment: 1 } }
+    });
+    assert.equal(corrected.completedAt, null);
+    assert.equal(corrected.state, before.state);
+    assert.equal(corrected.serviceRecoveryRequired, true);
+    assert.equal(corrected.completionNote, "");
+    const control = await db.retentionControl.findFirstOrThrow({
+      where: { kind: "VOLUNTEER_SERVICE_SIGNUP", sourceId: f.subject.id },
+      orderBy: { version: "desc" }
+    });
+    assert.equal(control.version, corrected.serviceVersion);
+    const entry = control.payload as unknown as RetentionControlEntry;
+    assert.equal(entry.targetId, f.lee.id);
+    await replayRetentionControls(db, [entry]);
+    const freshNote =
+      "Fictional fresh linked confirmation after legacy quarantine";
+    await volunteerCommand(
+      db,
+      f.ada.token,
+      action("complete", {
+        targetKind: "signup",
+        targetId: f.subject.id,
+        expectedVersion: corrected.version,
+        completed: true,
+        reason: freshNote
+      })
+    );
+    const newlyConfirmed = await db.postVolunteerSignup.findUniqueOrThrow({
+      where: { id: f.subject.id }
+    });
+    assert.equal(newlyConfirmed.serviceRecoveryRequired, false);
+    assert.equal(newlyConfirmed.serviceSharedAt, null);
+    assert.equal(newlyConfirmed.state, before.state);
+    assert.equal(newlyConfirmed.completionNote, freshNote);
+    const newEvent = await db.exchangeNeedEvent.findFirstOrThrow({
+      where: { needId: f.need.id, targetId: f.subject.id, text: freshNote }
+    });
+    await replayRetentionControls(db, [entry]);
+    assert.deepEqual(
+      await db.postVolunteerSignup.findUniqueOrThrow({
+        where: { id: f.subject.id }
+      }),
+      newlyConfirmed
+    );
+    assert.deepEqual(
+      await db.exchangeNeedEvent.findUniqueOrThrow({
+        where: { id: newEvent.id }
+      }),
+      newEvent
+    );
+    assert.deepEqual(
+      await db.exchangeNeedEvent.findMany({
+        where: { id: { in: f.unaffected.map((event) => event.id) } },
+        orderBy: { version: "asc" }
+      }),
+      f.unaffected
+    );
+    const receipt = (
+      await readVolunteerServiceHistory(db, f.lee.token)
+    ).items.find((item) => item.target.id === f.subject.id)!;
+    assert.equal(receipt.completed, true);
+    assert.equal(receipt.shared, false);
+    const retained = await db.exchangeNeedEvent.findMany({
+      where: { id: { in: f.privateEvents.map((event) => event.id) } },
+      orderBy: { version: "asc" }
+    });
+    // Need public updates already exclude these service actions. This proves
+    // protected private copies are scrubbed, not an alleged public-feed leak.
+    assert.deepEqual(
+      retained.map((event) => event.text),
+      ["", "", ""],
+      "Fresh confirmation after an equal-version legacy control must remove old linked service notes while keeping the fresh note"
+    );
+  });
 
 for (const legacy of [false, true])
   test(`linked Need completion notes are scrubbed during service replay without touching unrelated Need history${legacy ? " (legacy hyphen actions)" : ""}`, async () => {
