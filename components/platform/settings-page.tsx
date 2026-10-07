@@ -3,7 +3,7 @@ import { PlatformShell } from "./platform-shell";
 import { SettingsWorkspace } from "./settings-workspace";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountEntryHref } from "@/lib/platform/account-entry";
-import { RetainedReactionSettings } from "./reaction-preferences";
+import { RetainedSettingsFrame } from "./retained-settings-frame";
 
 export async function SettingsPage({
   folder,
@@ -17,13 +17,27 @@ export async function SettingsPage({
     "/platform/settings" +
     (folder ? "/" + folder : "") +
     (setting ? "/" + setting : "");
+  const deactivation = folder === "data" && setting === "deactivate";
+  const retained =
+    deactivation || (folder === "display" && setting === "reading");
   if (!user) {
-    if (folder === "display" && setting === "reading")
+    if (retained)
       return (
-        <RetainedReactionSettings key={next} owner={null}>
+        <RetainedSettingsFrame
+          key={next}
+          owner={null}
+          returnTo={next}
+          reactivation={deactivation}
+        >
           <section className="container-shell space-y-3 py-8">
-            <h1>Reading preferences</h1>
-            <p>Sign in to review your display and contribution choices.</p>
+            <h1>
+              {deactivation ? "Deactivate account" : "Reading preferences"}
+            </h1>
+            <p>
+              {deactivation
+                ? "Sign in to review deactivation for your account."
+                : "Sign in to review your display and contribution choices."}
+            </p>
             <a
               className="gc-button"
               href={accountEntryHref("join", next, "settings")}
@@ -31,7 +45,7 @@ export async function SettingsPage({
               Sign in or join
             </a>
           </section>
-        </RetainedReactionSettings>
+        </RetainedSettingsFrame>
       );
     redirect(accountEntryHref("join", next, "settings"));
   }
@@ -47,10 +61,15 @@ export async function SettingsPage({
       </section>
     </PlatformShell>
   );
-  return folder === "display" && setting === "reading" ? (
-    <RetainedReactionSettings key={next} owner={user.id}>
+  return retained ? (
+    <RetainedSettingsFrame
+      key={next}
+      owner={user.id}
+      returnTo={next}
+      reactivation={deactivation}
+    >
       {frame}
-    </RetainedReactionSettings>
+    </RetainedSettingsFrame>
   ) : (
     frame
   );

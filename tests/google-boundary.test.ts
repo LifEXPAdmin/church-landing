@@ -145,10 +145,14 @@ async function post(
   absorb(jar, response);
   return response;
 }
-async function account(body: object, jar: Jar) {
+async function account(
+  body: object,
+  jar: Jar,
+  headers: Record<string, string> = {}
+) {
   const response = await handleAccountRequest(
     db,
-    request("/api/platform/account", body, jar)
+    request("/api/platform/account", body, jar, headers)
   );
   absorb(jar, response);
   return response;
@@ -158,9 +162,10 @@ async function start(
   body: object = {
     operation: "start",
     next: "/platform/posts/fictional-discussion"
-  }
+  },
+  headers: Record<string, string> = {}
 ) {
-  const response = await post(body, jar);
+  const response = await post(body, jar, headers);
   assert.equal(response.status, 200, await response.clone().text());
   return new URL((await response.json()).redirect);
 }
@@ -221,11 +226,15 @@ async function reauth(
   purpose: string,
   extra: object = {}
 ) {
-  const url = await start(person.jar, {
-    operation: "reauthenticate",
-    purpose,
-    ...extra
-  });
+  const url = await start(
+    person.jar,
+    {
+      operation: "reauthenticate",
+      purpose,
+      ...extra
+    },
+    { "X-Expected-Account": person.user.id }
+  );
   const response = await callback(
     person.jar,
     url,
@@ -820,7 +829,8 @@ test("Google deactivation and reactivation require separate confirmation and nev
           credentialMethod: "google",
           confirmed: false
         },
-        person.jar
+        person.jar,
+        { "X-Expected-Account": person.user.id }
       )
     ).status,
     400
@@ -833,12 +843,14 @@ test("Google deactivation and reactivation require separate confirmation and nev
           credentialMethod: "google",
           confirmed: true
         },
-        person.jar
+        person.jar,
+        { "X-Expected-Account": person.user.id }
       )
     ).status,
     200
   );
-  assert.equal(person.jar.size, 0);
+  assert.equal(await readAccountSession(db, person.token), null);
+  assert.equal(person.jar.get(SESSION_COOKIE), person.token);
   const url = await start(person.jar);
   const result = await callback(
     person.jar,

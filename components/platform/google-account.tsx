@@ -14,14 +14,20 @@ import { PasswordField } from "./account-fields";
 
 export async function googleRequest(
   body: Record<string, unknown>,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  expectedOwner?: string
 ) {
   let response: Response;
   let result;
   try {
     response = await fetch("/api/platform/google", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(expectedOwner === undefined
+          ? {}
+          : { "X-Expected-Account": expectedOwner })
+      },
       body: JSON.stringify(body),
       cache: "no-store",
       signal: signal ?? AbortSignal.timeout(30_000)
@@ -54,13 +60,15 @@ export function GoogleButton({
   label = "Sign in with Google",
   disabled = false,
   submit = false,
-  allowNavigation
+  allowNavigation,
+  expectedOwner
 }: {
   body: Record<string, unknown> | (() => Record<string, unknown> | null);
   label?: string;
   disabled?: boolean;
   submit?: boolean;
   allowNavigation?: () => Promise<boolean>;
+  expectedOwner?: string;
 }) {
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -106,7 +114,11 @@ export function GoogleButton({
               setPending(false);
               return;
             }
-            const result = await googleRequest(values);
+            const result = await googleRequest(
+              values,
+              undefined,
+              expectedOwner
+            );
             if (!(await canNavigate())) {
               busy.current = false;
               setPending(false);
@@ -296,13 +308,15 @@ export function AccountConfirmation({
   label,
   emailToken,
   password,
-  allowNavigation
+  allowNavigation,
+  expectedOwner
 }: {
   value: ReturnType<typeof useAccountConfirmation>;
   id: string;
   label: string;
   emailToken?: string | null;
   allowNavigation?: () => Promise<boolean>;
+  expectedOwner?: string;
   password?: { value: string; onChange: (value: string) => void };
 }) {
   if (!value.loaded)
@@ -359,6 +373,7 @@ export function AccountConfirmation({
             </p>
           ) : (
             <GoogleButton
+              expectedOwner={expectedOwner}
               allowNavigation={allowNavigation}
               label={
                 "Sign in with Google to confirm " +

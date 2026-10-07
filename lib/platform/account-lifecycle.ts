@@ -4,7 +4,7 @@ import { closeGroupAccountAccess } from "./group-lifecycle";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { normalizeEmail } from "./accounts";
 import { AccountError } from "./account-error";
-import { withOwnedSession } from "./account-sessions";
+import { requireSessionOwner, withOwnedSession } from "./account-sessions";
 import { validatePassword, verifyPassword } from "./auth";
 import { reconcileSupportAccess } from "./support-revocation";
 import { requireAccountCredential } from "./account-credential";
@@ -48,12 +48,14 @@ export async function deactivateAccount(
   db: PrismaClient,
   token: unknown,
   password: unknown,
-  confirmed: unknown
+  confirmed: unknown,
+  expectedOwner?: string | null
 ) {
   return withOwnedSession(
     db,
     token,
     async (tx, current) => {
+      requireSessionOwner(current, expectedOwner);
       if (confirmed !== true) throw new AccountLifecycleError("confirmation");
       await requireAccountCredential(
         tx,

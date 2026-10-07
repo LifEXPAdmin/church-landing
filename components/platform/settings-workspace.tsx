@@ -58,6 +58,7 @@ export function SettingsWorkspace({
   // can discard the draft, but a background identity check cannot.
   const preserveOriginalDraft =
     retainedReading ||
+    (folder === "data" && setting === "deactivate") ||
     (folder === "security" && setting === "password") ||
     (folder === "account" && ["email", "methods"].includes(setting ?? ""));
   const key =

@@ -1,21 +1,48 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { accountInputClass, PasswordField } from "./account-form";
 import { AccountConfirmation, useAccountConfirmation } from "./google-account";
+import {
+  CredentialPrivacyNotice,
+  useCredentialPrivacy
+} from "./account-credential-privacy";
 
 export function AccountLifecycle({
-  reactivate = false
+  reactivate = false,
+  owner: sourceOwner
 }: {
   reactivate?: boolean;
+  owner?: string;
 }) {
+  const owner = useRef(sourceOwner).current;
+  const privacy = useCredentialPrivacy(owner, !reactivate, "deactivation");
   const confirmation = useAccountConfirmation("deactivate-account");
+  const [password, setPassword] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const busy = useRef(false);
   const feedback = useRef<HTMLParagraphElement>(null);
   const action = reactivate ? "Reactivate account" : "Deactivate account";
   const prefix = reactivate ? "reactivate" : "deactivate";
+  useEffect(() => {
+    if (privacy.visible && message && !pending) feedback.current?.focus();
+  }, [privacy.visible, message, pending]);
+  if (!reactivate && !privacy.visible)
+    return (
+      <div className="space-y-3">
+        <CredentialPrivacyNotice value={privacy} />
+        <a
+          className="block underline"
+          href="/platform/account/reactivate"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Check reactivation in another tab
+        </a>
+      </div>
+    );
   return (
     <section
       className="gc-settings"
@@ -80,12 +107,20 @@ export function AccountLifecycle({
           busy.current = true;
           const form = event.currentTarget;
           const values = new FormData(form);
+          const credentials = !reactivate
+            ? confirmation.credentials(values)
+            : {};
+          let redirect: unknown;
           setPending(true);
           setMessage("");
           try {
+            if (!reactivate) await privacy.begin();
             const response = await fetch("/api/platform/account", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                ...(!reactivate ? { "X-Expected-Account": owner ?? "" } : {})
+              },
               body: JSON.stringify({
                 operation: `${prefix}-account`,
                 confirmed: values.get("confirmed") === "on",
@@ -94,10 +129,16 @@ export function AccountLifecycle({
                       email: values.get("email"),
                       password: values.get("password")
                     }
-                  : confirmation.credentials(values))
+                  : credentials)
               })
             });
             const result = await response.json();
+            if (response.ok && !reactivate) {
+              setPassword("");
+              setConfirmed(false);
+              redirect = result.redirect;
+              return;
+            }
             if (
               response.ok &&
               typeof result.redirect === "string" &&
@@ -113,13 +154,17 @@ export function AccountLifecycle({
             );
           } catch {
             setMessage(
-              "We could not confirm the response. Refresh the page to check your account status before trying again."
+              reactivate
+                ? "We could not confirm the response. Check sign-in before trying again."
+                : "We could not confirm the response. Check sign-in or reactivation before submitting again. This request will not be repeated automatically."
             );
           } finally {
-            if (!reactivate) confirmation.finish();
+            if (!reactivate) {
+              confirmation.finish();
+              privacy.finish(redirect);
+            }
             busy.current = false;
             setPending(false);
-            requestAnimationFrame(() => feedback.current?.focus());
           }
         }}
       >
@@ -155,6 +200,9 @@ export function AccountLifecycle({
             value={confirmation}
             id="deactivate-password"
             label="Current password for deactivation"
+            password={{ value: password, onChange: setPassword }}
+            expectedOwner={owner ?? ""}
+            allowNavigation={privacy.allowNavigation}
           />
         )}
         <label className="flex min-h-11 items-start gap-3">
@@ -162,6 +210,12 @@ export function AccountLifecycle({
             className="mt-1 h-5 w-5 shrink-0"
             name="confirmed"
             type="checkbox"
+            checked={reactivate ? undefined : confirmed}
+            onChange={
+              reactivate
+                ? undefined
+                : (event) => setConfirmed(event.target.checked)
+            }
             required
           />
           <span>

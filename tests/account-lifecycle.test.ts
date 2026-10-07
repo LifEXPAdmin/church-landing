@@ -158,12 +158,19 @@ test("deactivation requires owner, password and explicit intent; HTTPS rejects f
     400
   );
   assert.equal(
-    (await post({ ...body, currentPassword: "Wrong-password-1" }, a.token))
-      .status,
+    (
+      await post({ ...body, currentPassword: "Wrong-password-1" }, a.token, {
+        "X-Expected-Account": a.user.id
+      })
+    ).status,
     400
   );
   assert.equal(
-    (await post({ ...body, confirmed: "true" }, a.token)).status,
+    (
+      await post({ ...body, confirmed: "true" }, a.token, {
+        "X-Expected-Account": a.user.id
+      })
+    ).status,
     400
   );
   assert.equal(
@@ -255,7 +262,8 @@ test("all duty categories block deactivation, including retained case and enable
         currentPassword: password,
         confirmed: true
       },
-      a.token
+      a.token,
+      { "X-Expected-Account": a.user.id }
     );
     assert.equal(response.status, 409);
     assert.equal((await response.json()).code, "ACCOUNT_HANDOFF");
@@ -330,12 +338,12 @@ test("deactivation ends all access and sharing while preserving records; reactiv
       currentPassword: password,
       confirmed: true
     },
-    a.token
+    a.token,
+    { "X-Expected-Account": a.user.id }
   );
   assert.equal(response.status, 200);
   assert.match(response.headers.get("cache-control")!, /no-store/);
-  assert.match(response.headers.get("set-cookie")!, /Max-Age=0/);
-  assert.match(response.headers.get("set-cookie")!, /Secure/);
+  assert.equal(response.headers.get("set-cookie"), null);
   assert.equal(await readAccountSession(db, a.token), null);
   assert.equal(await readAccountSession(db, other), null);
   assert.ok(await readAccountSession(db, b.token));

@@ -1126,6 +1126,7 @@ try {
   await runTests("tests/early-community.test.ts");
   await runTests("tests/feed-gesture.test.ts");
   await runTests("tests/account-email-change.test.ts");
+  await runTests("tests/account-deactivation-owner.test.ts");
   await runTests("tests/google-accounts.test.ts");
   await runTests("tests/google-boundary.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");

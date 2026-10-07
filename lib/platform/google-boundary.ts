@@ -316,7 +316,10 @@ export async function handleGoogleRequest(
         sessionToken,
         newBrowser,
         body.purpose,
-        accountConfirmationReturn(body.purpose)
+        accountConfirmationReturn(body.purpose),
+        body.purpose === "deactivate-account"
+          ? (request.headers.get("X-Expected-Account") ?? "")
+          : undefined
       );
     } else {
       attempt = await beginGoogleAttempt(
