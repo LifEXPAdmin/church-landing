@@ -165,7 +165,7 @@ try {
   const item = () => page.locator("[data-saved-id]").first();
   await item().getByRole("combobox").selectOption(collection.id);
   await item()
-    .getByRole("button", { name: "Move saved post", exact: true })
+    .getByRole("button", { name: "Move bookmark", exact: true })
     .click();
   await page.getByText("Private changes saved.", { exact: true }).waitFor();
   assert.equal(
@@ -247,7 +247,7 @@ try {
   await page
     .getByRole("button", { name: "Refresh bookmarks", exact: true })
     .click();
-  await page.getByText("Saved post unavailable", { exact: true }).waitFor();
+  await page.getByText("Bookmarked item unavailable", { exact: true }).waitFor();
   assert.equal(
     await page
       .getByText("Saved browser source marker", { exact: true })
@@ -261,7 +261,7 @@ try {
     0
   );
   await item()
-    .getByRole("button", { name: "Remove saved post", exact: true })
+    .getByRole("button", { name: "Remove bookmark", exact: true })
     .click();
   await page.getByText("No bookmarks in this view.", { exact: true }).waitFor();
   ok(
