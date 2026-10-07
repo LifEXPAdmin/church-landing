@@ -121,7 +121,10 @@ try {
     }
   ]);
   await page.goto(config.origin + "/platform/posts/" + data.nativeReceipt.id);
-  await page.getByText(data.nativeInput.content, { exact: true }).waitFor();
+  await page
+    .getByLabel("Post by " + data.actor.name, { exact: true })
+    .getByText(data.nativeInput.content, { exact: true })
+    .waitFor();
   await page.getByText(data.actor.name, { exact: true }).first().waitFor();
   await bounded();
   await page.screenshot({
@@ -239,7 +242,10 @@ try {
   assert.equal(projected.body.text, webText);
   assert.equal(projected.audience, "PUBLIC");
   await link.click();
-  await page.getByText(webText, { exact: true }).waitFor();
+  await page
+    .getByLabel("Post by " + data.actor.name, { exact: true })
+    .getByText(webText, { exact: true })
+    .waitFor();
   await bounded();
   pass(
     "Byte-identical website retry consumes one draft and one publication; native reading sees the same post"
