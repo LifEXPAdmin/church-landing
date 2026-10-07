@@ -15,6 +15,7 @@ const eslintConfig = [
       ".next/**",
       ".account-test/**",
       "node_modules/**",
+      "mobile/**",
       "next-env.d.ts"
     ]
   },

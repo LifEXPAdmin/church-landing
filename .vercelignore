@@ -5,3 +5,6 @@
 *.pem
 *.tsbuildinfo
 *.log
+
+# Native app has independent dependencies and build artifacts.
+mobile

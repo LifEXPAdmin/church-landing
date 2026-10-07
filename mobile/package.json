@@ -1,0 +1,30 @@
+{
+  "name": "@godschurches/mobile",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.ts",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node scripts/workspace.mjs dev",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts tests/*.test.mjs",
+    "check:boundary": "node scripts/check-boundary.mjs",
+    "export:native": "node scripts/workspace.mjs export"
+  },
+  "dependencies": {
+    "expo": "57.0.27",
+    "expo-dev-client": "57.0.19",
+    "expo-linking": "57.0.12",
+    "expo-secure-store": "57.0.4",
+    "expo-status-bar": "57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "5.10.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "6.0.3"
+  }
+}

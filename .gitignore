@@ -30,3 +30,10 @@ yarn-error.log*
 
 # Disposable account-security fixtures and local delivery sink
 /.account-test/
+
+# Isolated native app generated data
+/mobile/node_modules/
+/mobile/.expo/
+/mobile/.generated/
+/mobile/ios/
+/mobile/android/
