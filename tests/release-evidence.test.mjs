@@ -85,6 +85,54 @@ test("complete exact-source evidence validates and emits only a bounded summary"
   });
 });
 
+for (const value of [
+  "2026-02-30T10:00:00.000Z",
+  "2026-02-29T10:00:00Z",
+  "2024-02-30T10:00:00.123Z",
+  "1900-02-29T10:00:00.000Z",
+  "2100-02-29T10:00:00Z",
+  "2026-04-31T10:00:00.000Z",
+  "2026-01-01T24:00:00.000Z",
+  "2026-12-31T24:00:00Z"
+]) {
+  for (const field of ["startedAt", "finishedAt"]) {
+    test(`rejects normalized calendar timestamp ${field}=${value}`, async (t) => {
+      const f = fixture(t);
+      // Keep the other boundaries valid and wide enough that the old parser
+      // accepts the normalized value; rejection must come from date validity.
+      f.checks[0].startedAt = "1800-01-01T00:00:00.000Z";
+      f.checks[0].finishedAt = "2200-01-01T00:00:00.000Z";
+      f.options.now = Date.parse("2200-01-02T00:00:00.000Z");
+      f.checks[0][field] = value;
+      await assert.rejects(
+        f.verify,
+        (error) => error.message === "EVIDENCE_TIME"
+      );
+    });
+  }
+}
+
+for (const [startedAt, finishedAt] of [
+  ["2024-02-29T23:59:59.999Z", "2024-03-01T00:00:00.000Z"],
+  ["2000-02-29T10:00:00Z", "2000-02-29T10:00:01Z"],
+  ["2026-04-30T23:59:59Z", "2026-05-01T00:00:00.000Z"],
+  ["2026-10-02T10:00:00.123Z", "2026-10-02T10:00:01Z"],
+  ["2026-10-02T10:00:00Z", "2026-10-02T10:00:00.000Z"],
+  ["0000-02-29T10:00:00Z", "0000-02-29T10:00:01.000Z"],
+  ["0099-01-01T10:00:00.000Z", "0099-01-01T10:00:01Z"]
+]) {
+  test(`accepts canonical calendar timestamps ${startedAt} to ${finishedAt}`, async (t) => {
+    const f = fixture(t);
+    Object.assign(f.checks[0], { startedAt, finishedAt });
+    assert.deepEqual(await f.verify(), {
+      sourceSha: f.options.candidate,
+      checks: releaseChecks,
+      artifacts: 5,
+      verifiedAt: "2026-10-02T12:00:00.000Z"
+    });
+  });
+}
+
 for (const [name, change, code] of [
   [
     "short candidate",
@@ -270,6 +318,36 @@ for (const [name, change, code] of [
     await assert.rejects(f.verify, (error) => error.message === code);
   });
 }
+
+test("CLI rejects impossible calendar dates without exposing receipt values", (t) => {
+  const f = fixture(t);
+  const invalidTime = "2026-02-30T10:00:00.000Z";
+  Object.assign(f.checks[0], {
+    startedAt: invalidTime,
+    finishedAt: invalidTime,
+    command: "fictional-private-evidence-command"
+  });
+  f.save();
+  const result = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(
+        new URL("../scripts/verify-release-evidence.mjs", import.meta.url)
+      ),
+      "--candidate",
+      f.options.candidate,
+      "--receipt",
+      f.options.receiptPath
+    ],
+    { cwd: f.cwd, encoding: "utf8" }
+  );
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, "");
+  assert.equal(
+    result.stderr.trim(),
+    "Release evidence rejected: EVIDENCE_TIME"
+  );
+});
 
 test("CLI fails closed without exposing malformed private receipt contents", (t) => {
   const f = fixture(t);

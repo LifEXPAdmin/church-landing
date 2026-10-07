@@ -36,6 +36,10 @@ function time(value) {
   );
   const parsed = Date.parse(value);
   requireValue(Number.isFinite(parsed), "EVIDENCE_TIME");
+  // Date.parse normalizes impossible days and 24:00 into another date. Only
+  // allow the two UTC spellings in the receipt contract to round-trip exactly.
+  const canonical = value.length === 20 ? `${value.slice(0, -1)}.000Z` : value;
+  requireValue(new Date(parsed).toISOString() === canonical, "EVIDENCE_TIME");
   return parsed;
 }
 

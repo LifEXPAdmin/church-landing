@@ -1,7 +1,7 @@
 ## Prepared CI safeguards integrated locally, 7 October 2026 UTC
 
 The continuation incorporates the previously prepared CI and receipt sources
-from `c92d7d4`, `8ab33a1` and `a746cfa`. Application dependencies retain the
+from `c92d7d4`, `e123e05`, `8ab33a1` and `a746cfa`. Application dependencies retain the
 separately verified compatible repairs described in
 [dependency remediation](DEPENDENCY_REMEDIATION.md).
 
@@ -32,7 +32,9 @@ The private JSON uses `schema: 1`, `sourceSha` equal to the candidate HEAD, and
 exactly one check for each of `static`, `services`, `https`, `build` and `browser`.
 Each check names the same `sourceSha`, `status: "passed"`, `exitCode: 0`, actual
 nonempty `command`, ordered UTC `startedAt`/`finishedAt`, and one or more
-`artifacts` with relative `path` and SHA256. Timestamps cannot be in the future.
+`artifacts` with relative `path` and SHA256. Timestamps must round-trip to the
+exact UTC calendar value; impossible days and midnight overflow are rejected.
+Timestamps cannot be in the future.
 Service, HTTPS and browser checks also require `environment: "isolated-fictional"`,
 a positive integer `passed` and `failed: 0`. The build check includes `buildId`.
 Logs must be nonempty regular files resolving inside the receipt directory;

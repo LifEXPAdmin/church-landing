@@ -14,3 +14,12 @@ condition = "AND"
 regexTarget = "secret"
 paths = ['''^scripts/qa-mission-browser\.mjs$''']
 regexes = ['''^Fictional-Mission-Signup-1$''']
+
+# This fixed UUID is a fictional idempotency key in a pure schema test.
+# It authorizes no account or provider operation. Both conditions must match.
+[[rules.allowlists]]
+description = "Exact fictional native authenticator request UUID"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^tests/native-auth-contracts\.test\.ts$''']
+regexes = ['''^76ff5d31-9439-4d9d-8174-aec5c5dbb657$''']
