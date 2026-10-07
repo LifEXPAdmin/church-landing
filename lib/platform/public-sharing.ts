@@ -4,44 +4,13 @@ import { accountConfig } from "./account-config";
 import { postContext, postReadableWhere, withPostRead } from "./post-access";
 import { postId } from "./post-input";
 import { commentVisibleWhere } from "./comment-policy";
-import { PortalError } from "./portal-policy";
 import type { PrismaClient } from "@prisma/client";
 import { topicPublicWhere } from "./topic-policy";
 import { shareCardLabel } from "../share-card";
 import { publicChurchWhere, publicEventWhere } from "./public-discovery-policy";
 
-export type ShareKind =
-  | "post"
-  | "comment"
-  | "church"
-  | "event"
-  | "profile"
-  | "topic";
-export function canonicalSharePath(
-  kind: unknown,
-  id: unknown,
-  commentId?: unknown
-) {
-  if (
-    !["post", "comment", "church", "event", "profile", "topic"].includes(
-      String(kind)
-    )
-  )
-    throw new PortalError(400, "Choose a supported sharing destination.");
-  const safeId = postId(id);
-  if (kind === "topic") {
-    if (
-      safeId.length < 3 ||
-      safeId.length > 60 ||
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(safeId)
-    )
-      throw new PortalError(400, "Choose a valid topic address.");
-    return `/platform/topics/${safeId}`;
-  }
-  if (kind === "comment")
-    return `/platform/posts/${safeId}?comment=${postId(commentId)}`;
-  return `/platform/${kind === "post" ? "posts" : kind === "church" ? "churches" : kind === "event" ? "events" : "profile"}/${safeId}`;
-}
+import { canonicalSharePath, type ShareKind } from "./destination-links";
+export { canonicalSharePath, type ShareKind } from "./destination-links";
 const short = (text: string, max: number) =>
   text
     .replace(/[\u0000-\u001f\u007f]/g, " ")
