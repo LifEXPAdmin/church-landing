@@ -3,7 +3,6 @@ import {
   API_VERSION,
   API_MAX_RESPONSE_BYTES,
   apiContracts,
-  apiCursor,
   apiDate,
   apiId,
   apiUsername,
@@ -43,6 +42,7 @@ export type NativeReadOperation =
   | "profile"
   | "churches"
   | "church";
+const feedCursor = wire.text(2500, 1, /^[A-Za-z0-9_.-]+$/);
 const postCursor = wire.object({ before: apiDate, id: apiId });
 const queryKeys: Record<NativeReadOperation, readonly string[]> = {
   capabilities: [],
@@ -220,7 +220,7 @@ export async function handleNativeReadRequest(
       if (query.cursor && !query.scope) throw new NativeCursorError();
       const cursors = nativeReadCursors(
         [operation, viewer, query.mode, query.scope],
-        apiCursor
+        feedCursor
       );
       const prior = cursors.decode(query.cursor);
       const view = await readFeed(
@@ -236,7 +236,7 @@ export async function handleNativeReadRequest(
       );
       const outgoing = nativeReadCursors(
         [operation, view.ownerId, view.mode, view.scope],
-        apiCursor
+        feedCursor
       );
       return success(operation, view.ownerId, {
         mode: view.mode,

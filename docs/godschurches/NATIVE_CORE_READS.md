@@ -35,10 +35,15 @@ canonical permission, not an available native comment action. Comments, media,
 resource cards and richer profile/church modules require the website. The
 initial cards therefore conservatively report `requiresWeb: true`.
 
-Continuation values are signed, bounded opaque cursors. They bind endpoint,
+Continuation values are signed opaque cursors bounded to 4096 characters. They bind endpoint,
 original viewer, resource and normalized filters, expire after one hour and
 retain the original deadline across pages. Feed cursors wrap the existing
 service cursor; send both returned `scope` and cursor when reopening a page.
+The initial preactivation 2000-character proposal was corrected after reproducing
+valid canonical discovery pages with cursors longer than 2000. The internal feed
+payload retains its separate 2500-character bound. Mobile consumers must use the
+revised schema before activation; older 2000-character decoders accept ordinary
+short pages but cannot consume these larger pages.
 Profile/church post cursors preserve published-time/id tie breaking. Church
 discovery retains the canonical name/id order, which is not a frozen snapshot
 under concurrent renames. Every page reauthorizes current privacy and audience.

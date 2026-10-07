@@ -28,6 +28,7 @@ function send(
       origin + path,
       {
         method,
+        servername: "localhost",
         headers: {
           ...(data === undefined
             ? {}

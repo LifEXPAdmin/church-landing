@@ -26,15 +26,16 @@ export function nativeReadCursors<T>(
   const envelope = wire.object({ expires: wire.integer(), value: payload });
   return {
     encode(value: T, expires = now.getTime() + NATIVE_CURSOR_LIFETIME_MS) {
-      const body = gzipSync(
-        JSON.stringify(envelope.parse({ expires, value }))
-      ).toString("base64url");
       try {
+        const body = gzipSync(
+          JSON.stringify(envelope.parse({ expires, value }))
+        ).toString("base64url");
         return apiCursor.parse(
           body + "." + signature(body).toString("base64url")
         );
       } catch {
-        throw new Error("Native cursor exceeds the response bound");
+        // Outbound failures belong to the server, never to valid request input.
+        throw new Error("Native cursor could not be encoded");
       }
     },
     decode(value: string | null) {

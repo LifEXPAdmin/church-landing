@@ -1,6 +1,6 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomBytes } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { PrismaClient } from "@prisma/client";
 import { assertPortalTestDatabase, createPortalActor } from "./seed-portal";
@@ -12,6 +12,7 @@ import {
   decodeApiResponse,
   apiId,
   apiCursor,
+  wire,
   WireContractError,
   type ApiResponse
 } from "../lib/platform/api-contracts";
@@ -434,8 +435,14 @@ test("reposts retain hidden source counts and lose withdrawn sources without wid
       publishedAt: at
     }
   });
-  assert.equal((await ok("post", c, { postId: quote.id })).repost?.source, null);
-  await db.platformPost.update({ where: { id: source.id }, data: { allowReposts: true } });
+  assert.equal(
+    (await ok("post", c, { postId: quote.id })).repost?.source,
+    null
+  );
+  await db.platformPost.update({
+    where: { id: source.id },
+    data: { allowReposts: true }
+  });
   const result = await ok("post", c, { postId: quote.id });
   assert.equal(result.repost?.source?.likeCount, null);
   assert.equal(result.repost?.source?.ownReaction?.liked, true);
@@ -616,9 +623,23 @@ test("cursor deadlines cannot be extended by continuation or accepted for other 
       ).decode(next),
     NativeCursorError
   );
-  assert.throws(() => codec.decode("x".repeat(2001)), NativeCursorError);
+  assert.throws(() => codec.decode("x".repeat(4097)), NativeCursorError);
+  const inner = nativeReadCursors(
+    ["feed"],
+    wire.text(2500, 1, /^[A-Za-z0-9_.-]+$/),
+    now
+  );
+  assert.equal(
+    inner.decode(inner.encode("x".repeat(2500)))?.value.length,
+    2500
+  );
+  assert.throws(
+    () => inner.encode("x".repeat(2501)),
+    (error) => error instanceof Error && !(error instanceof WireContractError)
+  );
+  assert.equal(apiCursor.parse("x".repeat(4096)).length, 4096);
   assert.throws(() =>
-    nativeReadCursors(["feed"], apiCursor, now).encode("x".repeat(2001))
+    nativeReadCursors(["feed"], apiCursor, now).encode("x".repeat(4097))
   );
 });
 test("queued reads revalidate expiry and revocation after acquiring the authorization gate", async () => {
@@ -703,5 +724,48 @@ test("account deletion and personal blocking make native content unavailable", a
   assert.equal(
     (await call("post", undefined, { postId: post.id })).response.status,
     404
+  );
+});
+
+test("native discovery pages preserve valid long canonical cursor payloads", async () => {
+  const reader = await createPortalActor(db, "longread");
+  const author = await createPortalActor(db, "longauthor");
+  await db.platformFollow.create({
+    data: { followerId: reader.id, followingId: author.id }
+  });
+  await db.platformPost.createMany({
+    data: Array.from({ length: 30 }, () => ({
+      id: randomBytes(48).toString("base64url"),
+      authorId: author.id,
+      content: "Fictional long discovery ID",
+      publishedAt: at
+    }))
+  });
+  const canonical = await readFeed(db, reader.token, { mode: "following" });
+  assert.equal(canonical.posts.length, 30);
+  assert.ok(
+    canonical.pageCursor.length > 2000 && canonical.pageCursor.length <= 2500,
+    "Canonical large cursor fixture must exercise the established service bound"
+  );
+  const canonicalAgain = await readFeed(db, reader.token, {
+    mode: "following",
+    scope: canonical.scope,
+    cursor: canonical.pageCursor
+  });
+  assert.deepEqual(
+    canonicalAgain.posts.map((p) => p.id),
+    canonical.posts.map((p) => p.id)
+  );
+  const first = await ok("feed", reader, {}, { mode: "following" });
+  assert.equal(first.page.items.length, 30);
+  const again = await ok(
+    "feed",
+    reader,
+    {},
+    { mode: "following", scope: first.scope, cursor: first.pageCursor }
+  );
+  assert.deepEqual(
+    again.page.items.map((p) => p.id),
+    first.page.items.map((p) => p.id)
   );
 });

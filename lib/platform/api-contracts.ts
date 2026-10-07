@@ -111,7 +111,7 @@ export const wire = Object.freeze({
 
 export const apiId = text(100, 1, /^[A-Za-z0-9_-]+$/);
 export const apiUsername = text(24, 3, /^[A-Za-z0-9_]+$/);
-export const apiCursor = text(2000, 1, /^[A-Za-z0-9_.-]+$/);
+export const apiCursor = text(4096, 1, /^[A-Za-z0-9_.-]+$/);
 export const apiDate = schema<string>((value) => {
   if (
     typeof value !== "string" ||
