@@ -26,6 +26,37 @@ import {
   retentionDate
 } from "./messaging-retention";
 type Tx = Prisma.TransactionClient;
+// Call only after matching the service source and owner to a recovery control.
+// Older participation writers used hyphenated event names.
+export async function clearVolunteerServiceNotesIn(
+  tx: Tx,
+  kind: "VOLUNTEER_SERVICE_SIGNUP" | "VOLUNTEER_SERVICE_APPLICATION",
+  sourceId: string
+) {
+  if (kind === "VOLUNTEER_SERVICE_SIGNUP")
+    await tx.exchangeNeedEvent.updateMany({
+      where: {
+        targetId: sourceId,
+        action: {
+          in: [
+            "VOLUNTEER_COMPLETED",
+            "VOLUNTEER_COMPLETION_CORRECTED",
+            "VOLUNTEER-COMPLETED",
+            "VOLUNTEER-COMPLETION-CORRECTED"
+          ]
+        }
+      },
+      data: { text: "" }
+    });
+  else
+    await tx.volunteerApplicationEvent.updateMany({
+      where: {
+        applicationId: sourceId,
+        action: { in: ["COMPLETED", "COMPLETION_CORRECTED"] }
+      },
+      data: { note: "" }
+    });
+}
 const PREFIX = "retention-v1/controls/";
 export type RetentionControlEntry = {
   id: string;
@@ -1476,31 +1507,14 @@ export async function replayRetentionControls(
               data
             });
             if (changed.count)
-              await tx.exchangeNeedEvent.updateMany({
-                where: {
-                  targetId: entry.sourceId,
-                  action: {
-                    in: [
-                      "VOLUNTEER_COMPLETED",
-                      "VOLUNTEER_COMPLETION_CORRECTED"
-                    ]
-                  }
-                },
-                data: { text: "" }
-              });
+              await clearVolunteerServiceNotesIn(tx, entry.kind, entry.sourceId);
           } else {
             const changed = await tx.volunteerApplication.updateMany({
               where,
               data
             });
             if (changed.count)
-              await tx.volunteerApplicationEvent.updateMany({
-                where: {
-                  applicationId: entry.sourceId,
-                  action: { in: ["COMPLETED", "COMPLETION_CORRECTED"] }
-                },
-                data: { note: "" }
-              });
+              await clearVolunteerServiceNotesIn(tx, entry.kind, entry.sourceId);
           }
           // Historical copies cannot return when reconfirmation ends quarantine.
           // A matched older owner row is required, so replaying an old control

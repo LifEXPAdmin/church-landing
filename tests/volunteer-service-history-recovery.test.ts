@@ -137,9 +137,13 @@ for (const timed of [true, false]) {
       const snapshot = await db.volunteerApplication.findUniqueOrThrow({
         where: { id: f.target.targetId }
       });
+      const events = await db.volunteerApplicationEvent.findMany({
+        where: { applicationId: snapshot.id }
+      });
       await db.volunteerApplication.delete({ where: { id: snapshot.id } });
       await replayRetentionControls(db, [protectedEntry]);
       await db.volunteerApplication.create({ data: snapshot });
+      await db.volunteerApplicationEvent.createMany({ data: events });
     }
     const history = async () =>
       (await readVolunteerServiceHistory(db, f.lee.token)).items.find(
@@ -160,6 +164,7 @@ for (const timed of [true, false]) {
       const after = await f.row();
       assert.equal(after.serviceSharedAt, null);
       assert.equal(after.serviceRecoveryRequired, true);
+      assert.equal(after.completionNote, "");
       assert.equal((await history()).completed, false);
       assert.equal((await history()).canShare, false);
       await assert.rejects(
@@ -176,6 +181,34 @@ for (const timed of [true, false]) {
       );
       await volunteerCommand(db, f.lee.token, input);
       assert.deepEqual(await f.row(), after);
+    }
+    const current = await f.row();
+    await volunteerCommand(
+      db,
+      f.ada.token,
+      action("complete", {
+        ...f.target,
+        expectedVersion: current.version,
+        completed: true,
+        reason: "Fictional confirmation after restored withdrawal"
+      })
+    );
+    assert.equal((await history()).completed, true);
+    assert.equal((await history()).shared, false);
+    if (!timed) {
+      const exported = await db.$transaction((tx) =>
+        exportVolunteerApplications(tx, f.lee.id, 2000)
+      );
+      assert.ok(
+        !JSON.stringify(exported).includes(
+          "Fictional private completion confirmation"
+        )
+      );
+      assert.ok(
+        JSON.stringify(exported).includes(
+          "Fictional confirmation after restored withdrawal"
+        )
+      );
     }
   });
 

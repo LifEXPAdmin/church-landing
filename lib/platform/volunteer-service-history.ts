@@ -23,7 +23,10 @@ import {
 import { needSource, requireNeedCoordinator } from "./exchange-need-policy";
 import { expected, PortalError } from "./portal-policy";
 import { postField, postId } from "./post-input";
-import { recordDiscoveryControl } from "./retention-controls";
+import {
+  clearVolunteerServiceNotesIn,
+  recordDiscoveryControl
+} from "./retention-controls";
 import { recordNeedChange } from "./exchange-need-lifecycle";
 
 export type VolunteerServiceTarget = {
@@ -464,8 +467,12 @@ export async function setVolunteerServiceConsentIn(
   await authorizeVolunteerServiceIn(tx, actorId, input);
   expected(input.expectedVersion, record.row.serviceVersion);
   const disclose = input.shared === true;
+  const fenced = await recoveryFence(tx, record);
   const data = {
     serviceVersion: { increment: 1 },
+    // An owned withdrawal remains possible after restore, but cannot consume
+    // an opaque fence and resurrect the old confirmation or historical notes.
+    ...(fenced ? { serviceRecoveryRequired: true, completionNote: "" } : {}),
     serviceSharedAt: disclose ? new Date() : null,
     serviceSharedCompletionVersion: disclose
       ? record.row.completionVersion
@@ -478,6 +485,8 @@ export async function setVolunteerServiceConsentIn(
           where: { id: target.id },
           data
         });
+  if (fenced)
+    await clearVolunteerServiceNotesIn(tx, controlKind(target), row.id);
   await recordDiscoveryControl(
     tx,
     controlKind(target),
