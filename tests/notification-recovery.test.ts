@@ -328,6 +328,16 @@ test("a real database lock timeout rolls back the lease and a restarted worker c
 
 test("repeated failed workers converge to the existing terminal guard without a ninth send or message rollback", async () => {
   const f = await seedNotificationPair(db);
+  // Eight exponential retries span more than the normal idle window. Keep this
+  // fixture session active long enough to test the send budget; separate cases
+  // verify that actual idle sessions cancel before contacting a provider.
+  const device = await db.pushSubscription.findUniqueOrThrow({
+    where: { id: f.subscription.id }
+  });
+  await db.platformSession.update({
+    where: { id: device.sessionId! },
+    data: { idleExpiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000) }
+  });
   providerStatus = 503;
   for (let attempt = 1; attempt <= 8; attempt++) {
     const pending = await row(f.delivery.id);

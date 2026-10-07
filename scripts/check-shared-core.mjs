@@ -15,7 +15,7 @@ const consumerRoot = join(output, "consumer");
 mkdirSync(join(consumerRoot, "node_modules/@godschurches"), { recursive: true });
 symlinkSync(packageRoot, join(consumerRoot, "node_modules/@godschurches/shared-core"));
 const consumer = join(consumerRoot, "consumer.ts");
-writeFileSync(consumer, `import { draftProblem, POST_TOPICS, destinationWebPath, parseDestinationPath, DraftController, prepareRequest, issueNativePasswordCredential, apiContracts, decodeApiResponse, decodeNativePasswordResponse, decodeNativeResponse, type RequestAdapter, type AppDestination, type PostDraft, type PrivateDraftPayload, type DraftState, type DraftTransport } from "@godschurches/shared-core";
+writeFileSync(consumer, `import { draftProblem, POST_TOPICS, destinationWebPath, parseDestinationPath, DraftController, prepareRequest, issueNativePasswordCredential, apiContracts, decodeApiResponse, decodeNativePasswordResponse, decodeNativeResponse, decodeNativePushResponse, decodeNativePushRegistration, type NativePushRegistration, type RequestAdapter, type AppDestination, type PostDraft, type PrivateDraftPayload, type DraftState, type DraftTransport } from "@godschurches/shared-core";
 export const draft: PostDraft = { content: "Hello", scripture: "", type: "UPDATE", topics: [POST_TOPICS[0]], audience: "PUBLIC" };
 export const payload: PrivateDraftPayload = { ...draft, linkUrl: "", replyAudience: null, authorChurchId: null, audienceChurchId: null, eventOccurrenceId: null };
 export const problem: string | null = draftProblem(draft);
@@ -26,6 +26,8 @@ export const nativeRequest = (adapter: RequestAdapter) => prepareRequest(adapter
 export const feedPath: string = apiContracts.feed.path;
 export const nativeFeed = (value: unknown, owner: string) => decodeApiResponse("feed", value, owner);
 export const nativeIssuance = (value: unknown) => decodeNativePasswordResponse(value);
+export const nativePushDevices = (value: unknown, owner: string) => decodeNativePushResponse("list", value, owner);
+export const nativePushReceipt = (value: unknown, owner: string, input: NativePushRegistration) => decodeNativePushRegistration(value, owner, input);
 export const nativeActivity = (value: unknown, owner: string) => decodeNativeResponse("activity", value, owner);
 export const nativeSignIn = (adapter: RequestAdapter) => issueNativePasswordCredential(adapter, { email: "fictional@example.invalid", password: "fictional-only" }, { owner: null, generation: 1 });
 export const destination: AppDestination = { kind: "event", occurrenceId: "occurrence_1" };

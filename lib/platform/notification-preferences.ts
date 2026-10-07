@@ -14,6 +14,7 @@ import { eligibleWhere, expected, PortalError } from "./portal-policy";
 import { calendarZone } from "./calendar-time";
 import { socialCommand, socialInput } from "./social-operations";
 import { pushAvailable } from "./push-config";
+import { nativePushAvailable } from "./native-push-config";
 
 const legacyInAppCategories = [
   "messages",
@@ -241,7 +242,9 @@ export function readNotificationPreferences(db: PrismaClient, token: unknown) {
         inApp: true,
         calendarReminders: eligible,
         volunteerReminders: eligible,
-        push: push && eligible,
+        push: (push || nativePushAvailable()) && eligible,
+        browserPush: push && eligible,
+        devices: eligible,
         socialEmail: socialEmail && eligible,
         email: email && eligible
       }
@@ -416,6 +419,7 @@ export async function notificationPreferenceCommand(
         );
       if (
         !pushAvailable() &&
+        !nativePushAvailable() &&
         categories.some((c) => !old.pushCategories.includes(c))
       )
         throw new PortalError(

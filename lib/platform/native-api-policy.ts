@@ -1,11 +1,14 @@
 /** Server capability admission policy. This never grants account or resource access. */
 import { API_VERSION } from "./api-contracts";
+import { nativePushAvailable } from "./native-push-config";
 
 const essential = [
   "session.read",
   "session.activity",
   "session.logout",
-  "session.authenticator"
+  "session.authenticator",
+  "push.list",
+  "push.revoke"
 ] as const;
 const optional = [
   "session.password",
@@ -21,7 +24,10 @@ const optional = [
   "media.images.read",
   "media.images.list",
   "media.images.upload",
-  "media.images.remove"
+  "media.images.remove",
+  "push.prepare",
+  "push.register",
+  "push.open"
 ] as const;
 const unimplemented = [
   "session.google",
@@ -74,7 +80,10 @@ export function nativeCapabilityPolicy(
     ...essential.map((name) => ({ name, available: true })),
     ...optional.map((name) => ({
       name,
-      available: valid && !configured.has(name)
+      available:
+        valid &&
+        !configured.has(name) &&
+        (name !== "push.register" || nativePushAvailable())
     })),
     ...unimplemented.map((name) => ({ name, available: false }))
   ];

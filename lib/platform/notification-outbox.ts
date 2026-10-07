@@ -11,10 +11,17 @@ import {
 } from "./feedback-email";
 import type { Prisma, PrismaClient, SocialEvent } from "@prisma/client";
 import { randomUUID, createHash } from "node:crypto";
-import { withOwnedSession } from "./account-sessions";
+import { withOwnedSession, requireSessionOwner } from "./account-sessions";
 import { PortalError } from "./portal-policy";
 import { postId } from "./post-input";
 import { pushAvailable } from "./push-config";
+import { nativePushAvailable, nativePushConfig } from "./native-push-config";
+import {
+  nativePushTransport,
+  type NativePushTransport,
+  type NativePushSendResult,
+  type NativePushReceiptResult
+} from "./native-push-provider";
 import {
   projectNotificationPreferences,
   notificationPushAllowed,
@@ -110,11 +117,16 @@ export async function enqueueNotification(
         skipDuplicates: true
       });
   }
-  if (!pushAvailable()) return;
+  const providers = [
+    ...(pushAvailable() ? ["WEB_PUSH"] : []),
+    ...(nativePushAvailable() ? ["EXPO"] : [])
+  ];
+  if (!providers.length) return;
   const now = new Date();
   const devices = await tx.pushSubscription.findMany({
     where: {
       ownerId: event.recipientId,
+      provider: { in: providers },
       revokedAt: null,
       expiresAt: { gt: now },
       session: { is: activeAccountSessionWhere(now) },
@@ -170,7 +182,10 @@ const terminal = (now: Date, outcome: "CANCELLED" | "ACCEPTED" | "FAILED") => ({
   outcome,
   finishedAt: now,
   leaseToken: null,
-  leaseUntil: null
+  leaseUntil: null,
+  nativeTicketId: null,
+  nativeTicketCreatedAt: null,
+  nativeReceiptChecks: 0
 });
 export type PushTransport = (
   subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
@@ -188,7 +203,8 @@ export async function deliverNotification(
   transport: PushTransport,
   now = new Date(),
   emailTransport: FeedbackEmailTransport = sendFeedbackEmail,
-  socialTransport: SocialEmailTransport = sendSocialEmail
+  socialTransport: SocialEmailTransport = sendSocialEmail,
+  nativeTransport: NativePushTransport = nativePushTransport
 ): Promise<PushWorkResult> {
   const claim = await notificationWrite(db, async (tx) => {
     // The permission gate may have blocked. Never admit an idle session using
@@ -217,6 +233,11 @@ export async function deliverNotification(
       return { done: true, outcome: "finished" } as const;
     const sub = row.subscription;
     const email = row.channel === "EMAIL";
+    const native = !email && sub?.provider === "EXPO";
+    const nativeConfig = nativePushConfig();
+    const nativeEpoch = native
+      ? await tx.nativePushRecovery.findUnique({ where: { id: "current" } })
+      : null;
     const emailCategory =
       socialEmailCategory(row.event) ??
       (["FEEDBACK_CASE", "FEEDBACK_IDEA"].includes(row.event.kind)
@@ -248,7 +269,7 @@ export async function deliverNotification(
             ? feedbackEmailAvailable()
             : socialEmailAvailable()) ||
           row.emailCredentialVersion !== row.owner.credentialVersion
-        : !pushAvailable() ||
+        : (native ? !nativeConfig : !pushAvailable()) ||
           !sub ||
           sub.revokedAt ||
           sub.expiresAt <= now ||
@@ -256,9 +277,15 @@ export async function deliverNotification(
           !sub.session ||
           !accountSessionIsActive(sub.session, sessionNow) ||
           sub.session.credentialVersion !== sub.owner.credentialVersion ||
-          !sub.endpoint ||
-          !sub.p256dh ||
-          !sub.auth)
+          (native
+            ? !sub.nativeToken ||
+              sub.nativeProjectId !== nativeConfig?.projectId ||
+              !nativeEpoch ||
+              sub.nativeRecoveryEpoch !== nativeEpoch.epoch
+            : sub.provider !== "WEB_PUSH" ||
+              !sub.endpoint ||
+              !sub.p256dh ||
+              !sub.auth))
     )
       return finish("CANCELLED");
     if (row.state === "IN_FLIGHT" && row.leaseUntil! > now)
@@ -317,22 +344,36 @@ export async function deliverNotification(
         )
       } as const;
     }
-    if (row.attempts >= 8) return finish("FAILED");
-    const attempt = row.attempts + 1,
+    const polling = native && row.nativeTicketId !== null;
+    if (
+      polling
+        ? row.nativeReceiptChecks >= 100 ||
+          !row.nativeTicketCreatedAt ||
+          row.nativeTicketCreatedAt.getTime() + DAY <= now.getTime()
+        : row.attempts >= 8
+    )
+      return finish("FAILED");
+    const attempt = row.attempts + (polling ? 0 : 1),
       leaseToken = randomUUID();
     await tx.notificationDelivery.update({
       where: { id },
       data: {
         state: "IN_FLIGHT",
         attempts: attempt,
+        ...(polling ? { nativeReceiptChecks: { increment: 1 } } : {}),
         leaseToken,
         leaseUntil: new Date(now.getTime() + 60000)
       }
     });
-    await tx.pushDeliveryAttempt.create({
-      data: { deliveryId: id, attempt, outcome: "ATTEMPTED", createdAt: now }
-    });
+    if (!polling)
+      await tx.pushDeliveryAttempt.create({
+        data: { deliveryId: id, attempt, outcome: "ATTEMPTED", createdAt: now }
+      });
     return {
+      nativeIntent:
+        native && sub?.nativeToken
+          ? { token: sub.nativeToken, ticketId: row.nativeTicketId }
+          : null,
       socialIntent:
         email && emailCategory !== "feedback"
           ? { deliveryId: id, email: row.owner.email }
@@ -393,29 +434,137 @@ export async function deliverNotification(
   const idleBeforeDispatch =
     remainingSessionSeconds != null && remainingSessionSeconds <= 0;
   let status = 0;
+  let nativeResult: NativePushSendResult | NativePushReceiptResult | null =
+    null;
   try {
-    status = idleBeforeDispatch
-      ? 0
-      : claim.socialIntent
-        ? await socialTransport(claim.socialIntent)
-        : claim.emailIntent
-          ? await emailTransport(claim.emailIntent)
-          : claim.subscription
-            ? await transport(
-                claim.subscription,
-                claim.payload,
-                Math.min(claim.ttl, remainingSessionSeconds ?? claim.ttl)
-              )
-            : 400;
+    if (claim.nativeIntent && !idleBeforeDispatch) {
+      nativeResult = claim.nativeIntent.ticketId
+        ? await nativeTransport.receipt(claim.nativeIntent.ticketId)
+        : await nativeTransport.send(
+            claim.nativeIntent.token,
+            claim.payload,
+            Math.min(claim.ttl, remainingSessionSeconds ?? claim.ttl)
+          );
+    } else
+      status = idleBeforeDispatch
+        ? 0
+        : claim.socialIntent
+          ? await socialTransport(claim.socialIntent)
+          : claim.emailIntent
+            ? await emailTransport(claim.emailIntent)
+            : claim.subscription
+              ? await transport(
+                  claim.subscription,
+                  claim.payload,
+                  Math.min(claim.ttl, remainingSessionSeconds ?? claim.ttl)
+                )
+              : 400;
   } catch {
     /* Diagnostics must not retain a provider exception with endpoint/key material. */
   }
   const finished = new Date(Math.max(Date.now(), now.getTime()));
   return notificationWrite(db, async (tx) => {
+    if (claim.nativeIntent && claim.subscriptionId)
+      await tx.$queryRaw`SELECT id FROM "PushSubscription" WHERE id=${claim.subscriptionId} FOR UPDATE NOWAIT`;
     const row = await tx.notificationDelivery.findFirst({
       where: { id, state: "IN_FLIGHT", leaseToken: claim.leaseToken }
     });
     if (!row) return { done: true, outcome: "cancelled" };
+    if (claim.nativeIntent) {
+      // A lease captures one immutable association and provider ticket. A stale
+      // callback cannot settle a replacement device or another receipt poll.
+      if (row.nativeTicketId !== claim.nativeIntent.ticketId)
+        return { done: true, outcome: "cancelled" };
+      const result = nativeResult ?? {
+        kind: "retry" as const,
+        statusCode: null
+      };
+      const inactive = idleBeforeDispatch || row.expiresAt <= finished;
+      const invalid = result.kind === "invalid";
+      const accepted = result.kind === "accepted" && !inactive;
+      const polling = claim.nativeIntent.ticketId !== null;
+      const ticketId =
+        result.kind === "ticket" ? result.ticketId : row.nativeTicketId;
+      const ticketCreatedAt =
+        result.kind === "ticket" ? finished : row.nativeTicketCreatedAt;
+      const pollAgain =
+        !inactive &&
+        ticketId !== null &&
+        (result.kind === "ticket" ||
+          result.kind === "pending" ||
+          (polling && result.kind === "retry"));
+      const resend =
+        !inactive &&
+        !pollAgain &&
+        claim.attempt < 8 &&
+        ((!polling && result.kind === "retry") ||
+          result.kind === "retry-delivery");
+      const deadline = Math.min(
+        row.expiresAt.getTime(),
+        claim.sessionDeadline ?? Infinity,
+        ticketCreatedAt ? ticketCreatedAt.getTime() + DAY : Infinity
+      );
+      const afterSeconds = pollAgain
+        ? Math.min(900, Math.floor((deadline - finished.getTime()) / 2000))
+        : Math.min(3600, 30 * 2 ** (claim.attempt - 1));
+      const retry =
+        (pollAgain || resend) &&
+        afterSeconds >= 1 &&
+        finished.getTime() + afterSeconds * 1000 < deadline &&
+        (!pollAgain || row.nativeReceiptChecks < 100);
+      await tx.pushDeliveryAttempt.update({
+        where: {
+          deliveryId_attempt: { deliveryId: id, attempt: claim.attempt }
+        },
+        data: {
+          outcome:
+            inactive || invalid
+              ? "EXPIRED"
+              : accepted
+                ? "ACCEPTED"
+                : retry
+                  ? pollAgain
+                    ? "ATTEMPTED"
+                    : "RETRY"
+                  : "FAILED",
+          statusCode: result.statusCode
+        }
+      });
+      if ((invalid || idleBeforeDispatch) && claim.subscriptionId)
+        await revokePushSubscriptions(
+          tx,
+          { id: claim.subscriptionId },
+          finished
+        );
+      if (retry) {
+        await tx.notificationDelivery.update({
+          where: { id },
+          data: {
+            state: "QUEUED",
+            availableAt: new Date(finished.getTime() + afterSeconds * 1000),
+            leaseToken: null,
+            leaseUntil: null,
+            dispatchedAt: null,
+            nativeTicketId: pollAgain ? ticketId : null,
+            nativeTicketCreatedAt: pollAgain ? ticketCreatedAt : null,
+            nativeReceiptChecks: pollAgain ? row.nativeReceiptChecks : 0
+          }
+        });
+        return { done: false, afterSeconds };
+      }
+      await tx.notificationDelivery.update({
+        where: { id },
+        data: terminal(
+          finished,
+          inactive || invalid ? "CANCELLED" : accepted ? "ACCEPTED" : "FAILED"
+        )
+      });
+      return {
+        done: true,
+        outcome:
+          inactive || invalid ? "cancelled" : accepted ? "accepted" : "failed"
+      };
+    }
     const accepted = status >= 200 && status < 300,
       expired =
         !claim.socialIntent &&
@@ -482,12 +631,23 @@ export function openNotification(
   db: PrismaClient,
   token: unknown,
   id: unknown,
-  requireDevice = true
+  requireDevice = true,
+  expectedOwner?: string,
+  nativeOnly = false
 ) {
   return withOwnedSession(
     db,
     token,
     async (tx, session) => {
+      requireSessionOwner(session, expectedOwner);
+      const epoch = nativeOnly
+        ? await tx.nativePushRecovery.findUnique({ where: { id: "current" } })
+        : null;
+      if (nativeOnly && !epoch)
+        throw new PortalError(
+          503,
+          "Notification access needs a recovery review."
+        );
       const row = await tx.notificationDelivery.findFirst({
         where: {
           id: postId(id),
@@ -495,6 +655,9 @@ export function openNotification(
           ...(requireDevice
             ? {
                 subscription: {
+                  ...(nativeOnly
+                    ? { provider: "EXPO", nativeRecoveryEpoch: epoch!.epoch }
+                    : {}),
                   sessionId: session.id,
                   revokedAt: null,
                   expiresAt: { gt: new Date() }

@@ -1,4 +1,5 @@
 import { quarantineArtists } from "./artist-retention";
+import { randomUUID } from "node:crypto";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { clearRestoredMeasurements } from "./platform-measurement";
 import { createSessionToken, hashSessionToken } from "./auth";
@@ -21,6 +22,7 @@ async function requireIsolatedRestore(db: PrismaClient) {
     process.env.ACCOUNT_DELIVERY_MODE !== "disabled" ||
     [
       "PUSH_ENABLED",
+      "NATIVE_PUSH_ENABLED",
       "FOUNDER_WELCOME_ENABLED",
       "COMMUNITY_REPORTS_ENABLED",
       "RETENTION_CLEANUP_ENABLED"
@@ -53,6 +55,13 @@ export async function quarantineRestoredAccess(db: PrismaClient) {
       const now = new Date();
       const pendingDeliveries = await tx.notificationDelivery.count({
         where: { state: { not: "FINISHED" } }
+      });
+      // Fence versions restored from a backup can alias later generations, and
+      // an installation may be absent from that backup. Every new registration
+      // must carry this fresh global epoch, including an initial version zero.
+      await tx.nativePushRecovery.update({
+        where: { id: "current" },
+        data: { epoch: randomUUID() }
       });
       const devices = await revokePushSubscriptions(tx, {}, now);
       // Restored plan agreement cannot authorize new disclosure or reminders.

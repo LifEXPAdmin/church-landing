@@ -10,13 +10,24 @@ import { handleNativeSessionRequest } from "../lib/platform/native-session-bound
 import { handleNativeReadRequest } from "../lib/platform/native-read-boundary";
 import { handleNativeImageRequest } from "../lib/platform/native-media-boundary";
 import { handleNativeReactionRequest } from "../lib/platform/native-reaction-boundary";
+import { handleNativePushRequest } from "../lib/platform/native-push-boundary";
 import { decodeApiResponse, apiFailure } from "../lib/platform/api-contracts";
 
 const priorOrigin = process.env.ACCOUNT_ORIGIN;
 const priorDisabled = process.env.NATIVE_API_DISABLED_FEATURES;
+const pushEnvironment = [
+  "NATIVE_PUSH_ENABLED",
+  "NATIVE_PUSH_EXPO_PROJECT_ID",
+  "NATIVE_PUSH_EXPO_ACCESS_TOKEN"
+];
+const priorPush = pushEnvironment.map((name) => process.env[name]);
 process.env.ACCOUNT_ORIGIN = "https://127.0.0.1:49119";
 const origin = process.env.ACCOUNT_ORIGIN;
 after(() => {
+  pushEnvironment.forEach((name, index) => {
+    if (priorPush[index] === undefined) delete process.env[name];
+    else process.env[name] = priorPush[index];
+  });
   if (priorOrigin === undefined) delete process.env.ACCOUNT_ORIGIN;
   else process.env.ACCOUNT_ORIGIN = priorOrigin;
   if (priorDisabled === undefined)
@@ -143,6 +154,48 @@ test("capability pauses cannot activate unsupported features or turn off essenti
     assert.equal(available(raw, "push"), false);
   }
   assert.equal(available("", "media.images.upload"), true);
+});
+
+test("native push advertises configured registration and retains essential cleanup during optional pauses", () => {
+  const available = (raw: string, name: string) =>
+    nativeCapabilityPolicy(raw).features.find((f) => f.name === name)
+      ?.available;
+  process.env.NATIVE_PUSH_ENABLED = "false";
+  assert.equal(available("", "push.register"), false);
+  assert.equal(available("", "push.prepare"), true);
+  Object.assign(process.env, {
+    NATIVE_PUSH_ENABLED: "true",
+    NATIVE_PUSH_EXPO_PROJECT_ID: "838ff30c-8791-4344-b4d4-c42b2a533c30",
+    NATIVE_PUSH_EXPO_ACCESS_TOKEN: "fictional-policy-test-token"
+  });
+  assert.equal(available("", "push.register"), true);
+  for (const raw of [
+    "push.register",
+    "push.prepare,push.register,push.open",
+    "typo",
+    "push.list,push.revoke"
+  ]) {
+    assert.equal(available(raw, "push.register"), false);
+    assert.equal(available(raw, "push.list"), true);
+    assert.equal(available(raw, "push.revoke"), true);
+  }
+});
+
+test("paused native push admission rejects before reading a body or using the database", async () => {
+  const { db, calls } = unusedDatabase();
+  process.env.NATIVE_API_DISABLED_FEATURES =
+    "push.prepare,push.register,push.open";
+  for (const operation of ["prepare", "register", "open"] as const) {
+    const req = request(`push/${operation}`, "POST", credentials, true);
+    await denied(
+      await handleNativePushRequest(db, req.value, operation),
+      503,
+      "feature_unavailable"
+    );
+    assert.equal(req.pulls(), 0);
+  }
+  assert.equal(calls(), 0);
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
 });
 
 test("reaction controls reject unsupported versions and paused reads/writes without database or body access", async () => {

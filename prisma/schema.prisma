@@ -3052,8 +3052,21 @@ model SocialPreferences {
   @@index([profilePinPostId])
 }
 
-// Each browser binding belongs to one current account session. Revocation
-// immediately removes endpoint/key material; an old row can never be reassigned.
+// Minimal anti-replay state has no owner, session, token or historical binding.
+// Retained across erasure. Restores also rotate the global registration epoch.
+model NativePushInstallation {
+  id String @id
+  version Int
+  subscriptions PushSubscription[]
+}
+
+model NativePushRecovery {
+  id String @id
+  epoch String
+}
+
+// Each device binding belongs to one current account session. Revocation
+// immediately removes routing material; an old row can never be reassigned.
 model PushSubscription {
   id String @id @default(cuid())
   ownerId String
@@ -3063,6 +3076,13 @@ model PushSubscription {
   endpoint String?
   p256dh String?
   auth String?
+  provider String @default("WEB_PUSH")
+  nativeToken String?
+  nativePlatform String?
+  nativeProjectId String?
+  nativeRecoveryEpoch String?
+  installationHash String? @unique
+  installationVersion Int?
   version Int @default(1)
   label String
   createdAt DateTime @default(now())
@@ -3070,6 +3090,7 @@ model PushSubscription {
   revokedAt DateTime?
   owner PlatformUser @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   session PlatformSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  installation NativePushInstallation? @relation(fields: [installationHash], references: [id], onDelete: Restrict)
   deliveries NotificationDelivery[]
   @@index([ownerId, revokedAt])
   @@index([expiresAt, revokedAt])
@@ -3092,6 +3113,9 @@ model NotificationDelivery {
   subscriptionId String?
   subscriptionVersion Int?
   emailCredentialVersion Int?
+  nativeTicketId String?
+  nativeTicketCreatedAt DateTime?
+  nativeReceiptChecks Int @default(0)
   state NotificationDeliveryState @default(QUEUED)
   attempts Int @default(0)
   availableAt DateTime @default(now())

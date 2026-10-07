@@ -44,6 +44,7 @@ import {
 } from "./notification-queue";
 import { createHash, randomUUID } from "node:crypto";
 import { pushServerConfig } from "./push-config";
+import { nativePushConfig } from "./native-push-config";
 import {
   notificationFanoutMessage,
   scheduledPublicationMessage
@@ -170,6 +171,7 @@ export async function handleNotificationMaintenance(
         {
           mode,
           configured: !!config,
+          nativeConfigured: nativePushConfig() !== null,
           publicKeyFingerprint: config
             ? createHash("sha256")
                 .update(config.publicKey)
