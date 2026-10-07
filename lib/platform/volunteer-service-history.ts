@@ -257,6 +257,7 @@ export async function volunteerServiceRecordIn(
     opportunityId: current ? record.opportunityId : null,
     canComplete:
       current &&
+      !fenced &&
       canOrganizeRecord &&
       record.active &&
       (!completed || recoveryRequired),
