@@ -20,6 +20,28 @@ existing explicit empty ignore file and fully redacted output because Gitleaks
 can also load an implicit ignore path from its target checkout. Actions and the
 scanner archive remain pinned. Hosted execution remains a separate gate.
 
+### Current local verification
+
+At `79819db`, all 102 standalone guard tests pass, as do focused lint, source
+security and authored-copy checks. Actionlint 1.7.12 accepted the unchanged
+workflow at `622c439`; shellcheck was unavailable and explicitly disabled.
+The actual workflow-shell fixtures separately exercise its ignore-path guard.
+These are local results, not hosted CI or a combined product acceptance.
+
+The fully redacted reachable-history scan initially found the fixed UUID used
+as an idempotency key in the pure native authenticator schema test. That value
+is not a credential and authorizes no operation. The exception requires both
+the exact test path and exact value. The corrected history scan passes. Three
+isolated scanner fixtures confirm that the exact pair is permitted, the same
+value in another file is detected, and another value in the same file is
+detected. Default scanner rules and fatal failures remain in force.
+
+The first receipt CLI test failed on a checkout path containing spaces because
+URL `pathname` encoded those spaces. Both CLI tests now use `fileURLToPath`.
+Review also restored the prepared exact calendar round-trip check and its
+leap-year, impossible-day, midnight-overflow and redacted CLI cases. Failed
+attempts and the original prepared sources remain retained.
+
 ### Candidate release evidence
 
 From the clean product candidate checkout, run:
