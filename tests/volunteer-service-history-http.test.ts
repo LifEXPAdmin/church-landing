@@ -5,7 +5,11 @@ import { mkdir, rename, writeFile, unlink } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-import { assertPortalTestDatabase } from "./seed-portal";
+import {
+  assertPortalTestDatabase,
+  createPortalActor,
+  seedOperatorGrants
+} from "./seed-portal";
 import {
   seedVolunteerApplications,
   volunteerAction
@@ -21,7 +25,14 @@ import { EXCHANGE_ITEM_POLICY } from "../lib/platform/exchange-options";
 const db = new PrismaClient();
 const origin = process.env.ACCOUNT_ORIGIN!;
 assert.match(origin, /^https:\/\/127\.0\.0\.1:\d+$/);
-before(() => assertPortalTestDatabase(db));
+before(async () => {
+  await assertPortalTestDatabase(db);
+  await seedOperatorGrants(
+    db,
+    await createPortalActor(db, "servicehttpreview"),
+    ["REVIEW_COMMUNITY_REPORTS"]
+  );
+});
 after(() => db.$disconnect());
 type Actor = { id: string; token: string; username: string };
 const endpoint = "/api/platform/volunteers";
@@ -290,6 +301,13 @@ test("HTTPS coordinator roster and own-history pages have private access checks"
 });
 
 async function linkNeed(f: Awaited<ReturnType<typeof seed>>) {
+  await db.churchCapabilityGrant.create({
+    data: {
+      churchId: f.churchA.id,
+      userId: f.val.id,
+      capability: "MODERATE_EXCHANGE_LISTINGS"
+    }
+  });
   await db.churchCapabilityGrant.create({
     data: {
       churchId: f.churchA.id,

@@ -2,7 +2,11 @@ import test, { after, before } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-import { assertPortalTestDatabase } from "./seed-portal";
+import {
+  assertPortalTestDatabase,
+  createPortalActor,
+  seedOperatorGrants
+} from "./seed-portal";
 import {
   seedVolunteerApplications,
   volunteerAction as action
@@ -31,7 +35,14 @@ import { NEED_SCHEMA } from "../lib/platform/exchange-need-options";
 import { EXCHANGE_ITEM_POLICY } from "../lib/platform/exchange-options";
 
 const db = new PrismaClient();
-before(() => assertPortalTestDatabase(db));
+before(async () => {
+  await assertPortalTestDatabase(db);
+  await seedOperatorGrants(
+    db,
+    await createPortalActor(db, "servicerecoveryreview"),
+    ["REVIEW_COMMUNITY_REPORTS"]
+  );
+});
 after(() => db.$disconnect());
 
 async function confirmed(timed: boolean) {

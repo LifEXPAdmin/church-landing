@@ -120,17 +120,61 @@ async function go(page, path) {
 }
 async function refresh(page) {
   const path = new URL(page.url()).pathname;
+  const identityRequests = new Set();
+  const completedIdentity = [];
+  const requested = (request) => {
+    const url = new URL(request.url());
+    if (
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "identity"
+    )
+      identityRequests.add(request);
+  };
+  const received = async (response) => {
+    if (
+      identityRequests.has(response.request()) &&
+      !(await response.finished())
+    )
+      completedIdentity.push(response.status());
+  };
+  page.on("request", requested);
+  page.on("response", received);
   const reply = page.waitForResponse(
     (response) =>
       response.request().headers().rsc === "1" &&
       new URL(response.url()).pathname === path
   );
-  await page.evaluate(() => {
-    if (typeof window.next?.router?.refresh !== "function")
-      throw Error("Installed Next router refresh unavailable");
-    window.next.router.refresh();
-  });
-  assert.equal((await reply).status(), 200);
+  try {
+    await page.evaluate(() => {
+      if (typeof window.next?.router?.refresh !== "function")
+        throw Error("Installed Next router refresh unavailable");
+      window.next.router.refresh();
+    });
+    const response = await reply;
+    assert.equal(response.status(), 200);
+    assert.equal(await response.finished(), null);
+    if (
+      await page.evaluate(
+        () => document.hasFocus() && document.visibilityState !== "hidden"
+      )
+    ) {
+      await until(
+        async () =>
+          completedIdentity.some((status) => status === 401) ||
+          completedIdentity.filter((status) => status === 200).length >= 2,
+        "Refreshed service frame never completed its account/source/account recheck"
+      );
+      await page.evaluate(
+        () =>
+          new Promise((done) =>
+            requestAnimationFrame(() => requestAnimationFrame(done))
+          )
+      );
+    }
+  } finally {
+    page.off("request", requested);
+    page.off("response", received);
+  }
 }
 async function until(fn, message) {
   for (let i = 0; i < 100; i++) {
@@ -214,6 +258,12 @@ try {
   );
   await coordinator.context.addCookies([cookie(f.blake)]);
   await refresh(coordinator.page);
+  await coordinator.page
+    .getByText(
+      "Return to the original account to recover your service entries and requests.",
+      { exact: true }
+    )
+    .waitFor();
   await until(
     async () => (await note.count()) === 0,
     "Replacement-owner RSC exposed the original note"
@@ -310,6 +360,12 @@ try {
   await retry().waitFor();
   await applicant.context.clearCookies();
   await refresh(applicant.page);
+  await applicant.page
+    .getByText(
+      "Return to the original account to recover your service entries and requests.",
+      { exact: true }
+    )
+    .waitFor();
   await until(
     async () => (await retry().count()) === 0,
     "Guest refresh exposed the original request"
@@ -378,8 +434,23 @@ try {
     async () => (await record()).serviceSharedAt === null,
     "Keyboard withdrawal did not persist"
   );
+  const withdrawnSnapshot = viewer.page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "member-snapshot"
+    );
+  });
   await viewer.page.bringToFront();
   await wake(viewer.page);
+  const checkedSnapshot = await withdrawnSnapshot;
+  assert.equal(checkedSnapshot.status(), 200);
+  assert.equal(await checkedSnapshot.finished(), null);
+  await viewer.page
+    .getByText(
+      /^This member profile or its access changed\. Reload to inspect current details\./
+    )
+    .waitFor();
   await until(
     async () =>
       (await viewer.page
@@ -432,7 +503,22 @@ try {
   ).waitFor();
   const beforeSwap = requests.length;
   await applicant.context.addCookies([cookie(f.blake)]);
+  const replacementIdentity = applicant.page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "identity" &&
+      response.status() === 401
+    );
+  });
   await wake(applicant.page);
+  assert.equal(await (await replacementIdentity).finished(), null);
+  await applicant.page
+    .getByText(
+      "Return to the original account to recover your service entries and requests.",
+      { exact: true }
+    )
+    .waitFor();
   await until(
     async () =>
       (await button(

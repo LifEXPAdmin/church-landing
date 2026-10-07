@@ -385,6 +385,13 @@ test("linked Need completion retains its designated coordinator authority at the
   await db.churchCapabilityGrant.create({
     data: {
       churchId: f.churchA.id,
+      userId: f.val.id,
+      capability: "MODERATE_EXCHANGE_LISTINGS"
+    }
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      churchId: f.churchA.id,
       userId: f.ada.id,
       capability: "MANAGE_EXCHANGE_LISTINGS"
     }
