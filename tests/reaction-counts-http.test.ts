@@ -44,8 +44,9 @@ function privateResponse(response: Response) {
 test("HTTPS author choice requires its original account, origin, supported body and exact retry", async () => {
   const f = await seedReactionCounts(db),
     path = "/api/platform/reaction-preferences";
+  assert.equal((await read(path)).status, 400);
   for (const response of [
-    await read(path),
+    await read(path, { id: f.a.id, token: "" }),
     await read(path, { id: f.a.id, token: f.b.token })
   ]) {
     assert.equal(response.status, 401);
