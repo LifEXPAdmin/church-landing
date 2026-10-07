@@ -1,3 +1,14 @@
+## Shared recruitment conversations locally verified, 7 October 2026 UTC
+
+Recruitment opportunities now reuse the existing authorized church post discussion.
+Private application and decision records remain separate. Original-owner comment
+reads and a retained workspace protect drafts and exact retries across account and
+source refreshes. Application `3d1b9cf` / build `7TfdxjjQm5iCut6knP73y` passed five
+HTTPS cases, 22 browser groups and 11 controlled lifecycle checks. The registered
+suites passed 89 checks and populated upgrade/restore verification across 124
+migrations. [RESOURCE_CONVERSATIONS.md](RESOURCE_CONVERSATIONS.md) records
+eligibility, boundaries and evidence. This candidate is not merged or live.
+
 ## Featured profile resources locally verified, 6 October 2026 UTC
 
 Application `2356885` / build `yB8ycJbNab2ZsF7lHzjzY` adds up to six ordered
