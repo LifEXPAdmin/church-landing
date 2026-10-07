@@ -15,6 +15,7 @@ import {
   readPostWorkspace
 } from "../lib/platform/post-workspace";
 import { relationshipCommand } from "../lib/platform/relationships";
+import { loginAccount } from "../lib/platform/accounts";
 import {
   advanceScheduledPost,
   dispatchScheduledPosts
@@ -179,8 +180,16 @@ test("private draft scheduling preserves choices, publishes once and triggers on
     }),
     1
   );
+  // The one-hour scheduling jump also expires the original idle session.
+  assert.equal(await getPost(db, f.coordinator.token, postId), null);
+  const currentToken = await loginAccount(
+    db,
+    f.coordinator.email,
+    f.coordinator.password,
+    "fictional-scheduled-publication-test"
+  );
   assert.equal(
-    (await getPost(db, f.coordinator.token, postId))?.replyAudience,
+    (await getPost(db, currentToken, postId))?.replyAudience,
     "CHURCH_MEMBERS"
   );
 });
