@@ -30,6 +30,7 @@ test("native image commands reject unsupported destinations, hidden authority an
     { replacesId: "old" },
     { expectedVersion: 1 },
     { requestKey: "not-a-request-id" },
+    { requestKey: base.requestKey.toUpperCase() },
     { replacesId: "old", expectedVersion: -1 },
     { alt: "a".repeat(301) },
     { crop: { x: 0.5, y: 0.5, zoom: Infinity } },
@@ -77,6 +78,13 @@ test("native image descriptors permit only bounded canonical routes and fields",
   };
   const data = { apiVersion: "1", viewerId: "owner", data: { image } };
   assert.deepEqual(nativeImageEnvelope("upload").parse(data), data);
+  assert.equal(
+    nativeImageEnvelope("list").parse({
+      ...data,
+      data: { images: [{ ...image, purpose: "PROFILE_PHOTO", position: 1001 }] }
+    }).data.images[0].position,
+    1001
+  );
   for (const change of [
     { storagePrefix: "private" },
     { version: -1 },

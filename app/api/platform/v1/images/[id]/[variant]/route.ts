@@ -9,3 +9,9 @@ export async function GET(
 ) {
   return handleNativeImageRequest(prisma, request, await params);
 }
+export const POST = GET;
+export const PUT = GET;
+export const PATCH = GET;
+export const DELETE = GET;
+export const OPTIONS = GET;
+export const HEAD = GET;

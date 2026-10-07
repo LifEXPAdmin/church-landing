@@ -12,6 +12,8 @@ import {
 } from "../lib/platform/native-media-contracts";
 import { type ImageStorage } from "../lib/platform/media-storage";
 import { hashSessionToken } from "../lib/platform/auth";
+import { uploadImage } from "../lib/platform/media";
+import { postWorkspaceCommand } from "../lib/platform/post-workspace";
 import { portalCommand } from "../lib/platform/portal";
 
 const db = new PrismaClient();
@@ -37,7 +39,7 @@ function storage() {
     async delete(paths: string[]) {
       for (const path of paths) files.delete(path);
     }
-  } satisfies ImageStorage;
+  } satisfies ImageStorage & { files: Map<string, Buffer> };
 }
 const details = (owner: string) => ({
   purpose: "PROFILE_AVATAR",
@@ -408,11 +410,12 @@ test("binary and metadata bounds, unsupported purposes and formats fail without 
     input = details(f.ada.id),
     bytes = await picture();
   await budget();
-  for (const extra of [
+  const invalidHeaders: Record<string, string>[] = [
     { "Content-Length": String(NATIVE_IMAGE_MAX_BYTES + 1) },
     { "X-Image-Details": "x".repeat(8193) },
     { "Content-Type": "multipart/form-data" }
-  ])
+  ];
+  for (const extra of invalidHeaders)
     assert.equal((await send(f.ada, input, bytes, store, extra)).status, 400);
   assert.equal(
     (await send(f.ada, input, Buffer.alloc(NATIVE_IMAGE_MAX_BYTES + 1), store))
@@ -505,5 +508,66 @@ test("replacement versions and church authority are rechecked after storage IO",
   } finally {
     if (before === undefined) delete process.env.PRIVILEGED_MFA_MODE;
     else process.env.PRIVILEGED_MFA_MODE = before;
+  }
+});
+
+test("authorized saved personal photos remain readable in post galleries without enabling library commands", async () => {
+  const f = await seedParticipation(db),
+    store = storage();
+  const prior = process.env.PERSONAL_PHOTO_LIBRARY_ENABLED;
+  try {
+    process.env.PERSONAL_PHOTO_LIBRARY_ENABLED = "true";
+    const photo = await uploadImage(
+      db,
+      f.ada.token,
+      {
+        purpose: "PROFILE_PHOTO",
+        targetId: f.ada.id,
+        requestKey: randomUUID(),
+        audience: "CHURCH",
+        audienceChurchId: f.churchA.id
+      },
+      await picture(),
+      store
+    );
+    const id = randomUUID();
+    await postWorkspaceCommand(db, f.ada.token, {
+      operation: "save-draft",
+      mutationId: randomUUID(),
+      id,
+      expectedVersion: 0,
+      payload: {
+        content: "Fictional saved photo",
+        replyAudience: "CHURCH_MEMBERS",
+        audience: "CHURCH",
+        audienceChurchId: f.churchA.id,
+        photos: [{ id: photo.id, version: photo.version }]
+      }
+    });
+    const result = (await postWorkspaceCommand(db, f.ada.token, {
+      operation: "publish-draft",
+      mutationId: randomUUID(),
+      id,
+      expectedVersion: 1
+    })) as { postId: string };
+    await db.postPhotoReference.updateMany({
+      where: { postId: result.postId, assetId: photo.id },
+      data: { position: 1001 }
+    });
+    const listed = await handleNativeImageRequest(
+      db,
+      request(f.lee, "GET", `?purpose=POST_PHOTO&targetId=${result.postId}`)
+    );
+    assert.equal(listed.status, 200, await listed.clone().text());
+    const images = nativeImageEnvelope("list").parse(await listed.json()).data
+      .images;
+    assert.equal(images[0].id, photo.id);
+    assert.equal(images[0].purpose, "PROFILE_PHOTO");
+    assert.equal(images[0].position, 1001);
+    assert.equal((await get(f.lee, photo.id, store)).status, 200);
+    assert.equal((await get(f.blake, photo.id, store)).status, 404);
+  } finally {
+    if (prior === undefined) delete process.env.PERSONAL_PHOTO_LIBRARY_ENABLED;
+    else process.env.PERSONAL_PHOTO_LIBRARY_ENABLED = prior;
   }
 });

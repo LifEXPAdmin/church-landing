@@ -45,7 +45,7 @@ const upload = wire.object({
   requestKey: wire.text(
     36,
     36,
-    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/
   ),
   replacesId: wire.nullable(apiId),
   expectedVersion: wire.nullable(version),
@@ -90,10 +90,12 @@ const variant = wire.object({
 export const nativeImage = wire.object({
   id: apiId,
   version,
-  purpose: nativeImagePurpose,
+  // Saved personal photos keep their purpose when referenced by a post.
+  // This read-only descriptor does not enable personal-library commands.
+  purpose: wire.union(nativeImagePurpose, wire.literal("PROFILE_PHOTO")),
   caption: wire.text(500),
   alt: wire.text(300),
-  position: wire.integer(1000),
+  position: wire.integer(),
   crop,
   variants: wire.object({
     original: variant,

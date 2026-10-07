@@ -217,3 +217,29 @@ test("HTTPS native upload preserves format, account, query and explicit version 
   );
   assert.equal(malformed.status, 400);
 });
+
+test("HTTPS unsupported methods use native private typed errors on collection and delivery routes", async () => {
+  for (const path of [
+    "/api/platform/v1/images",
+    "/api/platform/v1/images/fictional/thumb"
+  ]) {
+    for (const method of ["PUT", "PATCH", "OPTIONS", "HEAD"]) {
+      const response = await send(path, null, method);
+      assert.equal(response.status, 405);
+      assert.match(
+        String(response.headers["cache-control"]),
+        /private.*no-store/
+      );
+      assert.match(
+        String(response.headers.vary),
+        /Authorization.*X-Expected-Account/
+      );
+      if (method !== "HEAD")
+        assert.equal(
+          JSON.parse(response.bytes.toString()).error.code,
+          "method_not_allowed"
+        );
+      else assert.equal(response.bytes.length, 0);
+    }
+  }
+});

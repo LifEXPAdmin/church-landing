@@ -5,3 +5,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 const handle = (request: Request) => handleNativeImageRequest(prisma, request);
 export { handle as GET, handle as POST, handle as DELETE };
+export const PUT = handle;
+export const PATCH = handle;
+export const OPTIONS = handle;
+export const HEAD = handle;
