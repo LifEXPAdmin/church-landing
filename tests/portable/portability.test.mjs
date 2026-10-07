@@ -3,9 +3,9 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, sym
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import { checkPortability } from "../scripts/check-portability.mjs";
+import { checkPortability } from "../../scripts/check-portability.mjs";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const scratch = process.env.GC_SHARED_CORE_TMP;
 assert.ok(scratch && isAbsolute(scratch), "Set GC_SHARED_CORE_TMP to existing task-owned generated storage");
 const scratchRoot = realpathSync(scratch);

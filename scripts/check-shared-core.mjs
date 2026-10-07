@@ -71,7 +71,7 @@ const schema = readFileSync(join(root, "prisma/schema.prisma"), "utf8");
 const postEnum = schema.match(/enum PlatformPostType\s*\{([^}]+)\}/u)?.[1];
 assert.ok(postEnum, "PlatformPostType enum must remain explicit");
 const schemaTypes = postEnum.split("\n").map(line => line.replace(/\/\/.*$/u, "").trim()).filter(Boolean);
-const run = spawnSync(process.execPath, ["--import", join(root, "tests/register.mjs"), "--test", join(root, "tests/shared-core.test.mjs")], {
+const run = spawnSync(process.execPath, ["--import", join(root, "tests/register.mjs"), "--test", join(root, "tests/portable/shared-core.test.mjs")], {
   cwd: root, encoding: "utf8", timeout: 30000,
   env: { ...process.env, GC_SHARED_CORE_BUILD: compiled, GC_SHARED_CORE_SCHEMA_TYPES: JSON.stringify(schemaTypes) }
 });

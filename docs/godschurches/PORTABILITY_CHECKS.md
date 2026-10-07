@@ -118,3 +118,12 @@ Local success is distinct from a GitHub CI run. Native dependency installation,
 Metro export, Android/iPhone builds, device behavior and mobile release automation
 still require the canonical app's own checks. Integration must run the gate again
 against the combined branch, particularly when its API contracts have changed.
+
+## Combined website CI discovery
+
+The dedicated suites live under `tests/portable/`. The existing source-security
+job discovers `tests/*.test.mjs` without the shared package build or generated
+storage setup. Keeping these suites in their own directory preserves that job
+and its complete original test set. The Portable contracts job invokes both
+suites through `check:portable`, including all negative compatibility fixtures
+and the named-package runtime checks. Neither job silently skips a failed test.

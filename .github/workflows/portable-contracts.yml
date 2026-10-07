@@ -31,4 +31,4 @@ jobs:
       - name: Check portable imports, named exports and frozen v1 compatibility
         run: npm run check:portable
       - name: Check the portability tooling itself
-        run: npx --no-install eslint scripts/check-portability.mjs tests/portability.test.mjs tests/fixtures/api-v1-initial-native-compatibility.ts
+        run: npx --no-install eslint scripts/check-portability.mjs tests/portable/portability.test.mjs tests/fixtures/api-v1-initial-native-compatibility.ts

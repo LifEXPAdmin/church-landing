@@ -12,8 +12,8 @@ const core = require(join(process.env.GC_SHARED_CORE_BUILD, "index.js"));
 const draft = overrides => ({ content: "A valid post", scripture: "", type: "UPDATE", topics: [], audience: "PUBLIC", ...overrides });
 
 test("existing website options resolve to the same source implementation", async () => {
-  const web = await import("../lib/platform/post-options.ts");
-  const source = await import("../packages/shared-core/src/post-options.ts");
+  const web = await import("../../lib/platform/post-options.ts");
+  const source = await import("../../packages/shared-core/src/post-options.ts");
   for (const key of Object.keys(web)) assert.equal(web[key], source[key]);
 });
 
@@ -29,7 +29,7 @@ test("the website copy gate still rejects violations in migrated shared source",
   for (const directory of ["app", "components", "lib", "public", "packages/shared-core/src"])
     mkdirSync(join(fixture, directory), { recursive: true });
   writeFileSync(join(fixture, "packages/shared-core/src/example.ts"), 'export const message = "Authored \\u2014 invalid copy";\n');
-  const run = spawnSync(process.execPath, [fileURLToPath(new URL("../scripts/verify-website-copy.mjs", import.meta.url))], { cwd: fixture, encoding: "utf8", timeout: 10000 });
+  const run = spawnSync(process.execPath, [fileURLToPath(new URL("../../scripts/verify-website-copy.mjs", import.meta.url))], { cwd: fixture, encoding: "utf8", timeout: 10000 });
   assert.equal(run.status, 1);
   assert.match(run.stderr, /packages\/shared-core\/src\/example\.ts:1: rewrite authored/);
 });
