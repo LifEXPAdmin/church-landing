@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
@@ -25,7 +25,9 @@ Object.assign(process.env, {
   ACCOUNT_DELIVERY_MODE: "test-sink",
   ACCOUNT_TEST_SINK_DIR: dir + "/sink",
   RETENTION_TEST_DIR: dir + "/retention",
-  AUTH_RATE_LIMIT_SECRET: "volunteer-browser-fictional-only-".repeat(3),
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "volunteer-browser-fictional-only-".repeat(3),
   SOCIAL_EMAIL_ENABLED: "false",
   BLOB_READ_WRITE_TOKEN: "",
   BLOB_STORE_ID: "",
@@ -36,6 +38,10 @@ const { PrismaClient } = await import("@prisma/client");
 const { assertPortalTestDatabase } = await import("../tests/seed-portal.ts");
 const { seedVolunteerApplications } =
   await import("../tests/seed-volunteer-applications.ts");
+const { privilegedAuthenticatorCommand } =
+  await import("../lib/platform/privileged-auth.ts");
+const { openAuthenticator, authenticatorTotp } =
+  await import("../lib/platform/admin-authenticator-crypto.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
 const { chromium } = createRequire(
@@ -138,10 +144,45 @@ const noOverflow = async (page) =>
     ),
     "No horizontal page overflow"
   );
+// Exercise the existing editor under enforced privileged reads with real
+// fictional enrollment/challenge receipts, never by disabling the built server.
+async function confirmCoordinator(actor) {
+  process.env.PRIVILEGED_MFA_MODE = "enforce";
+  try {
+    await privilegedAuthenticatorCommand(
+      db,
+      actor.token,
+      { operation: "mfa-start", requestKey: randomUUID(), expectedVersion: 0 },
+      actor.password
+    );
+    const factor = await db.adminAuthenticator.findUniqueOrThrow({
+      where: { userId: actor.id }
+    });
+    const secret = openAuthenticator(actor.id, factor.secretCiphertext);
+    const counter = BigInt(Math.floor(Date.now() / 30000));
+    const confirmed = await privilegedAuthenticatorCommand(db, actor.token, {
+      operation: "mfa-confirm",
+      requestKey: randomUUID(),
+      expectedVersion: factor.version,
+      code: authenticatorTotp(secret, counter - BigInt(1))
+    });
+    await privilegedAuthenticatorCommand(db, actor.token, {
+      operation: "mfa-challenge",
+      requestKey: randomUUID(),
+      expectedVersion: Number(confirmed.version),
+      purpose: "privileged-work",
+      code: authenticatorTotp(secret, counter)
+    });
+  } finally {
+    process.env.PRIVILEGED_MFA_MODE = "off";
+  }
+}
 let phase = "seed";
 try {
   const f = await seedVolunteerApplications(db),
     untimed = await seedVolunteerApplications(db, false);
+  await confirmCoordinator(f.ada);
+  await confirmCoordinator(untimed.ada);
   const coordinator = await actorPage(f.ada, 1024),
     applicant = await actorPage(f.lee),
     other = await actorPage(f.val);
