@@ -649,6 +649,185 @@ try {
     "Account replacement conceals the original volunteer choices without sending a cross-account command."
   );
 
+  step("organizer correction after membership loss");
+  const formerStatement = "Fictional former volunteer private browser answer",
+    formerAvailability =
+      "Fictional former volunteer private browser availability",
+    formerDecision = "Fictional former volunteer private browser decision",
+    formerHistory = "Fictional former volunteer private browser history";
+  await db.volunteerApplication.update({
+    where: { id: applied.id },
+    data: {
+      statement: formerStatement,
+      availability: formerAvailability,
+      decisionNote: formerDecision
+    }
+  });
+  const populatedHistory = await db.volunteerApplicationEvent.updateMany({
+    where: { applicationId: applied.id },
+    data: { note: formerHistory }
+  });
+  assert.ok(populatedHistory.count > 0);
+  await go(
+    coordinator.page,
+    `/platform/serve/${f.opportunity.id}/applications`
+  );
+  const currentApplication = coordinator.page.getByRole("article").filter({
+    has: coordinator.page.getByRole("heading", {
+      name: f.lee.name,
+      exact: true
+    })
+  });
+  await button(currentApplication, "Correct completion").waitFor();
+  const originalApplicationHtml = await currentApplication.innerHTML();
+  for (const value of [
+    formerStatement,
+    formerDecision,
+    formerHistory
+  ])
+    assert.ok(
+      originalApplicationHtml.includes(value),
+      "Privacy checks require populated, previously accessible private fields"
+    );
+  const retainedCompletion = await record();
+  assert.ok(retainedCompletion.completedAt);
+  // Completed assignments already conceal availability, even before removal.
+  assert.equal(retainedCompletion.availability, formerAvailability);
+  assert.ok(!originalApplicationHtml.includes(formerAvailability));
+  const acceptedBefore = await db.volunteerApplication.count({
+    where: { opportunityId: f.opportunity.id, state: "ACCEPTED" }
+  });
+  const beforeMembershipLoss = requests.length;
+  const removed = await db.churchConnection.updateMany({
+    where: { userId: f.lee.id, churchId: f.churchA.id, state: "APPROVED" },
+    data: { state: "REMOVED" }
+  });
+  assert.equal(removed.count, 1);
+  await refresh(coordinator.page);
+  const redactedApplication = coordinator.page.getByRole("article").filter({
+    has: coordinator.page.getByRole("heading", {
+      name: "Unavailable volunteer opportunity",
+      exact: true
+    })
+  });
+  await button(redactedApplication, "Correct completion").waitFor();
+  assert.equal(await redactedApplication.count(), 1);
+  assert.equal(requests.length, beforeMembershipLoss);
+  assert.equal(
+    (await record()).completedAt?.toISOString(),
+    retainedCompletion.completedAt.toISOString(),
+    "Membership loss must retain the completion until the organizer corrects it"
+  );
+  const redactedHtml = await redactedApplication.innerHTML();
+  for (const value of [
+    f.lee.name,
+    f.lee.email,
+    formerStatement,
+    formerAvailability,
+    formerDecision,
+    formerHistory,
+    f.opportunity.contact,
+    f.opportunity.id,
+    f.opportunityPost.id,
+    "Recent private history"
+  ]) {
+    assert.ok(value.length > 0);
+    assert.ok(!redactedHtml.includes(value), `Redacted row exposed ${value}`);
+  }
+  assert.equal(await currentApplication.count(), 0);
+  assert.equal(await redactedApplication.getByRole("link").count(), 0);
+  for (const name of [
+    "Confirm completed service",
+    "Cancel assignment",
+    "Accept application",
+    "Decline application",
+    "Share confirmed service on my profile",
+    "Hide service from my profile"
+  ])
+    assert.equal(await button(redactedApplication, name).count(), 0);
+  const correctionReason =
+    "Fictional correction after volunteer membership ended";
+  await redactedApplication
+    .getByRole("textbox", {
+      name: "Reason for correcting this completion",
+      exact: true
+    })
+    .fill(correctionReason);
+  const correctionReply = coordinator.page.waitForResponse((response) => {
+    const request = response.request();
+    if (
+      request.method() !== "POST" ||
+      new URL(response.url()).pathname !== "/api/platform/volunteers"
+    )
+      return false;
+    const body = request.postDataJSON();
+    return (
+      body.operation === "complete" &&
+      body.targetId === applied.id &&
+      body.completed === false
+    );
+  });
+  const beforeFormerCorrection = requests.length;
+  await button(redactedApplication, "Correct completion").click();
+  const correctedResponse = await correctionReply;
+  assert.equal(correctedResponse.status(), 200);
+  const correctedReceipt = await correctedResponse.json();
+  assert.equal(correctedReceipt.id, applied.id);
+  assert.equal(correctedReceipt.version, retainedCompletion.version + 1);
+  assert.equal(typeof correctedReceipt.message, "string");
+  const sentCorrection = correctedResponse.request().postDataJSON();
+  assert.deepEqual(
+    { ...sentCorrection, mutationId: undefined },
+    {
+      operation: "complete",
+      targetKind: "application",
+      targetId: applied.id,
+      expectedVersion: retainedCompletion.version,
+      completed: false,
+      reason: correctionReason,
+      mutationId: undefined
+    }
+  );
+  assert.match(
+    sentCorrection.mutationId,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+  );
+  assert.equal(
+    correctedResponse.request().headers()["x-expected-account"],
+    f.ada.id
+  );
+  await coordinator.page
+    .getByText("No applications are available on this page.", { exact: true })
+    .waitFor();
+  assert.equal(await redactedApplication.count(), 0);
+  for (const name of [
+    "Correct completion",
+    "Confirm completed service",
+    "Cancel assignment",
+    "Accept application"
+  ])
+    assert.equal(await button(coordinator.page, name).count(), 0);
+  assert.equal(requests.length, beforeFormerCorrection + 1);
+  const corrected = await record();
+  assert.equal(corrected.completedAt, null);
+  assert.equal(corrected.serviceSharedAt, null);
+  assert.equal(corrected.version, correctedReceipt.version);
+  assert.equal(corrected.state, "ACCEPTED");
+  assert.equal(
+    await db.volunteerApplication.count({
+      where: { opportunityId: f.opportunity.id, state: "ACCEPTED" }
+    }),
+    acceptedBefore,
+    "Correcting completion must not release the accepted assignment's place"
+  );
+  assert.equal(
+    await db.postVolunteerSignup.count({ where: { userId: f.lee.id } }),
+    0
+  );
+  ok(
+    "After volunteer membership loss, the organizer sees only a redacted correction row; its real UI correction removes that row without releasing the accepted assignment."
+  );
+
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   writeFileSync(
