@@ -148,11 +148,19 @@ async function refresh(page) {
       identityRequests.add(request);
   };
   const received = async (response) => {
-    if (
-      identityRequests.has(response.request()) &&
-      !(await response.finished())
-    )
+    if (!identityRequests.has(response.request())) return;
+    // The access guard deliberately cancels denied bodies. Its settled notice
+    // below proves handling; waiting for that cancelled body would deadlock QA.
+    if (response.status() === 401) {
       completedIdentity.push(response.status());
+      return;
+    }
+    try {
+      if (!(await response.finished()))
+        completedIdentity.push(response.status());
+    } catch {
+      // Interrupted checks never qualify as completed access verification.
+    }
   };
   page.on("request", requested);
   page.on("response", received);
@@ -173,6 +181,36 @@ async function refresh(page) {
         if (!tree || tree !== history.state.__PRIVATE_NEXTJS_INTERNALS_TREE)
           throw Error("Installed Next committed router tree unavailable");
         window.serviceTestRefreshTree = tree;
+        // Read the current committed root, never a host fiber's stale alternate.
+        // This additionally proves the service page itself consumed the RSC,
+        // including while its original working children remain retained.
+        window.serviceTestScopeProps = () => {
+          const key = Object.getOwnPropertyNames(document).find((value) =>
+            value.startsWith("__reactContainer$")
+          );
+          const root = key && document[key]?.stateNode?.current;
+          const pending = root ? [root] : [];
+          while (pending.length) {
+            const node = pending.pop();
+            const props = node.memoizedProps;
+            if (
+              props &&
+              typeof props.url === "string" &&
+              props.url.startsWith("/api/platform/volunteers?") &&
+              typeof props.ready === "boolean" &&
+              Object.hasOwn(props, "owner") &&
+              Object.hasOwn(props, "children") &&
+              !Object.hasOwn(props, "original")
+            )
+              return props;
+            if (node.sibling) pending.push(node.sibling);
+            if (node.child) pending.push(node.child);
+          }
+          return null;
+        };
+        window.serviceTestRefreshProps = window.serviceTestScopeProps();
+        if (!window.serviceTestRefreshProps)
+          throw Error("Committed service page scope unavailable");
         window.next.router.refresh();
       }),
       "Router refresh invocation"
@@ -183,7 +221,9 @@ async function refresh(page) {
       () =>
         !!history.state?.__PRIVATE_NEXTJS_INTERNALS_TREE &&
         history.state.__PRIVATE_NEXTJS_INTERNALS_TREE !==
-          window.serviceTestRefreshTree,
+          window.serviceTestRefreshTree &&
+        !!window.serviceTestScopeProps() &&
+        window.serviceTestScopeProps() !== window.serviceTestRefreshProps,
       undefined,
       { polling: 100 }
     );
@@ -559,7 +599,7 @@ try {
     );
   });
   await wake(applicant.page);
-  assert.equal(await (await replacementIdentity).finished(), null);
+  assert.equal((await replacementIdentity).status(), 401);
   await applicant.page
     .getByText(
       "Return to the original account to recover your service entries and requests.",
