@@ -3,8 +3,8 @@
 ## Implementation checkpoint, 7 October 2026
 
 Selected native GET adapters now reuse the authoritative website read services.
-This checkpoint is local implementation; runtime verification and release
-acceptance are recorded separately below. The native session adapter is the
+This checkpoint has passed isolated local verification. Release and device
+acceptance remain separate. The native session adapter is the
 prerequisite. There are no database or dependency changes in this slice.
 
 | Route below `/api/platform/v1` | Contents | Access |
@@ -64,5 +64,19 @@ from these server contracts.
 
 ## Verification
 
-Implementation checks and isolated service/production HTTPS verification are in
-progress. No integration or live acceptance is claimed by this checkpoint.
+Application `b9da150994b4304157abfb0d630a29dc9056f45a`, production build
+`5gnNJQZKJ5Ov5U2i0OuFb`: 32 current contract/service checks and 7 real HTTPS
+checks pass. Another 25 unchanged canonical/web reader checks are retained from
+`ee53926f10305a0cbf84beee9d96950c104f9a8a`: concurrent reads, four feeds,
+profiles and profile-location privacy. Changed tests cover 30/31 and 100/101
+pagination, revoked/expired/deleted accounts, queued reads, account changes,
+church operator privacy, event audience, hidden counts/reposts and long discovery
+cursors. Website post rendering still works through the existing route.
+
+Full TypeScript, focused lint, ES2022-only contracts without DOM/Node types,
+copy/build/hydration/trace/security checks pass. The previous decoder consumes
+all 11 ordinary current fictional examples; its documented large-cursor limit
+still applies. Initial fixture-label/repost-opt-in and TLS-host setup failures
+are retained alongside the reproduced cursor defect and its passing regression.
+All owned fictional runtimes were stopped and their ports checked closed.
+Final independent review is pending. No integration or live acceptance claimed.

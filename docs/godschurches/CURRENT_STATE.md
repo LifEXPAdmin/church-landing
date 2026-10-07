@@ -1,11 +1,15 @@
-## Native core reads in local verification, 7 October 2026
+## Native core reads locally verified, 7 October 2026
 
 Selected GET adapters reuse canonical feed, post, member-profile and church
 services with identity checked inside their authorization transaction. Explicit
 projection preserves current audience, private fields and hidden reaction totals;
 signed cursors bind owner/resource/filter and retain a one-hour deadline.
 [Native core reads](NATIVE_CORE_READS.md) records the scope and current acceptance.
-Type checking passed. Service/build/HTTPS verification and final review remain.
+Application `b9da150`, build `5gnNJQZKJ5Ov5U2i0OuFb`: 32 current contract/service
+and 7 HTTPS checks pass, plus 25 unchanged canonical reader regressions. Type,
+lint, no-DOM and build checks pass. The reproduced large discovery-cursor
+limitation is fixed with distinct 2500/4096 internal/outer bounds; consumers must
+update the preactivation schema. Final independent review remains.
 No merge, deployment, production migration or live acceptance is claimed.
 
 ## Native session adapter locally verified, 7 October 2026
