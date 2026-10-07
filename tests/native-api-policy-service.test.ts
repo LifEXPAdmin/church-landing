@@ -122,14 +122,12 @@ test("completed upload and uncertain removal survive pause and rollback without 
     image.id
   );
   assert.equal(puts(), writes);
-  assert.equal(
-    (
-      await upload(actor, input, bytes, store, {
-        "X-Expected-Account": other.id
-      })
-    ).status,
-    409
-  );
+  const wrongOwner = await upload(actor, input, bytes, store, {
+    "X-Expected-Account": other.id
+  });
+  assert.equal(wrongOwner.status, 401);
+  assert.equal((await wrongOwner.json()).error.code, "account_changed");
+  assert.equal(puts(), writes);
   const remove = (expectedVersion: number) =>
     handleNativeImageRequest(
       db,
