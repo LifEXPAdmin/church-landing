@@ -118,7 +118,24 @@ async function go(page, path) {
   assert.equal(response.status(), 200);
   await page.getByRole("heading", { level: 1 }).waitFor();
 }
+async function deadline(promise, label, milliseconds = 20000) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(Error(label + " timed out")),
+          milliseconds
+        );
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function refresh(page) {
+  console.log("BROWSER_REFRESH", new URL(page.url()).pathname);
   const path = new URL(page.url()).pathname;
   const identityRequests = new Set();
   const completedIdentity = [];
@@ -145,17 +162,27 @@ async function refresh(page) {
       new URL(response.url()).pathname === path
   );
   try {
-    await page.evaluate(() => {
-      if (typeof window.next?.router?.refresh !== "function")
-        throw Error("Installed Next router refresh unavailable");
-      window.next.router.refresh();
-    });
+    await deadline(
+      page.evaluate(() => {
+        if (typeof window.next?.router?.refresh !== "function")
+          throw Error("Installed Next router refresh unavailable");
+        window.next.router.refresh();
+      }),
+      "Router refresh invocation"
+    );
     const response = await reply;
     assert.equal(response.status(), 200);
-    assert.equal(await response.finished(), null);
+    assert.equal(
+      await deadline(response.finished(), "Refreshed RSC body"),
+      null
+    );
+    console.log("BROWSER_REFRESH_BODY_FINISHED");
     if (
-      await page.evaluate(
-        () => document.hasFocus() && document.visibilityState !== "hidden"
+      await deadline(
+        page.evaluate(
+          () => document.hasFocus() && document.visibilityState !== "hidden"
+        ),
+        "Refresh foreground check"
       )
     ) {
       await until(
@@ -164,11 +191,16 @@ async function refresh(page) {
           completedIdentity.filter((status) => status === 200).length >= 2,
         "Refreshed service frame never completed its account/source/account recheck"
       );
-      await page.evaluate(
-        () =>
-          new Promise((done) =>
-            requestAnimationFrame(() => requestAnimationFrame(done))
-          )
+      console.log("BROWSER_REFRESH_ACCESS_FINISHED", completedIdentity);
+      await deadline(
+        page.evaluate(
+          () =>
+            new Promise((done) =>
+              requestAnimationFrame(() => requestAnimationFrame(done))
+            )
+        ),
+        "Foreground refresh animation frames",
+        5000
       );
     }
   } finally {
@@ -192,6 +224,10 @@ const wake = (page) =>
     );
   });
 let phase = "seed";
+function step(value) {
+  phase = value;
+  console.log("BROWSER_PHASE", value);
+}
 try {
   const f = await seedVolunteerApplications(db, false, 2);
   const applied = await volunteerCommand(
@@ -214,7 +250,7 @@ try {
     coordinator = await actorPage(f.ada, 1280),
     viewer = await actorPage(f.val),
     guest = await actorPage(null);
-  phase = "private default";
+  step("private default");
   await go(applicant.page, "/platform/serve/history");
   await applicant.page
     .getByText("Completion has not been confirmed.", { exact: true })
@@ -231,7 +267,7 @@ try {
     "Unconfirmed accepted assignment remains private and offers no sharing control."
   );
 
-  phase = "organizer completion";
+  step("organizer completion");
   await go(
     coordinator.page,
     `/platform/serve/${f.opportunity.id}/applications`
@@ -316,7 +352,7 @@ try {
     "Organizer confirms untimed service through the UI without granting consent or creating an event assignment."
   );
 
-  phase = "lost consent reply";
+  step("lost consent reply");
   await go(applicant.page, "/platform/serve/history");
   let stage = 0;
   await applicant.page.route("**/api/platform/volunteers", async (route) => {
@@ -387,7 +423,7 @@ try {
     "Malformed receipt remains pending; a lost real consent reply survives guest refresh and recovers the same original owner, immutable body and mutation key."
   );
 
-  phase = "profile audience";
+  step("profile audience");
   await go(viewer.page, `/platform/profile/${f.lee.username}`);
   await viewer.page
     .getByRole("heading", { name: "Shared service history", exact: true })
@@ -406,7 +442,7 @@ try {
     "Only an authorized member sees the voluntarily shared projection; private notes and guest profile stay clear."
   );
 
-  phase = "bounded layout and keyboard";
+  step("bounded layout and keyboard");
   await applicant.page.bringToFront();
   await wake(applicant.page);
   await button(applicant.page, "Hide service from my profile").waitFor();
@@ -462,7 +498,7 @@ try {
     "Narrow large-text and desktop layouts are bounded; keyboard withdrawal invalidates a retained profile."
   );
 
-  phase = "correction and reconfirmation";
+  step("correction and reconfirmation");
   await go(applicant.page, "/platform/serve/history");
   await button(applicant.page, "Share confirmed service on my profile").click();
   await until(
@@ -495,7 +531,7 @@ try {
     "Correction removes the completion and its consent; reconfirmation does not restore sharing."
   );
 
-  phase = "account replacement";
+  step("account replacement");
   await go(applicant.page, "/platform/serve/history");
   await button(
     applicant.page,
@@ -556,14 +592,21 @@ try {
   writeFileSync(
     output + "/failure.json",
     JSON.stringify(
-      { phase, message: error.message, groups, errors, external },
+      {
+        phase,
+        message: error.message,
+        stack: error.stack,
+        groups,
+        errors,
+        external
+      },
       null,
       2
     )
   );
   throw error;
 } finally {
-  for (const context of contexts) await context.close();
-  await browser.close();
+  for (const context of contexts) await context.close().catch(() => {});
+  await browser.close().catch(() => {});
   await db.$disconnect();
 }
