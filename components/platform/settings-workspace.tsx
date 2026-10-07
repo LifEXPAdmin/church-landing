@@ -28,7 +28,7 @@ const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
 
 export function SettingsWorkspace({
-  owner,
+  owner: sourceOwner,
   folder,
   setting
 }: {
@@ -36,6 +36,9 @@ export function SettingsWorkspace({
   folder?: string;
   setting?: string;
 }) {
+  const originalOwner = useRef(sourceOwner).current;
+  const retainedReading = folder === "display" && setting === "reading";
+  const owner = retainedReading ? originalOwner : sourceOwner;
   const router = useRouter(),
     pathname = usePathname(),
     params = useSearchParams();
@@ -51,7 +54,8 @@ export function SettingsWorkspace({
   // These controllers own private drafts and uncertain self-revoking commands.
   // Keep their original owner mounted on a failed refresh; explicit navigation
   // can discard the draft, but a background identity check cannot.
-  const preserveCredentialDraft =
+  const preserveOriginalDraft =
+    retainedReading ||
     (folder === "security" && setting === "password") ||
     (folder === "account" && ["email", "methods"].includes(setting ?? ""));
   const key =
@@ -68,7 +72,7 @@ export function SettingsWorkspace({
       );
       if (seq !== generation.current) return;
       if (r.data.ownerId !== owner) {
-        if (!preserveCredentialDraft) {
+        if (!preserveOriginalDraft) {
           setData(null);
           router.refresh();
         }
@@ -103,7 +107,7 @@ export function SettingsWorkspace({
             : "Settings could not be checked. Try again."
         );
         if (
-          !preserveCredentialDraft &&
+          !preserveOriginalDraft &&
           e instanceof SocialClientError &&
           e.status === 401
         ) {
@@ -114,7 +118,7 @@ export function SettingsWorkspace({
     } finally {
       if (seq === generation.current) setBusy(false);
     }
-  }, [owner, router, folder, preserveCredentialDraft]);
+  }, [owner, router, folder, preserveOriginalDraft]);
   useEffect(() => {
     if (positionOwner !== owner) {
       positions.clear();
@@ -295,7 +299,7 @@ export function SettingsWorkspace({
             >
               Retry settings
             </button>
-            {preserveCredentialDraft && (
+            {preserveOriginalDraft && (
               <p className="mt-3 flex flex-wrap gap-4">
                 <a className="underline" href="/platform/login">
                   Sign in

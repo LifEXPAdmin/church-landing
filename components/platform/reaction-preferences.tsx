@@ -4,10 +4,22 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
-  useState
+  useState,
+  type ReactNode
 } from "react";
 import type { ReactionPreferencesState } from "@/lib/platform/reaction-preferences";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
+
+/** This API-backed editor retains its original shell through server refreshes.
+ * Its current-account reads still conceal and reject a different account.
+ * Explicit navigation or reload starts a new working copy. */
+export function RetainedReactionSettings({
+  children
+}: {
+  children: ReactNode;
+}) {
+  return useRef(children).current;
+}
 
 export function ReactionPreferences({
   owner: currentOwner

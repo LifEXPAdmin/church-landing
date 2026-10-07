@@ -204,10 +204,62 @@ const setBrowserHide = async (hide) => {
   if (await save.isEnabled()) await save.click();
   await waitFor(
     async () =>
-      (await page.locator(`div[data-hide-reaction-counts="${hide}"]`).count()) ===
-      1
+      (await page
+        .locator(`div[data-hide-reaction-counts="${hide}"]`)
+        .count()) === 1
   );
 };
+const bounded = async (promise, label, milliseconds = 20000) => {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(label)), milliseconds);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+const refresh = async () => {
+  const completed = Promise.withResolvers();
+  const match = (u) => u.pathname === settingPath;
+  const handler = async (route) => {
+    if (route.request().headers().rsc !== "1") return route.fallback();
+    try {
+      const r = await forwarded(route);
+      assert.equal(r.status, 200);
+      await route.fulfill(r);
+      completed.resolve();
+    } catch (e) {
+      completed.reject(e);
+      await route.abort().catch(() => {});
+    }
+  };
+  await page.route(match, handler);
+  try {
+    await page.evaluate(() => {
+      if (!window.next?.router?.refresh)
+        throw Error("Actual Next router unavailable");
+      window.next.router.refresh();
+    });
+    await bounded(completed.promise, "Actual RSC refresh failed to settle");
+    await bounded(
+      page.evaluate(
+        () =>
+          new Promise((done) =>
+            requestAnimationFrame(() => requestAnimationFrame(done))
+          )
+      ),
+      "Refreshed render did not settle"
+    );
+  } finally {
+    await page.unroute(match, handler);
+  }
+  console.log("PHASE refreshed " + phase);
+};
+
 let otherWindow;
 try {
   await signIn(f.viewer);
@@ -252,7 +304,9 @@ try {
     await go(path);
     await waitFor(
       async () =>
-        (await page.locator('div[data-hide-reaction-counts="true"]').count()) === 1
+        (await page
+          .locator('div[data-hide-reaction-counts="true"]')
+          .count()) === 1
     );
     assert.equal(await totalCount(), 0, path);
   }
@@ -402,9 +456,12 @@ try {
     .first()
     .waitFor();
   assert.equal(await authorControl.isVisible(), false);
+  await refresh();
+  assert.equal(await authorControl.isVisible(), false);
   await cookieOwner(f.a);
   await otherWindow.bringToFront();
   await page.bringToFront();
+  await refresh();
   await authorControl.waitFor({ state: "visible" });
   assert.equal(await authorControl.isChecked(), false);
   assert.equal(
@@ -418,7 +475,7 @@ try {
   await otherWindow.close();
   otherWindow = null;
   ok(
-    "Native blur and A-to-B-to-A cookie changes conceal the editor and retain A's unsaved choice"
+    "Native blur and actual A-to-B-to-A server refreshes conceal the editor and retain A's unsaved choice"
   );
 
   const bodies = [];

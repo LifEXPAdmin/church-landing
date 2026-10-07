@@ -3,6 +3,7 @@ import { PlatformShell } from "./platform-shell";
 import { SettingsWorkspace } from "./settings-workspace";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
 import { accountEntryHref } from "@/lib/platform/account-entry";
+import { RetainedReactionSettings } from "./reaction-preferences";
 
 export async function SettingsPage({
   folder,
@@ -17,7 +18,7 @@ export async function SettingsPage({
     (folder ? "/" + folder : "") +
     (setting ? "/" + setting : "");
   if (!user) redirect(accountEntryHref("join", next, "settings"));
-  return (
+  const frame = (
     <PlatformShell user={user}>
       <section className="container-shell py-8 sm:py-10">
         <SettingsWorkspace
@@ -28,5 +29,10 @@ export async function SettingsPage({
         />
       </section>
     </PlatformShell>
+  );
+  return folder === "display" && setting === "reading" ? (
+    <RetainedReactionSettings key={next}>{frame}</RetainedReactionSettings>
+  ) : (
+    frame
   );
 }
