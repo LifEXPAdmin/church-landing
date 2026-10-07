@@ -69,3 +69,17 @@ step. Test commands, security thresholds and application bytes are unchanged.
 The failed run remains part of the evidence; a successful local command did not
 establish that the workflow itself was valid. See GitHub's
 [context availability reference](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability).
+
+Hosted portability run `37668230207` passed on `63bc83c`, including the portable
+checks and their tooling lint. Source-security run `37668230161` passed install,
+source checks, copy, schema generation, full types, provenance and lint, but
+failed both the dependency audit and reachable-history secret scan.
+
+The scanner's two findings were reproduced in the original `ff2efd7` and
+integrated `3e22d6c` histories. Both identify the same SHA-256 checksum of the
+tracked `tests/fixtures/api-v1-requests.json`, not a credential. The digest was
+independently recomputed before adding an exact-path AND exact-value exception
+for `scripts/check-portability.mjs`. Both histories then passed. Three isolated
+scanner fixtures prove the exact pair passes while either another path or
+another value still fails. Default rules, full history, redaction and failure
+status remain enforced; no fingerprint ignore file or history rewrite is used.
