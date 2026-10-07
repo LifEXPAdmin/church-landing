@@ -50,6 +50,7 @@ optional comma-separated list of exact feature names:
 
 - `session.password`
 - `feed.read`, `post.read`, `profile.read`, `churches.read`, `church.read`
+- `likes.read`, `likes.write`, `reactionPreferences.read`, `reactionPreferences.write`
 - `media.images.read`, `media.images.list`, `media.images.upload`, `media.images.remove`
 
 Unset or blank leaves implemented optional features admitted. For example,
@@ -92,6 +93,11 @@ older unsafe schema/projection to achieve rollback. Combined release/security
 checks and actual serving identity still govern production deployment.
 
 ## Verification status
+
+The new reaction adapters add four independently pausable features using the
+unchanged v1 schemas. Their current verification is recorded in
+[Native reactions](NATIVE_REACTIONS.md); the following receipt is the earlier
+session/read/image policy baseline.
 
 Tested source `524faf461aa3b20e8c2402bc587a31a4abf7b78d`, application
 `eb1ac523e6d94d37f2e960f54a2ceed81e9fcddd`, production build

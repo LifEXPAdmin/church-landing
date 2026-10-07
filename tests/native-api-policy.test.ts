@@ -9,6 +9,7 @@ import {
 import { handleNativeSessionRequest } from "../lib/platform/native-session-boundary";
 import { handleNativeReadRequest } from "../lib/platform/native-read-boundary";
 import { handleNativeImageRequest } from "../lib/platform/native-media-boundary";
+import { handleNativeReactionRequest } from "../lib/platform/native-reaction-boundary";
 import { decodeApiResponse, apiFailure } from "../lib/platform/api-contracts";
 
 const priorOrigin = process.env.ACCOUNT_ORIGIN;
@@ -142,6 +143,40 @@ test("capability pauses cannot activate unsupported features or turn off essenti
     assert.equal(available(raw, "push"), false);
   }
   assert.equal(available("", "media.images.upload"), true);
+});
+
+test("reaction controls reject unsupported versions and paused reads/writes without database or body access", async () => {
+  const { db, calls } = unusedDatabase();
+  for (const resource of ["like", "reactionPreferences"] as const) {
+    const params = resource === "like" ? { postId: "fictional-post" } : {};
+    for (const method of ["GET", "POST"]) {
+      for (const reason of ["version", "pause", "invalid"]) {
+        process.env.NATIVE_API_DISABLED_FEATURES =
+          reason === "version"
+            ? ""
+            : reason === "invalid"
+              ? "unknown.feature"
+              : "likes.read,likes.write,reactionPreferences.read,reactionPreferences.write";
+        const probe = request(
+          "reactions",
+          method,
+          {
+            ...credentials,
+            ...(reason === "version" ? { "X-API-Version": "2" } : {})
+          },
+          method === "POST"
+        );
+        await denied(
+          await handleNativeReactionRequest(db, probe.value, resource, params),
+          reason === "version" ? 426 : 503,
+          reason === "version" ? "unsupported_version" : "feature_unavailable"
+        );
+        assert.equal(probe.pulls(), 0);
+      }
+    }
+  }
+  assert.equal(calls(), 0);
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
 });
 
 test("unsupported version reaches no database or request body through session, core read or image adapters", async () => {

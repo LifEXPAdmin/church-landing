@@ -1,6 +1,8 @@
 import { requireGroupPostParticipation } from "./group-post-policy";
 import { recordDomainActivity } from "./domain-activity";
 import type { PrismaClient } from "@prisma/client";
+import type { ReadIdentity } from "./account-read";
+import { requireSessionOwner } from "./account-sessions";
 import { expected, PortalError } from "./portal-policy";
 import { postContext, withPostRead } from "./post-access";
 import { postId as parsePostId } from "./post-input";
@@ -19,40 +21,47 @@ import {
 export function readPostLike(
   db: PrismaClient,
   token: unknown,
-  postId: unknown
+  postId: unknown,
+  identity?: ReadIdentity
 ) {
-  return withPostRead(db, token, async (tx, context) => {
-    const id = await postInteractionIdIn(tx, context, parsePostId(postId));
-    const [own, count, source] = await Promise.all([
-      context.actorId
-        ? tx.platformPostLike.findUnique({
-            where: { postId_userId: { postId: id, userId: context.actorId } }
-          })
-        : null,
-      tx.platformPostLike.count({
-        where: { postId: id, active: true, user: socialUserWhere(context) }
-      }),
-      tx.platformPost.findUniqueOrThrow({
-        where: { id },
-        select: {
-          authorChurchId: true,
-          author: { select: reactionCountAuthorSelect }
-        }
-      })
-    ]);
-    return {
-      id,
-      liked: own?.active ?? false,
-      version: own?.version ?? 0,
-      count: projectedReactionCount(source, count)
-    };
-  });
+  return withPostRead(
+    db,
+    token,
+    async (tx, context) => {
+      const id = await postInteractionIdIn(tx, context, parsePostId(postId));
+      const [own, count, source] = await Promise.all([
+        context.actorId
+          ? tx.platformPostLike.findUnique({
+              where: { postId_userId: { postId: id, userId: context.actorId } }
+            })
+          : null,
+        tx.platformPostLike.count({
+          where: { postId: id, active: true, user: socialUserWhere(context) }
+        }),
+        tx.platformPost.findUniqueOrThrow({
+          where: { id },
+          select: {
+            authorChurchId: true,
+            author: { select: reactionCountAuthorSelect }
+          }
+        })
+      ]);
+      return {
+        id,
+        liked: own?.active ?? false,
+        version: own?.version ?? 0,
+        count: projectedReactionCount(source, count)
+      };
+    },
+    identity
+  );
 }
 
 export function postLikeCommand(
   db: PrismaClient,
   token: unknown,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  expectedOwner?: string
 ) {
   socialInput(input, ["postId", "mutationId", "expectedVersion", "desired"]);
   if (typeof input.desired !== "boolean")
@@ -119,6 +128,7 @@ export function postLikeCommand(
       };
     },
     async (tx, ownerId) => {
+      requireSessionOwner({ userId: ownerId }, expectedOwner);
       const source = await tx.platformPost.findUnique({
         where: { id: parsePostId(input.postId) },
         select: { groupId: true }

@@ -14,6 +14,10 @@ const optional = [
   "profile.read",
   "churches.read",
   "church.read",
+  "likes.read",
+  "likes.write",
+  "reactionPreferences.read",
+  "reactionPreferences.write",
   "media.images.read",
   "media.images.list",
   "media.images.upload",
@@ -24,7 +28,6 @@ const unimplemented = [
   "comments.read",
   "comments.write",
   "posts.write",
-  "likes.write",
   "media.read",
   "push"
 ] as const;
