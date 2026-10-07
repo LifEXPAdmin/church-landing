@@ -56,8 +56,10 @@ public fields and existing post reader in one read transaction, avoiding the
 portal writer and its unrelated account maintenance. Native GET does not renew
 session activity. Ranked feeds retain their existing bounded snapshot writes.
 
-Native comment/reaction/post writes, Google sign-in, general media-library
-access and push remain unavailable in the capability response. The subsequent
+Native comment/post writes, Google sign-in, general media-library
+access and push remain unavailable in the capability response. The
+[native reaction adapters](NATIVE_REACTIONS.md) add Like state/changes and
+authored-count preferences through their canonical services. The subsequent
 [native private image adapter](NATIVE_PRIVATE_MEDIA.md) adds explicit
 `media.images.read`, `media.images.list`, `media.images.upload` and
 `media.images.remove` capabilities. Core post cards still conservatively require
