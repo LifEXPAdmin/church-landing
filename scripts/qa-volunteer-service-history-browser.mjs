@@ -365,10 +365,34 @@ try {
   );
   const cover = await coordinator.context.newPage();
   await cover.goto("about:blank");
+  const foregroundCdp = await coordinator.context.newCDPSession(
+    coordinator.page
+  );
+  const backgroundCdp = await coordinator.context.newCDPSession(cover);
+  // Playwright otherwise emulates focus on every page. Observe a trusted
+  // browser blur with that override disabled on both actual tabs.
+  await foregroundCdp.send("Emulation.setFocusEmulationEnabled", {
+    enabled: false
+  });
+  await backgroundCdp.send("Emulation.setFocusEmulationEnabled", {
+    enabled: false
+  });
+  await coordinator.page.bringToFront();
+  await coordinator.page.waitForFunction(() => document.hasFocus());
+  await note.waitFor();
+  await coordinator.page.evaluate(() => {
+    window.serviceTestTrustedBlur = 0;
+    window.addEventListener("blur", (event) => {
+      if (event.isTrusted) window.serviceTestTrustedBlur++;
+    });
+  });
   await cover.bringToFront();
   await until(
     async () => !(await coordinator.page.evaluate(() => document.hasFocus())),
     "Native secondary tab did not blur original page"
+  );
+  assert.ok(
+    await coordinator.page.evaluate(() => window.serviceTestTrustedBlur > 0)
   );
   await coordinator.page.evaluate(() =>
     window.dispatchEvent(new Event("online"))
@@ -382,6 +406,11 @@ try {
   await wake(coordinator.page);
   await note.waitFor();
   assert.equal(await note.inputValue(), "Fictional private organizer note");
+  await foregroundCdp.send("Emulation.setFocusEmulationEnabled", {
+    enabled: true
+  });
+  await foregroundCdp.detach();
+  await backgroundCdp.detach();
   await cover.close();
   assert.equal(requests.length, beforeLifecycle);
   ok(
