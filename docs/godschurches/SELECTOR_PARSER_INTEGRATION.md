@@ -58,3 +58,14 @@ These are not closed by the combined build or browser checks. Hosted CI, main
 integration, supported-client inventory, native-device acceptance and verified
 live release remain distinct gates. No production deployment, migration or
 provider operation occurred.
+
+## Hosted workflow correction
+
+The first hosted portability run, `37668036812`, failed workflow validation
+before creating any jobs. Its job-level environment referenced `runner.temp`,
+which GitHub permits only after allocating the runner, such as in a step's
+environment. The temporary-directory setting now belongs to the portable-check
+step. Test commands, security thresholds and application bytes are unchanged.
+The failed run remains part of the evidence; a successful local command did not
+establish that the workflow itself was valid. See GitHub's
+[context availability reference](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability).
