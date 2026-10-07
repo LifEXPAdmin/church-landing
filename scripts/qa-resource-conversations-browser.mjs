@@ -409,6 +409,12 @@ try {
   );
   assert.ok(bodies.every((body) => body === bodies[0]));
   await page.unroute("**/api/platform/comments", commentRoute);
+  await page
+    .getByText("Your application note: " + statement, { exact: true })
+    .waitFor();
+  ok(
+    "The already-received application snapshot becomes visible after the last protected comment request is confirmed"
+  );
   assert.equal(await thread().getByText(statement, { exact: true }).count(), 0);
   writeFileSync(
     output + "/original-comment-retries.json",
@@ -463,6 +469,152 @@ try {
     timeout: 5000
   });
   ok("320-pixel enlarged comment editor has no horizontal page overflow");
+  phase = "public guest discussion and sign-in return";
+  await db.platformPost.update({
+    where: { id: f.opportunityPost.id },
+    data: { audience: "PUBLIC", replyAudience: "CHURCH_MEMBERS" }
+  });
+  const guestContext = await browser.newContext({
+    viewport: { width: 390, height: 844 }
+  });
+  await guestContext.route("**/*", (route) =>
+    new URL(route.request().url()).origin === config.origin
+      ? route.continue()
+      : route.abort()
+  );
+  const guest = await guestContext.newPage();
+  guest.on("pageerror", (error) => errors.push(error.message));
+  await guest.goto(config.origin + "/platform/serve/" + f.opportunity.id);
+  await guest.bringToFront();
+  await guest.locator('[data-comment-id="' + saved.id + '"]').waitFor();
+  assert.equal(
+    await guest.getByLabel("Comment text", { exact: true }).count(),
+    0
+  );
+  assert.equal(await guest.getByText(statement, { exact: true }).count(), 0);
+  const entry = guest.getByRole("link", {
+    name: "Sign in to take part",
+    exact: true
+  });
+  const target = new URL(await entry.getAttribute("href"), config.origin);
+  assert.equal(
+    target.searchParams.get("next"),
+    "/platform/serve/" + f.opportunity.id
+  );
+  await guestContext.close();
+  await page.bringToFront();
+  ok(
+    "Public recruitment discussion is guest-readable without private application details, and sign-in preserves the opportunity destination"
+  );
+
+  phase = "initially unavailable source becomes a protected workspace";
+  const recoveryContext = await browser.newContext({
+    viewport: { width: 390, height: 844 }
+  });
+  await recoveryContext.route("**/*", (route) =>
+    new URL(route.request().url()).origin === config.origin
+      ? route.continue()
+      : route.abort()
+  );
+  await recoveryContext.addCookies([
+    {
+      name: sessionCookieFixtureName(config.origin),
+      value: f.lee.token,
+      url: config.origin,
+      secure: true,
+      httpOnly: true,
+      sameSite: "Lax"
+    }
+  ]);
+  const recoveryPage = await recoveryContext.newPage();
+  recoveryPage.on("pageerror", (error) => errors.push(error.message));
+  await db.platformPost.update({
+    where: { id: f.opportunityPost.id },
+    data: { status: "WITHDRAWN", withdrawnAt: new Date() }
+  });
+  await recoveryPage.goto(
+    config.origin + "/platform/serve/" + f.opportunity.id
+  );
+  await recoveryPage.bringToFront();
+  await recoveryPage
+    .getByRole("status")
+    .filter({ hasText: /unavailable/ })
+    .waitFor();
+  const refreshRecovery = async () => {
+    const completed = Promise.withResolvers();
+    const matcher = (u) => u.pathname === "/platform/serve/" + f.opportunity.id;
+    const handler = async (route) => {
+      if (route.request().headers().rsc !== "1") return route.fallback();
+      try {
+        await route.fulfill(await forwarded(route));
+        completed.resolve();
+      } catch (e) {
+        completed.reject(e);
+        await route.abort().catch(() => {});
+      }
+    };
+    await recoveryPage.route(matcher, handler);
+    try {
+      await recoveryPage.evaluate(() => window.next.router.refresh());
+      await bounded(completed.promise, "Initial-source refresh failed");
+    } finally {
+      await recoveryPage.unroute(matcher, handler);
+    }
+  };
+  await db.platformPost.update({
+    where: { id: f.opportunityPost.id },
+    data: { status: "PUBLISHED", withdrawnAt: null }
+  });
+  await refreshRecovery();
+  await recoveryPage
+    .getByRole("button", { name: "Write a comment", exact: true })
+    .click();
+  const recoveredDraft =
+    "Fictional draft after an initially unavailable source";
+  await recoveryPage
+    .getByLabel("Comment text", { exact: true })
+    .fill(recoveredDraft);
+  await recoveryContext.clearCookies();
+  await recoveryContext.addCookies([
+    {
+      name: sessionCookieFixtureName(config.origin),
+      value: f.val.token,
+      url: config.origin,
+      secure: true,
+      httpOnly: true,
+      sameSite: "Lax"
+    }
+  ]);
+  await refreshRecovery();
+  await recoveryPage
+    .getByRole("region", { name: "Recruitment access", exact: true })
+    .waitFor();
+  assert.equal(
+    await recoveryPage.getByLabel("Comment text", { exact: true }).isVisible(),
+    false
+  );
+  await recoveryContext.clearCookies();
+  await recoveryContext.addCookies([
+    {
+      name: sessionCookieFixtureName(config.origin),
+      value: f.lee.token,
+      url: config.origin,
+      secure: true,
+      httpOnly: true,
+      sameSite: "Lax"
+    }
+  ]);
+  await refreshRecovery();
+  await recoveryPage.getByLabel("Comment text", { exact: true }).waitFor();
+  assert.equal(
+    await recoveryPage.getByLabel("Comment text", { exact: true }).inputValue(),
+    recoveredDraft
+  );
+  await recoveryContext.close();
+  await page.bringToFront();
+  ok(
+    "An initially unavailable page establishes the original-owner workspace on first permitted refresh and retains its later A-to-B-to-A draft"
+  );
   assert.deepEqual(errors, []);
   assert.deepEqual(external, []);
   writeFileSync(

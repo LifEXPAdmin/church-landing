@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   PrivatePostWorkspace,
   type PrivatePostRecovery
@@ -16,18 +17,51 @@ import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
 /** Keep the original working tree above the account-keyed shell. A server
  * refresh may update read-only content, but cannot replace a protected owner. */
-export function RecruitmentConversationScope({
-  owner,
-  opportunityId,
-  postId,
-  children
-}: {
+type RecruitmentScopeProps = {
   owner: string | null;
   opportunityId: string;
   postId: string | null;
   children: ReactNode;
-}) {
-  const original = useRef({ owner, opportunityId, postId }).current;
+};
+type RecruitmentSource = {
+  owner: string | null;
+  opportunityId: string;
+  postId: string;
+};
+export function RecruitmentConversationScope(props: RecruitmentScopeProps) {
+  const [initial, setInitial] = useState<RecruitmentSource | null>(() =>
+    props.postId
+      ? {
+          owner: props.owner,
+          opportunityId: props.opportunityId,
+          postId: props.postId
+        }
+      : null
+  );
+  // A denied initial response has no working owner. Initialize on the first
+  // permitted source, then retain that component through later denied responses.
+  if (!initial && props.postId) {
+    setInitial({
+      owner: props.owner,
+      opportunityId: props.opportunityId,
+      postId: props.postId
+    });
+    return null;
+  }
+  return initial ? (
+    <RetainedRecruitmentScope {...props} original={initial} />
+  ) : (
+    props.children
+  );
+}
+function RetainedRecruitmentScope({
+  owner,
+  opportunityId,
+  postId,
+  children,
+  original
+}: RecruitmentScopeProps & { original: RecruitmentSource }) {
+  const router = useRouter();
   const [frame, setFrame] = useState(children);
   const [visible, setVisible] = useState(false);
   const [notice, setNotice] = useState("Checking current recruitment access…");
@@ -35,6 +69,7 @@ export function RecruitmentConversationScope({
     Record<string, PrivatePostRecovery>
   >({});
   const work = useRef<Record<string, boolean>>({});
+  const [protectedCount, setProtectedCount] = useState(0);
   const generation = useRef(0),
     permitted = useRef(false);
   const flight = useRef<AbortController | null>(null);
@@ -42,9 +77,12 @@ export function RecruitmentConversationScope({
     owner === original.owner &&
     opportunityId === original.opportunityId &&
     postId === original.postId;
+  const sourceNow = useRef(sameSource);
   const registerWork = useCallback((id: string, protectedWork: boolean) => {
+    if (!!work.current[id] === protectedWork) return;
     if (protectedWork) work.current[id] = true;
     else delete work.current[id];
+    setProtectedCount(Object.keys(work.current).length);
   }, []);
   const registerRecovery = useCallback(
     (id: string, value: PrivatePostRecovery | null) => {
@@ -59,8 +97,8 @@ export function RecruitmentConversationScope({
     []
   );
   useEffect(() => {
-    if (sameSource && !Object.keys(work.current).length) setFrame(children);
-  }, [children, sameSource]);
+    if (sameSource && protectedCount === 0) setFrame(children);
+  }, [children, sameSource, protectedCount]);
   const hide = useCallback(() => {
     generation.current++;
     permitted.current = false;
@@ -71,7 +109,7 @@ export function RecruitmentConversationScope({
   const read = useCallback(async () => {
     hide();
     if (
-      !original.postId ||
+      !sourceNow.current ||
       !document.hasFocus() ||
       document.visibilityState === "hidden" ||
       !navigator.onLine
@@ -121,6 +159,7 @@ export function RecruitmentConversationScope({
           "Your sign-in changed. Return to the original account to continue this working copy."
         );
       if (
+        !sourceNow.current ||
         seq !== generation.current ||
         controller.signal.aborted ||
         !document.hasFocus() ||
@@ -145,10 +184,15 @@ export function RecruitmentConversationScope({
     }
   }, [hide, original]);
   useLayoutEffect(() => {
+    sourceNow.current = sameSource;
     hide();
-    void read();
+    if (sameSource) void read();
+    else
+      setNotice(
+        "This page’s account or source changed. Your original working copy is retained. Return to the original account and page to continue."
+      );
     return hide;
-  }, [owner, opportunityId, postId, hide, read]);
+  }, [sameSource, owner, opportunityId, postId, hide, read]);
   useEffect(() => {
     const refresh = () => {
       void read();
@@ -185,22 +229,26 @@ export function RecruitmentConversationScope({
   }, [read, hide]);
   const accessVersion = useCallback(
     () =>
-      permitted.current && document.hasFocus() && navigator.onLine
+      sourceNow.current &&
+      permitted.current &&
+      document.hasFocus() &&
+      navigator.onLine
         ? generation.current
         : null,
     []
   );
   const refresh = useCallback(() => {
-    void read();
-  }, [read]);
-  if (!original.postId) return children;
+    if (!sourceNow.current) router.refresh();
+    else void read();
+  }, [read, router]);
+  const concealed = !visible || !sameSource;
   return (
     <PrivatePostWorkspace.Provider
       value={
         original.owner
           ? {
               owner: original.owner,
-              concealed: !visible,
+              concealed,
               accessVersion,
               refresh,
               registerWork,
@@ -209,7 +257,7 @@ export function RecruitmentConversationScope({
           : null
       }
     >
-      {!visible && (
+      {concealed && (
         <section
           aria-label="Recruitment access"
           className="container-shell space-y-3 rounded-xl border p-4"
@@ -240,7 +288,7 @@ export function RecruitmentConversationScope({
           </button>
         </section>
       )}
-      {visible &&
+      {!concealed &&
         Object.entries(recoveries).map(([id, recovery]) => (
           <button
             key={id}
@@ -256,8 +304,8 @@ export function RecruitmentConversationScope({
               : "Confirm original comment request"}
           </button>
         ))}
-      <ReadVisibility.Provider value={visible}>
-        <div hidden={!visible} inert={!visible}>
+      <ReadVisibility.Provider value={!concealed}>
+        <div hidden={concealed} inert={concealed}>
           {frame}
         </div>
       </ReadVisibility.Provider>
