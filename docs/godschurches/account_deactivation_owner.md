@@ -50,11 +50,37 @@ The current focused service checks pass:
 - Nine built HTTPS lifecycle cases preserve duty-handoff denial, full session
   and sharing revocation, concurrent assignment safety and separate reactivation.
 
-The production build and source gates pass. Browser acceptance is still in progress.
-The browser harness covers native focus, actual server refreshes, account
-replacement, exact draft recovery, delayed committed replies, uncertain outcomes,
-small screens and Google-only confirmation. A seeded recent proof is a trusted
-test-verifier seam, not real Google provider acceptance.
+The production build, type check, authored-copy check, source security, hydration
+and output-trace checks pass. Lint has no errors and 39 existing warnings.
+The tested application is `28f8b2f2f2b594879c6af8a11467e95a545bb683`, build
+`1su82AlO9lUHPb5cLmMCb`. Later commits only change reports and browser tests.
+
+Browser checks pass in four groups:
+
+- Twelve deactivation scenarios cover trusted native focus, actual server
+  refreshes, account replacement, exact draft recovery, delayed committed replies,
+  uncertain outcomes, small screens and Google-only confirmation.
+- Fifteen existing reaction and reading-settings scenarios preserve the shared
+  retained frame's privacy and draft behavior.
+- Sixteen password and email scenarios preserve concealment, recovery, no replay,
+  replacement logins, normal success, owner rejection and small-screen access.
+- Six existing Google credential scenarios preserve sign-in methods recovery,
+  late-redirect suppression and replacement session and proof cookies.
+
+The credential regression harness now waits for the global session monitor's
+deliberate account-change concealment before testing recovery. Password settings
+use trusted native refocus because the local recheck button is inside a concealed
+workspace. Standalone email confirmation uses its accessible recheck button.
+The harness observes actual response completion, retained success, committed
+database state, one mutation, concealed fields and an unchanged replacement
+login. It does not bypass hidden or inert controls.
+
+Browser runs recorded no page errors. All users, databases and delivery fixtures
+were isolated and fictional; no production writes or real provider sends occurred.
+A seeded recent proof is a trusted test-verifier seam, not real Google provider
+acceptance. Existing credential Google redirect tests use injected same-origin
+responses; the new deactivation test also exercises its actual HTTPS confirmation
+start while blocking external navigation.
 
 ## Integration
 
@@ -64,4 +90,6 @@ be reloaded. Preserve the existing account duty-handoff and sharing-revocation
 checks. Run the focused lifecycle/browser checks against the combined release
 and retain the separate dependency, deployment and live-acceptance gates.
 
-This checkpoint is not yet a tested handoff or a production release.
+The local implementation and acceptance checks are complete, pending independent
+final review. Integration, hosted checks, dependency clearance and verified live
+acceptance remain separate gates. This checkpoint is not a production release.

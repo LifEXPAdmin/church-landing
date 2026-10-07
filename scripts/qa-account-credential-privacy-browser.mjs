@@ -66,7 +66,10 @@ await context.route("**/*", async (route) => {
     else await route.abort();
   } catch (error) {
     // A navigation may cancel a prefetch before its continuation settles.
-    if (!/Route is already handled/.test(String(error)) || !route.request().failure())
+    if (
+      !/Route is already handled/.test(String(error)) ||
+      !route.request().failure()
+    )
       throw error;
   }
 });
@@ -133,7 +136,10 @@ const refocusNatively = async () => {
     window.credentialFocusEvents = [];
     for (const event of ["blur", "focus"])
       window.addEventListener(event, (e) =>
-        window.credentialFocusEvents.push({ type: e.type, trusted: e.isTrusted })
+        window.credentialFocusEvents.push({
+          type: e.type,
+          trusted: e.isTrusted
+        })
       );
   });
   const { targetInfo } = await pageCdp.send("Target.getTargetInfo");
@@ -147,7 +153,9 @@ const refocusNatively = async () => {
   const other = await created;
   try {
     const otherCdp = await context.newCDPSession(other);
-    await otherCdp.send("Emulation.setFocusEmulationEnabled", { enabled: false });
+    await otherCdp.send("Emulation.setFocusEmulationEnabled", {
+      enabled: false
+    });
     await other.bringToFront();
     await page.waitForFunction(() => !document.hasFocus());
     await page.bringToFront();
@@ -266,12 +274,19 @@ const forward = async (route) => {
           resolve({
             status: res.statusCode,
             headers: Object.fromEntries(
-              Object.entries(res.headers).filter(([name]) =>
-                !["connection", "transfer-encoding", "content-length"].includes(name)
-              ).map(([k, v]) => [
-                k,
-                Array.isArray(v) ? v.join("\n") : String(v)
-              ])
+              Object.entries(res.headers)
+                .filter(
+                  ([name]) =>
+                    ![
+                      "connection",
+                      "transfer-encoding",
+                      "content-length"
+                    ].includes(name)
+                )
+                .map(([k, v]) => [
+                  k,
+                  Array.isArray(v) ? v.join("\n") : String(v)
+                ])
             ),
             body
           })
@@ -465,9 +480,10 @@ try {
       }
     };
     await page.route("**/api/platform/account", intercept);
-    const browserReply = page.waitForResponse((reply) =>
-      new URL(reply.url()).pathname === "/api/platform/account" &&
-      reply.request().postDataJSON()?.operation === operation
+    const browserReply = page.waitForResponse(
+      (reply) =>
+        new URL(reply.url()).pathname === "/api/platform/account" &&
+        reply.request().postDataJSON()?.operation === operation
     );
     await page.getByRole("button", { name: f.button, exact: true }).click();
     await arrived;
@@ -490,13 +506,17 @@ try {
     await pulse("focus");
     // The global session monitor deliberately conceals again when it detects
     // the replacement account. Let that check settle before testing recovery.
-    await page.getByText("The signed-in account changed.", { exact: false }).waitFor();
+    await page
+      .getByText("The signed-in account changed.", { exact: false })
+      .waitFor();
     if (operation === "change-password") {
       // Settings conceal their entire workspace, including its recheck button.
       // Native focus can recover the retained outcome without bypassing inert.
       await refocusNatively();
     } else {
-      await page.getByRole("button", { name: "Recheck current account", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Recheck current account", exact: true })
+        .click();
     }
     await page
       .getByText("The change was confirmed.", { exact: false })
@@ -505,12 +525,22 @@ try {
     await concealed(f.fields);
     assert.equal(page.url(), before);
     assert.equal(count, 1);
-    assert.equal((await context.cookies()).find((cookie) =>
-      cookie.name === sessionCookieFixtureName(config.origin))?.value, replacement.token);
-    const changed = await db.platformUser.findUniqueOrThrow({ where: { id: a.id } });
+    assert.equal(
+      (await context.cookies()).find(
+        (cookie) => cookie.name === sessionCookieFixtureName(config.origin)
+      )?.value,
+      replacement.token
+    );
+    const changed = await db.platformUser.findUniqueOrThrow({
+      where: { id: a.id }
+    });
     assert.equal(changed.credentialVersion, 1);
-    assert.equal(await db.platformSession.count({ where: { userId: a.id } }), 0);
-    if (operation === "confirm-email-change") assert.equal(changed.email, f.newEmail);
+    assert.equal(
+      await db.platformSession.count({ where: { userId: a.id } }),
+      0
+    );
+    if (operation === "confirm-email-change")
+      assert.equal(changed.email, f.newEmail);
     await page.unroute("**/api/platform/account", intercept);
     ok(
       operation +
