@@ -1,17 +1,20 @@
+import {
+  POST_RESOURCE_LIMIT,
+  postResourceKinds,
+  type PostResourceKind
+} from "../../packages/shared-core/src/post-options";
+import type { PostResourceReference } from "../../packages/shared-core/src/post-contracts";
 import { PortalError } from "./portal-policy";
 import { postId } from "./post-input";
 import { requireImplementedResource } from "./resource-contracts";
 import { socialInput } from "./social-operations";
 
-export const POST_RESOURCE_LIMIT = 3;
-export const postResourceKinds = [
-  "exchangeListing",
-  "eventOccurrence",
-  "volunteerOpportunity",
-  "mediaCatalogItem"
-] as const;
-export type PostResourceKind = (typeof postResourceKinds)[number];
-export type PostResourceReference = { kind: PostResourceKind; id: string };
+export {
+  POST_RESOURCE_LIMIT,
+  postResourceKinds
+} from "../../packages/shared-core/src/post-options";
+export type { PostResourceKind } from "../../packages/shared-core/src/post-options";
+export type { PostResourceReference } from "../../packages/shared-core/src/post-contracts";
 export function postResourceReferences(
   value: unknown
 ): PostResourceReference[] {

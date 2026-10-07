@@ -1,40 +1,9 @@
-// Safe to share with the composer; no database or credential dependencies.
-export const POST_TOPICS = [
-  "prayer",
-  "testimony",
-  "scripture",
-  "fasting",
-  "worship",
-  "service",
-  "community",
-  "family",
-  "questions",
-  "encouragement"
-] as const;
-export const normalizedPostText = (value: string) =>
-  value.replace(/\r\n?/g, "\n");
-export const CONTENT_NOTE_LIMIT = 120;
-export const SAFE_EXCERPT_LIMIT = 160;
-// Selection is the author's explicit choice, never an inferred sensitivity label.
-export function postPreviewText(post: {
-  content: string;
-  contentNote?: string | null;
-  safeExcerpt?: string | null;
-}) {
-  return (
-    post.safeExcerpt ||
-    (post.contentNote
-      ? "Open this post when you’re ready to read more."
-      : post.content)
-  );
-}
-
-export const emptyPostDiscovery = {
-  discoveryLanguage: null,
-  discoveryDenomination: null,
-  discoveryCountry: null,
-  discoveryPlaceId: null,
-  discoveryRegion: null,
-  discoveryLatitude: null,
-  discoveryLongitude: null
-};
+// Compatibility entry point; web and mobile consume the same pure source.
+export {
+  POST_TOPICS,
+  normalizedPostText,
+  CONTENT_NOTE_LIMIT,
+  SAFE_EXCERPT_LIMIT,
+  postPreviewText,
+  emptyPostDiscovery
+} from "../../packages/shared-core/src/post-options";

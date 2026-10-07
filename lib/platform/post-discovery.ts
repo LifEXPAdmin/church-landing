@@ -1,3 +1,4 @@
+import type { PostDiscoveryInput } from "../../packages/shared-core/src/post-contracts";
 import type { PlatformPost } from "@prisma/client";
 import {
   denominationKey,
@@ -8,13 +9,7 @@ import {
 import { getDiscoveryPlace } from "./discovery-places";
 import { PortalError } from "./portal-policy";
 
-export type PostDiscoveryInput = {
-  language: string | null;
-  denomination: string | null;
-  country: string | null;
-  placeId: number | null;
-  shareLocality: boolean;
-};
+export type { PostDiscoveryInput } from "../../packages/shared-core/src/post-contracts";
 export function parsePostDiscovery(
   value: unknown,
   requireConsent = true

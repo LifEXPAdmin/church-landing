@@ -106,7 +106,7 @@ function walk(directory) {
     visit(ast);
   }
 }
-for (const directory of ["app", "components", "lib", "public"])
+for (const directory of ["app", "components", "lib", "public", "packages/shared-core/src"])
   walk(join(root, directory));
 if (issues.length) {
   console.error(issues.join("\n"));

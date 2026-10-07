@@ -1,3 +1,4 @@
+import type { SavedPhotoReference } from "../../packages/shared-core/src/post-contracts";
 import type { PlatformPost } from "@prisma/client";
 import { expected, PortalError } from "./portal-policy";
 import { type PostContext, type PostTx } from "./post-access";
@@ -7,7 +8,7 @@ import {
   requirePhotoLibrary
 } from "./personal-photo-policy";
 import { socialInput } from "./social-operations";
-export type SavedPhotoReference = { id: string; version: number };
+export type { SavedPhotoReference } from "../../packages/shared-core/src/post-contracts";
 export function savedPhotoReferences(value: unknown): SavedPhotoReference[] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 10)
