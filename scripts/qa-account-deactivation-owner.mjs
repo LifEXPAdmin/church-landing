@@ -18,6 +18,9 @@ const { assertPortalTestDatabase, createPortalActor } =
   await import("../tests/seed-portal.ts");
 const { changeAccountPassword, loginAccount } =
   await import("../lib/platform/accounts.ts");
+const { createSessionToken, hashSessionToken } =
+  await import("../lib/platform/auth.ts");
+const { googleCookieName } = await import("../lib/platform/google-cookies.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
 const { chromium } = createRequire(
@@ -499,6 +502,138 @@ try {
   assert.equal(await active(normal.b), true);
   assert.equal(commands, before + 1);
   ok("Normal confirmed deactivation still completes and opens reactivation");
+  if (process.env.ACCOUNT_GOOGLE_ENABLED === "true") {
+    async function googleActor(label) {
+      const a = await createPortalActor(db, label);
+      a.identity = await db.platformGoogleIdentity.create({
+        data: {
+          userId: a.id,
+          issuer: "https://accounts.google.com",
+          subject: createSessionToken()
+        }
+      });
+      await db.platformUser.update({
+        where: { id: a.id },
+        data: { passwordHash: null }
+      });
+      return a;
+    }
+    async function googlePage(a, recent) {
+      await page.goto("about:blank");
+      await cookieOwner(a);
+      if (recent)
+        await context.addCookies([
+          {
+            name: googleCookieName("recent", true),
+            value: recent,
+            url: config.origin,
+            secure: true,
+            httpOnly: true,
+            sameSite: "Lax"
+          }
+        ]);
+      assert.equal((await page.goto(config.origin + path)).status(), 200);
+      await page.bringToFront();
+      await ack.waitFor();
+    }
+    const original = await googleActor("deactgoog");
+    await googlePage(original);
+    const googleStarted = Promise.withResolvers(),
+      releaseGoogle = Promise.withResolvers();
+    const googleUrl = config.origin + "/api/platform/google";
+    const delayedGoogle = async (route) => {
+      if (route.request().postDataJSON()?.operation !== "reauthenticate")
+        return route.fallback();
+      assert.equal(
+        route.request().headers()["x-expected-account"],
+        original.id
+      );
+      const response = await forward(route);
+      assert.equal(response.status, 200);
+      googleStarted.resolve();
+      await releaseGoogle.promise;
+      await route.fulfill(response);
+    };
+    await page.route(googleUrl, delayedGoogle);
+    before = commands;
+    await page
+      .getByRole("button", {
+        name: "Sign in with Google to confirm deactivating your account",
+        exact: true
+      })
+      .click();
+    await bounded(
+      googleStarted.promise,
+      "Actual Google confirmation start did not complete"
+    );
+    await cookieOwner(normal.b);
+    releaseGoogle.resolve();
+    await waitFor(async () => (await ack.count()) === 0);
+    assert.equal(new URL(page.url()).pathname, path);
+    assert.equal(await active(original), true);
+    assert.equal(await active(normal.b), true);
+    assert.equal(commands, before);
+    const attempt = await db.platformGoogleAttempt.findFirstOrThrow({
+      where: { linkUserId: original.id },
+      orderBy: { createdAt: "desc" }
+    });
+    assert.equal(attempt.reauthPurpose, "deactivate-account");
+    await page.unroute(googleUrl, delayedGoogle);
+    ok(
+      "Actual Google confirmation start carries the original owner and a delayed redirect is suppressed after B signs in"
+    );
+
+    const confirmedGoogle = await googleActor("deactproof");
+    const session = await db.platformSession.findUniqueOrThrow({
+      where: { tokenHash: hashSessionToken(confirmedGoogle.token) }
+    });
+    const recent = createSessionToken();
+    await db.platformRecentAuthentication.create({
+      data: {
+        userId: confirmedGoogle.id,
+        sessionId: session.id,
+        googleIdentityId: confirmedGoogle.identity.id,
+        credentialVersion: session.credentialVersion,
+        purpose: "deactivate-account",
+        tokenHash: hashSessionToken(recent),
+        expiresAt: new Date(Date.now() + 300000)
+      }
+    });
+    // Trusted test verifier seam only. No actual Google provider exchange is claimed.
+    await googlePage(confirmedGoogle, recent);
+    await page
+      .getByText(
+        "Google confirmation received for this action. Continue below.",
+        { exact: true }
+      )
+      .waitFor();
+    assert.equal(await field.count(), 0);
+    await ack.check();
+    before = commands;
+    const googleDeactivation = page.waitForRequest(
+      (r) => r.method() === "POST" && r.url() === account
+    );
+    await submit.click();
+    const submitted = await googleDeactivation;
+    assert.equal(submitted.headers()["x-expected-account"], confirmedGoogle.id);
+    assert.deepEqual(submitted.postDataJSON(), {
+      operation: "deactivate-account",
+      confirmed: true,
+      credentialMethod: "google"
+    });
+    await page.waitForURL("**/platform/account/reactivate?notice=deactivated");
+    assert.equal(await active(confirmedGoogle), false);
+    assert.equal(
+      await db.platformRecentAuthentication.count({
+        where: { tokenHash: hashSessionToken(recent) }
+      }),
+      0
+    );
+    assert.equal(commands, before + 1);
+    ok(
+      "Google-only deactivation uses the HttpOnly purpose proof once and still requires explicit acknowledgment"
+    );
+  }
   assert.deepEqual(evidence.errors, []);
   assert.deepEqual(evidence.external, []);
 } finally {

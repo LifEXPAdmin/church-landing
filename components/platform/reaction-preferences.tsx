@@ -10,11 +10,6 @@ import type { ReactionPreferencesState } from "@/lib/platform/reaction-preferenc
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { useReadVisibility } from "./read-visibility";
 
-const foreground = () =>
-  document.hasFocus() &&
-  document.visibilityState !== "hidden" &&
-  navigator.onLine;
-
 export { RetainedSettingsFrame as RetainedReactionSettings } from "./retained-settings-frame";
 
 export function ReactionPreferences({

@@ -859,7 +859,8 @@ test("Google deactivation and reactivation require separate confirmation and nev
     person.user.email
   );
   assert.equal(result.headers.get("location"), "/platform/account/google");
-  assert.equal(person.jar.has(SESSION_COOKIE), false);
+  assert.equal(person.jar.get(SESSION_COOKIE), person.token);
+  assert.equal(await readAccountSession(db, person.token), null);
   assert.equal(
     (await (await post({ operation: "status" }, person.jar)).json()).pending,
     "reactivate"
@@ -874,7 +875,8 @@ test("Google deactivation and reactivation require separate confirmation and nev
       .status,
     200
   );
-  assert.equal(person.jar.size, 0);
+  assert.deepEqual([...person.jar.keys()], [SESSION_COOKIE]);
+  assert.equal(await readAccountSession(db, person.token), null);
   assert.equal(
     await db.platformSession.count({ where: { userId: person.user.id } }),
     0
