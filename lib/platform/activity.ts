@@ -114,7 +114,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind IN ('EXCHANGE_INQUIRY','EXCHANGE_HANDOFF','EXCHANGE_REMINDER') THEN 'handoffs'
   WHEN e.kind = 'EXCHANGE_MATCH' THEN 'exchange'
   WHEN e.kind = 'PANTRY_REQUEST' THEN 'assistance'
-  WHEN e.kind IN ('NEED_UPDATE','NEED_CONTRIBUTION') THEN 'needs'
+  WHEN e.kind IN ('NEED_UPDATE','NEED_CONTRIBUTION','INTERCHURCH_HELP') THEN 'needs'
   WHEN e.kind = 'POST_MENTION' THEN 'comments'
   WHEN e.kind = 'AUTHOR_POST' THEN 'posts'
   WHEN e.kind IN ('POST_REACTION','COMMENT_REACTION') THEN 'reactions'
@@ -123,6 +123,7 @@ const categorySql = Prisma.sql`CASE
   WHEN e.kind IN ('CALENDAR_REMINDER','VOLUNTEER_REMINDER','EVENT_CHANGED','RSVP_CHANGED','VOLUNTEER_CHANGED','VOLUNTEER_REQUEST','VOLUNTEER_CONFIRMATION') THEN 'commitments'
   WHEN e.kind = 'COMMENT_ACTIVITY' THEN 'comments' ELSE 'reports' END`;
 const groupSql = Prisma.sql`CASE
+  WHEN e.kind = 'INTERCHURCH_HELP' THEN 'interchurch-help:' || coalesce(e."sourceId",e.id)
   WHEN e.kind IN ('GROUP_MEMBERSHIP','GROUP_REVIEW') THEN e.kind || ':' || coalesce(e."sourceId",e.id)
   WHEN e.kind IN ('EXCHANGE_INQUIRY','EXCHANGE_HANDOFF','EXCHANGE_REMINDER') THEN 'exchange-handoff:' || coalesce(e."sourceId",e.id)
   WHEN e.kind = 'EXCHANGE_MATCH' THEN 'exchange-listing:' || coalesce(e."sourceId",e.id)
