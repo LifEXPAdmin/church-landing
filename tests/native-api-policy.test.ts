@@ -15,6 +15,7 @@ import { handleNativePostCreateRequest } from "../lib/platform/native-post-bound
 import {
   handleNativeCommentReadRequest,
   handleNativeCommentLikeRequest,
+  handleNativeCommentEditRequest,
   handleNativeCommentCreateRequest
 } from "../lib/platform/native-comment-boundary";
 import { decodeApiResponse, apiFailure } from "../lib/platform/api-contracts";
@@ -196,6 +197,78 @@ test("direct comment publication can pause before body or database work without 
   delete process.env.NATIVE_API_DISABLED_FEATURES;
   assert.equal(
     nativeCapabilityPolicy().features.find((f) => f.name === "comments.create")
+      ?.available,
+    true
+  );
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.write")
+      ?.available,
+    false
+  );
+});
+
+test("comment editing pauses independently before body and database access", async () => {
+  const { db, calls } = unusedDatabase();
+  const params = { postId: "post", commentId: "comment" };
+  const path = "posts/post/comments/comment";
+  for (const reason of ["version", "pause", "invalid"]) {
+    process.env.NATIVE_API_DISABLED_FEATURES =
+      reason === "version"
+        ? ""
+        : reason === "pause"
+          ? "comments.edit"
+          : "unknown.feature";
+    const probe = request(
+      path,
+      "POST",
+      {
+        ...credentials,
+        ...(reason === "version" ? { "X-API-Version": "2" } : {})
+      },
+      true
+    );
+    await denied(
+      await handleNativeCommentEditRequest(db, probe.value, params),
+      reason === "version" ? 426 : 503,
+      reason === "version" ? "unsupported_version" : "feature_unavailable"
+    );
+    assert.equal(probe.pulls(), 0);
+  }
+  await denied(
+    await handleNativeCommentEditRequest(
+      db,
+      request(path, "POST", { ...credentials, Origin: origin }, true).value,
+      params
+    ),
+    403,
+    "forbidden"
+  );
+  await denied(
+    await handleNativeCommentEditRequest(
+      db,
+      request(path, "POST", {}, true).value,
+      params
+    ),
+    401,
+    "unauthenticated"
+  );
+  const method = await handleNativeCommentEditRequest(
+    db,
+    request(path).value,
+    params
+  );
+  assert.equal(method.headers.get("allow"), "POST");
+  await denied(method, 405, "method_not_allowed");
+  assert.equal(calls(), 0);
+  process.env.NATIVE_API_DISABLED_FEATURES = "comments.edit";
+  for (const name of ["comments.create", "comments.read", "commentLikes.write"])
+    assert.equal(
+      nativeCapabilityPolicy().features.find((f) => f.name === name)?.available,
+      true
+    );
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.edit")
       ?.available,
     true
   );

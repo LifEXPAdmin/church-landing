@@ -104,24 +104,37 @@ function denied(error: unknown, writing = false) {
   );
 }
 
-/** Both writes use the same admission, owner and uncertain-receipt boundary. */
+const commentWrites = {
+  createComment: {
+    command: "create",
+    feature: "comments.create",
+    methodMessage: "Use POST to publish a comment."
+  },
+  editComment: {
+    command: "edit",
+    feature: "comments.edit",
+    methodMessage: "Use POST to edit a comment."
+  },
+  setCommentLike: {
+    command: "like",
+    feature: "commentLikes.write",
+    methodMessage: "Use POST to change a comment Like."
+  }
+} as const;
+
+/** Writes share admission, original-owner and uncertain-receipt boundaries. */
 async function handleNativeCommentWriteRequest(
   db: PrismaClient,
   request: Request,
   params: unknown,
-  operation: "createComment" | "setCommentLike",
+  operation: keyof typeof commentWrites,
   afterWrite?: (commentId: string) => void
 ) {
   try {
-    const creating = operation === "createComment";
+    const policy = commentWrites[operation];
     const contract = apiContracts[operation];
     if (request.method !== "POST") {
-      const result = failure(
-        "method_not_allowed",
-        creating
-          ? "Use POST to publish a comment."
-          : "Use POST to change a comment Like."
-      );
+      const result = failure("method_not_allowed", policy.methodMessage);
       result.headers.set("Allow", "POST");
       return result;
     }
@@ -129,7 +142,7 @@ async function handleNativeCommentWriteRequest(
     const credential = nativeRequestCredential(request);
     if (!credential.token) throw new NativeRequestError("unauthenticated");
     if (!credential.owner) throw new NativeRequestError("validation");
-    requireNativeFeature(creating ? "comments.create" : "commentLikes.write");
+    requireNativeFeature(policy.feature);
     const target = contract.params.parse(params) as {
       postId: string;
       commentId?: string;
@@ -159,7 +172,7 @@ async function handleNativeCommentWriteRequest(
     const data = await commentCommand(
       db,
       credential.token,
-      { operation: creating ? "create" : "like", ...input, ...target },
+      { operation: policy.command, ...input, ...target },
       credential.owner
     );
     // The route schedules the existing durable outbox, including exact retries.
@@ -198,6 +211,22 @@ export function handleNativeCommentCreateRequest(
     params,
     "createComment",
     afterCreate
+  );
+}
+
+/** Corrections preserve the canonical author, audience and immutable receipt. */
+export function handleNativeCommentEditRequest(
+  db: PrismaClient,
+  request: Request,
+  params: unknown,
+  afterEdit?: (commentId: string) => void
+) {
+  return handleNativeCommentWriteRequest(
+    db,
+    request,
+    params,
+    "editComment",
+    afterEdit
   );
 }
 

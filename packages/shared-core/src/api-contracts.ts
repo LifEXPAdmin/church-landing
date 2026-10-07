@@ -562,6 +562,21 @@ export const apiContracts = Object.freeze({
     apiMutationReceipt,
     "member"
   ),
+  editComment: endpoint(
+    "POST",
+    "/posts/:postId/comments/:commentId",
+    empty,
+    object({
+      mutationId,
+      expectedVersion: version,
+      // Preserve raw text for the existing receipt; canonical validation owns
+      // normalization, the 1,500-character limit and mention eligibility.
+      content: text(3000, 2),
+      mentionIds: array(apiId, 5)
+    }),
+    apiMutationReceipt,
+    "member"
+  ),
   setCommentLike: endpoint(
     "POST",
     "/posts/:postId/comments/:commentId/like",

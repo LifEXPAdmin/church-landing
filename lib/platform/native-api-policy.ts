@@ -21,6 +21,7 @@ const optional = [
   "reactionPreferences.write",
   "comments.read",
   "comments.create",
+  "comments.edit",
   "commentLikes.write",
   "bookmarks.read",
   "bookmarks.write",

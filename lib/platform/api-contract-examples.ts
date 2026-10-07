@@ -64,6 +64,11 @@ export const apiResponseExamples = {
     version: 1,
     message: "Comment published."
   }),
+  editComment: member({
+    id: "fictional-comment",
+    version: 2,
+    message: "Comment updated."
+  }),
   setCommentLike: member({
     id: "fictional-comment",
     version: 1,
@@ -204,6 +209,12 @@ export const apiWriteExamples = {
     content: "Fictional comment text.",
     replyToId: null,
     authorChurchId: null,
+    mentionIds: []
+  },
+  editComment: {
+    mutationId: "fictional-comment-edit-1",
+    expectedVersion: 1,
+    content: "Fictional corrected comment.",
     mentionIds: []
   },
   setCommentLike: {

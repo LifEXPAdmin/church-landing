@@ -1,10 +1,10 @@
-# Native comment reading, publication and Likes
+# Native comment reading, publication, editing and Likes
 
 The versioned `GET /api/platform/v1/posts/:postId/comments` adapter calls the
 same `readComments` service as the website. It introduces no discussion store,
-schema or notification owner. `comments.read`, `comments.create` and
+schema or notification owner. `comments.read`, `comments.create`, `comments.edit` and
 `commentLikes.write` are separate optional capabilities. `comments.write`
-remains unavailable for drafts, editing and other discussion controls.
+remains unavailable for drafts, deletion and other discussion controls.
 
 The default view is `roots`, ordered `oldest`; roots also support `newest`.
 `replies` requires `rootId`, while `context` requires `commentId`. Replies and
@@ -61,8 +61,8 @@ thread for current Like state, version and visible count. Exact old retries neve
 restore a state that a later change replaced. A lost response keeps the original
 request reference and intended state; a different command needs a new reference.
 Post-commit handoff or projection failures remain unconfirmed. Requests are
-bounded to 16 KiB and receipts retain the response bound above. Editing,
-private drafts, prayer, pins and conversation settings still use the website.
+bounded to 16 KiB and receipts retain the response bound above. Private drafts,
+deletion, prayer, pins and conversation settings still use the website.
 
 ## Direct comment publication
 
@@ -99,6 +99,36 @@ leaves the committed outbox and continuation available to existing recovery.
 Local browser acceptance proves interoperability with the website; app UI,
 device lifecycle, provider delivery and release acceptance remain separate.
 
+## Comment corrections
+
+`POST /api/platform/v1/posts/:postId/comments/:commentId` supports text and
+mention corrections through the independent `comments.edit` capability. Its
+strict body contains only `mutationId`, `expectedVersion`, raw `content` and
+ordered `mentionIds` (at most five). The path fixes both targets. Speaker,
+audience, reply structure, private draft and operation overrides are rejected.
+The raw text allowance and canonical 1,500-character normalization rule match
+direct publication. Keep every original field for an exact retry.
+
+The adapter calls the existing `commentCommand` under its exclusive permission
+gate. A new correction requires a current readable source and comment, the
+personal author or current speaking-church publisher, the current version and
+reply permission. It preserves identity, audience and structure, then records
+the new version and Edited timestamp. A conflict leaves the text untouched.
+Original-account checks apply before body admission and inside the session lock,
+including receipt replay. The shared website comment rate bucket still applies.
+
+An ordinary exact receipt can acknowledge an earlier edit after later changes or
+access loss without reapplying it. Topic and group receipts retain their current
+participation gates. Always read current state and permissions separately;
+a historical receipt grants no continuing access or editing authority.
+
+Canonical mention eligibility, active flags and per-comment recipient intents
+remain authoritative. Removing and re-adding a mention does not create a second
+alert. Edits do not start publication follower jobs. Like the website edit route,
+the native route schedules `dispatchNotifications` with the comment ID after
+success, including exact retries. Post-commit handoff or receipt projection
+failure remains unconfirmed; retry the same immutable request.
+
 ## Verification
 
 `tests/comment-visibility-projection.test.ts` reproduces a restricted Topic root
@@ -132,3 +162,11 @@ and existing follower/outbox integration. The HTTP checks cover the production
 route over trusted local HTTPS; `qa-native-comment-publishing-browser.mjs`
 checks native roots and replies on the actual website, website publication in
 native reads, and immutable retry after a lost website acknowledgement.
+
+`--native-comment-editing` adds correction permissions, versions, raw retry
+identity, mention deduplication, original-owner races, shared quotas and current
+Topic/group replay gates. It also runs affected publication and Like regressions
+and canonical notification tests. `native-comment-editing-http.test.ts` and
+`qa-native-comment-editing-browser.mjs` exercise the production adapter and actual
+website editing, conflict and lost-acknowledgement controls. Keep their exact
+local evidence separate from native app, physical-device and release acceptance.
