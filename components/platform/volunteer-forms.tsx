@@ -7,6 +7,7 @@ import type {
 } from "@/lib/platform/volunteer-reads";
 import { usePrivateChoiceAction } from "./use-private-choice-action";
 import { portalInputClass } from "./portal-action-form";
+import { VolunteerServiceActions } from "./volunteer-service-history";
 
 const endpoint = "/api/platform/volunteers";
 const snapshot = (opportunity: VolunteerOpportunityView) => ({
@@ -445,6 +446,13 @@ export function VolunteerApplicationActions({
             Cancel assignment
           </button>
         )}
+      {application.service && (
+        <VolunteerServiceActions
+          key={`${owner}:${application.service.target.kind}:${application.service.target.id}:${application.service.version}:${application.service.serviceVersion}`}
+          owner={owner}
+          record={application.service}
+        />
+      )}
       {action.status}
     </div>
   );

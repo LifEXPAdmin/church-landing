@@ -10,6 +10,8 @@ import {
   RecruitmentConversationScope
 } from "./resource-conversation";
 import { RegionalTime } from "./regional-presentation";
+import { VolunteerServiceCard } from "./volunteer-service-history";
+import { VolunteerServiceScope } from "./volunteer-service-scope";
 import {
   VolunteerApplyForm,
   VolunteerApplicationActions,
@@ -33,7 +35,9 @@ const titles: Record<string, string> = {
   new: "Create volunteer opportunity",
   edit: "Edit volunteer opportunity",
   opportunity: "Volunteer opportunity",
-  applications: "Private volunteer applications"
+  applications: "Private volunteer applications",
+  history: "My volunteer service history",
+  "service-roster": "Confirm volunteer service"
 };
 function Opportunity({
   row,
@@ -185,6 +189,8 @@ export async function VolunteerPage({
   query: VolunteerPageQuery;
 }) {
   const user = await getCurrentPlatformUser();
+  let serviceScopeUrl = "",
+    serviceScopeReady = false;
   let content: ReactNode;
   let discussion: {
     owner: string | null;
@@ -208,6 +214,13 @@ export async function VolunteerPage({
         (entry): entry is [string, string] => typeof entry[1] === "string"
       )
     );
+    const parameters = new URLSearchParams({
+      ...values,
+      view,
+      ...(id ? { id } : {})
+    });
+    const api = `/api/platform/volunteers?${parameters}`;
+    serviceScopeUrl = api;
     if (!user && !["list", "opportunity"].includes(view))
       content = (
         <p>
@@ -219,12 +232,7 @@ export async function VolunteerPage({
       );
     else {
       const result = await volunteerPage({ ...values, view, id });
-      const parameters = new URLSearchParams({
-        ...values,
-        view,
-        ...(id ? { id } : {})
-      });
-      const api = `/api/platform/volunteers?${parameters}`;
+      serviceScopeReady = !!user && result.ownerId === user.id;
       let body: ReactNode;
       if (result.view === "opportunity")
         discussion = {
@@ -446,6 +454,77 @@ export async function VolunteerPage({
             )}
           </div>
         );
+      else if (result.view === "history")
+        body = (
+          <div className="space-y-5">
+            <p>
+              Your assignments remain private by default. After an organizer
+              confirms completed service, you can choose whether to share each
+              record on your member profile. This does not verify credentials,
+              hours or screening.
+            </p>
+            {!result.items.length && (
+              <p>No service records are available on this page.</p>
+            )}
+            {result.items.map((record) => (
+              <VolunteerServiceCard
+                key={`${record.target.kind}:${record.target.id}:${record.version}:${record.serviceVersion}`}
+                owner={result.ownerId}
+                record={record}
+              />
+            ))}
+            {result.nextCursor && (
+              <Link
+                prefetch={false}
+                className="gc-button gc-button-quiet"
+                href={`${path}?after=${encodeURIComponent(result.nextCursor)}`}
+              >
+                Next service records
+              </Link>
+            )}
+          </div>
+        );
+      else if (result.view === "service-roster")
+        body = (
+          <div className="space-y-5">
+            <h2 className="text-2xl [overflow-wrap:anywhere]">{result.role}</h2>
+            <p>
+              Confirm only service that actually happened. Each volunteer
+              controls their own profile sharing.
+            </p>
+            {!result.people.length && (
+              <p>No authorized volunteer records are available on this page.</p>
+            )}
+            {result.people.map((person) => (
+              <section
+                key={person.id}
+                aria-label={`Service record for ${person.name}`}
+                className="space-y-3"
+              >
+                <h3 className="text-xl [overflow-wrap:anywhere]">
+                  {person.name}
+                </h3>
+                {person.service ? (
+                  <VolunteerServiceCard
+                    owner={result.ownerId}
+                    record={person.service}
+                  />
+                ) : (
+                  <p>Service confirmation is unavailable for this record.</p>
+                )}
+              </section>
+            ))}
+            {result.nextCursor && (
+              <Link
+                prefetch={false}
+                className="gc-button gc-button-quiet"
+                href={`${path}?after=${encodeURIComponent(result.nextCursor)}`}
+              >
+                Next volunteer records
+              </Link>
+            )}
+          </div>
+        );
       else
         body = (
           <div className="space-y-5">
@@ -563,6 +642,13 @@ export async function VolunteerPage({
           <Link
             prefetch={false}
             className={linkClass}
+            href="/platform/serve/history"
+          >
+            My service history
+          </Link>
+          <Link
+            prefetch={false}
+            className={linkClass}
             href="/platform/commitments"
           >
             My timed commitments
@@ -581,6 +667,14 @@ export async function VolunteerPage({
     >
       {page}
     </RecruitmentConversationScope>
+  ) : ["history", "applications", "service-roster"].includes(view) ? (
+    <VolunteerServiceScope
+      owner={user?.id ?? null}
+      url={serviceScopeUrl}
+      ready={serviceScopeReady}
+    >
+      {page}
+    </VolunteerServiceScope>
   ) : (
     page
   );

@@ -48,14 +48,19 @@ export async function handleVolunteerRequest(
       )
         throw new PortalError(400, "Use only the supported volunteer filters.");
       return Response.json(
-        await readVolunteers(db, token, {
-          view: q.get("view") ?? "list",
-          id: q.get("id"),
-          after: q.get("after"),
-          postId: q.get("postId"),
-          churchId: q.get("churchId"),
-          q: q.get("q")
-        }),
+        await readVolunteers(
+          db,
+          token,
+          {
+            view: q.get("view") ?? "list",
+            id: q.get("id"),
+            after: q.get("after"),
+            postId: q.get("postId"),
+            churchId: q.get("churchId"),
+            q: q.get("q")
+          },
+          expectedOwner ? { expectedOwner, credentialSupplied: !!token } : undefined
+        ),
         { headers }
       );
     }
@@ -96,7 +101,7 @@ export async function handleVolunteerRequest(
         "Check the volunteer entries. Nothing has been shortened."
       );
     }
-    const result = await volunteerCommand(db, token, input);
+    const result = await volunteerCommand(db, token, input, expectedOwner!);
     scheduleDomainActivity(
       db,
       actor.id,
@@ -107,13 +112,28 @@ export async function handleVolunteerRequest(
     );
     let protectedRecovery = false;
     try {
+      const serviceControl =
+        input.operation === "complete"
+          ? await db.retentionControl.findFirst({
+              where: {
+                kind: input.targetKind === "signup"
+                  ? "VOLUNTEER_SERVICE_SIGNUP"
+                  : "VOLUNTEER_SERVICE_APPLICATION",
+                sourceId: result.id
+              },
+              orderBy: { version: "desc" },
+              select: { targetId: true }
+            })
+          : null;
       const controls = await journalRetentionControls(
         db,
         protectedRetentionControls(),
-        actor.id,
+        serviceControl ? [actor.id, serviceControl.targetId] : actor.id,
         request.signal
       );
-      protectedRecovery = !controls.failed && !controls.pending;
+      protectedRecovery =
+        (input.operation !== "complete" || !!serviceControl) &&
+        !controls.failed && !controls.pending;
     } catch {
       /* Durable receipt stays retryable. */
     }

@@ -217,13 +217,23 @@ export async function handleExchangeRequest(
     if (handoff) scheduleExchangeHandoffs(db, result.id, afterResponse);
     let protectedRecovery = false;
     try {
+      const serviceControl =
+        input.operation === "need-complete-volunteer"
+          ? await db.retentionControl.findFirst({
+              where: { kind: "VOLUNTEER_SERVICE_SIGNUP", sourceId: result.id },
+              orderBy: { version: "desc" },
+              select: { targetId: true }
+            })
+          : null;
       const controls = await journalRetentionControls(
         db,
         protectedRetentionControls(),
-        actor.id,
+        serviceControl ? [actor.id, serviceControl.targetId] : actor.id,
         request.signal
       );
-      protectedRecovery = !controls.failed && !controls.pending;
+      protectedRecovery =
+        (input.operation !== "need-complete-volunteer" || !!serviceControl) &&
+        !controls.failed && !controls.pending;
     } catch {
       /* The committed receipt remains authoritative and maintenance retries. */
     }

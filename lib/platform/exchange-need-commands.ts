@@ -37,6 +37,7 @@ import { postField, postId } from "./post-input";
 import { expected, PortalError } from "./portal-policy";
 import { recordDiscoveryControl } from "./retention-controls";
 import { socialCommand, socialInput } from "./social-operations";
+import { authorizeVolunteerServiceIn } from "./volunteer-service-history";
 
 const specifics: Record<string, string[]> = {
   configure: [
@@ -137,6 +138,13 @@ async function authorized(
   } else {
     const need = await needRow(tx, input.needId);
     await requireNeedCoordinator(tx, need, ownerId);
+    if (op === "complete-volunteer")
+      await authorizeVolunteerServiceIn(tx, ownerId, {
+        ...input,
+        operation: "complete",
+        targetKind: "signup",
+        targetId: input.signupId
+      });
   }
 }
 export async function needSlotCounts(tx: PostTx, slotId: string) {

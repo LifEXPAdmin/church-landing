@@ -53,6 +53,8 @@ export type RetentionControlEntry = {
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
     | "VOLUNTEER_APPLICATION"
+    | "VOLUNTEER_SERVICE_SIGNUP"
+    | "VOLUNTEER_SERVICE_APPLICATION"
     | "PANTRY_HUB"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
@@ -122,6 +124,10 @@ function validate(value: unknown): RetentionControlEntry {
       "REACTION_COUNT_PREFERENCES"
     ].includes(r.kind) &&
       (r.sourceId !== r.targetId || r.operatorId !== r.targetId)) ||
+    (["VOLUNTEER_SERVICE_SIGNUP", "VOLUNTEER_SERVICE_APPLICATION"].includes(
+      r.kind
+    ) &&
+      r.operatorId !== r.targetId) ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
     !([
@@ -141,6 +147,8 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_NEED",
       "VOLUNTEER_OPPORTUNITY",
       "VOLUNTEER_APPLICATION",
+      "VOLUNTEER_SERVICE_SIGNUP",
+      "VOLUNTEER_SERVICE_APPLICATION",
       "PANTRY_HUB",
       "EXCHANGE_INQUIRY",
       "EXCHANGE_CONTACT",
@@ -496,6 +504,8 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
     | "VOLUNTEER_APPLICATION"
+    | "VOLUNTEER_SERVICE_SIGNUP"
+    | "VOLUNTEER_SERVICE_APPLICATION"
     | "PANTRY_HUB"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
@@ -1434,6 +1444,35 @@ export async function replayRetentionControls(
                 }
               });
           }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (
+          entry.kind === "VOLUNTEER_SERVICE_SIGNUP" ||
+          entry.kind === "VOLUNTEER_SERVICE_APPLICATION"
+        ) {
+          // A disclosure/correction control cannot cancel an assignment or
+          // release a completed place. Its opaque row is also the recovery
+          // fence when the source is absent; never invent a signup/application.
+          const where = {
+            id: entry.sourceId,
+            userId: entry.targetId,
+            serviceVersion: { lt: entry.version }
+          };
+          const data = {
+            serviceVersion: entry.version,
+            serviceRecoveryRequired: true,
+            completionNote: "",
+            serviceSharedAt: null,
+            serviceSharedCompletionVersion: null
+          };
+          if (entry.kind === "VOLUNTEER_SERVICE_SIGNUP")
+            await tx.postVolunteerSignup.updateMany({ where, data });
+          else await tx.volunteerApplication.updateMany({ where, data });
           await record(tx, entry);
           await tx.retentionControl.updateMany({
             where: { id: entry.id, journaledAt: null },

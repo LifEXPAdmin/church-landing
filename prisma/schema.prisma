@@ -2340,6 +2340,12 @@ model PostVolunteerSignup {
   application VolunteerApplication?
   slotVersion Int @default(1)
   completedAt DateTime?
+  completionVersion Int @default(0)
+  completionNote String @default("")
+  serviceVersion Int @default(0)
+  serviceSharedAt DateTime?
+  serviceSharedCompletionVersion Int?
+  serviceRecoveryRequired Boolean @default(false)
   activeSince DateTime?
   id String @id @default(cuid())
   slotId String
@@ -2388,6 +2394,15 @@ model VolunteerOpportunity {
 
 model VolunteerApplication {
   id String @id @default(cuid())
+  // Completion belongs here only for untimed assignments. Timed applications
+  // continue to use their one canonical PostVolunteerSignup.
+  completedAt DateTime?
+  completionVersion Int @default(0)
+  completionNote String @default("")
+  serviceVersion Int @default(0)
+  serviceSharedAt DateTime?
+  serviceSharedCompletionVersion Int?
+  serviceRecoveryRequired Boolean @default(false)
   opportunityId String?
   userId String?
   signupId String? @unique

@@ -1,6 +1,7 @@
 import { ProfileFeaturedResources } from "@/components/platform/profile-featured";
 import { ProfilePhotos } from "@/components/platform/profile-photos";
 import { ProfileModuleContent } from "@/components/platform/profile-modules";
+import { RegionalTime } from "@/components/platform/regional-presentation";
 import { LocalEventTime } from "@/components/platform/local-event-time";
 import { profileModuleSections } from "@/lib/platform/profile-modules";
 import { createHash } from "node:crypto";
@@ -184,6 +185,7 @@ export default async function MemberProfilePage({
     profile.website ||
     profile.interests.length ||
     profile.selectedEvent ||
+    profile.serviceHistory.length ||
     profileModuleSections(profile.presentation.modules).length
   );
   const about = hasAbout ? (
@@ -220,6 +222,50 @@ export default async function MemberProfilePage({
         </div>
       )}
       <ProfileModuleContent modules={profile.presentation.modules} />
+      {profile.serviceHistory.length > 0 && (
+        <section
+          aria-labelledby="profile-service-heading"
+          className="space-y-3"
+        >
+          <h3 id="profile-service-heading" className="text-xl">
+            Shared service history
+          </h3>
+          <p className="text-sm text-gc-muted">
+            Organizer-recorded completions this member chose to share. These
+            records do not verify credentials, hours or screening.
+          </p>
+          <ul className="space-y-4">
+            {profile.serviceHistory.map((record) => (
+              <li key={`${record.kind}:${record.id}`} className="space-y-2">
+                <Link
+                  prefetch={false}
+                  className="gc-profile-text-button [overflow-wrap:anywhere]"
+                  href={
+                    record.opportunityId
+                      ? `/platform/serve/${record.opportunityId}`
+                      : `/platform/posts/${record.postId}`
+                  }
+                >
+                  {record.title}
+                </Link>
+                <p className="text-sm">
+                  Confirmed completed on{" "}
+                  <RegionalTime value={record.completedAt} />.
+                </p>
+              </li>
+            ))}
+          </ul>
+          {profile.isMe && !profile.memberPreview && (
+            <Link
+              prefetch={false}
+              className="gc-profile-text-button"
+              href="/platform/serve/history"
+            >
+              Manage my service sharing
+            </Link>
+          )}
+        </section>
+      )}
       {profile.selectedEvent && (
         <section aria-labelledby="profile-event-heading" className="space-y-3">
           <h3 id="profile-event-heading" className="text-xl">

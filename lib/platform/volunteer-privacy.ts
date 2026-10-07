@@ -70,6 +70,16 @@ export async function exportVolunteerApplications(
       id: row.id,
       state: row.state,
       version: row.version,
+      // Timed completion remains on the canonical signup exported separately.
+      // These are this applicant's own retained choices, never a profile grant.
+      completedAt: row.completedAt,
+      completionVersion: row.completionVersion,
+      completionNote:
+        current && !row.serviceRecoveryRequired ? row.completionNote : "",
+      serviceVersion: row.serviceVersion,
+      serviceSharedAt: row.serviceSharedAt,
+      serviceSharedCompletionVersion: row.serviceSharedCompletionVersion,
+      serviceRecoveryRequired: row.serviceRecoveryRequired,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       current,
@@ -78,13 +88,22 @@ export async function exportVolunteerApplications(
         current &&
         ["SUBMITTED", "ACCEPTED"].includes(row.state) &&
         row.signup?.state !== "CANCELED" &&
+        !row.completedAt &&
         !row.signup?.completedAt
           ? row.availability
           : "",
       decisionNote: current ? row.decisionNote : "",
       // Only this applicant's own receipt; no church roster, contact, source
       // logistics, other applicants, reviewer identity or authority grants.
-      history: current ? row.events.toReversed() : []
+      history: current
+        ? row.events
+            .filter(
+              (event) =>
+                !row.serviceRecoveryRequired ||
+                !["COMPLETED", "COMPLETION_CORRECTED"].includes(event.action)
+            )
+            .toReversed()
+        : []
     };
   });
 }
@@ -112,9 +131,30 @@ export async function eraseVolunteerApplications(
   await tx.volunteerApplication.updateMany({
     where: {
       userId,
-      OR: [{ signupId: null }, { signup: { completedAt: null } }]
+      OR: [
+        { signupId: null, completedAt: null },
+        { signup: { completedAt: null } }
+      ]
     },
     data: { state: "WITHDRAWN" }
+  });
+  await tx.postVolunteerSignup.updateMany({
+    where: {
+      userId,
+      OR: [
+        { serviceRecoveryRequired: false },
+        { completionNote: { not: "" } },
+        { serviceSharedAt: { not: null } },
+        { serviceSharedCompletionVersion: { not: null } }
+      ]
+    },
+    data: {
+      completionNote: "",
+      serviceSharedAt: null,
+      serviceSharedCompletionVersion: null,
+      serviceRecoveryRequired: true,
+      serviceVersion: { increment: 1 }
+    }
   });
   await tx.volunteerApplication.updateMany({
     where: { userId },
@@ -123,6 +163,11 @@ export async function eraseVolunteerApplications(
       statement: "",
       availability: "",
       decisionNote: "",
+      completionNote: "",
+      serviceSharedAt: null,
+      serviceSharedCompletionVersion: null,
+      serviceRecoveryRequired: true,
+      serviceVersion: { increment: 1 },
       recoveryRequired: true,
       version: { increment: 1 }
     }

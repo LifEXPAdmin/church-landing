@@ -15,6 +15,7 @@ import {
 import { postField, postId } from "./post-input";
 import { parseVolunteerShift, volunteerShift } from "./volunteer-shift";
 import { syncVolunteerCancellation } from "./volunteer-lifecycle";
+import { recordVolunteerCompletionIn } from "./volunteer-service-history";
 
 export const participationInclude = {
   eventOccurrence: { include: { event: { include: { calendar: true } } } }
@@ -199,57 +200,15 @@ export async function participationCommandIn(
   }
   const post = await participationPost(tx, context, input.postId);
   if (operation === "complete-volunteer") {
-    if (!canOrganize(context, post))
-      throw new PortalError(
-        403,
-        "A current volunteer organizer must confirm completed help."
-      );
     const signup = await tx.postVolunteerSignup.findFirst({
-      where: { id: postId(input.signupId), slot: { postId: post.id } }
+      where: { id: postId(input.signupId), slot: { postId: post.id } },
+      select: { id: true }
     });
-    if (!signup)
-      throw new PortalError(404, "This volunteer signup is unavailable.");
-    expected(input.expectedVersion, signup.version);
-    if (typeof input.completed !== "boolean")
-      throw new PortalError(
-        400,
-        "Choose whether the help was actually completed."
-      );
-    const reason = postField(
-      input.reason,
-      500,
-      signup.completedAt && !input.completed ? 3 : 0
+    if (!signup) throw new PortalError(404, "This volunteer signup is unavailable.");
+    return recordVolunteerCompletionIn(
+      tx, context, { kind: "signup", id: signup.id },
+      input.expectedVersion, input.completed, input.reason
     );
-    if (input.completed && signup.state !== "ACTIVE")
-      throw new PortalError(
-        409,
-        "Canceled signups cannot be marked completed."
-      );
-    const saved = await tx.postVolunteerSignup.update({
-      where: { id: signup.id },
-      data: {
-        completedAt: input.completed ? new Date() : null,
-        version: { increment: 1 }
-      }
-    });
-    await audit(
-      tx,
-      post.id,
-      actorId,
-      input.completed
-        ? "volunteer-completed"
-        : "volunteer-completion-corrected",
-      saved.id,
-      saved.version,
-      reason
-    );
-    return {
-      id: saved.id,
-      version: saved.version,
-      message: input.completed
-        ? "Completed volunteer help recorded."
-        : "Volunteer completion corrected with your reason."
-    };
   }
   if (operation === "configure-poll") {
     if (!postCanEdit(context, post))

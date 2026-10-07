@@ -294,12 +294,10 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
       OR: [
         {
           userId,
-          NOT: {
-            AND: [
-              { completedAt: { not: null } },
-              { application: { isNot: null } }
-            ]
-          }
+          OR: [
+            { completedAt: null },
+            { slot: { post: { authorChurchId: null } } }
+          ]
         },
         { slot: { post: personalPost(userId) } }
       ]
