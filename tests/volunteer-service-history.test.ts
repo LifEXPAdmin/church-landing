@@ -211,7 +211,7 @@ test("source and organizer revocation hide service and deny old confirmation whi
   const before = await own(f.lee.token, f.targetId);
   await db.churchConnection.updateMany({
     where: { userId: f.lee.id, churchId: f.churchA.id },
-    data: { state: "REJECTED" }
+    data: { state: "REMOVED" }
   });
   const unavailable = await own(f.lee.token, f.targetId);
   assert.equal(unavailable.current, false);

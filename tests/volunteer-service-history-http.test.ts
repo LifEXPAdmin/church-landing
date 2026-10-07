@@ -259,7 +259,7 @@ test("HTTPS consent withdrawal remains available after source revocation and old
   privateJson(await send(endpoint, f.lee, shareBody));
   await db.platformPost.update({
     where: { id: f.opportunityPost.id },
-    data: { deletedAt: new Date() }
+    data: { status: "WITHDRAWN" }
   });
   const concealed = await own(f.lee, f.target.id);
   assert.equal(concealed.current, false);

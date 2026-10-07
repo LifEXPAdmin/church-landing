@@ -102,7 +102,16 @@ async function confirmed(timed: boolean) {
       orderBy: { version: "asc" }
     })
   ).map((entry) => entry.payload as unknown as RetentionControlEntry);
-  return { ...f, application, target, row, current, controls, kind };
+  return {
+    ...f,
+    applicationInput: f.application,
+    application,
+    target,
+    row,
+    current,
+    controls,
+    kind
+  };
 }
 
 for (const timed of [true, false]) {
@@ -293,7 +302,7 @@ test("account export explicitly includes own completion and consent revisions, w
   const other = await volunteerCommand(
     db,
     f.val.token,
-    f.application("Other volunteer private answer")
+    f.applicationInput("Other volunteer private answer")
   );
   const secret = accountConfig().rateSecret;
   const proof = await prepareAccountExport(
@@ -403,7 +412,7 @@ for (const timed of [true, false]) {
     const unfinished = await volunteerCommand(
       db,
       f.val.token,
-      f.application("Erase unfinished private answer")
+      f.applicationInput("Erase unfinished private answer")
     );
     await volunteerCommand(
       db,
