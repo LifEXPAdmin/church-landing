@@ -1,3 +1,17 @@
+## Initial web/native wire contract, 7 October 2026
+
+The additive contract in `lib/platform/api-contracts.ts` describes eleven proposed
+versioned operations using existing account, feed, post, profile, church and
+reaction services. Runtime schemas and typed fictional examples provide strict
+outbound field allowlists, bounded inputs/results, original-viewer checks and
+explicit null/retry semantics. `WEB_NATIVE_API_CONTRACT.md` binds the service and
+consumer map to the inspected application and records native credential/read
+adapter gaps, current web differences, idempotency and privacy requirements.
+No route, service, dependency or production behavior is activated by this change.
+Authentication/read/write adapters and native consumer acceptance remain separate.
+Local contract verification and final review are recorded in the private handoff.
+Existing dependency/security and release gates remain open.
+
 ## Optional reaction-count visibility locally verified, 7 October 2026 UTC
 
 Application `caeff5d12f689308d40f5df2193e8f5dbb2ffb9a`, build
