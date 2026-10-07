@@ -340,6 +340,278 @@ test("HTTPS current visibility hides bookmarked source metadata in web and nativ
   );
 });
 
+test("HTTPS collection writes share web receipts and delete unfiles bookmarks only once", async () => {
+  const f = await fixture();
+  const originalName = "  Fictional private collection  ";
+  const creation = command("create-collection", {
+    id: randomUUID(),
+    name: originalName,
+    expectedVersion: 0
+  });
+  const bytes = json(creation);
+  const replies = await Promise.all([
+    send(collectionsPath, f.viewer, "POST", bytes),
+    webPost("/api/platform/post-workspace", f.viewer, bytes)
+  ]);
+  const created = ok("bookmarkCollectionCommand", replies[0], f.viewer.id);
+  assert.deepEqual(webOk(replies[1]), created);
+  assert.equal(created.version, 1);
+  const first = ok(
+    "bookmarkCollections",
+    await send(collectionsPath, f.viewer),
+    f.viewer.id
+  );
+  assert.equal(first.items[0].name, "Fictional private collection");
+  // Even canonically equivalent trimmed text cannot replace the original retry body.
+  denied(
+    await send(
+      collectionsPath,
+      f.viewer,
+      "POST",
+      json({
+        ...creation,
+        name: originalName.trim()
+      })
+    ),
+    409,
+    "conflict"
+  );
+
+  const rename = json(
+    command("rename-collection", {
+      id: created.id,
+      name: "Renamed private collection",
+      expectedVersion: created.version
+    })
+  );
+  const renamed = webOk(
+    await webPost("/api/platform/post-workspace", f.viewer, rename)
+  );
+  assert.deepEqual(
+    ok(
+      "bookmarkCollectionCommand",
+      await send(collectionsPath, f.viewer, "POST", rename),
+      f.viewer.id
+    ),
+    renamed
+  );
+  const saved = ok(
+    "bookmarkCommand",
+    await send(
+      path,
+      f.viewer,
+      "POST",
+      json({
+        ...save(f.post.id),
+        collectionId: created.id
+      })
+    ),
+    f.viewer.id
+  );
+  const deletion = json(
+    command("delete-collection", {
+      id: created.id,
+      expectedVersion: renamed.version
+    })
+  );
+  const deleted = ok(
+    "bookmarkCollectionCommand",
+    await send(collectionsPath, f.viewer, "POST", deletion),
+    f.viewer.id
+  );
+  assert.deepEqual(
+    webOk(await webPost("/api/platform/post-workspace", f.viewer, deletion)),
+    deleted
+  );
+  const unfiled = ok(
+    "bookmarkStatus",
+    await send(statusPath(f.post.id), f.viewer),
+    f.viewer.id
+  ).item;
+  assert.deepEqual(unfiled, {
+    id: saved.id,
+    collectionId: null,
+    version: saved.version + 1
+  });
+
+  const replacement = ok(
+    "bookmarkCollectionCommand",
+    await send(
+      collectionsPath,
+      f.viewer,
+      "POST",
+      json(
+        command("create-collection", {
+          id: randomUUID(),
+          name: "Later collection",
+          expectedVersion: 0
+        })
+      )
+    ),
+    f.viewer.id
+  );
+  const moved = ok(
+    "bookmarkCommand",
+    await send(
+      path,
+      f.viewer,
+      "POST",
+      json(
+        command("move-item", {
+          id: saved.id,
+          expectedVersion: unfiled!.version,
+          collectionId: replacement.id
+        })
+      )
+    ),
+    f.viewer.id
+  );
+  assert.deepEqual(
+    ok(
+      "bookmarkCollectionCommand",
+      await send(collectionsPath, f.viewer, "POST", deletion),
+      f.viewer.id
+    ),
+    deleted
+  );
+  assert.deepEqual(
+    ok(
+      "bookmarkStatus",
+      await send(statusPath(f.post.id), f.viewer),
+      f.viewer.id
+    ).item,
+    { id: saved.id, version: moved.version, collectionId: replacement.id }
+  );
+  denied(
+    await send(
+      collectionsPath,
+      f.viewer,
+      "POST",
+      json({
+        ...creation,
+        mutationId: randomUUID()
+      })
+    ),
+    409,
+    "conflict"
+  );
+  assert.deepEqual(
+    ok(
+      "bookmarkCollectionCommand",
+      await send(collectionsPath, f.viewer, "POST", bytes),
+      f.viewer.id
+    ),
+    created
+  );
+  assert.deepEqual(
+    ok(
+      "bookmarkCollections",
+      await send(collectionsPath, f.viewer),
+      f.viewer.id
+    ).items.map((item) => item.id),
+    [replacement.id]
+  );
+});
+
+test("HTTPS collection admission preserves account binding and strict bounded request bodies", async () => {
+  const f = await fixture();
+  const input = command("create-collection", {
+    id: randomUUID(),
+    name: "Fictional collection",
+    expectedVersion: 0
+  });
+  const bytes = json(input);
+  denied(
+    await send(collectionsPath, f.viewer, "POST", bytes, {
+      "X-Expected-Account": f.author.id
+    }),
+    401,
+    "account_changed"
+  );
+  denied(
+    await send(collectionsPath, f.viewer, "POST", bytes, {
+      "X-API-Version": "2"
+    }),
+    426,
+    "unsupported_version"
+  );
+  for (const headers of [
+    { Origin: origin },
+    { "Sec-Fetch-Site": "same-origin" }
+  ] as Record<string, string>[])
+    denied(
+      await send(collectionsPath, f.viewer, "POST", bytes, headers),
+      403,
+      "forbidden"
+    );
+  denied(
+    await send(collectionsPath, f.viewer, "POST", bytes, {
+      Cookie: webHeaders(f.viewer).Cookie
+    }),
+    401,
+    "unauthenticated"
+  );
+  for (const query of ["?cursor=x", "?collectionId=x", "?owner=x&owner=x"])
+    denied(
+      await send(collectionsPath + query, f.viewer, "POST", bytes),
+      400,
+      "validation"
+    );
+  for (const fields of [
+    { name: "n".repeat(81) },
+    { name: "   " },
+    { ownerId: f.author.id },
+    { expectedVersion: -1 },
+    { operation: "save-draft", payload: {} },
+    { operation: "save-item", postId: f.post.id }
+  ])
+    denied(
+      await send(
+        collectionsPath,
+        f.viewer,
+        "POST",
+        json({ ...input, ...fields })
+      ),
+      400,
+      "validation"
+    );
+  denied(
+    await send(collectionsPath, f.viewer, "POST", Buffer.alloc(16385, "x")),
+    400,
+    "validation"
+  );
+  denied(
+    await send(collectionsPath, f.viewer, "POST", Buffer.from("{invalid")),
+    400,
+    "validation"
+  );
+  denied(
+    await send(collectionsPath, f.viewer, "POST", bytes, {
+      "Content-Type": "text/plain"
+    }),
+    400,
+    "validation"
+  );
+  await db.platformSession.deleteMany({ where: { userId: f.viewer.id } });
+  denied(
+    await send(collectionsPath, f.viewer, "POST", bytes),
+    401,
+    "unauthenticated"
+  );
+  assert.equal(
+    await db.savedPostCollection.count({ where: { ownerId: f.viewer.id } }),
+    0
+  );
+  assert.equal(
+    await db.savedPostItem.count({ where: { ownerId: f.viewer.id } }),
+    0
+  );
+  assert.equal(
+    await db.postWorkspaceOperation.count({ where: { ownerId: f.viewer.id } }),
+    0
+  );
+});
+
 test("HTTPS bookmark identity, private headers and unsupported methods fail without cookie or redirect side effects", async () => {
   const f = await fixture();
   for (const target of [path, collectionsPath, statusPath(f.post.id)]) {
@@ -368,7 +640,7 @@ test("HTTPS bookmark identity, private headers and unsupported methods fail with
       denied(response, 405, "method_not_allowed");
       assert.equal(
         response.headers.allow,
-        target === path ? "GET, POST" : "GET"
+        target === path || target === collectionsPath ? "GET, POST" : "GET"
       );
     }
     const head = await send(target, f.viewer, "HEAD");
@@ -385,8 +657,8 @@ test("HTTPS bookmark identity, private headers and unsupported methods fail with
   );
   denied(
     await send(collectionsPath, f.viewer, "POST", json({})),
-    405,
-    "method_not_allowed"
+    400,
+    "validation"
   );
   denied(
     await send(statusPath(f.post.id), f.viewer, "POST", json({})),
@@ -530,6 +802,12 @@ test("HTTPS web and native bookmark writes share the same rate bucket and preser
   const limited = await send(path, f.viewer, "POST", bytes);
   denied(limited, 429, "rate_limited");
   assert.equal(limited.headers["retry-after"], "900");
+  const collectionLimited = await send(collectionsPath, f.viewer, "POST", json(
+    command("create-collection", { id: randomUUID(), name: "Rate-limited collection", expectedVersion: 0 })
+  ));
+  denied(collectionLimited, 429, "rate_limited");
+  assert.equal(collectionLimited.headers["retry-after"], "900");
+  assert.equal(await db.savedPostCollection.count({ where: { ownerId: f.viewer.id } }), 0);
   assert.equal(
     (await webPost("/api/platform/post-workspace", f.viewer, bytes)).status,
     429

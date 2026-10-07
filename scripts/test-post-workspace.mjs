@@ -151,7 +151,7 @@ try {
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
   const files = process.argv.includes("--native-bookmarks")
-    ? ["tests/native-bookmarks.test.ts", "tests/post-workspace.test.ts", "tests/saved-resources.test.ts", "tests/reposts.test.ts"]
+    ? ["tests/native-bookmarks.test.ts", "tests/native-bookmark-collections.test.ts", "tests/post-workspace.test.ts", "tests/saved-resources.test.ts", "tests/reposts.test.ts"]
     : process.argv.includes("--reaction-counts")
     ? ["tests/reaction-counts.test.ts", "tests/reaction-counts-restore.test.ts", "tests/reading-preferences.test.ts", "tests/settings-contract.test.ts", "tests/social-foundations.test.ts", "tests/prayer.test.ts", "tests/reposts.test.ts", "tests/profile-pin.test.ts"]
     : process.argv.includes("--resource-conversations")

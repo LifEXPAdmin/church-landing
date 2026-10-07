@@ -1,9 +1,9 @@
 # Native bookmark adapter
 
 The native v1 bookmark routes use the same saved-workspace service and database
-as the website. Collection management, resource bookmarking and drafts remain
-website operations. This slice enables post saving, moving and removing an
-existing saved item, and reading the complete mixed saved library.
+as the website. Native controls enable post saving, moving and removing an
+existing saved item, collection management and reading the complete mixed saved
+library. Resource bookmarking and drafts remain website operations.
 
 ## Transport and contracts
 
@@ -16,6 +16,11 @@ existing saved item, and reading the complete mixed saved library.
 - `POST /api/platform/v1/bookmarks` accepts only `save-item`, `move-item`
   and `remove-item`. Use the corresponding pure `apiContracts.bookmarkCommand`
   body. Every command requires the original mutation ID and expected version.
+- `POST /api/platform/v1/bookmark-collections` accepts `create-collection`,
+  `rename-collection` and `delete-collection` through
+  `apiContracts.bookmarkCollectionCommand`. Supply the original client-generated
+  collection ID and mutation ID, the expected version, and the unchanged name
+  for create or rename. Delete has no name field.
 
 All routes require a bearer session and `X-Expected-Account`. Native transport
 rejects browser credentials, Origin/Fetch Metadata, duplicate or unknown query
@@ -63,6 +68,13 @@ Move and remove commands target the saved-item ID returned by a read, not a post
 ID resolved again during retry. Removing and later saving a post creates a new
 saved-item ID. Retrying the old remove recovers its historical receipt without
 deleting the replacement. Changed bodies sharing a mutation ID conflict.
+
+Collection names retain the website's 1 to 80 character limit. Creation uses
+version zero; rename and delete use the current collection version. A deleted
+collection keeps a tombstone and its ID cannot be reused. Deletion unfiles its
+bookmarks and increments their versions in the same transaction. The exact
+delete retry returns its earlier receipt without unfiling or incrementing those
+items again. A different account cannot use a collection or its receipt.
 
 A historical receipt acknowledges an earlier result, not current visibility or
 current saved state. Refresh status/list explicitly after confirmation. Preserve

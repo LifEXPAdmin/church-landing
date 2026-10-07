@@ -483,6 +483,28 @@ export const apiContracts = Object.freeze({
     apiMutationReceipt,
     "member"
   ),
+  bookmarkCollectionCommand: endpoint(
+    "POST",
+    "/bookmark-collections",
+    empty,
+    union(
+      object({
+        operation: oneOf(["create-collection", "rename-collection"]),
+        mutationId,
+        id: bookmarkKey,
+        expectedVersion: version,
+        name: text(80, 1)
+      }),
+      object({
+        operation: literal("delete-collection"),
+        mutationId,
+        id: bookmarkKey,
+        expectedVersion: version
+      })
+    ),
+    apiMutationReceipt,
+    "member"
+  ),
   capabilities: endpoint(
     "GET",
     "/capabilities",

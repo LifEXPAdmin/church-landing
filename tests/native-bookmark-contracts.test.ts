@@ -179,6 +179,62 @@ test("bookmark commands require original immutable references and reject draft, 
   );
 });
 
+test("collection commands preserve original names and IDs while rejecting unrelated fields and operations", () => {
+  const input = {
+    mutationId: "create-collection-retry",
+    id: "client-collection-reference",
+    expectedVersion: 0
+  };
+  const schema = apiContracts.bookmarkCollectionCommand.body;
+  for (const operation of ["create-collection", "rename-collection"] as const) {
+    const command = { ...input, operation, name: "  Private choices  " };
+    assert.deepEqual(schema.parse(command), command);
+    for (const field of [
+      { name: "" },
+      { name: "n".repeat(81) },
+      { name: null },
+      { id: "" },
+      { id: "x".repeat(81) },
+      { expectedVersion: -1 },
+      { mutationId: "x".repeat(81) },
+      { ownerId: "other" },
+      { collectionId: "other" },
+      { payload: {} },
+      { postId: "post" }
+    ])
+      assert.throws(
+        () => schema.parse({ ...command, ...field }),
+        WireContractError
+      );
+  }
+  const deletion = {
+    ...input,
+    operation: "delete-collection",
+    expectedVersion: 1
+  };
+  assert.deepEqual(schema.parse(deletion), deletion);
+  assert.throws(
+    () => schema.parse({ ...deletion, name: "Private choices" }),
+    WireContractError
+  );
+  for (const operation of [
+    "save-item",
+    "save-resource",
+    "save-draft",
+    "publish-draft",
+    "remove-item"
+  ])
+    assert.throws(
+      () => schema.parse({ ...deletion, operation }),
+      WireContractError
+    );
+  assert.equal(
+    apiContracts.bookmarkCollectionCommand.path,
+    "/api/platform/v1/bookmark-collections"
+  );
+  assert.equal(apiContracts.bookmarkCollectionCommand.method, "POST");
+});
+
 test("collection and status envelopes are private, bounded and strictly projected", () => {
   const collection = {
     id: "collection",

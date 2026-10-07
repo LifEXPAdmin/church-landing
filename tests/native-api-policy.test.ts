@@ -187,7 +187,7 @@ test("bookmark admission stops before database and body access while preserving 
     "bookmarkCollections",
     "bookmarkStatus"
   ] as const) {
-    for (const method of resource === "bookmarks" ? ["GET", "POST"] : ["GET"]) {
+    for (const method of resource === "bookmarkStatus" ? ["GET"] : ["GET", "POST"]) {
       for (const reason of ["version", "pause", "invalid"]) {
         process.env.NATIVE_API_DISABLED_FEATURES =
           reason === "version"
@@ -196,7 +196,11 @@ test("bookmark admission stops before database and body access while preserving 
               ? "bookmarks.read,bookmarks.write"
               : "unknown.feature";
         const probe = request(
-          "bookmarks",
+          resource === "bookmarkCollections"
+            ? "bookmark-collections"
+            : resource === "bookmarkStatus"
+              ? "posts/fictional-post/bookmark"
+              : "bookmarks",
           method,
           {
             ...credentials,

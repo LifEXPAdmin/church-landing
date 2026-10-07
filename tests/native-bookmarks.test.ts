@@ -1312,8 +1312,8 @@ test("strict native admission rejects browser credentials, unsupported methods a
   );
   denied(
     await call("bookmarkCollections", f.reader, { body: input }),
-    405,
-    "method_not_allowed"
+    400,
+    "validation"
   );
   denied(
     await call("bookmarkStatus", f.reader, { postId: f.post.id, body: input }),

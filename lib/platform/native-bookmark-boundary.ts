@@ -31,7 +31,10 @@ export type NativeBookmarkResource =
   | "bookmarks"
   | "bookmarkCollections"
   | "bookmarkStatus";
-type Operation = NativeBookmarkResource | "bookmarkCommand";
+type Operation =
+  | NativeBookmarkResource
+  | "bookmarkCommand"
+  | "bookmarkCollectionCommand";
 const cursorKey = wire.text(80, 1, /^[A-Za-z0-9_-]+$/);
 
 function failure(
@@ -126,7 +129,8 @@ export async function handleNativeBookmarkRequest(
   params: unknown = {}
 ) {
   try {
-    const write = request.method === "POST" && resource === "bookmarks";
+    const writable = resource !== "bookmarkStatus";
+    const write = request.method === "POST" && writable;
     if (request.method !== "GET" && !write) {
       const response = failure(
         "method_not_allowed",
@@ -134,7 +138,7 @@ export async function handleNativeBookmarkRequest(
       );
       response.headers.set(
         "Allow",
-        resource === "bookmarks" ? "GET, POST" : "GET"
+        writable ? "GET, POST" : "GET"
       );
       return response;
     }
@@ -156,7 +160,11 @@ export async function handleNativeBookmarkRequest(
     );
     if (!credential.token) throw new NativeRequestError("unauthenticated");
     if (!credential.owner) throw new NativeRequestError("validation");
-    const operation: Operation = write ? "bookmarkCommand" : resource;
+    const command =
+      resource === "bookmarks"
+        ? "bookmarkCommand"
+        : "bookmarkCollectionCommand";
+    const operation: Operation = write ? command : resource;
     const parsedParams = apiContracts[operation].params.parse(params);
     requireNativeFeature(write ? "bookmarks.write" : "bookmarks.read");
     // Owner verification precedes cursor decoding, rate charges and body reads.
@@ -173,7 +181,7 @@ export async function handleNativeBookmarkRequest(
         );
       let input;
       try {
-        input = apiContracts.bookmarkCommand.body.parse(
+        input = apiContracts[command].body.parse(
           await readBody(request, API_MAX_REQUEST_BYTES)
         );
       } catch {

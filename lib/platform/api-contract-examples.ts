@@ -85,6 +85,11 @@ export const apiResponseExamples = {
     version: 1,
     message: "Post saved privately."
   }),
+  bookmarkCollectionCommand: member({
+    id: "fictional-collection",
+    version: 1,
+    message: "Private collection saved."
+  }),
   capabilities: guest({
     supportedVersions: ["1"],
     features: [{ name: "session.read", available: false }]
