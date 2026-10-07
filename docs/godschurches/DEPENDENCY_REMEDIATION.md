@@ -1,5 +1,14 @@
 # Dependency remediation
 
+## Scoped parser follow-up, 7 October 2026 UTC
+
+The follow-up to the baseline below selects postcss-selector-parser 7.1.6 for
+Tailwind and postcss-nested with scoped overrides. The fresh full audit changes
+from seven high and two moderate package findings to seven high and no moderate
+findings. Braces and embedded tooling copies remain unresolved; the release gate
+still fails. See [selector parser acceptance](SELECTOR_PARSER_ACCEPTANCE.md)
+for the exact lock delta, consumer checks, CSS comparison and remaining limits.
+
 ## Compatible patch candidate, 7 October 2026 UTC
 
 Candidate `535778a4cab31c9701272a1ccee583827edee9ab` repairs the available
