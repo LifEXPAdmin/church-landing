@@ -5,7 +5,7 @@ import type { NativeClient } from "./native-client.ts";
 
 type Account = Extract<Awaited<ReturnType<NativeClient["session"]>>["data"], { state: "authenticated" }>["account"];
 type Phase = "concealed" | "verifying" | "signing-in" | "signed-out" | "ready" | "unavailable";
-type Problem = "verification-unavailable" | "storage-unavailable" | "sign-in-required" | "sign-in-failed" | "sign-in-unconfirmed" | "session-expired" | null;
+type Problem = "verification-unavailable" | "storage-unavailable" | "sign-in-required" | "sign-in-failed" | "sign-in-unconfirmed" | "session-expired" | "service-unavailable" | "update-required" | null;
 type RemoteResult = "not-needed" | "confirmed" | "unconfirmed";
 export type SignOutResult = Readonly<{ local: ClearResult["status"]; remote: RemoteResult }>;
 export type SessionSnapshot = Readonly<{
@@ -35,6 +35,12 @@ const defaultClock: SessionClock = {
 };
 const deniedSession = (error: unknown) => error instanceof RequestClientError && error.responseError &&
   error.status === 401 && ["unauthenticated", "account_changed"].includes(error.code ?? "");
+function compatibilityProblem(error: unknown): Problem {
+  if (!(error instanceof RequestClientError) || !error.responseError) return null;
+  if (error.status === 426 && error.code === "unsupported_version") return "update-required";
+  if (error.status === 503 && error.code === "feature_unavailable") return "service-unavailable";
+  return null;
+}
 class ExpiredSession extends Error {}
 class UnavailableStorage extends Error {
   readonly cleanup: ClearResult["status"] | null;
@@ -188,7 +194,7 @@ export function createNativeSessionController(ports: SessionPorts) {
       const binding = candidate;
       if (binding && deniedSession(error)) {
         await rejectCurrentSession(binding);
-      } else invalidate("unavailable", error instanceof ExpiredSession ? "session-expired" : "verification-unavailable");
+      } else invalidate("unavailable", error instanceof ExpiredSession ? "session-expired" : compatibilityProblem(error) ?? "verification-unavailable");
     } finally { controller.abort(); work.delete(controller); }
   }
 
@@ -258,7 +264,7 @@ export function createNativeSessionController(ports: SessionPorts) {
         if (unconfirmed && !issued) unknownIssuance = true;
         if (!issued && !unconfirmed) noKnownSession = previouslyEmpty;
         const failedEpoch = invalidate("signed-out", error instanceof UnavailableStorage ? "storage-unavailable" :
-          error instanceof ExpiredSession ? "session-expired" : unconfirmed ? "sign-in-unconfirmed" : "sign-in-failed");
+          error instanceof ExpiredSession ? "session-expired" : unconfirmed ? "sign-in-unconfirmed" : compatibilityProblem(error) ?? "sign-in-failed");
         if (active(failedEpoch)) publish({ cleanup: error instanceof UnavailableStorage ? error.cleanup : null, revocation: issued ? "pending" : "none" });
         const remote = issued ? revoke(issued, epoch) : Promise.resolve<RemoteResult>("not-needed");
         const [local, revoked] = await Promise.all([clearing, remote]);
@@ -299,7 +305,7 @@ export function createNativeSessionController(ports: SessionPorts) {
       } catch (error) {
         if (active(epoch)) {
           if (candidate && deniedSession(error)) await rejectCurrentSession(candidate);
-          else invalidate("unavailable", error instanceof ExpiredSession ? "session-expired" : "verification-unavailable");
+          else invalidate("unavailable", error instanceof ExpiredSession ? "session-expired" : compatibilityProblem(error) ?? "verification-unavailable");
         }
       } finally { controller.abort(); work.delete(controller); if (epoch === generation) activityPending = false; }
     },

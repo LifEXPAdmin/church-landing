@@ -164,3 +164,7 @@ It keeps one bounded report of public build and platform metadata in memory,
 with explicit clear and no upload. The guarded launcher stamps the actual source
 base and state; non-development exports exclude this diagnostic UI. Native crash
 capture and device performance measurements remain separate work.
+
+[Native compatibility](../docs/mobile/COMPATIBILITY.md) records update and feature
+unavailability states, explicit recovery and separate server/JS/native rollback
+boundaries. OTA remains disabled and actual old/new native acceptance stays open.

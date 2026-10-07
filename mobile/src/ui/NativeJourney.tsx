@@ -29,7 +29,9 @@ function SessionNotice({ state, runtime }: { state: SessionSnapshot; runtime: Ru
     "sign-in-required": "Please sign in again to continue.",
     "sign-in-failed": "Sign-in could not be completed. Check your details and try again.",
     "sign-in-unconfirmed": "The sign-in response was interrupted. Its server outcome could not be confirmed.",
-    "session-expired": "Your session needs to be checked again before you continue."
+    "session-expired": "Your session needs to be checked again before you continue.",
+    "service-unavailable": "This service is currently unavailable. Please try again later.",
+    "update-required": "This app version is not supported by the server. Update the app before continuing."
   };
   const announcement = state.problem ? messages[state.problem] :
     state.cleanup === "unconfirmed" ? "Sign-out cleanup could not be confirmed. Retry sign-out." :
@@ -80,6 +82,7 @@ function ReadingError({ state, runtime, act }: { state: Extract<ReadingSnapshot,
   act: (command: () => Promise<unknown>) => void }) {
   const messages = {
     unavailable: "This content could not be checked. Please try again when your connection is available.",
+    "feature-unavailable": "This feature is currently unavailable in the app.",
     "not-found": "This content is unavailable or you no longer have access.",
     "refresh-required": "This page has changed. Refresh the feed to continue.",
     "recovery-required": "Your account needs attention on the website before you can continue.",
@@ -92,6 +95,7 @@ function ReadingError({ state, runtime, act }: { state: Extract<ReadingSnapshot,
     {state.problem === "rate-limited" && state.retryAfterSeconds !== null ?
       <Text variant="small" tone="muted">The server requested a pause of {state.retryAfterSeconds} seconds.</Text> : null}
     {state.problem === "refresh-required" ? <Button label="Refresh feed" onPress={() => act(runtime.refresh)} /> :
+      state.problem === "feature-unavailable" ? <Button label="Check availability" onPress={() => act(runtime.retry)} /> :
       ["unavailable", "rate-limited"].includes(state.problem) ? <Button label="Try again" onPress={() => act(runtime.retry)} /> : null}
   </Card>;
 }

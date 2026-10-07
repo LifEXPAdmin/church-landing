@@ -6,7 +6,7 @@ type Session = Pick<ReturnType<typeof createNativeSessionController>, "getSnapsh
 type Query = WireValue<typeof apiContracts.feed.query>;
 type Target = { kind: "feed"; query: Query } | { kind: "post"; id: string };
 type ReadonlyValue<T> = T extends object ? { readonly [K in keyof T]: ReadonlyValue<T[K]> } : T;
-type Problem = "unavailable" | "not-found" | "refresh-required" | "recovery-required" | "update-required" | "rate-limited";
+type Problem = "unavailable" | "feature-unavailable" | "not-found" | "refresh-required" | "recovery-required" | "update-required" | "rate-limited";
 export type ReadingSnapshot =
   | Readonly<{ kind: "concealed" | "idle" }>
   | Readonly<{ kind: "loading"; target: Target["kind"] }>
@@ -110,7 +110,7 @@ export function createNativeReadController(session: Session, client: Pick<Native
         publish({ kind: "error", target: target.kind, problem: "update-required", retryAfterSeconds: null }); return;
       }
       if (matches.length !== 1 || !matches[0].available) {
-        publish({ kind: "error", target: target.kind, problem: "unavailable", retryAfterSeconds: null }); return;
+        publish({ kind: "error", target: target.kind, problem: "feature-unavailable", retryAfterSeconds: null }); return;
       }
       const started = now();
       if (target.kind === "feed") {
@@ -142,7 +142,8 @@ export function createNativeReadController(session: Session, client: Pick<Native
         error.code === "not_found" || error.code === "forbidden" ? "not-found" :
         error.code === "cursor_invalid" || error.code === "conflict" ? "refresh-required" :
         error.code === "recovery_required" ? "recovery-required" :
-        error.code === "unsupported_version" ? "update-required" : error.code === "rate_limited" ? "rate-limited" : "unavailable";
+        error.code === "unsupported_version" ? "update-required" : error.code === "feature_unavailable" ? "feature-unavailable" :
+        error.code === "rate_limited" ? "rate-limited" : "unavailable";
       publish({ kind: "error", target: target.kind, problem,
         retryAfterSeconds: confirmed && error.retryAfter !== undefined ? error.retryAfter : null });
     } finally {

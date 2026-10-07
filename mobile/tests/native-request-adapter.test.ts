@@ -184,6 +184,30 @@ test("server Retry-After and denied details retain canonical classification with
   assert.equal(state.requests.length, 1);
 });
 
+test("version and availability denials remain typed v1 responses with one dispatch", async () => {
+  for (const [code, status] of [["unsupported_version", 426], ["feature_unavailable", 503], ["validation", 400]] as const) {
+    const { state, client } = harness();
+    state.response = { ...response({ apiVersion: "1", error: { code, message: token, retryAfterSeconds: null } }), status };
+    await assert.rejects(client.feed(owner, query), error => {
+      rejected(error); const value = error as RequestClientError;
+      assert.equal(value.responseError, true); assert.equal(value.code, code); assert.equal(value.status, status); return true;
+    });
+    assert.equal(state.requests.length, 1); assert.equal(state.requests[0].headers["X-API-Version"], "1");
+  }
+});
+
+test("missing or incompatible response versions cannot manufacture a confirmed update denial", async () => {
+  for (const change of [{ apiVersion: null }, { apiVersion: "2" }, { body: JSON.stringify({ apiVersion: "2",
+    error: { code: "unsupported_version", message: token, retryAfterSeconds: null } }) }]) {
+    const { state, client } = harness();
+    state.response = { ...response({ apiVersion: "1", error: { code: "unsupported_version", message: token, retryAfterSeconds: null } }), status: 426, ...change };
+    await assert.rejects(client.feed(owner, query), error => {
+      rejected(error); assert.equal((error as RequestClientError).responseError, false); return true;
+    });
+    assert.equal(state.requests.length, 1);
+  }
+});
+
 test("clock failures cannot expose private diagnostics through canonical rate-limit handling", async () => {
   for (const status of [429, 503]) {
     const { state } = harness();

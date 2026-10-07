@@ -129,8 +129,29 @@ test("missing, disabled, duplicate or incompatible capabilities cannot dispatch 
   ]) {
     const f = fixture(); t.after(f.dispose);
     f.state.intercept = async r => path(r).endsWith("/capabilities") ? response({ apiVersion: "1", viewerId: owner, data: capability }) : undefined;
-    await f.signIn(); assert.equal(f.runtime.reading.getSnapshot().kind, "error"); assert.equal(f.reads("/feed").length, 0);
+    await f.signIn();
+    assert.deepEqual(f.runtime.reading.getSnapshot(), { kind: "error", target: "feed",
+      problem: capability.supportedVersions.includes("1") ? "feature-unavailable" : "update-required", retryAfterSeconds: null });
+    assert.equal(f.reads("/feed").length, 0);
   }
+});
+
+test("additive v1 fields and unknown capabilities neither enter visible data nor activate unavailable screens", async t => {
+  const f = fixture(); t.after(f.dispose);
+  const future = "future-field-must-not-be-retained";
+  f.state.intercept = async r => {
+    if (path(r).endsWith("/capabilities")) return response({ apiVersion: "1", viewerId: owner, future,
+      data: { supportedVersions: ["1"], future, features: [
+        { name: "feed.read", available: true }, { name: "future.screen", available: true }] } });
+    if (path(r).endsWith("/feed")) return response({ ...apiResponseExamples.feed, viewerId: owner, future,
+      data: { ...apiResponseExamples.feed.data, future, page: { ...apiResponseExamples.feed.data.page, future,
+        items: [{ ...examplePost, future, body: { ...examplePost.body, future } }] } } });
+  };
+  await f.signIn(); assert.equal(f.runtime.reading.getSnapshot().kind, "feed");
+  assert.equal(JSON.stringify(f.runtime.reading.getSnapshot()).includes(future), false);
+  const requests = f.state.requests.length;
+  assert.equal(await f.runtime.open({ kind: "screen", screen: "messages" }), "unavailable");
+  assert.equal(f.state.requests.length, requests); assert.equal(f.runtime.reading.getSnapshot().kind, "feed");
 });
 
 test("superseded feed reads abort and late data cannot replace the current mode", async t => {
@@ -172,6 +193,35 @@ test("lost reads conceal old content, retain no raw error, and retry only on exp
   assert.equal(f.reads("/feed").length, 2); assert.equal(f.runtime.session.getSnapshot().phase, "ready");
   f.state.intercept = null; await f.runtime.retry();
   assert.equal(f.reads("/feed").length, 3); assert.equal(f.runtime.reading.getSnapshot().kind, "feed");
+});
+
+test("content paused after capability discovery preserves protected session controls and resumes by explicit retry", async t => {
+  const f = fixture(); t.after(f.dispose); await f.signIn(); const saved = await f.secret.read();
+  f.state.intercept = async r => path(r).endsWith("/feed") ? denied("feature_unavailable", 503) : undefined;
+  await f.runtime.refresh();
+  assert.deepEqual(f.runtime.reading.getSnapshot(), { kind: "error", target: "feed", problem: "feature-unavailable", retryAfterSeconds: null });
+  assert.equal(f.runtime.session.getSnapshot().phase, "ready"); assert.equal(await f.secret.read(), saved);
+  assert.equal(f.timers.size, 1, "Only the session deadline remains, no content retry timer");
+  const reads = f.reads("/feed").length;
+  await f.runtime.recordForegroundActivity();
+  assert.equal(f.runtime.session.getSnapshot().phase, "ready"); assert.equal(f.reads("/feed").length, reads);
+  f.state.intercept = null; await f.runtime.retry();
+  assert.equal(f.reads("/feed").length, reads + 1); assert.equal(f.runtime.reading.getSnapshot().kind, "feed");
+  f.state.intercept = async r => path(r).endsWith("/feed") ? denied("feature_unavailable", 503) : undefined;
+  await f.runtime.refresh();
+  assert.deepEqual(await f.runtime.signOut(), { local: "cleared", remote: "confirmed" });
+  assert.equal(await f.secret.read(), null); assert.equal(f.runtime.reading.getSnapshot().kind, "concealed");
+});
+
+test("unsupported content version is an explicit update state without automatic request or credential changes", async t => {
+  const f = fixture(); t.after(f.dispose); await f.signIn(); const saved = await f.secret.read();
+  f.state.intercept = async r => path(r).includes("/posts/") ? denied("unsupported_version", 426) : undefined;
+  await f.runtime.open(post);
+  assert.deepEqual(f.runtime.reading.getSnapshot(), { kind: "error", target: "post", problem: "update-required", retryAfterSeconds: null });
+  assert.equal(f.reads("/posts/" + post.postId).length, 1); assert.equal(f.timers.size, 1);
+  assert.equal(await f.secret.read(), saved); assert.equal(f.runtime.session.getSnapshot().phase, "ready");
+  f.state.intercept = null; await f.runtime.retry();
+  assert.equal(f.runtime.reading.getSnapshot().kind, "post");
 });
 
 test("canonical cursor recovery and rate-limit hints remain bounded explicit UI states", async t => {

@@ -104,6 +104,41 @@ test("password issuance is one command and account publication waits for verific
   assert.equal(JSON.stringify(f.state.snapshots).includes(newToken), false);
 });
 
+test("confirmed login compatibility denials do not imply bad credentials or trigger replay", async t => {
+  for (const [code, status, problem] of [["unsupported_version", 426, "update-required"], ["feature_unavailable", 503, "service-unavailable"]] as const) {
+    await t.test(code, async () => {
+      const f = fixture(); t.after(() => f.controller.dispose()); await f.controller.setForeground(true);
+      f.state.onRequest = async () => rejected(code, status);
+      await f.controller.signIn(input);
+      const state = f.controller.getSnapshot();
+      assert.equal(state.problem, problem); assert.equal(state.phase, "signed-out");
+      assert.equal(state.account, null); assert.equal(f.secret.value, null);
+      assert.equal(f.state.requests.length, 1); assert.equal(f.timers.size, 0);
+      assert.equal(f.state.requests[0].headers["X-API-Version"], "1");
+      assert.deepEqual(await f.controller.signOut(), { local: "cleared", remote: "not-needed" });
+    });
+  }
+});
+
+test("confirmed compatibility failures conceal restoration and activity without deleting the saved candidate", async t => {
+  for (const stage of ["restore", "activity"] as const) {
+    for (const [code, status, problem] of [["unsupported_version", 426, "update-required"], ["feature_unavailable", 503, "service-unavailable"]] as const) {
+      const f = fixture(); t.after(() => f.controller.dispose()); await f.seed();
+      const saved = f.secret.value;
+      if (stage === "activity") await f.controller.setForeground(true);
+      f.state.onRequest = async () => rejected(code, status);
+      if (stage === "activity") await f.controller.recordForegroundActivity(); else await f.controller.setForeground(true);
+      assert.equal(f.controller.getSnapshot().phase, "unavailable");
+      assert.equal(f.controller.getSnapshot().problem, problem);
+      assert.equal(f.controller.getSnapshot().account, null); assert.equal(f.secret.value, saved);
+      assert.equal(f.timers.size, 0, "A denial must not start an automatic retry");
+      f.state.onRequest = null; await f.controller.retryVerification();
+      assert.equal(f.controller.getSnapshot().phase, "ready"); assert.equal(f.secret.value, saved);
+      assert.equal(f.state.requests.filter(r => pathIs(r, "/auth/password")).length, 0);
+    }
+  }
+});
+
 test("backgrounding cancels a held restoration and a late successful reply cannot reveal it", async t => {
   const f = fixture(); t.after(() => f.controller.dispose()); await f.seed();
   const reached = deferred(), release = deferred();
