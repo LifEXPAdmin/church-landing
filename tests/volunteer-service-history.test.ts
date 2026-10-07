@@ -289,9 +289,9 @@ test("pending, declined, canceled, stale-owner and malformed commands cannot ass
     reason: ""
   });
   await denied(volunteerCommand(db, f.ada.token, input), 409);
-  await denied(
-    volunteerCommand(db, f.ada.token, { ...input, userId: f.lee.id }),
-    400
+  assert.throws(
+    () => volunteerCommand(db, f.ada.token, { ...input, userId: f.lee.id }),
+    (error) => error instanceof PortalError && error.status === 400
   );
   await denied(
     volunteerCommand(db, f.ada.token, { ...input, completed: "true" }),
@@ -318,6 +318,38 @@ test("pending, declined, canceled, stale-owner and malformed commands cannot ass
     (
       await db.volunteerApplication.findUniqueOrThrow({
         where: { id: application.id }
+      })
+    ).completedAt,
+    null
+  );
+  const canceled = await volunteerCommand(db, f.morgan.token, f.application());
+  const accepted = await volunteerCommand(
+    db,
+    f.ada.token,
+    action("accept", {
+      id: canceled.id,
+      expectedVersion: canceled.version,
+      ...f.snapshot
+    })
+  );
+  const ended = await volunteerCommand(
+    db,
+    f.ada.token,
+    action("cancel", { id: canceled.id, expectedVersion: accepted.version })
+  );
+  await denied(
+    volunteerCommand(db, f.ada.token, {
+      ...input,
+      mutationId: randomUUID(),
+      targetId: canceled.id,
+      expectedVersion: ended.version
+    }),
+    409
+  );
+  assert.equal(
+    (
+      await db.volunteerApplication.findUniqueOrThrow({
+        where: { id: canceled.id }
       })
     ).completedAt,
     null

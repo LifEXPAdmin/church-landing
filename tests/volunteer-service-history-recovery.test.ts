@@ -594,6 +594,9 @@ test("reconfirmation after service replay cannot re-expose restored completion o
       reason: freshNote
     })
   );
+  const newlyConfirmed = await f.row();
+  await replayRetentionControls(db, [protectedEntry]);
+  assert.deepEqual(await f.row(), newlyConfirmed);
   const read = await readVolunteerApplications(db, f.lee.token, {});
   const own = read.items.find((item) => item.id === f.application.id)!;
   const exported = await db.$transaction((tx) =>
@@ -811,13 +814,12 @@ test("linked Need completion notes are scrubbed during service replay without to
     where: { kind: "VOLUNTEER_SERVICE_SIGNUP", sourceId: source.id },
     orderBy: { version: "desc" }
   });
-  await replayRetentionControls(db, [
-    {
-      ...(control.payload as unknown as RetentionControlEntry),
-      id: randomUUID(),
-      version: source.serviceVersion + 2
-    }
-  ]);
+  const protectedEntry = {
+    ...(control.payload as unknown as RetentionControlEntry),
+    id: randomUUID(),
+    version: source.serviceVersion + 2
+  };
+  await replayRetentionControls(db, [protectedEntry]);
   const restored = await db.postVolunteerSignup.findUniqueOrThrow({
     where: { id: source.id }
   });
@@ -840,6 +842,34 @@ test("linked Need completion notes are scrubbed during service replay without to
     retained.map((entry) => entry.text),
     ["", "", ""],
     "Quarantine must scrub copied service notes, not merely the canonical signup field"
+  );
+  const freshNote = "Fictional new linked confirmation survives older replay";
+  await volunteerCommand(
+    db,
+    f.ada.token,
+    action("complete", {
+      targetKind: "signup",
+      targetId: source.id,
+      expectedVersion: restored.version,
+      completed: true,
+      reason: freshNote
+    })
+  );
+  const newlyConfirmed = await db.postVolunteerSignup.findUniqueOrThrow({
+    where: { id: source.id }
+  });
+  await replayRetentionControls(db, [protectedEntry]);
+  assert.deepEqual(
+    await db.postVolunteerSignup.findUniqueOrThrow({
+      where: { id: source.id }
+    }),
+    newlyConfirmed
+  );
+  assert.equal(
+    await db.exchangeNeedEvent.count({
+      where: { targetId: source.id, text: freshNote }
+    }),
+    1
   );
 });
 

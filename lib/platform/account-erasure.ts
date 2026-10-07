@@ -222,6 +222,12 @@ async function eraseSocialData(tx: Tx, userId: string, now: Date) {
     where: { coordinatorId: userId },
     data: { coordinatorId: null, authorityKey: null }
   });
+  // Completion notes concern the volunteer even when an organizer authored the
+  // Need event. Clear these copies before canonical signup ownership is erased.
+  await tx.$executeRaw`UPDATE "ExchangeNeedEvent" e SET text=''
+    WHERE e.action IN ('VOLUNTEER_COMPLETED','VOLUNTEER_COMPLETION_CORRECTED')
+      AND EXISTS (SELECT 1 FROM "PostVolunteerSignup" s
+        WHERE s.id=e."targetId" AND s."userId"=${userId})`;
   await tx.exchangeNeedEvent.updateMany({
     where: { actorId: userId },
     data: { actorId: null }

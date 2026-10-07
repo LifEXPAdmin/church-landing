@@ -1470,9 +1470,41 @@ export async function replayRetentionControls(
             serviceSharedAt: null,
             serviceSharedCompletionVersion: null
           };
-          if (entry.kind === "VOLUNTEER_SERVICE_SIGNUP")
-            await tx.postVolunteerSignup.updateMany({ where, data });
-          else await tx.volunteerApplication.updateMany({ where, data });
+          if (entry.kind === "VOLUNTEER_SERVICE_SIGNUP") {
+            const changed = await tx.postVolunteerSignup.updateMany({
+              where,
+              data
+            });
+            if (changed.count)
+              await tx.exchangeNeedEvent.updateMany({
+                where: {
+                  targetId: entry.sourceId,
+                  action: {
+                    in: [
+                      "VOLUNTEER_COMPLETED",
+                      "VOLUNTEER_COMPLETION_CORRECTED"
+                    ]
+                  }
+                },
+                data: { text: "" }
+              });
+          } else {
+            const changed = await tx.volunteerApplication.updateMany({
+              where,
+              data
+            });
+            if (changed.count)
+              await tx.volunteerApplicationEvent.updateMany({
+                where: {
+                  applicationId: entry.sourceId,
+                  action: { in: ["COMPLETED", "COMPLETION_CORRECTED"] }
+                },
+                data: { note: "" }
+              });
+          }
+          // Historical copies cannot return when reconfirmation ends quarantine.
+          // A matched older owner row is required, so replaying an old control
+          // never scrubs notes from a newer deliberate confirmation.
           await record(tx, entry);
           await tx.retentionControl.updateMany({
             where: { id: entry.id, journaledAt: null },
