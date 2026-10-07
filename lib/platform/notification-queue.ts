@@ -2,6 +2,7 @@ import { socialEmailAvailable } from "./social-email";
 import { feedbackEmailAvailable } from "./feedback-email";
 import type { PrismaClient } from "@prisma/client";
 import { pushAvailable } from "./push-config";
+import { nativePushAvailable } from "./native-push-config";
 export const PUSH_TOPIC = "phone-notification-v1";
 export type QueuePublish = (
   id: string,
@@ -15,7 +16,10 @@ export const publishPush: QueuePublish = async (
 ) => {
   if (
     process.env.VERCEL !== "1" ||
-    (!pushAvailable() && !feedbackEmailAvailable() && !socialEmailAvailable())
+    (!pushAvailable() &&
+      !nativePushAvailable() &&
+      !feedbackEmailAvailable() &&
+      !socialEmailAvailable())
   )
     throw Error("Notification queue is not configured on this deployment.");
   const { send } = await import("@vercel/queue");
@@ -31,7 +35,12 @@ export async function dispatchNotifications(
   publish: QueuePublish = publishPush,
   actorId?: string
 ) {
-  if (!pushAvailable() && !feedbackEmailAvailable() && !socialEmailAvailable())
+  if (
+    !pushAvailable() &&
+    !nativePushAvailable() &&
+    !feedbackEmailAvailable() &&
+    !socialEmailAvailable()
+  )
     return { queued: 0, failed: 0 };
   const now = new Date();
   const rows = await db.notificationDelivery.findMany({
@@ -39,7 +48,7 @@ export async function dispatchNotifications(
       state: { not: "FINISHED" },
       channel: {
         in: [
-          ...(pushAvailable() ? ["PUSH"] : []),
+          ...(pushAvailable() || nativePushAvailable() ? ["PUSH"] : []),
           ...(feedbackEmailAvailable() || socialEmailAvailable()
             ? ["EMAIL"]
             : [])
@@ -79,7 +88,12 @@ export async function dispatchNotifications(
         { state: "IN_FLIGHT", leaseUntil: { lte: now } }
       ]
     },
-    select: { id: true, availableAt: true, attempts: true },
+    select: {
+      id: true,
+      availableAt: true,
+      attempts: true,
+      nativeReceiptChecks: true
+    },
     orderBy: [{ availableAt: "asc" }, { id: "asc" }],
     take: 100
   });
@@ -100,7 +114,7 @@ export async function dispatchNotifications(
                 Math.ceil((row.availableAt.getTime() - now.getTime()) / 1000)
               )
             ),
-            `${row.id}:${row.attempts}:${Math.floor(now.getTime() / 3600000)}`
+            `${row.id}:${row.attempts}:${row.nativeReceiptChecks ? `receipt-${row.nativeReceiptChecks}:` : ""}${Math.floor(now.getTime() / 3600000)}`
           )
         )
     );

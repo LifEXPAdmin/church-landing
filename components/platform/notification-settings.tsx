@@ -96,7 +96,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
         )
           setConflict(true);
         setSupport(browserPushSupport());
-        if (data.channels.push) {
+        if (data.channels.devices) {
           const found = (
             await socialRequest<Devices>(
               endpoint + "?view=devices",
@@ -689,9 +689,9 @@ export function NotificationSettings({ owner }: { owner: string }) {
           <section aria-label="Phone notifications" className="space-y-3">
             <h2 className="text-xl">This phone or browser</h2>
             <p>
-              {view.channels.push
+              {view.channels.browserPush
                 ? support.reason
-                : "Phone delivery is unavailable for this account right now. Email verification and adult setup are required, and the service must be enabled."}
+                : "Browser delivery is unavailable for this account right now. Email verification and adult setup are required, and the browser notification service must be enabled."}
             </p>
             <p>
               Enable notifications adds phone alerts for personal messages and
@@ -702,7 +702,7 @@ export function NotificationSettings({ owner }: { owner: string }) {
               type="button"
               className="gc-button"
               disabled={
-                !view.channels.push ||
+                !view.channels.browserPush ||
                 !support.available ||
                 busy ||
                 !!pending ||
