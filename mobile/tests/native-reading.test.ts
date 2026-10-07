@@ -90,6 +90,21 @@ test("private composition proves sign-in, bounded feed, fresh post, reveal and s
   assert.deepEqual(Object.keys(f.runtime.session).sort(), ["getSnapshot", "subscribe"]);
 });
 
+test("plain repost detail protects the original content note even when its wrapper has none", async t => {
+  const f = fixture(); t.after(f.dispose); await f.signIn();
+  const source = { ...examplePost, id: "original-post", body: { ...examplePost.body,
+    contentNote: "Original content note", safeExcerpt: null, text: "Concealed original" } };
+  f.state.intercept = async r => path(r).includes("/posts/") ? response({ apiVersion: "1", viewerId: owner,
+    data: { ...examplePost, body: { ...examplePost.body, contentNote: null }, repost: { kind: "PLAIN", source } } }) : undefined;
+  await f.runtime.open(post);
+  const before = f.runtime.reading.getSnapshot();
+  assert.equal(before.kind, "post");
+  if (before.kind === "post") assert.equal(before.revealed, false);
+  await f.runtime.reveal();
+  const after = f.runtime.reading.getSnapshot();
+  if (after.kind === "post") assert.equal(after.revealed, true);
+});
+
 test("next page replaces the current page and back reauthorizes the exact returned cursor and scope", async t => {
   const f = fixture(); t.after(f.dispose); await f.signIn(); await f.runtime.nextPage();
   const page = f.runtime.reading.getSnapshot();

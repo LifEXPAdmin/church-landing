@@ -124,7 +124,10 @@ export function createNativeReadController(session: Session, client: Pick<Native
         const result = (await client.post(captured.owner, target.id, controller.signal)).data;
         if (!current(request, captured, controller)) return;
         armRecheck(request, captured, target, started);
-        publish({ kind: "post", post: immutable(result), revealed: result.body.contentNote === null });
+        // A plain repost displays the current original, whose note can differ
+        // from the wrapper. Quoted originals remain separate previews.
+        const primaryBody = result.repost?.kind === "PLAIN" ? result.repost.source?.body : result.body;
+        publish({ kind: "post", post: immutable(result), revealed: primaryBody?.contentNote === null });
       }
     } catch (error) {
       if (!current(request, captured, controller)) return;
