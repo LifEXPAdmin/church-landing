@@ -136,6 +136,9 @@ jobs:
       - name: Verify Expo compatibility
         working-directory: mobile
         run: npx --no-install expo install --check
+      - name: Capture public source identity for this export
+        working-directory: mobile
+        run: node scripts/build-identity.mjs >> "$GITHUB_ENV"
       - name: Export only the requested platform
         working-directory: mobile
         shell: bash

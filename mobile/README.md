@@ -157,3 +157,9 @@ The scoped native lint configuration reuses the website's existing locked
 analysis tools. See [Mobile verification](../docs/mobile/VERIFICATION.md) for
 separate source checks, package-security gates and manually selected exports.
 Native builds, hosted CI, staging and device acceptance remain distinct.
+
+The development preview also offers a [local diagnostic check](../docs/mobile/DIAGNOSTICS.md).
+It keeps one bounded report of public build and platform metadata in memory,
+with explicit clear and no upload. The guarded launcher stamps the actual source
+base and state; non-development exports exclude this diagnostic UI. Native crash
+capture and device performance measurements remain separate work.

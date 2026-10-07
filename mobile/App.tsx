@@ -12,6 +12,12 @@ import { Button, Card, Screen, Text } from "./src/ui/primitives";
 import { DisplayControls } from "./src/ui/DisplayControls";
 import { NativeJourney } from "./src/ui/NativeJourney";
 
+const DiagnosticControls = __DEV__
+  // Metro removes this development-only dependency from non-development exports.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? (require("./src/ui/DiagnosticControls") as typeof import("./src/ui/DiagnosticControls")).DiagnosticControls
+  : null;
+
 type Fixture = ReturnType<typeof createNativeFixture>;
 
 function Preview({ fixture }: { fixture: Fixture }) {
@@ -83,6 +89,7 @@ function Preview({ fixture }: { fixture: Fixture }) {
       <Button label="Check secure storage" secondary disabled={probe === "Checking"} onPress={() => { void checkStorage(); }} />
     </Card>
     <DisplayControls />
+    {DiagnosticControls ? <DiagnosticControls /> : null}
   </>} />;
 }
 
