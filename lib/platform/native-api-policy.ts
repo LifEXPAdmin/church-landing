@@ -18,6 +18,7 @@ const optional = [
   "likes.write",
   "reactionPreferences.read",
   "reactionPreferences.write",
+  "comments.read",
   "bookmarks.read",
   "bookmarks.write",
   "media.images.read",
@@ -27,7 +28,6 @@ const optional = [
 ] as const;
 const unimplemented = [
   "session.google",
-  "comments.read",
   "comments.write",
   "posts.write",
   "media.read",

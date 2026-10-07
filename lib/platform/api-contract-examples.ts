@@ -54,6 +54,31 @@ const guest = <T,>(data: T) => ({
   data
 });
 export const apiResponseExamples = {
+  comments: guest({
+    postId: "fictional-post",
+    sort: "oldest",
+    items: [
+      {
+        id: "fictional-comment",
+        rootId: null,
+        parentId: null,
+        createdAt: "2026-10-07T00:00:00.000Z",
+        replyCount: 1,
+        available: false
+      }
+    ],
+    nextCursor: null,
+    root: null,
+    target: null,
+    pinned: null,
+    pinVersion: 0,
+    canPin: false,
+    canReply: false,
+    discussionClosed: false,
+    visibleCount: 1,
+    conversation: { mode: "DEFAULT", version: 0 },
+    requiresWeb: true
+  }),
   bookmarks: member({
     items: [
       {

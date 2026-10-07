@@ -253,6 +253,83 @@ export const apiLikeState = object({
   version,
   count: nullable(integer())
 });
+const commentStructure = {
+  id: apiId,
+  rootId: nullable(apiId),
+  parentId: nullable(apiId),
+  createdAt: apiDate,
+  replyCount: integer()
+};
+// A retained parent is structural context only. Hidden names, text, versions,
+// mentions and reactions are absent rather than a second content projection.
+export const apiComment = union(
+  object({ ...commentStructure, available: literal(false) }),
+  union(
+    object({
+      ...commentStructure,
+      available: literal(true),
+      requiresWeb: literal(true)
+    }),
+    object({
+      ...commentStructure,
+      available: literal(true),
+      requiresWeb: literal(false),
+      content: text(1500),
+      author: apiAuthor,
+      version,
+      editedAt: nullable(apiDate),
+      prayerUpdateKind: nullable(text(40, 1)),
+      isPostAuthor: boolean,
+      replyTo: nullable(object({ id: apiId, name: nullable(text(200, 1)) })),
+      mentions: array(identity, 5),
+      likeCount: nullable(integer()),
+      ownReaction: nullable(object({ liked: boolean, version })),
+      canReply: boolean,
+      canEdit: boolean,
+      canDelete: boolean
+    })
+  )
+);
+export type ApiComment = WireValue<typeof apiComment>;
+const commentQueryShape = object({
+  view: oneOf(["roots", "replies", "context"]),
+  sort: oneOf(["oldest", "newest"]),
+  rootId: nullable(apiId),
+  commentId: nullable(apiId),
+  cursor: nullable(apiCursor)
+});
+const commentQuery = schema<WireValue<typeof commentQueryShape>>((v, mode) => {
+  const query = commentQueryShape.parse(v, mode);
+  if (
+    (query.view === "roots" &&
+      (query.rootId !== null || query.commentId !== null)) ||
+    (query.view === "replies" &&
+      (query.rootId === null || query.commentId !== null)) ||
+    (query.view === "context" &&
+      (query.rootId !== null || query.commentId === null)) ||
+    (query.view !== "roots" && query.sort !== "oldest")
+  )
+    return fail();
+  return query;
+});
+export const apiCommentThread = object({
+  postId: apiId,
+  sort: oneOf(["oldest", "newest"]),
+  items: array(apiComment, 20),
+  nextCursor: nullable(apiCursor),
+  root: nullable(apiComment),
+  target: nullable(apiComment),
+  pinned: nullable(apiComment),
+  pinVersion: version,
+  canPin: boolean,
+  canReply: boolean,
+  discussionClosed: boolean,
+  visibleCount: integer(),
+  conversation: object({ mode: oneOf(["DEFAULT", "FOLLOW", "MUTE"]), version }),
+  // Writing, prayer, mentions and group read acknowledgements use the website
+  // until their native operations and consumers have separate acceptance.
+  requiresWeb: literal(true)
+});
 // A historical receipt does not assert that a current read/permission still succeeds.
 export const apiMutationReceipt = object({
   id: apiId,
@@ -442,6 +519,14 @@ const endpoint = <Q, B, R>(
   });
 
 export const apiContracts = Object.freeze({
+  comments: endpoint(
+    "GET",
+    "/posts/:postId/comments",
+    commentQuery,
+    empty,
+    apiCommentThread,
+    "public"
+  ),
   bookmarks: endpoint(
     "GET",
     "/bookmarks",
@@ -675,6 +760,31 @@ function bindApiResponse<K extends ApiOperation>(
     if (operation === "like") {
       const state = (result as ApiResponse<"like">).data;
       if (state.liked || state.version !== 0) fail();
+    }
+    if (operation === "comments") {
+      const thread = (result as ApiResponse<"comments">).data;
+      for (const comment of [
+        ...thread.items,
+        thread.root,
+        thread.target,
+        thread.pinned
+      ])
+        if (
+          comment?.available &&
+          !comment.requiresWeb &&
+          (comment.ownReaction !== null ||
+            comment.canReply ||
+            comment.canEdit ||
+            comment.canDelete)
+        )
+          fail();
+      if (
+        thread.canPin ||
+        thread.canReply ||
+        thread.conversation.mode !== "DEFAULT" ||
+        thread.conversation.version !== 0
+      )
+        fail();
     }
   }
   return result;

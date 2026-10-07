@@ -11,6 +11,7 @@ import { handleNativeReadRequest } from "../lib/platform/native-read-boundary";
 import { handleNativeImageRequest } from "../lib/platform/native-media-boundary";
 import { handleNativeReactionRequest } from "../lib/platform/native-reaction-boundary";
 import { handleNativeBookmarkRequest } from "../lib/platform/native-bookmark-boundary";
+import { handleNativeCommentReadRequest } from "../lib/platform/native-comment-boundary";
 import { decodeApiResponse, apiFailure } from "../lib/platform/api-contracts";
 
 const priorOrigin = process.env.ACCOUNT_ORIGIN;
@@ -249,6 +250,20 @@ test("bookmark admission stops before database and body access while preserving 
       ?.available,
     true
   );
+});
+
+test("comment reading can be paused before database access and never activates native writes", async () => {
+  const { db, calls } = unusedDatabase();
+  for (const reason of ["version", "pause", "invalid"]) {
+    process.env.NATIVE_API_DISABLED_FEATURES = reason === "version" ? "" : reason === "pause" ? "comments.read" : "unknown.feature";
+    await denied(await handleNativeCommentReadRequest(db, request("posts/post/comments", "GET", reason === "version" ? { "X-API-Version": "2" } : {}).value, { postId: "post" }), reason === "version" ? 426 : 503, reason === "version" ? "unsupported_version" : "feature_unavailable");
+  }
+  process.env.NATIVE_API_DISABLED_FEATURES = "comments.read";
+  await denied(await handleNativeCommentReadRequest(db, request("posts/post/comments", "GET", { Origin: origin }).value, { postId: "post" }), 403, "forbidden");
+  assert.equal(calls(), 0);
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
+  assert.equal(nativeCapabilityPolicy().features.find((f) => f.name === "comments.read")?.available, true);
+  assert.equal(nativeCapabilityPolicy().features.find((f) => f.name === "comments.write")?.available, false);
 });
 
 test("unsupported version reaches no database or request body through session, core read or image adapters", async () => {

@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Prisma, PrismaClient, PlatformPost } from "@prisma/client";
 import { accountConfig } from "./account-config";
 import { withOwnedSession } from "./account-sessions";
+import type { ReadIdentity } from "./account-read";
 import { PortalError } from "./portal-policy";
 import { communityAuthorSelect } from "./public-profile";
 import {
@@ -80,6 +81,7 @@ function include(context: PostContext) {
   return {
     prayerUpdate: { select: { kind: true } },
     groupAuthor: { select: { state: true } },
+    topicAuthor: { select: { restrictedAt: true } },
     author: {
       select: {
         ...communityAuthorSelect,
@@ -112,6 +114,7 @@ type Row = Prisma.PlatformPostCommentGetPayload<{
 const visible = (r: Row, c: PostContext) =>
   !r.deletedAt &&
   (!r.groupId || r.groupAuthor?.state !== "BANNED") &&
+  (!r.topicCommunityId || r.topicAuthor?.restrictedAt === null) &&
   r.moderationState === "VISIBLE" &&
   (!!r.authorChurch ||
     (!r.author.suspendedAt &&
@@ -199,9 +202,10 @@ export function readComments(
   db: PrismaClient,
   token: unknown,
   query: Query,
-  expectedOwner?: string | null
+  expectedOwner?: string | null,
+  identity?: ReadIdentity
 ) {
-  return withPostRead(db, token, async (tx, context) => {
+  const read = async (tx: PostTx, context: PostContext) => {
     if (expectedOwner !== undefined && context.actorId !== expectedOwner)
       throw new PortalError(
         401,
@@ -366,7 +370,8 @@ export function readComments(
       }),
       conversation: preference ?? { mode: "DEFAULT", version: 0 }
     };
-  });
+  };
+  return withPostRead(db, token, read, identity);
 }
 export function readCommentDrafts(
   db: PrismaClient,
