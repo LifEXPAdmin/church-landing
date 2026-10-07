@@ -49,18 +49,33 @@ Each private destination needs a fresh authorized server read; a route or cached
 resource ID grants no access. Do not render retained private content while that
 read is unresolved or denied.
 
-Contextual sign-in return handling is deferred to that accepted session interface.
-Retain at most one bounded destination identity in memory, bind it to the original
-guest/credential generation, and clear it on cancellation, logout, replacement,
-account switch or disposal. Revalidate on foreground and after sign-in, including
-same-account credential replacement. Do not persist URLs/tokens or automatically
-replay writes. This preparation deliberately does not invent a competing pending
-session controller.
+`session-navigation.ts` now consumes that one session controller. It keeps at
+most one bounded, canonical destination identity in memory. Only its explicit
+contextual sign-in command may adopt that address after the session verifies the
+account. A sign-in initiated elsewhere cannot inherit a guest's pending address.
+No token, URL, private content or request client enters navigation snapshots.
+
+Backgrounding, failed sign-in, cancellation, logout, generation replacement,
+account switch and disposal discard the return address. Verified foreground
+restoration starts at Home, including a new credential for the same account.
+Snapshot reads ask the session authority to enforce its current deadline. Only a
+verified foreground owner receives an active destination; that address still
+requires a fresh authorized resource read. Navigation never dispatches it itself.
+Unavailable renderers remain unavailable, without an automatic website action.
+Cancelling a return clears the address only. Cancelling authentication uses the
+session controller's sign-out operation, including its credential cleanup.
 
 ## Verification and next step
 
 Unit checks cover trusted-origin/raw-path security, canonical route precedence,
 query-data removal, tab reordering and explicit availability/fallback behavior.
+Fourteen additional checks run contextual return against the actual session
+controller, vault and request adapter with a fictional wire. They cover held
+sign-in/logout replies, account replacement, backgrounding, deadline expiry,
+reentrant sign-out/disposal, invalid/unavailable targets and disposal. The expiry
+callback can dispose navigation, so commands recheck that state after callbacks
+before retaining a return or dispatching sign-in. These are source
+integration checks; no native UI, device or real-network acceptance is implied.
 Link security vectors also run with the locked WHATWG URL implementation that
 Expo installs at native startup, as well as Node's URL. This is library-level
 evidence; it does not launch Hermes or an OS link event.
@@ -68,6 +83,6 @@ Type and import checks cover the actual native package. These establish source
 contracts, not native navigation, authenticated return, system Back, modal/dirty
 entry dismissal, process death, screen-reader focus or device link acceptance.
 
-After the session interface is accepted, wire these pure adapters to the canonical
-app's navigator, render the replaceable native tab controls, and verify the first
+Next, connect authorized bounded resource reads and the canonical app's native
+screens to this session-bound destination state, render native controls, and verify the first
 real sign-in/feed/post/sign-out journey before enabling broader feature screens.
