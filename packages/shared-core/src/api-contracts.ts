@@ -47,7 +47,7 @@ const boolean = schema<boolean>((value) =>
   typeof value === "boolean" ? value : fail()
 );
 const literal = <const T extends string | boolean>(expected: T) =>
-  schema<T,>((value) => (value === expected ? expected : fail()));
+  schema<T>((value) => (value === expected ? expected : fail()));
 const oneOf = <const T extends readonly string[]>(choices: T) =>
   schema<T[number]>((value) =>
     typeof value === "string" && choices.includes(value)
