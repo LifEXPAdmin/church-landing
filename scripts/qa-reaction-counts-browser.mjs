@@ -363,6 +363,32 @@ try {
   assert.equal(await totalCount(), 0);
   ok("Like and Unlike stay usable with author totals hidden");
 
+  await page
+    .getByRole("button", { name: "Pray for this post", exact: true })
+    .first()
+    .click();
+  await page.getByLabel("I have read this prayer guide").check();
+  await page
+    .getByRole("button", { name: "Accept prayer guide", exact: true })
+    .click();
+  const prayed = page.getByRole("button", { name: "I prayed", exact: true });
+  await waitFor(() => prayed.isEnabled());
+  await prayed.click();
+  await page
+    .getByRole("button", { name: "Undo I prayed", exact: true })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole("region", { name: "Prayer participants", exact: true })
+      .locator(".gc-reaction-count")
+      .count(),
+    0
+  );
+  await page.getByRole("button", { name: "Close prayer", exact: true }).click();
+  ok(
+    "Prayer acknowledgement remains functional while the author's prayer total is absent"
+  );
+
   await signIn(f.a);
   await go(settingPath);
   await authorControl.waitFor({ state: "visible" });

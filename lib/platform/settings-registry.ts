@@ -449,7 +449,7 @@ export const settingsRegistry: readonly SettingRegistration[] = Object.freeze([
     )
   ),
   entry(
-    "privacy.reaction-counts",
+    "privacy.reactions",
     "privacy",
     "Reaction counts",
     "Hide totals on this browser or on your personal contributions. These shortcuts use the same saved choices as Appearance and reading.",
