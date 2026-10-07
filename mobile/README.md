@@ -47,7 +47,9 @@ the launcher points it at the task's new `.generated/expo-home` directory.
 Existing Expo account state is preserved. Recheck the installed CLI's actual
 settings path when changing SDK versions; `EXPO_HOME` is not honored by SDK 57.
 
-The fictional feed listens on loopback port 4084. Metro uses port 8084. Inspect
+The original HTTP spike fixture remains available on loopback port 4084 for
+transport investigation. The current app uses an in-memory fictional wire and
+does not need that server. Metro uses port 8084. Inspect
 port ownership before starting them. Do not terminate an existing foreign
 listener. iOS Simulator reads `127.0.0.1:4084`; Android Emulator reads its host
 alias `10.0.2.2:4084`. Physical-device fixture networking is not configured.
@@ -82,25 +84,36 @@ credential directories as an incidental setup change. Full Xcode was absent at
 discovery. Android tooling is owned by the Android lane. No native binary,
 simulator/device launch or installed-size result is claimed by this checkpoint.
 
-## Spike behavior and acceptance
+## Current fictional journey and acceptance
 
-The preview explicitly identifies fictional data. Continue as a demo member,
-read a finite feed, open a post, deliberately reveal a content note, return,
-simulate a failed read, retry, and sign out. Reading state is held in memory.
-Sign-out invalidates earlier request generations, including re-entry as the same
-demo member. Backgrounding obscures the fixture screen. This is not the real
-session lifecycle or a substitute for server authorization.
+The preview explicitly identifies fictional data and uses the canonical native
+client, credential-vault state machine, session authority, navigation and bounded
+reader. `src/spike/native-fixture.ts` supplies strict canonical response shapes
+through a fictional in-memory wire and in-memory stores. It contains no network
+fallback or persistent credential activation. Only its fixed demo input can
+issue a fictional session. The app presents no password field in fixture mode.
+
+Continue as a demo member, read two finite pages, open a fresh post detail,
+deliberately reveal a content note, return to the current page, try an interrupted
+or empty read, retry, and sign out. Pages replace each other. Content-note,
+repost, account-generation, deadline and cleanup behavior now runs through the
+same components and state owners prepared for real native integration. This is
+still a fictional response exercise, not server authorization or native transport
+acceptance. Original spike sources/tests remain as their historical receipt.
 
 The secure-store probe writes, reads and deletes one disposable constant using
 device-only unlocked access. It never stores member credentials. The local app
 link opens a fixture detail route and reports success only after receiving the
 link. It is not a universal-link or OAuth implementation.
 
-The remaining spike acceptance is explicit: both native development builds must
-launch, read the local fixture API, complete navigation/retry/sign-out, pass
-secure-store cleanup and app-link round trips, and record release-style download
-and installed-size baselines. JavaScript tests, typechecking, bundle export,
-source review and web preview do not satisfy those native checks.
+Remaining acceptance is explicit: both native development builds must launch,
+complete the fictional preview, then use the reviewed native wire/vault against
+the accepted staging API for the real journey. Native secure-store cleanup,
+app-link round trips, download/installed-size baselines and device accessibility
+remain open. JavaScript tests, typechecking, exports, source review and web
+preview do not satisfy them. Android focus starts unknown because React Native
+has no initial window-focus snapshot; startup stays concealed until focus is
+known. See [Native first journey](../docs/mobile/NATIVE_JOURNEY.md).
 
 The initial dependency audit found transitive advisories in development tooling.
 The exact lock and audit are retained for triage. Do not force npm's proposed

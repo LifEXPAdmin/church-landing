@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AccessibilityInfo, ActivityIndicator, AppState, Platform, View } from "react-native";
 import { nativePasswordInput } from "@godschurches/shared-core";
 import type { createNativeRuntime } from "../session/runtime";
@@ -130,7 +130,8 @@ function Reading({ runtime, state, post }: { runtime: Runtime; state: ReadingSna
 
 /** The caller owns one runtime. No native credentials or network activate from
  * this import. Real password mode requires the separate native acceptance gates. */
-export function NativeJourney({ runtime, signInMode }: { runtime: Runtime; signInMode: SignInMode }) {
+export function NativeJourney({ runtime, signInMode, previewTools }:
+  { runtime: Runtime; signInMode: SignInMode; previewTools?: ReactNode }) {
   const state = useSyncExternalStore(runtime.session.subscribe, runtime.session.getSnapshot);
   const navigation = useSyncExternalStore(runtime.navigation.subscribe, runtime.navigation.getSnapshot);
   const reading = useSyncExternalStore(runtime.reading.subscribe, runtime.reading.getSnapshot);
@@ -171,5 +172,6 @@ export function NativeJourney({ runtime, signInMode }: { runtime: Runtime; signI
     {state.phase === "ready" && state.account ? <Reading key={state.account.id + ":" + state.generation} runtime={runtime} state={reading} post={post} /> : null}
     {state.phase === "ready" || state.phase === "unavailable" || state.cleanup === "cleanup-pending" || state.cleanup === "unconfirmed" ?
       <Button label={state.phase === "ready" ? "Sign out" : "Retry sign-out"} secondary onPress={() => { void runtime.signOut(); }} /> : null}
+    {signInMode.kind === "fixture" ? previewTools : null}
   </Screen>;
 }
