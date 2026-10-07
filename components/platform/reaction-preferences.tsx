@@ -150,12 +150,13 @@ function OriginalReactionFrame({
           >
             Sign in to recover settings
           </a>
-          <a
+          <button
+            type="button"
             className="gc-button gc-button-quiet"
-            href="/platform/settings/display/reading"
+            onClick={() => window.location.reload()}
           >
             Reload settings and discard retained entries
-          </a>
+          </button>
         </section>
       )}
       <ReadVisibility.Provider value={allowed}>
