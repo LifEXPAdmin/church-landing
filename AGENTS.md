@@ -32,6 +32,16 @@ Session Log; retain other task labels when adding gc_in_progress. Refresh at
 meaningful checkpoints and handoffs. Never steal an active or unexamined lock.
 Coordinate overlaps with their owner and take other eligible work meanwhile.
 
+For native mobile work, select primarily from the dedicated iPhone/shared or
+Android queue and read the current private mobile coding runbook, master plan,
+source map and website-to-app portability audit. Website chats retain the regular
+website queues. Canonical API, backend and reusable-package work stays on its
+original website task; a mobile worker may claim it only when eligible and
+unclaimed, or explicitly handed over. Consume the tested receipt instead of
+building a parallel contract. Follow [mobile instructions](mobile/AGENTS.md) for
+the shared native workspace. A dependency gate can hold acceptance while useful
+independent preparation continues.
+
 Finish every required UI, integration, configuration, regression and documentation
 step locally for each feature. Save tested checkpoints and combine compatible
 finished work into a named release batch. Publish when that batch is ready; avoid
@@ -47,6 +57,11 @@ commits against current main before integrating; preserve completed work and
 verify the combined release and live behavior before closure.
 Complete newly unlocked children immediately. Recheck all four project lists
 between features and continue through your eligible P1, P2, P3 and P4 tasks.
+For mobile features, recheck both mobile lists and the relevant canonical website
+prerequisites. Repair routine code, configuration, dependency and test failures
+within the authorized scope. Reuse source-reading and test receipts when their
+source and applicability remain valid; read full affected modules and changed
+dependencies. Avoid unchanged test loops, idle polling and duplicate engineering.
 Stop only when asked, no eligible work remains, or an actual access,
 runtime or usage limitation prevents progress. Preserve exact blockers and keep
 final review last. Each chat owns one coherent feature at a time. Use bounded
@@ -94,5 +109,14 @@ Record the outcome, changed files and branch/commit or PR, decisions, checks act
 Include owner-action dependencies, agreed batch status, next-batch references, unfinished documentation propagation and notification outcome when applicable. Follow the current private **Workflow Guide for ChatGPT and Codex** and its owner-action and final-review procedures.
 
 When a workflow changes, update the existing guide or runbook in place, add a dated change entry, and propagate relevant changes to entry points, templates, task descriptions, and repository instructions. Name any propagation still pending.
+
+Before stopping, check eligible tasks, independent partial work, incoming
+handoffs and permitted shared assistance. A progress report or completed
+checkpoint is not a stopping point. Preserve an exact next action and distinguish
+local completion from integration, native-device acceptance and release gates.
+
+Workflow clarification, 7 October 2026: dedicated mobile queue selection,
+canonical website ownership and continuous execution now apply to the native
+workspace. Existing security, purchase and designated release-owner gates remain.
 
 This repository is public. Keep private workspace links, task identifiers, personal context, credentials, and private test evidence out of repository documents. Refer to private pages by exact title. See the workflow guide for the complete reading and update routine.

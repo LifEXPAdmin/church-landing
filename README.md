@@ -22,6 +22,13 @@ For implementation status, use the newest applicable sections of
 [CURRENT_STATE.md](docs/godschurches/CURRENT_STATE.md) and its linked reports;
 older checkpoints in this README may be superseded.
 
+Native iPhone and Android work uses the isolated [shared mobile workspace](mobile/README.md).
+Read its [working instructions](mobile/AGENTS.md),
+[architecture decision](docs/mobile/ARCHITECTURE.md) and
+[iPhone development route](docs/mobile/IOS_DEVELOPMENT.md). The current mobile
+checkpoint is a fictional-data development spike. Its native-build and real-account
+acceptance gates remain open; it is not a store or production release.
+
 ## Stack
 
 - Next.js App Router + TypeScript
