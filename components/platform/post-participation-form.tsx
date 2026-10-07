@@ -348,6 +348,15 @@ function Roster({ slotId }: { slotId: string }) {
   }
   return (
     <div className="space-y-2">
+      <ParticipationPresentation>
+        <Link
+          prefetch={false}
+          className="gc-button gc-button-quiet"
+          href={`/platform/serve/roles/${encodeURIComponent(slotId)}`}
+        >
+          Review and confirm completed service
+        </Link>
+      </ParticipationPresentation>
       <button
         type="button"
         className={portalButtonClass}

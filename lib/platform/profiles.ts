@@ -11,6 +11,7 @@ import { PortalError } from "./portal-policy";
 import { imagesAvailable } from "./media-storage";
 import { readProfileModules } from "./profile-modules";
 import { profileEventIn } from "./profile-events";
+import { profileVolunteerServiceIn } from "./volunteer-service-history";
 
 export const profilePresentationSelect = {
   version: true,
@@ -167,6 +168,7 @@ export function getMemberProfile(
         modules: visibleModules
       },
       selectedEvent,
+      serviceHistory: await profileVolunteerServiceIn(tx, reader, profile.id),
       avatar,
       cover,
       posts,

@@ -10,6 +10,12 @@ import { socialCommand, socialInput } from "./social-operations";
 import { recordDiscoveryControl } from "./retention-controls";
 import { recordVolunteerApplicationChange } from "./volunteer-lifecycle";
 import {
+  authorizeVolunteerServiceIn,
+  recordVolunteerCompletionIn,
+  setVolunteerServiceConsentIn,
+  volunteerServiceTarget
+} from "./volunteer-service-history";
+import {
   applicationIsTerminal,
   opportunitySource,
   ownedVolunteerApplication,
@@ -21,6 +27,8 @@ import {
 } from "./volunteer-policy";
 
 const fields: Record<string, string[]> = {
+  complete: ["targetKind", "targetId", "completed", "reason"],
+  "service-visibility": ["targetKind", "targetId", "shared", "completionVersion"],
   save: [
     "id",
     "postId",
@@ -96,6 +104,10 @@ async function authorized(
   op: string,
   input: Record<string, unknown>
 ) {
+  if (op === "complete" || op === "service-visibility") {
+    await authorizeVolunteerServiceIn(tx, actorId, input);
+    return;
+  }
   const version = input.expectedVersion;
   if (
     typeof version !== "number" ||
@@ -133,7 +145,8 @@ async function authorized(
         prior.recoveryRequired ||
         applicationIsTerminal(prior) ||
         prior.signup?.state === "CANCELED" ||
-        prior.signup?.completedAt
+        prior.signup?.completedAt ||
+        prior.completedAt
       )
         throw unavailableVolunteer();
       await requireVolunteerApplicant(tx, actorId, prior.opportunityId);
@@ -494,7 +507,7 @@ async function withdraw(
       409,
       "This application or assignment has already ended."
     );
-  if (prior.signup?.completedAt)
+  if (prior.signup?.completedAt || (!prior.signupId && prior.completedAt))
     throw new PortalError(
       409,
       "Completed help needs the existing reasoned receipt correction before withdrawal."
@@ -548,7 +561,8 @@ async function saveAvailability(
       prior.recoveryRequired ||
       applicationIsTerminal(prior) ||
       prior.signup?.state === "CANCELED" ||
-      prior.signup?.completedAt
+      prior.signup?.completedAt ||
+      prior.completedAt
     )
       throw unavailableVolunteer();
     await requireVolunteerApplicant(tx, actorId, prior.opportunityId);
@@ -575,7 +589,8 @@ async function saveAvailability(
 export function volunteerCommand(
   db: PrismaClient,
   token: unknown,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  expectedOwner?: string
 ) {
   const op = String(input.operation);
   if (!fields[op])
@@ -591,7 +606,18 @@ export function volunteerCommand(
     token,
     "volunteer",
     input,
-    (tx, actorId) => {
+    async (tx, actorId) => {
+      if (op === "complete")
+        return recordVolunteerCompletionIn(
+          tx,
+          await postContext(tx, actorId),
+          volunteerServiceTarget(input.targetKind, input.targetId),
+          input.expectedVersion,
+          input.completed,
+          input.reason
+        );
+      if (op === "service-visibility")
+        return setVolunteerServiceConsentIn(tx, actorId, input);
       if (op === "save") return save(tx, actorId, input);
       if (op === "apply") return apply(tx, actorId, input);
       if (op === "availability") return saveAvailability(tx, actorId, input);
@@ -599,6 +625,13 @@ export function volunteerCommand(
         return withdraw(tx, actorId, input, op === "cancel");
       return review(tx, actorId, input, op === "accept");
     },
-    (tx, actorId) => authorized(tx, actorId, op, input)
+    async (tx, actorId) => {
+      if (expectedOwner !== undefined && expectedOwner !== actorId)
+        throw new PortalError(
+          401,
+          "Your sign-in changed. Keep your original entries."
+        );
+      await authorized(tx, actorId, op, input);
+    }
   );
 }

@@ -1,4 +1,6 @@
 import type { PrismaClient, Prisma } from "@prisma/client";
+import type { ReadIdentity } from "./account-read";
+import { volunteerServiceRecordIn } from "./volunteer-service-history";
 import { eligibleWhere, PortalError } from "./portal-policy";
 import {
   postCanEdit,
@@ -165,7 +167,8 @@ export function getVolunteerRoster(
   db: PrismaClient,
   token: unknown,
   slotId: string,
-  cursor?: string
+  cursor?: string,
+  identity?: ReadIdentity
 ) {
   return withPostRead(db, token, async (tx, context) => {
     const slot = await tx.postVolunteerSlot.findUnique({
@@ -196,14 +199,28 @@ export function getVolunteerRoster(
     });
     const people = [];
     for (const row of rows.slice(0, pageSize)) {
+      let service = null;
+      try {
+        service = await volunteerServiceRecordIn(tx, context, { kind: "signup", id: row.id });
+      } catch (error) {
+        if (!(error instanceof PortalError && error.status === 404)) throw error;
+      }
       if (slot.opportunity) {
         if (!row.application) continue;
         try { await reviewedVolunteerApplication(tx, context, row.application.id); }
-        catch (error) { if (error instanceof PortalError && error.status === 404) continue; throw error; }
+        catch (error) {
+          if (!(error instanceof PortalError && error.status === 404)) throw error;
+          if (!service?.canCorrect) continue;
+        }
       }
-      people.push({ id: row.id, name: row.user.suspendedAt || row.user.deactivatedAt ? "Unavailable account" : row.user.name });
+      people.push({
+        id: row.id,
+        name: !service?.current || row.user.suspendedAt || row.user.deactivatedAt ? "Unavailable account" : row.user.name,
+        service
+      });
     }
     return {
+      ownerId: context.actorId!,
       role: slot.role,
       capacity: slot.capacity,
       total: await tx.postVolunteerSignup.count({
@@ -212,7 +229,7 @@ export function getVolunteerRoster(
       people,
       nextCursor: rows.length > pageSize ? rows[pageSize - 1].id : null
     };
-  });
+  }, identity);
 }
 export async function volunteerCommitmentsIn(
   tx: PostTx,

@@ -7,6 +7,7 @@ import type {
 } from "@/lib/platform/volunteer-reads";
 import { usePrivateChoiceAction } from "./use-private-choice-action";
 import { portalInputClass } from "./portal-action-form";
+import { VolunteerServiceActions } from "./volunteer-service-history";
 
 const endpoint = "/api/platform/volunteers";
 const snapshot = (opportunity: VolunteerOpportunityView) => ({
@@ -373,62 +374,66 @@ export function VolunteerApplicationActions({
           Withdraw application or assignment
         </button>
       )}
-      {coordinator && application.state === "SUBMITTED" && (
-        <>
-          <button
-            type="button"
-            className="gc-button"
-            disabled={
-              action.blocked ||
-              application.detailsChanged ||
-              opportunity?.closed ||
-              !opportunity ||
-              opportunity.filled >= opportunity.capacity
-            }
-            onClick={() =>
-              command(
-                "accept",
-                "Accept this application and confirm one volunteer assignment for the displayed commitment? This grants no church authority or additional access."
-              )
-            }
-          >
-            Accept application
-          </button>
-          {application.detailsChanged && (
-            <p>
-              The applicant must confirm the changed commitment before approval.
-            </p>
-          )}
-          <label className="block space-y-2" htmlFor={id}>
-            <span>
-              Optional explanation for declining, visible to the applicant
-            </span>
-            <textarea
-              id={id}
-              rows={2}
-              maxLength={500}
-              className={portalInputClass}
-              disabled={action.blocked}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </label>
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            disabled={action.blocked}
-            onClick={() =>
-              command(
-                "decline",
-                "Decline this application with the explanation shown? The decision will remain in its private history."
-              )
-            }
-          >
-            Decline application
-          </button>
-        </>
-      )}
       {coordinator &&
+        application.current &&
+        application.state === "SUBMITTED" && (
+          <>
+            <button
+              type="button"
+              className="gc-button"
+              disabled={
+                action.blocked ||
+                application.detailsChanged ||
+                opportunity?.closed ||
+                !opportunity ||
+                opportunity.filled >= opportunity.capacity
+              }
+              onClick={() =>
+                command(
+                  "accept",
+                  "Accept this application and confirm one volunteer assignment for the displayed commitment? This grants no church authority or additional access."
+                )
+              }
+            >
+              Accept application
+            </button>
+            {application.detailsChanged && (
+              <p>
+                The applicant must confirm the changed commitment before
+                approval.
+              </p>
+            )}
+            <label className="block space-y-2" htmlFor={id}>
+              <span>
+                Optional explanation for declining, visible to the applicant
+              </span>
+              <textarea
+                id={id}
+                rows={2}
+                maxLength={500}
+                className={portalInputClass}
+                disabled={action.blocked}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              disabled={action.blocked}
+              onClick={() =>
+                command(
+                  "decline",
+                  "Decline this application with the explanation shown? The decision will remain in its private history."
+                )
+              }
+            >
+              Decline application
+            </button>
+          </>
+        )}
+      {coordinator &&
+        application.current &&
         application.state === "ACCEPTED" &&
         !application.completed && (
           <button
@@ -445,6 +450,13 @@ export function VolunteerApplicationActions({
             Cancel assignment
           </button>
         )}
+      {application.service && (
+        <VolunteerServiceActions
+          key={`${owner}:${application.service.target.kind}:${application.service.target.id}:${application.service.version}:${application.service.serviceVersion}`}
+          owner={owner}
+          record={application.service}
+        />
+      )}
       {action.status}
     </div>
   );

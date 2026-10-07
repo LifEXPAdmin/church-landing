@@ -1,4 +1,11 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import type { ReadIdentity } from "./account-read";
+import { getVolunteerRoster } from "./post-participation-reads";
+import {
+  readVolunteerServiceHistory,
+  volunteerServiceRecordIn,
+  type VolunteerServiceRecord
+} from "./volunteer-service-history";
 import {
   withPostRead,
   postReadableWhere,
@@ -98,19 +105,41 @@ export type VolunteerOpportunityView = Awaited<
   ReturnType<typeof opportunityView>
 >;
 
-function applicationView(
+async function applicationView(
+  tx: PostTx,
   row: Application,
   source: Source | null,
   context: PostContext
 ) {
   const current = !!source && !row.recoveryRequired;
   const signup = row.signup;
+  let service: VolunteerServiceRecord | null = null;
+  if (row.state === "ACCEPTED" || signup?.completedAt || row.completedAt) {
+    try {
+      service = await volunteerServiceRecordIn(
+        tx,
+        context,
+        signup
+          ? { kind: "signup", id: signup.id }
+          : { kind: "application", id: row.id }
+      );
+    } catch (error) {
+      if (!(error instanceof PortalError && error.status === 404)) throw error;
+    }
+  }
   const availabilityCurrent =
     current &&
     ["SUBMITTED", "ACCEPTED"].includes(row.state) &&
     signup?.state !== "CANCELED" &&
-    !signup?.completedAt;
-  const history = current ? row.events : [];
+    !signup?.completedAt &&
+    !row.completedAt;
+  const history = current
+    ? row.events.filter(
+        (event) =>
+          !service?.recoveryRequired ||
+          !["COMPLETED", "COMPLETION_CORRECTED"].includes(event.action)
+      )
+    : [];
   const detailsChanged =
     !!source &&
     (row.opportunityVersion !== source.row.version ||
@@ -140,10 +169,12 @@ function applicationView(
     title: current ? source!.row.title : "Unavailable volunteer opportunity",
     opportunityId: current ? row.opportunityId : null,
     detailsChanged,
-    completed: !!signup?.completedAt,
+    completed: service?.completed ?? false,
+    service,
     canWithdraw:
       row.userId === context.actorId &&
       !signup?.completedAt &&
+      !row.completedAt &&
       ["SUBMITTED", "ACCEPTED"].includes(row.state),
     history: history
       .toReversed()
@@ -196,7 +227,7 @@ export function readVolunteerOpportunity(
         : null,
       opportunity: await opportunityView(tx, source),
       application: own
-        ? applicationView(own, eligible ? source : null, context)
+        ? await applicationView(tx, own, eligible ? source : null, context)
         : null
     };
   });
@@ -333,7 +364,11 @@ export function readVolunteerApplications(
           opportunityId: source.row.id,
           userId: { notIn: context.blockedIds ?? [] },
           recoveryRequired: false,
-          user: { is: volunteerApplicantWhere(source) }
+          OR: [
+            { user: { is: volunteerApplicantWhere(source) } },
+            { completedAt: { not: null } },
+            { signup: { is: { completedAt: { not: null } } } }
+          ]
         }
       : { userId: context.actorId };
     const rows = await tx.volunteerApplication.findMany({
@@ -345,11 +380,26 @@ export function readVolunteerApplications(
       orderBy: { id: "asc" },
       take: PAGE + 1
     });
+    // Keep the candidate page bounded. Former applicants enter it only for a
+    // retained completion, and never regain their private application details.
+    const currentIds = source
+      ? new Set(
+          (
+            await tx.volunteerApplication.findMany({
+              where: {
+                id: { in: rows.slice(0, PAGE).map((row) => row.id) },
+                user: { is: volunteerApplicantWhere(source) }
+              },
+              select: { id: true }
+            })
+          ).map((row) => row.id)
+        )
+      : null;
     const items = [];
     for (const row of rows.slice(0, PAGE)) {
       let currentSource: Source | null = null;
       try {
-        if (source) currentSource = source;
+        if (source) currentSource = currentIds!.has(row.id) ? source : null;
         else if (row.opportunityId) {
           const found = await opportunitySource(tx, context, row.opportunityId);
           if (await canParticipate(tx, context, found.post))
@@ -359,9 +409,10 @@ export function readVolunteerApplications(
         if (!(error instanceof PortalError && error.status === 404))
           throw error;
       }
-      if (source && !currentSource) continue;
+      const view = await applicationView(tx, row, currentSource, context);
+      if (source && !currentSource && !view.service?.canCorrect) continue;
       items.push({
-        ...applicationView(row, currentSource, context),
+        ...view,
         applicantName:
           source && currentSource
             ? (row.user?.name ?? "Unavailable account")
@@ -388,9 +439,26 @@ export type VolunteerQuery = {
 export async function readVolunteers(
   db: PrismaClient,
   token: unknown,
-  query: VolunteerQuery
+  query: VolunteerQuery,
+  identity?: ReadIdentity
 ) {
   switch (query.view ?? "list") {
+    case "history":
+      return {
+        view: "history" as const,
+        ...(await readVolunteerServiceHistory(db, token, query.after, identity))
+      };
+    case "service-roster":
+      return {
+        view: "service-roster" as const,
+        ...(await getVolunteerRoster(
+          db,
+          token,
+          postId(query.id),
+          query.after ?? undefined,
+          identity
+        ))
+      };
     case "list":
       return {
         view: "list" as const,

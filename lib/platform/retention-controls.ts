@@ -26,6 +26,38 @@ import {
   retentionDate
 } from "./messaging-retention";
 type Tx = Prisma.TransactionClient;
+// Call only after matching the service source and owner to a recovery control
+// or authorizing a deliberate change to that owner's quarantined receipt.
+// Older participation writers used hyphenated event names.
+export async function clearVolunteerServiceNotesIn(
+  tx: Tx,
+  kind: "VOLUNTEER_SERVICE_SIGNUP" | "VOLUNTEER_SERVICE_APPLICATION",
+  sourceId: string
+) {
+  if (kind === "VOLUNTEER_SERVICE_SIGNUP")
+    await tx.exchangeNeedEvent.updateMany({
+      where: {
+        targetId: sourceId,
+        action: {
+          in: [
+            "VOLUNTEER_COMPLETED",
+            "VOLUNTEER_COMPLETION_CORRECTED",
+            "VOLUNTEER-COMPLETED",
+            "VOLUNTEER-COMPLETION-CORRECTED"
+          ]
+        }
+      },
+      data: { text: "" }
+    });
+  else
+    await tx.volunteerApplicationEvent.updateMany({
+      where: {
+        applicationId: sourceId,
+        action: { in: ["COMPLETED", "COMPLETION_CORRECTED"] }
+      },
+      data: { note: "" }
+    });
+}
 const PREFIX = "retention-v1/controls/";
 export type RetentionControlEntry = {
   id: string;
@@ -53,6 +85,8 @@ export type RetentionControlEntry = {
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
     | "VOLUNTEER_APPLICATION"
+    | "VOLUNTEER_SERVICE_SIGNUP"
+    | "VOLUNTEER_SERVICE_APPLICATION"
     | "PANTRY_HUB"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
@@ -122,6 +156,10 @@ function validate(value: unknown): RetentionControlEntry {
       "REACTION_COUNT_PREFERENCES"
     ].includes(r.kind) &&
       (r.sourceId !== r.targetId || r.operatorId !== r.targetId)) ||
+    (["VOLUNTEER_SERVICE_SIGNUP", "VOLUNTEER_SERVICE_APPLICATION"].includes(
+      r.kind
+    ) &&
+      r.operatorId !== r.targetId) ||
     ![r.recordedAt, r.startedAt, r.reviewDueAt].every(date) ||
     (r.endedAt !== null && !date(r.endedAt)) ||
     !([
@@ -141,6 +179,8 @@ function validate(value: unknown): RetentionControlEntry {
       "EXCHANGE_NEED",
       "VOLUNTEER_OPPORTUNITY",
       "VOLUNTEER_APPLICATION",
+      "VOLUNTEER_SERVICE_SIGNUP",
+      "VOLUNTEER_SERVICE_APPLICATION",
       "PANTRY_HUB",
       "EXCHANGE_INQUIRY",
       "EXCHANGE_CONTACT",
@@ -496,6 +536,8 @@ export async function recordDiscoveryControl(
     | "EXCHANGE_NEED"
     | "VOLUNTEER_OPPORTUNITY"
     | "VOLUNTEER_APPLICATION"
+    | "VOLUNTEER_SERVICE_SIGNUP"
+    | "VOLUNTEER_SERVICE_APPLICATION"
     | "PANTRY_HUB"
     | "EXCHANGE_INQUIRY"
     | "EXCHANGE_CONTACT"
@@ -1434,6 +1476,50 @@ export async function replayRetentionControls(
                 }
               });
           }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (
+          entry.kind === "VOLUNTEER_SERVICE_SIGNUP" ||
+          entry.kind === "VOLUNTEER_SERVICE_APPLICATION"
+        ) {
+          // A disclosure/correction control cannot cancel an assignment or
+          // release a completed place. Its opaque row is also the recovery
+          // fence when the source is absent; never invent a signup/application.
+          const where = {
+            id: entry.sourceId,
+            userId: entry.targetId,
+            serviceVersion: { lt: entry.version }
+          };
+          const data = {
+            serviceVersion: entry.version,
+            serviceRecoveryRequired: true,
+            completionNote: "",
+            serviceSharedAt: null,
+            serviceSharedCompletionVersion: null
+          };
+          if (entry.kind === "VOLUNTEER_SERVICE_SIGNUP") {
+            const changed = await tx.postVolunteerSignup.updateMany({
+              where,
+              data
+            });
+            if (changed.count)
+              await clearVolunteerServiceNotesIn(tx, entry.kind, entry.sourceId);
+          } else {
+            const changed = await tx.volunteerApplication.updateMany({
+              where,
+              data
+            });
+            if (changed.count)
+              await clearVolunteerServiceNotesIn(tx, entry.kind, entry.sourceId);
+          }
+          // Historical copies cannot return when reconfirmation ends quarantine.
+          // A matched older owner row is required, so replaying an old control
+          // never scrubs notes from a newer deliberate confirmation.
           await record(tx, entry);
           await tx.retentionControl.updateMany({
             where: { id: entry.id, journaledAt: null },
