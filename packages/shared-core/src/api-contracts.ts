@@ -3,6 +3,8 @@
  * No browser, framework, database, credential or server runtime imports.
  * Services must authorize and explicitly project before encode; never pass rows.
  */
+import { POST_TOPICS, POST_TYPES } from "./post-options";
+
 export const API_VERSION = "1" as const;
 export const API_BASE_PATH = "/api/platform/v1" as const;
 export const API_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
@@ -521,6 +523,29 @@ const endpoint = <Q, B, R>(
   });
 
 export const apiContracts = Object.freeze({
+  createPost: endpoint(
+    "POST",
+    "/posts",
+    empty,
+    object({
+      // Direct publication keeps the canonical requestKey receipt owner.
+      requestKey: apiId,
+      // Keep raw text in the fingerprint; canonical validation normalizes CRLF.
+      content: text(6000, 3),
+      contentNote: text(240),
+      safeExcerpt: text(320),
+      scripture: text(240),
+      type: oneOf(POST_TYPES),
+      topics: array(oneOf(POST_TOPICS), 5),
+      authorChurchId: nullable(apiId),
+      audienceChurchId: nullable(apiId),
+      audience: oneOf(["PUBLIC", "CHURCH"]),
+      replyAudience: oneOf(["VIEWERS", "CHURCH_MEMBERS"]),
+      allowReposts: boolean
+    }),
+    apiMutationReceipt,
+    "member"
+  ),
   createComment: endpoint(
     "POST",
     "/posts/:postId/comments",

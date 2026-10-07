@@ -11,6 +11,7 @@ import { handleNativeReadRequest } from "../lib/platform/native-read-boundary";
 import { handleNativeImageRequest } from "../lib/platform/native-media-boundary";
 import { handleNativeReactionRequest } from "../lib/platform/native-reaction-boundary";
 import { handleNativeBookmarkRequest } from "../lib/platform/native-bookmark-boundary";
+import { handleNativePostCreateRequest } from "../lib/platform/native-post-boundary";
 import {
   handleNativeCommentReadRequest,
   handleNativeCommentLikeRequest,
@@ -81,6 +82,67 @@ async function denied(response: Response, status: number, code: string) {
   assert.equal(response.headers.get("set-cookie"), null);
   assert.equal(response.headers.get("location"), null);
 }
+
+test("direct post publication pauses before body and database work while broader post writes remain unavailable", async () => {
+  const { db, calls } = unusedDatabase();
+  for (const reason of ["version", "pause", "invalid"]) {
+    process.env.NATIVE_API_DISABLED_FEATURES =
+      reason === "version"
+        ? ""
+        : reason === "pause"
+          ? "posts.create"
+          : "unknown.feature";
+    const probe = request(
+      "posts",
+      "POST",
+      {
+        ...credentials,
+        ...(reason === "version" ? { "X-API-Version": "2" } : {})
+      },
+      true
+    );
+    await denied(
+      await handleNativePostCreateRequest(db, probe.value),
+      reason === "version" ? 426 : 503,
+      reason === "version" ? "unsupported_version" : "feature_unavailable"
+    );
+    assert.equal(probe.pulls(), 0);
+  }
+  await denied(
+    await handleNativePostCreateRequest(
+      db,
+      request("posts", "POST", { ...credentials, Origin: origin }, true).value
+    ),
+    403,
+    "forbidden"
+  );
+  await denied(
+    await handleNativePostCreateRequest(
+      db,
+      request("posts", "POST", {}, true).value
+    ),
+    401,
+    "unauthenticated"
+  );
+  const method = await handleNativePostCreateRequest(
+    db,
+    request("posts").value
+  );
+  assert.equal(method.headers.get("allow"), "POST");
+  await denied(method, 405, "method_not_allowed");
+  assert.equal(calls(), 0);
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "posts.create")
+      ?.available,
+    true
+  );
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "posts.write")
+      ?.available,
+    false
+  );
+});
 
 test("direct comment publication can pause before body or database work without opening other comment writes", async () => {
   const { db, calls } = unusedDatabase();

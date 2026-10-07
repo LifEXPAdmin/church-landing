@@ -11,6 +11,7 @@ const optional = [
   "session.password",
   "feed.read",
   "post.read",
+  "posts.create",
   "profile.read",
   "churches.read",
   "church.read",

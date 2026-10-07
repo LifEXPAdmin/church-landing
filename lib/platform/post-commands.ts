@@ -32,7 +32,7 @@ import {
   type PostReplyAudience
 } from "@prisma/client";
 import { Temporal } from "@js-temporal/polyfill";
-import { withOwnedSession } from "./account-sessions";
+import { requireSessionOwner, withOwnedSession } from "./account-sessions";
 import { expected, PortalError } from "./portal-policy";
 import { calendarZone } from "./calendar-time";
 import {
@@ -737,7 +737,8 @@ export async function postCommandIn(
 export async function postCommand(
   db: PrismaClient,
   token: unknown,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  expectedOwner?: string
 ) {
   if (input.authorId !== undefined)
     throw new PortalError(
@@ -745,15 +746,16 @@ export async function postCommand(
       "The acting account comes from your current sign-in."
     );
   if (input.mutationId !== undefined)
-    return receiptedPostAction(db, token, input);
+    return receiptedPostAction(db, token, input, expectedOwner);
   if (input.operation === "create")
-    return receiptedPostCreation(db, token, input);
+    return receiptedPostCreation(db, token, input, expectedOwner);
   let preparedLink: PostLink | undefined;
   if (input.operation === "edit" && input.linkUrl !== undefined) {
     const source = await withOwnedSession(
       db,
       token,
       async (tx, session) => {
+        requireSessionOwner(session, expectedOwner);
         const context = await postContext(tx, session.userId);
         const post = await tx.platformPost.findUnique({
           where: { id: postId(input.postId) }
@@ -776,13 +778,15 @@ export async function postCommand(
   const result = await withOwnedSession(
     db,
     token,
-    async (tx, session) =>
-      postCommandIn(
+    async (tx, session) => {
+      requireSessionOwner(session, expectedOwner);
+      return postCommandIn(
         tx,
         await postContext(tx, session.userId),
         input,
         preparedLink
-      ),
+      );
+    },
     true
   );
   return preparedLink?.linkUrl &&
@@ -804,11 +808,13 @@ export async function postCommand(
 async function receiptedPostCreation(
   db: PrismaClient,
   token: unknown,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  expectedOwner?: string
 ) {
   const requestKey = postId(input.requestKey);
   const mutationId = createHash("sha256").update(requestKey).digest("hex");
   const current = async (tx: PostTx, ownerId: string) => {
+    requireSessionOwner({ userId: ownerId }, expectedOwner);
     if (input.groupId)
       requireGroupParticipation(
         await postContext(tx, ownerId),
@@ -869,7 +875,8 @@ async function receiptedPostCreation(
 async function receiptedPostAction(
   db: PrismaClient,
   token: unknown,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  expectedOwner?: string
 ) {
   if (
     ![
@@ -884,6 +891,7 @@ async function receiptedPostAction(
     throw new PortalError(400, "Choose a supported post management action.");
   const key = `post-control:${socialKey(input.mutationId)}`;
   const authority = async (tx: PostTx, ownerId: string) => {
+    requireSessionOwner({ userId: ownerId }, expectedOwner);
     const context = await postContext(tx, ownerId);
     const post = await tx.platformPost.findUnique({
       where: { id: postId(input.postId) }
