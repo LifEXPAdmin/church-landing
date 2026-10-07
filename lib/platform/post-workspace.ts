@@ -1,8 +1,8 @@
+import type { PrivateDraftPayload } from "../../packages/shared-core/src/post-contracts";
 import { groupPostDestination } from "./group-post-policy";
 import {
   postResourceReferences,
-  resourceKey,
-  type PostResourceReference
+  resourceKey
 } from "./post-resource-input";
 import {
   resolvePostResourcesIn,
@@ -11,16 +11,13 @@ import {
 import { requireGroupParticipation } from "./group-policy";
 import { personMentionIds } from "./person-mentions";
 import { postInteractionIdIn } from "./post-reads";
-import { parsePostDiscovery, type PostDiscoveryInput } from "./post-discovery";
+import { parsePostDiscovery } from "./post-discovery";
 import {
   requireUnrestrictedTopicPost,
   requireTopicParticipation,
   topicPostReference
 } from "./topic-policy";
-import {
-  savedPhotoReferences,
-  type SavedPhotoReference
-} from "./post-photo-references";
+import { savedPhotoReferences } from "./post-photo-references";
 import { createHash } from "node:crypto";
 import { Prisma, PlatformPostType, type PrismaClient } from "@prisma/client";
 import { withOwnedSession } from "./account-sessions";
@@ -32,31 +29,7 @@ import { preparePostLink, type PostLink } from "./post-links";
 import { POST_TOPICS, postPreviewText } from "./post-options";
 
 export const WORKSPACE_PAGE_SIZE = 20;
-export type PrivateDraftPayload = {
-  resourceReferences?: PostResourceReference[];
-  mentionIds?: string[];
-  discovery?: PostDiscoveryInput;
-  scheduleLocal?: string;
-  scheduleZone?: string;
-  content: string;
-  contentNote?: string;
-  safeExcerpt?: string;
-  scripture: string;
-  type: PlatformPostType;
-  topics: string[];
-  audience: "PUBLIC" | "CHURCH" | "GROUP";
-  groupId?: string | null;
-  groupThreadKind?: string | null;
-  groupCategory?: string | null;
-  replyAudience: "VIEWERS" | "CHURCH_MEMBERS" | null;
-  authorChurchId: string | null;
-  audienceChurchId: string | null;
-  eventOccurrenceId: string | null;
-  linkUrl: string;
-  photos?: SavedPhotoReference[];
-  quoteSourceId?: string | null;
-  topicCommunityId?: string | null;
-};
+export type { PrivateDraftPayload } from "../../packages/shared-core/src/post-contracts";
 const draftFields = [
   "resourceReferences",
   "groupId",

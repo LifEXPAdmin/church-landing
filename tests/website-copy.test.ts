@@ -15,8 +15,8 @@ const script = resolve("scripts/verify-website-copy.mjs");
 function check(source: string, file = "app/page.tsx") {
   const root = mkdtempSync(join(tmpdir(), "gc-website-copy-"));
   try {
-    for (const dir of ["app", "components", "lib", "public"])
-      mkdirSync(join(root, dir));
+    for (const dir of ["app", "components", "lib", "public", "packages/shared-core/src"])
+      mkdirSync(join(root, dir), { recursive: true });
     writeFileSync(join(root, file), source);
     const result = spawnSync(process.execPath, [script], {
       cwd: root,

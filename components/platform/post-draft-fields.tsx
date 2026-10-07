@@ -1,6 +1,9 @@
 "use client";
 import { useId, type Dispatch, type SetStateAction } from "react";
-import type { PlatformPostType } from "@prisma/client";
+import type {
+  PostType as PlatformPostType,
+  PostDraft
+} from "@/packages/shared-core/src";
 import {
   POST_TOPICS,
   normalizedPostText,
@@ -11,48 +14,8 @@ import { postTypeLabels } from "@/lib/platform/format";
 import { portalInputClass } from "./portal-action-form";
 import { PostLinkFields } from "./post-link-fields";
 import { PostDiscoveryFields } from "./post-discovery-fields";
-import type { PostDiscoveryInput } from "@/lib/platform/post-discovery";
-import type { PostResourceReference } from "@/lib/platform/post-resource-input";
-export type PostDraft = {
-  resourceReferences?: PostResourceReference[];
-  mentionIds?: string[];
-  discovery?: PostDiscoveryInput;
-  content: string;
-  contentNote?: string;
-  safeExcerpt?: string;
-  scripture: string;
-  type: PlatformPostType;
-  topics: string[];
-  audience: "PUBLIC" | "CHURCH" | "GROUP";
-  linkUrl?: string;
-  linkReceipt?: string;
-  keepLinkPreview?: boolean;
-  linkPreview?: {
-    title: string | null;
-    description: string | null;
-    sourceUrl: string;
-  } | null;
-};
-export function draftProblem(draft: PostDraft) {
-  if (
-    normalizedPostText(draft.content).length > 3000 ||
-    draft.content.trim().length < 3
-  )
-    return "Use 3 to 3,000 characters for your post. Your draft has not been shortened.";
-  if (normalizedPostText(draft.scripture).length > 120)
-    return "Use up to 120 characters for the Scripture reference. Your draft has not been shortened.";
-  if (normalizedPostText(draft.contentNote ?? "").length > CONTENT_NOTE_LIMIT)
-    return "Use up to 120 characters for the content note. Your draft has not been shortened.";
-  if (normalizedPostText(draft.safeExcerpt ?? "").length > SAFE_EXCERPT_LIMIT)
-    return "Use up to 160 characters for the safe excerpt. Your draft has not been shortened.";
-  if (draft.topics.length > 5) return "Choose up to five topics.";
-  if (
-    (draft.discovery?.country || draft.discovery?.placeId) &&
-    !draft.discovery.shareLocality
-  )
-    return "Confirm sharing the broad locality with this post, or clear its location fields.";
-  return null;
-}
+export type { PostDraft } from "@/packages/shared-core/src/post-contracts";
+export { draftProblem } from "@/packages/shared-core/src/draft-validation";
 export function PostDraftFields({
   draft,
   change
