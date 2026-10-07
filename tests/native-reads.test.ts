@@ -434,6 +434,8 @@ test("reposts retain hidden source counts and lose withdrawn sources without wid
       publishedAt: at
     }
   });
+  assert.equal((await ok("post", c, { postId: quote.id })).repost?.source, null);
+  await db.platformPost.update({ where: { id: source.id }, data: { allowReposts: true } });
   const result = await ok("post", c, { postId: quote.id });
   assert.equal(result.repost?.source?.likeCount, null);
   assert.equal(result.repost?.source?.ownReaction?.liked, true);
