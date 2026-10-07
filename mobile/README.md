@@ -68,6 +68,11 @@ cannot collide when development and staging are installed together.
 Production configuration fails deliberately until the owner/seller identifiers,
 credential scope and release configuration are settled.
 
+Both variants block broad Android storage and media-library permissions inherited
+from dependencies. See [Android permission preparation](../docs/mobile/ANDROID_PERMISSIONS.md).
+Rebuild native binaries to apply the manifest removal rules; actual merged
+manifests and installed permission state still need verification.
+
 The local fixture network plugin enables cleartext access only in these
 non-production configurations. The JavaScript fixture reader accepts only the
 two exact loopback origins above, sends no cookies or credentials, rejects

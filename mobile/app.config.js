@@ -17,7 +17,20 @@ module.exports = () => {
     scheme: selected.scheme,
     userInterfaceStyle: "automatic",
     ios: { bundleIdentifier: "com.godschurches.mobile" + selected.suffix, supportsTablet: false },
-    android: { package: "com.godschurches.mobile" + selected.suffix, predictiveBackGestureEnabled: true },
+    android: {
+      package: "com.godschurches.mobile" + selected.suffix,
+      predictiveBackGestureEnabled: true,
+      // Selection must use scoped system grants, not access to the whole library.
+      // Block declarations inherited from native dependencies during merging.
+      blockedPermissions: [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.MANAGE_EXTERNAL_STORAGE"
+      ]
+    },
     plugins: ["expo-system-ui", ["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: false }], "./plugins/with-fixture-network"],
     extra: { variant, fixtureOnly: true },
     updates: { enabled: false }
