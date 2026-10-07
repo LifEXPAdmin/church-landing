@@ -11,7 +11,7 @@ assert(readFileSync(join(root, ".vercelignore"), "utf8").split("\n").includes("m
 assert(!JSON.parse(readFileSync(join(root, "package.json"), "utf8")).workspaces, "No implicit root workspace conversion.");
 const mobilePackage = JSON.parse(readFileSync(join(mobile, "package.json"), "utf8"));
 assert.equal(mobilePackage.dependencies["@godschurches/shared-core"], "file:../packages/shared-core", "Use the canonical shared source package.");
-const allowed = new Set(["@godschurches/shared-core", "react", "react-native", "expo", "expo/fetch", "expo-status-bar", "expo-linking", "expo-secure-store", "react-native-safe-area-context"]);
+const allowed = new Set(["@godschurches/shared-core", "react", "react-native", "expo", "expo/fetch", "expo-status-bar", "expo-linking", "expo-secure-store", "expo-crypto", "expo-file-system", "react-native-safe-area-context"]);
 let count = 0;
 function inspect(path) {
   const source = readFileSync(path, "utf8");
