@@ -11,7 +11,7 @@ assert.match(origin, /^https:\/\/127\.0\.0\.1:\d+$/);
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
 type Actor = { id: string; token: string };
-const headers = (actor?: Actor) =>
+const headers = (actor?: Actor): Record<string, string> =>
   actor
     ? {
         cookie: `${sessionCookieFixtureName()}=${actor.token}`,

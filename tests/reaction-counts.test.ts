@@ -28,8 +28,10 @@ import {
 } from "../lib/platform/account-export";
 const db = new PrismaClient({ log: [{ level: "query", emit: "event" }] });
 let queries = 0;
-db.$on("query", () => {
+let preferenceQueries = 0;
+db.$on("query", (event) => {
   queries++;
+  if (event.query.includes('"hideAuthoredReactionCounts"')) preferenceQueries++;
 });
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
@@ -146,8 +148,9 @@ test("current count policy reaches guest/member detail, feed, profile, pin, avai
         !payload.includes("reactionCountRecoveryRequired")
     );
   }
-  const profile = await getMemberProfile(db, f.viewer.token, f.a.id);
-  assert.ok(profile);
+  const profile = await getMemberProfile(db, f.viewer.token, f.a.username);
+  assert.equal(profile.pinnedPost?.id, f.post.id);
+  assert.equal(profile.pinnedPost?.likeCount, null);
   const own = await readPostLike(db, f.viewer.token, f.post.id);
   assert.equal(own.count, null);
   assert.equal(own.liked, true);
@@ -324,23 +327,31 @@ test("hidden totals never bypass current withdrawal or bilateral block checks", 
 test("mixed-author feed projection stays bounded as its page grows", async () => {
   const f = await seedReactionCounts(db);
   await setAuthorCounts(db, f.a, true);
+  const marker = `count-cost-${randomUUID()}`;
   await db.platformPost.createMany({
     data: Array.from({ length: 24 }, (_, i) => ({
       authorId: i % 2 ? f.a.id : f.b.id,
-      content: `Fictional count page ${i}`,
+      content: `${marker} Fictional count page ${i}`,
       publishedAt: new Date(Date.now() - 1)
     }))
   });
   queries = 0;
-  await listPosts(db, null, { limit: 1 });
+  preferenceQueries = 0;
+  await listPosts(db, null, { search: marker, limit: 1 });
   const one = queries;
+  const onePreferences = preferenceQueries;
   queries = 0;
-  const page = await listPosts(db, null, { limit: 30 });
+  preferenceQueries = 0;
+  const page = await listPosts(db, null, { search: marker, limit: 30 });
   const thirty = queries;
-  assert.ok(page.length >= 24);
-  assert.ok(thirty <= one + 2, `${one} versus ${thirty} queries`);
+  assert.equal(page.length, 24);
+  assert.ok(page.every((post) => post.repost === null));
+  assert.equal(onePreferences, 1);
+  assert.equal(preferenceQueries, 1);
   assert.ok(page.some((p) => p.author.id === f.a.id && p.likeCount === null));
-  console.log(`COUNT_PROJECTION_QUERIES one=${one} thirty=${thirty}`);
+  console.log(
+    `COUNT_PROJECTION_QUERIES one=${one} twentyFour=${thirty} preferenceReads=${onePreferences}/${preferenceQueries}`
+  );
 });
 test("private account export includes only the owner's versioned count choice", async () => {
   const f = await seedReactionCounts(db);
