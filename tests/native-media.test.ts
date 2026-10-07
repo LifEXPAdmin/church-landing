@@ -504,11 +504,40 @@ test("replacement versions and church authority are rechecked after storage IO",
       store
     );
     assert.equal(denied.status, 403);
-    assert.equal((await denied.json()).error.code, "authenticator_required");
+    assert.equal((await denied.json()).error.code, "forbidden");
   } finally {
     if (before === undefined) delete process.env.PRIVILEGED_MFA_MODE;
     else process.env.PRIVILEGED_MFA_MODE = before;
   }
+  let revoked = false;
+  const revokeGrant: ImageStorage = {
+    ...store,
+    async put(path, data) {
+      await store.put(path, data);
+      if (!revoked) {
+        revoked = true;
+        await db.churchCapabilityGrant.updateMany({
+          where: {
+            userId: f.ada.id,
+            churchId: f.churchA.id,
+            capability: "MANAGE_CHURCH_PROFILE"
+          },
+          data: { revokedAt: new Date() }
+        });
+      }
+    }
+  };
+  const input = { ...details(f.churchA.id), purpose: "CHURCH_LOGO" };
+  assert.equal((await send(f.ada, input, bytes, revokeGrant)).status, 403);
+  const pending = await db.mediaAsset.findUniqueOrThrow({
+    where: {
+      uploaderId_requestKey: {
+        uploaderId: f.ada.id,
+        requestKey: input.requestKey
+      }
+    }
+  });
+  assert.equal(pending.status, "UPLOADING");
 });
 
 test("authorized saved personal photos remain readable in post galleries without enabling library commands", async () => {
@@ -570,4 +599,22 @@ test("authorized saved personal photos remain readable in post galleries without
     if (prior === undefined) delete process.env.PERSONAL_PHOTO_LIBRARY_ENABLED;
     else process.env.PERSONAL_PHOTO_LIBRARY_ENABLED = prior;
   }
+});
+
+test("invalid removal bodies do not misreport session loss or revoke the current account", async () => {
+  const f = await seedParticipation(db);
+  await budget();
+  for (const body of [undefined, "null", "[]", " ".repeat(2049)]) {
+    const response = await handleNativeImageRequest(
+      db,
+      request(f.ada, "DELETE", "", body, { "Content-Type": "application/json" })
+    );
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).error.code, "validation");
+  }
+  const list = await handleNativeImageRequest(
+    db,
+    request(f.ada, "GET", `?purpose=PROFILE_AVATAR&targetId=${f.ada.id}`)
+  );
+  assert.equal(list.status, 200);
 });

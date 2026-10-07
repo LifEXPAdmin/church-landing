@@ -70,7 +70,9 @@ function denied(error: unknown) {
       "Return to the original signed-in account before continuing."
     );
   if (error instanceof AccountError)
-    return failure("unauthenticated", "Sign in again to manage images.");
+    return error.code === "session" || error.code === "credentials"
+      ? failure("unauthenticated", "Sign in again to manage images.")
+      : failure("validation", "Check the image details and try again.");
   if (error instanceof NativeRequestError)
     return failure(error.code, "Use the supported native image controls.");
   if (
