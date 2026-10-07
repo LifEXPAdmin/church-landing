@@ -334,7 +334,13 @@ try {
   await open(first.a);
   let before = commands;
   await cookieOwner(first.b);
-  await submit.click();
+  try {
+    await submit.click({ timeout: 1500 });
+  } catch (error) {
+    // A pending genuine access check may conceal the stale form before the
+    // attempted click settles. Only that safe state satisfies this case.
+    if (await field.count()) throw error;
+  }
   await concealed();
   assert.equal(commands, before);
   assert.equal(await active(first.b), true);
@@ -394,6 +400,59 @@ try {
   other = null;
   ok(
     "Trusted native blur suppresses a delayed identity result and fresh focus restores the exact draft"
+  );
+
+  const preflightCaptured = Promise.withResolvers(),
+    releasePreflight = Promise.withResolvers();
+  let preflightHeld = false;
+  const preflight = async (route) => {
+    if (preflightHeld || route.request().headers()["x-expected-account"])
+      return route.fallback();
+    preflightHeld = true;
+    const response = await forward(route);
+    preflightCaptured.resolve();
+    await releasePreflight.promise;
+    await route.fulfill(response);
+  };
+  await page.route(identity, preflight);
+  before = commands;
+  await submit.click();
+  await bounded(
+    preflightCaptured.promise,
+    "Submit identity check was not held"
+  );
+  other = await nativeOtherWindow();
+  await concealed();
+  await page.bringToFront();
+  await page.waitForFunction(() => document.hasFocus());
+  releasePreflight.resolve();
+  await restored(first.a);
+  assert.equal(commands, before);
+  await page.unroute(identity, preflight);
+  await other.close();
+  other = null;
+  ok(
+    "A submit identity result spanning native blur and focus cannot authorize a stale command"
+  );
+
+  const failedIdentity = (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Fictional unavailable identity" })
+    });
+  await page.route(identity, failedIdentity);
+  other = await nativeOtherWindow();
+  await page.bringToFront();
+  await concealed();
+  assert.equal(commands, before);
+  await page.unroute(identity, failedIdentity);
+  await recheck();
+  await restored(first.a);
+  await other.close();
+  other = null;
+  ok(
+    "An unavailable identity check conceals entries and a successful explicit recheck restores them without submitting"
   );
   await page.setViewportSize({ width: 320, height: 720 });
   assert.equal(
