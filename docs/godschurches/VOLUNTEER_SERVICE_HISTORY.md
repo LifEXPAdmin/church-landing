@@ -31,6 +31,9 @@ controls. The member profile shows only currently authorized shared projections.
 - Need-linked completion still requires both the current Need coordinator and
   volunteer organizer permissions. Its existing completion path uses the same
   canonical receipt and control journal.
+- Current organizers can correct an existing receipt after the volunteer loses
+  source membership. The correction and its exact retry retain actor authority
+  checks. This exception grants no new completion, source visibility or sharing.
 - Sharing requires current confirmed service and source access for both the
   volunteer and profile reader. Generic member previews assume no church rights.
   Guest profile behavior is unchanged. Application answers, availability and
@@ -44,11 +47,16 @@ controls. The member profile shows only currently authorized shared projections.
   existing receipt without another completion.
 - Recovery controls quarantine stale service disclosure without changing
   assignment state, completed capacity or the original completion timestamp.
+  Historical application and linked Need completion notes are scrubbed only for
+  the matched older owner record. A repeated older control preserves newer
+  deliberate confirmations and unrelated history.
   Missing rows retain opaque recovery fences. Earlier compatible writers that
   change a completion or end an assignment clear consent and create a control.
 - Account export includes the owner's retained completion and sharing choices.
   Account erasure clears private notes and disclosure, preserving previously
   completed church service anonymously under the existing retention contract.
+  This includes linked Need completion notes authored by an organizer about the
+  erased volunteer.
 
 The additive migration extends the current retention-control predicates and
 adds database bounds and legacy-writer triggers. Apply it before enabling these
@@ -58,9 +66,36 @@ service-history model or external notification provider was introduced.
 
 ## Verification and release state
 
-Implementation and focused service, recovery, actual-HTTPS and browser
-acceptance cases are prepared. Runtime verification is pending. This document
-does not establish merge, production migration or live acceptance.
+The local application at `7a21ce84fb57b64cf4d141fb35c164bdf15ae60c`
+passed production build `tOWEFEfDHjeAWMhqUeTLT`, full types, lint with no
+errors, source/copy checks, and hydration, runtime-trace and public-build
+guards. No dependencies were added.
+
+There are 128 passing service, migration, recovery and actual-HTTPS cases:
+52 affected service cases and 18 endpoint/export cases at `ac26e312`, plus
+58 unchanged regression cases retained from `b10c1b43`. The later change
+only fixes client refresh after a confirmed receipt. The populated migration
+test upgrades all 125 predecessor migrations, preserves original columns in
+165 tables, and verifies an actual PostgreSQL dump and restore.
+
+Eight Chrome browser groups pass against the rebuilt application over trusted
+local HTTPS. They cover private defaults, same-document account replacement
+and return, trusted native tab blur, organizer completion, malformed and lost
+receipts with exact retry, authorized profile disclosure, narrow large-text
+layout, keyboard withdrawal, retained profile invalidation, correction and
+reconfirmation. Captured narrow and desktop screens were inspected. The browser
+reported no JavaScript errors or external requests.
+
+Verification reproduced and repaired historical-note recovery/erasure defects,
+preserved organizer correction after membership loss and the existing Need
+permission denial, and fixed a saved-receipt UI refresh suppressed by a changed
+access generation. Request settlement still requires the original authorized
+generation before clearing local work. The subsequent read refresh preserves
+the pinned account and concealed-page boundaries.
+
+These checks used isolated fictional data. They do not establish physical-device,
+privileged-MFA, production migration or live acceptance. Final independent review
+and integration remain open.
 
 The current dependency security gate remains unresolved in the preceding
 foundation batch. This feature must pass its own verification and the combined
