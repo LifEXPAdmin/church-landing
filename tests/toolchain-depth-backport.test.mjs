@@ -12,7 +12,7 @@ const nodeModules = process.env.TOOLCHAIN_DEPTH_NODE_MODULES ?? resolve("node_mo
 const read = path => readFileSync(path, "utf8");
 function pristine(kind, source) {
   const spec = manifest.bundles[kind];
-  if (sha256(source) === spec.afterSha256) for (const module of spec.modules) source = source.replace(module.replacement, () => module.original);
+  if (sha256(source) === spec.afterSha256) for (const factory of spec.modules) source = source.replace(factory.replacement, () => factory.original);
   assert.equal(sha256(source), spec.beforeSha256);
   return source;
 }

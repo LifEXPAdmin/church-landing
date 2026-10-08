@@ -60,16 +60,16 @@ export function transform(kind, input, payloadRoot) {
   let output = input;
   let outsideBefore = input;
   let outsideAfter;
-  for (const module of spec.modules) {
-    const body = replacement(kind, module.name, payloadRoot);
-    assert.equal(body, module.replacement, `Replacement drift: ${kind}/${module.name}`);
-    assert.equal(sha256(module.original), module.beforeSha256);
-    assert.equal(output.split(module.original).length, 2, `Expected one exact ${kind}/${module.name} factory`);
-    output = output.replace(module.original, () => body);
-    outsideBefore = outsideBefore.replace(module.original, `/* ${module.name} */`);
+  for (const factory of spec.modules) {
+    const body = replacement(kind, factory.name, payloadRoot);
+    assert.equal(body, factory.replacement, `Replacement drift: ${kind}/${factory.name}`);
+    assert.equal(sha256(factory.original), factory.beforeSha256);
+    assert.equal(output.split(factory.original).length, 2, `Expected one exact ${kind}/${factory.name} factory`);
+    output = output.replace(factory.original, () => body);
+    outsideBefore = outsideBefore.replace(factory.original, `/* ${factory.name} */`);
   }
   outsideAfter = output;
-  for (const module of spec.modules) outsideAfter = outsideAfter.replace(module.replacement, `/* ${module.name} */`);
+  for (const factory of spec.modules) outsideAfter = outsideAfter.replace(factory.replacement, `/* ${factory.name} */`);
   assert.equal(outsideAfter, outsideBefore, "Bytes outside the six factories changed");
   assert.equal(sha256(output), spec.afterSha256, "Patched artifact hash changed");
   return output;
