@@ -286,8 +286,58 @@ requests, second-page content after Back, refresh, empty and interrupted reads,
 and rejection of superseded responses. Mobile types, scoped lint and the
 43-module boundary check pass. Source review found no actionable issues.
 
-This component is not yet wired into the native journey, which still exposes its
-previous controls. These source and handler results do not establish native
+At that preparation checkpoint, the component was not yet wired into the native
+journey, which retained its previous controls. Those source and handler results
+did not establish native
 layout, large-text or VoiceOver behavior, actual feed ranking, scroll restoration
 or real-backend acceptance. Shared-screen integration and a fresh native check
-remain next; this preparation adds no dependency or native configuration change.
+remained next; that preparation added no dependency or native configuration change.
+
+The subsequent feed integration connects all four choices to the existing
+canonical reader. The journey keeps one memory-only page address and vertical
+offset through post/Back and same-page rechecks. Each fresh response gets a new
+inner scroll view. Restoration waits for current layout bounds, clamps its
+target and rejects callbacks from obsolete reads or detached views. It does not
+retain hidden posts, renew activity or issue extra read requests. Refresh, mode
+changes, Next page, error recovery and session concealment clear the bookmark.
+Pixel restoration preserves a nearby position; changed content or text size can
+move the original post. Native observations for this integrated source must be
+recorded separately from the earlier preparation and dependency checkpoints.
+
+This integration also consumes the released shared Android keyboard wrapper and
+privacy bindings. Apple registration and Swift sources remain unchanged. Fresh
+iOS project and Pods preparation is still required because the local module
+configuration and package inputs changed. The Android privacy checkpoint in
+[its report](ANDROID_PRIVACY.md) is separate from iPhone acceptance.
+
+Integrated feed validation, 8 October 2026: all 269 mobile tests pass, including
+11 groups exercising the actual journey callbacks and six pure bookmark-policy
+tests. Mobile types, lint, the 44-module boundary check, copy and source security
+checks pass. The callback harness is not React/Fabric or device acceptance.
+
+Fresh project and Pods preparation completed, followed by a successful unsigned
+Xcode Release build. The installed iPhone SE Simulator app on iOS 18.3.1 matches
+the build's JavaScript, executable and Info.plist hashes. Its Hermes bundle is
+1,746,376 bytes. Source stayed unchanged throughout the managed native session,
+which shut down successfully.
+
+The fictional native journey showed all four feed choices, post/Back position
+restoration on both pages, and top-of-page resets after Refresh, a mode change,
+Next page and interrupted-read recovery. These are qualitative visible-position
+observations. Some later saved captures caught the periodic loading screen;
+their filenames alone are not proof of restored positions. The empty feed stayed
+within valid content. A bounded passive interval retained its ending position,
+but did not capture its loading transition. Exact clamping and stale callback
+ordering remain covered by the source tests.
+
+At the largest system accessibility text category, post opening and Back worked,
+and the visible Back and Refresh controls wrapped without clipping. This limited
+check does not establish VoiceOver or complete large-text acceptance. The native
+app-switcher cover stayed opaque; returning from a lower feed position started
+fresh at the top. Sign-out and fresh demo sign-in also reset the feed. System
+text size was restored after the check.
+
+Real backend and feed-ranking acceptance, physical devices, minimum supported
+iOS, signing and store readiness remain open. This run does not repeat earlier
+keyboard, iOS 27 or stalled-JavaScript privacy checks. The unchanged mobile audit
+still has four high node-forge findings; no security gate was waived.
