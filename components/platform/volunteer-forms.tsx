@@ -7,6 +7,7 @@ import type {
 } from "@/lib/platform/volunteer-reads";
 import { usePrivateChoiceAction } from "./use-private-choice-action";
 import { portalInputClass } from "./portal-action-form";
+import { VolunteerDutyTemplatePicker } from "./volunteer-duty-template-picker";
 
 const endpoint = "/api/platform/volunteers";
 const snapshot = (opportunity: VolunteerOpportunityView) => ({
@@ -21,13 +22,15 @@ export function VolunteerOpportunityForm({
   postId,
   postVersion,
   event,
-  opportunity
+  opportunity,
+  templateChurchId
 }: {
   owner: string;
   postId: string;
   postVersion: number;
   event: { startLocal: string; endLocal: string; timeZone: string } | null;
   opportunity?: VolunteerOpportunityView;
+  templateChurchId?: string;
 }) {
   const formId = useId(),
     router = useRouter(),
@@ -87,6 +90,25 @@ export function VolunteerOpportunityForm({
         Once an application exists, keep the title, duties, requirements and
         commitment unchanged. Publish a new opportunity for a different duty.
       </p>
+      {!opportunity && templateChurchId && (
+        <VolunteerDutyTemplatePicker
+          owner={owner}
+          churchId={templateChurchId}
+          postId={postId}
+          postVersion={postVersion}
+          draftFingerprint={JSON.stringify(values)}
+          blocked={action.blocked}
+          onApply={(fields) =>
+            setValues((current) => ({
+              ...current,
+              title: fields.title,
+              duties: fields.duties,
+              requirements: fields.requirements,
+              commitment: fields.commitment
+            }))
+          }
+        />
+      )}
       <fieldset disabled={action.blocked} className="space-y-4">
         <legend className="sr-only">Opportunity details</legend>
         {(

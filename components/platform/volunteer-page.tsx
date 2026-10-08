@@ -359,6 +359,7 @@ export async function VolunteerPage({
             postId={result.postId}
             postVersion={result.postVersion}
             event={result.event}
+            templateChurchId={result.churchId}
           />
         );
       else if (result.view === "edit")
@@ -559,6 +560,13 @@ export async function VolunteerPage({
             href="/platform/serve/applications"
           >
             My applications and assignments
+          </Link>
+          <Link
+            prefetch={false}
+            className={linkClass}
+            href="/platform/serve/templates"
+          >
+            Duty templates
           </Link>
           <Link
             prefetch={false}

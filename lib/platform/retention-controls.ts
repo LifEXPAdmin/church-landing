@@ -1,3 +1,4 @@
+import { replayVolunteerDutyTemplateControl } from "./volunteer-duty-template-retention";
 import { replayArtistControl } from "./artist-retention";
 import { replayMediaControl } from "./media-catalog-retention";
 import { replayPlaylistControl } from "./media-playlist-retention";
@@ -51,6 +52,7 @@ export type RetentionControlEntry = {
     | "MEDIA_SAVE"
     | "INTERCHURCH_HELP"
     | "EXCHANGE_NEED"
+    | "VOLUNTEER_DUTY_TEMPLATE"
     | "VOLUNTEER_OPPORTUNITY"
     | "VOLUNTEER_APPLICATION"
     | "PANTRY_HUB"
@@ -139,6 +141,7 @@ function validate(value: unknown): RetentionControlEntry {
       "MEDIA_SAVE",
       "INTERCHURCH_HELP",
       "EXCHANGE_NEED",
+      "VOLUNTEER_DUTY_TEMPLATE",
       "VOLUNTEER_OPPORTUNITY",
       "VOLUNTEER_APPLICATION",
       "PANTRY_HUB",
@@ -494,6 +497,7 @@ export async function recordDiscoveryControl(
     | "MEDIA_SAVE"
     | "INTERCHURCH_HELP"
     | "EXCHANGE_NEED"
+    | "VOLUNTEER_DUTY_TEMPLATE"
     | "VOLUNTEER_OPPORTUNITY"
     | "VOLUNTEER_APPLICATION"
     | "PANTRY_HUB"
@@ -1396,6 +1400,20 @@ export async function replayRetentionControls(
               }
             });
           }
+          await record(tx, entry);
+          await tx.retentionControl.updateMany({
+            where: { id: entry.id, journaledAt: null },
+            data: { journaledAt: new Date() }
+          });
+          continue;
+        }
+        if (entry.kind === "VOLUNTEER_DUTY_TEMPLATE") {
+          await replayVolunteerDutyTemplateControl(
+            tx,
+            entry.sourceId,
+            entry.version,
+            new Date(entry.recordedAt)
+          );
           await record(tx, entry);
           await tx.retentionControl.updateMany({
             where: { id: entry.id, journaledAt: null },
