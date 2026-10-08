@@ -42,6 +42,22 @@ launch a navigator. The existing custom-scheme fixture remains separate and
 deliberately narrow. Platform link configuration and cold/warm device acceptance
 must follow their own receipts.
 
+`observeNativeLinks` admits one normalized destination through the native
+lifecycle boundary. Android can deliver `onNewIntent` while the activity is
+paused, before `onResume`. An address received while concealed may wait only for
+the immediately following foreground verification. It dispatches no read and
+exposes no destination while concealed. An address already delivered before
+concealment is discarded as before.
+
+The pending delivery binds to that verification generation and, when the observer
+has a previously verified account, that same owner. Logout, cancellation,
+verification failure, another account or generation, a second concealment after
+verification starts, and disposal drop it. A verified guest can use the existing
+explicit contextual sign-in flow. Only one address is retained, and a newer valid
+delivery replaces it. A delayed initial URL may cross the first startup
+verification, but no later lifecycle change or newer URL. No raw URL, credential,
+private content, disk record or background read is introduced.
+
 ## Session integration gate
 
 The secure vault's restored credential candidate is not an authenticated session.
@@ -81,6 +97,11 @@ integration checks; no native UI, device or real-network acceptance is implied.
 Link security vectors also run with the locked WHATWG URL implementation that
 Expo installs at native startup, as well as Node's URL. This is library-level
 evidence; it does not launch Hermes or an OS link event.
+Lifecycle regressions reproduce Android's paused-intent ordering and initial URL
+resolution before, during and after startup verification. The actual shared
+runtime proves a fresh post read wins over restoration's feed continuation.
+Cancellation, logout, owner replacement, failure, repeated concealment and late
+initial delivery retain their invalidation checks.
 Type and import checks cover the actual native package. These establish source
 contracts, not native navigation, authenticated return, system Back, modal/dirty
 entry dismissal, process death, screen-reader focus or device link acceptance.

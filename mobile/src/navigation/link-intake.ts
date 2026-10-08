@@ -8,14 +8,17 @@ export type NativeLinkSource = {
   subscribe(listener: (url: string) => void): () => void;
 };
 
-/** One normalized address can wait for the current verification only. No raw
- * link, credential or content survives here. The runtime owns guest return and
- * fresh authorization; this observer never replays a link after account change. */
+/** One normalized address can wait for the current verification or the next
+ * resume when Android delivers onNewIntent while paused. No raw link, credential
+ * or content survives here. The runtime still owns guest return and fresh reads. */
 export function observeNativeLinks(runtime: Runtime, source: NativeLinkSource,
   parse: (url: string) => AppDestination | null, notice: (value: LinkNotice) => void) {
   let mounted = true, revision = 0, arrival = 0;
-  let generation = runtime.session.getSnapshot().generation;
-  let pending: { destination: AppDestination; generation: number } | null = null;
+  let state = runtime.session.getSnapshot();
+  let owner = state.account?.id ?? null;
+  let initialValid = true;
+  const initialStartup = state.generation === 0 && !state.foreground && state.phase === "concealed";
+  let pending: { destination: AppDestination; generation: number; owner: string | null; waitForResume: boolean } | null = null;
   let stopLinks = () => {};
   const publish = (value: LinkNotice) => { if (mounted) { try { notice(value); } catch { /* Presentation cannot block invalidation. */ } } };
   async function open(destination: AppDestination) {
@@ -31,22 +34,47 @@ export function observeNativeLinks(runtime: Runtime, source: NativeLinkSource,
     let destination: AppDestination | null;
     try { destination = parse(url); } catch { return; }
     if (!destination) return;
-    arrival++;
-    const state = runtime.session.getSnapshot();
-    if (!mounted) return;
-    if (state.foreground && state.phase === "verifying") pending = { destination, generation: state.generation };
-    else { pending = null; void open(destination); }
+    const received = ++arrival, observed = revision;
+    const current = runtime.session.getSnapshot();
+    // Expiry enforcement can synchronously sign out, dispose or deliver a newer
+    // link through subscribers. The outer callback must not overwrite that work.
+    if (!mounted || received !== arrival || observed !== revision) return;
+    pending = null;
+    if ((!current.foreground && current.phase === "concealed") || (current.foreground && current.phase === "verifying")) {
+      revision++;
+      pending = { destination, generation: current.generation, owner, waitForResume: !current.foreground };
+    } else void open(destination);
   }
   const stopSession = runtime.session.subscribe(() => {
-    const state = runtime.session.getSnapshot();
+    const current = runtime.session.getSnapshot();
     if (!mounted) return;
-    if (state.generation !== generation || !state.foreground) {
-      generation = state.generation; revision++; arrival++; publish(null);
+    const previous = state;
+    state = current;
+    const nextGeneration = current.generation === previous.generation + 1;
+    const resuming = nextGeneration && !previous.foreground && previous.phase === "concealed" &&
+      current.foreground && current.phase === "verifying";
+    const concealing = nextGeneration && previous.foreground && !current.foreground && current.phase === "concealed";
+    // Retain only an owner identifier through the lifecycle handoff. Explicit
+    // session replacement/logout/failure breaks that continuity, even when hidden.
+    if (current.phase === "ready") owner = current.account?.id ?? null;
+    else if (["signed-out", "signing-in", "unavailable"].includes(current.phase) ||
+      (current.generation !== previous.generation && !resuming && !concealing)) owner = null;
+    if (pending?.waitForResume && resuming && pending.generation === previous.generation)
+      pending = { ...pending, generation: current.generation, waitForResume: false };
+    else if (pending && (pending.generation !== current.generation || (!current.foreground && !pending.waitForResume))) pending = null;
+    if (current.generation !== previous.generation || !current.foreground) {
+      // getInitialURL may resolve on either side of startup verification. Only
+      // that first expected transition can retain it; later lifecycle changes
+      // invalidate it independently of whether a newer URL has arrived.
+      if (!(initialStartup && previous.generation === 0 && resuming)) initialValid = false;
+      revision++; publish(null);
     }
-    if (!state.foreground || pending && pending.generation !== state.generation) pending = null;
-    if (pending && (state.phase === "ready" || state.phase === "signed-out")) {
-      const destination = pending.destination; pending = null; void open(destination);
-    } else if (state.phase === "unavailable") pending = null;
+    if (!mounted || state !== current) return; // Presentation may reenter or dispose.
+    if (pending && current.foreground && (current.phase === "ready" || current.phase === "signed-out")) {
+      const accepted = pending.owner === null || (current.phase === "ready" && pending.owner === current.account?.id);
+      const destination = pending.destination; pending = null;
+      if (accepted) void open(destination);
+    } else if (current.phase === "unavailable" || current.phase === "signing-in") pending = null;
   });
   function stop() {
     if (!mounted) return;
@@ -56,7 +84,7 @@ export function observeNativeLinks(runtime: Runtime, source: NativeLinkSource,
   try {
     const initial = arrival;
     stopLinks = source.subscribe(receive);
-    void source.initial().then(url => { if (mounted && arrival === initial) receive(url); }).catch(() => {});
+    void source.initial().then(url => { if (mounted && initialValid && arrival === initial) receive(url); }).catch(() => {});
   } catch { stop(); }
   return stop;
 }
