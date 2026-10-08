@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, realpathSync, existsSync } from "node:fs";
 import { resolve, sep, join } from "node:path";
 import { cpus, totalmem, loadavg } from "node:os";
-import { spawnSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { gzipSync } from "node:zlib";
 import { PrismaClient } from "@prisma/client";
 import { assertPortalTestDatabase } from "../tests/seed-portal.ts";
@@ -19,6 +20,11 @@ import { getCalendarAgenda } from "../lib/platform/calendar-reads.ts";
 import { readImage } from "../lib/platform/media.ts";
 import { imageStorage } from "../lib/platform/media-storage.ts";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
+import {
+  resourceCandidate,
+  resourceServingIdentity
+} from "./resource-budget-identity.mjs";
+import { createResourceResponseBudget } from "./resource-response-budget.mjs";
 
 const dir = realpathSync(resolve(process.argv[2] ?? ""));
 assert.ok(dir.startsWith(realpathSync(".account-test") + sep));
@@ -63,10 +69,20 @@ const summary = (values) => ({
   p95: percentile(values, 0.95),
   max: Math.max(...values)
 });
-const source = spawnSync("git", ["rev-parse", "HEAD"], {
+const source = execFileSync("git", ["rev-parse", "HEAD"], {
   encoding: "utf8"
-}).stdout.trim();
+}).trim();
+assert.equal(
+  execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
+  "",
+  "RESOURCE_DIRTY_SOURCE"
+);
 const host = {
+  node: process.version,
+  environment:
+    process.env.GITHUB_ACTIONS === "true"
+      ? "hosted-isolated"
+      : "local-isolated",
   cpu: cpus()[0].model,
   logicalCpus: cpus().length,
   memoryBytes: totalmem(),
@@ -74,7 +90,7 @@ const host = {
 };
 async function databaseStats() {
   const [row] =
-    await db.$queryRaw`SELECT numbackends, xact_commit, xact_rollback, blks_read, blks_hit, temp_bytes, deadlocks, pg_database_size(current_database()) AS bytes FROM pg_stat_database WHERE datname=current_database()`;
+    await db.$queryRaw`SELECT current_setting('server_version') AS version, numbackends, xact_commit, xact_rollback, blks_read, blks_hit, temp_bytes, deadlocks, pg_database_size(current_database()) AS bytes FROM pg_stat_database WHERE datname=current_database()`;
   return Object.fromEntries(
     Object.entries(row).map(([key, value]) => [
       key,
@@ -87,8 +103,15 @@ try {
   if (phase === "seed") {
     console.log(JSON.stringify(await seedResourceBudgetFixture(db, dir)));
   } else {
-    const fixture = JSON.parse(
-      readFileSync(join(dir, "resource-fixture.json"))
+    const fixtureBytes = readFileSync(join(dir, "resource-fixture.json"));
+    const fixture = JSON.parse(fixtureBytes);
+    const candidate = resourceCandidate(
+      JSON.parse(readFileSync(join(dir, "measurement-candidate.json"))),
+      {
+        source,
+        buildId: readFileSync(".next/BUILD_ID", "utf8").trim(),
+        fixtureSha256: createHash("sha256").update(fixtureBytes).digest("hex")
+      }
     );
     const actor = fixture.actors[0],
       token = actor.token;
@@ -131,12 +154,18 @@ try {
         cursors.push(row);
       }
       save("feed-cursors.json", {
+        candidate,
         createdAt: new Date().toISOString(),
         cursors,
         creation
       });
     }
     const feedSetup = JSON.parse(readFileSync(cursorFile));
+    assert.deepEqual(
+      feedSetup.candidate,
+      candidate,
+      "RESOURCE_CURSOR_CANDIDATE"
+    );
     const calls = [
       {
         name: "feed-latest",
@@ -279,6 +308,7 @@ try {
       }
       save("service-query-events.json", captured);
       save("service-budget.json", {
+        candidate,
         startedAt,
         completedAt: new Date().toISOString(),
         source,
@@ -295,12 +325,25 @@ try {
       });
     } else {
       const ready = JSON.parse(readFileSync(join(dir, "server-ready.json")));
-      assert.equal(ready.origin, config.origin);
-      const identity = await (
-        await fetch(config.origin + "/api/platform/release")
-      ).json();
-      assert.equal(identity.release, ready.runtimeSource);
-      assert.equal(identity.product.version, "2026.09.18.8");
+      assert.deepEqual(
+        JSON.parse(readFileSync(join(dir, "service-budget.json"))).candidate,
+        candidate,
+        "RESOURCE_SERVICE_CANDIDATE"
+      );
+      const verifyServing = async () => {
+        const response = await fetch(config.origin + "/api/platform/release", {
+          redirect: "error",
+          signal: AbortSignal.timeout(15000)
+        });
+        assert.equal(response.status, 200, "RESOURCE_IDENTITY_RESPONSE");
+        resourceServingIdentity(
+          candidate,
+          ready,
+          await response.json(),
+          config.origin
+        );
+      };
+      await verifyServing();
       const paths = [
         [
           "feed-latest",
@@ -355,17 +398,25 @@ try {
           () => "/api/platform/images/" + fixture.mediaId + "/medium"
         ]
       ];
-      let totalBytes = 0,
-        totalCalls = 0,
+      const responseBudget = createResourceResponseBudget(
+        256 * 1024 * 1024,
+        8 * 1024 * 1024
+      );
+      let totalCalls = 0,
         active = 0;
       const startedAt = new Date().toISOString(),
         stages = [],
         databaseBefore = await databaseStats();
       async function call(index, actorIndex, measured) {
-        assert.ok(
-          totalCalls < 1000 && totalBytes < 256 * 1024 * 1024,
-          "Local experiment budget reached"
-        );
+        if (
+          totalCalls >= 1000 ||
+          responseBudget.totalBytes >= 256 * 1024 * 1024
+        ) {
+          const error = new Error("Local experiment budget reached");
+          responseBudget.abort(error);
+          throw error;
+        }
+        responseBudget.signal.throwIfAborted();
         totalCalls++;
         active++;
         const [name, path] = paths[index],
@@ -374,19 +425,17 @@ try {
         try {
           const response = await fetch(config.origin + path(actorIndex), {
             redirect: "manual",
-            signal: AbortSignal.timeout(20000),
+            signal: AbortSignal.any([
+              responseBudget.signal,
+              AbortSignal.timeout(20000)
+            ]),
             headers: {
               cookie:
                 sessionCookieFixtureName(config.origin) + "=" + current.token,
               "x-expected-account": current.id
             }
           });
-          const bytes = Buffer.from(await response.arrayBuffer());
-          totalBytes += bytes.length;
-          assert.ok(
-            bytes.length <= 8 * 1024 * 1024 && totalBytes <= 256 * 1024 * 1024,
-            "Local response-byte budget exceeded"
-          );
+          const bytes = await responseBudget.read(response.body);
           const row = {
             name,
             ms: performance.now() - start,
@@ -414,6 +463,9 @@ try {
               /image\/webp/
             );
           if (measured) measured.push(row);
+        } catch (error) {
+          responseBudget.abort(error);
+          throw error;
         } finally {
           active--;
         }
@@ -456,19 +508,22 @@ try {
         };
         stages.push(stage);
         save("http-budget-progress.json", {
+          candidate,
           startedAt,
           source,
           runtimeSource: ready.runtimeSource,
           host,
           stages,
           totalCalls,
-          totalBytes
+          totalBytes: responseBudget.totalBytes
         });
         console.log(
           JSON.stringify({ concurrency, peak, elapsedMs, measurements })
         );
       }
+      await verifyServing();
       save("http-budget.json", {
+        candidate,
         startedAt,
         completedAt: new Date().toISOString(),
         source,
@@ -481,13 +536,13 @@ try {
         mix: paths.map(([name]) => ({ name, percent: 10 })),
         stages,
         totalCalls,
-        totalBytes,
+        totalBytes: responseBudget.totalBytes,
         databaseBefore,
         databaseAfter: await databaseStats(),
         productionWrites: 0,
         externalProviderCalls: 0,
         limitations:
-          "Warm loopback HTTPS, no think time or network shaping. Local filesystem image store. Shared Mac, not hosted capacity or physical-device acceptance."
+          "Warm loopback HTTPS, no think time or network shaping. Local filesystem image store in an isolated environment. Not production-equivalent hosted capacity or physical-device acceptance."
       });
     }
   }

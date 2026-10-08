@@ -17,8 +17,11 @@ Object.assign(process.env, {
   NEXT_PUBLIC_SITE_URL: config.origin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  ACCOUNT_TEST_SINK_DIR:
+    process.env.ACCOUNT_TEST_SINK_DIR ?? fixtureDir + "/sink",
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: ""
 });
@@ -540,10 +543,17 @@ try {
     .getByRole("link", { name: /^Read (?:more|older) posts$/, exact: true })
     .click();
   await page.waitForFunction((url) => location.href !== url, firstUrl);
-  assert.deepEqual(
-    await getIds(),
-    posts.slice(30, 37).map((p) => p.id)
+  const secondPageIds = posts.slice(30, 37).map((p) => p.id);
+  await page.waitForFunction(
+    (ids) =>
+      JSON.stringify(
+        [...document.querySelectorAll(".gc-feed [data-post]")].map(
+          (n) => n.dataset.post
+        )
+      ) === JSON.stringify(ids),
+    secondPageIds
   );
+  assert.deepEqual(await getIds(), secondPageIds);
   await page.goBack();
   await page.waitForFunction(
     (ids) =>
@@ -591,6 +601,14 @@ try {
     await db.socialPreferences.count({ where: { ownerId: c.id } }),
     0
   );
+  // Wait for the session reader's completed account-change check. The recheck
+  // button also exists during a pending check, before its concealment event.
+  await page
+    .getByText(
+      "The signed-in account changed. This tab keeps its original account and entries. Reload before using a different account.",
+      { exact: true }
+    )
+    .waitFor();
   await signIn(a);
   await resume();
   await form()

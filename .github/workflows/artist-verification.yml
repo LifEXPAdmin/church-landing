@@ -17,6 +17,7 @@ on:
       - scripts/verify-hydration-output.mjs
       - scripts/verify-runtime-traces.mjs
       - scripts/test-artists-isolated.mjs
+      - scripts/test-platform-isolated.mjs
       - scripts/qa-artist*.mjs
       - components/platform/artist-*.tsx
       - tests/artist*.test.*

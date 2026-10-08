@@ -1,5 +1,208 @@
 # Resource budgets for enabled modules
 
+## Current dense workload, 3 October 2026 UTC
+
+Candidate `45159afb34426a8eaef94296f5789b73378435dc` passes the isolated
+dense measurement on [run 37082673236](https://github.com/LifEXPAdmin/church-landing/actions/runs/37082673236).
+The actual serving source, product `2026.09.28.42`, production build
+`YmF69MzAsV80yV-sp19Js` and fixture metadata digest agree with the candidate
+receipt. The digest identifies the fixture metadata, not a database snapshot.
+Source CI passes 118 guards, types, copy, audit, provenance, lint and redacted
+history scanning. This adds measurement infrastructure and evidence to the
+accepted application below; it is not integrated or live.
+
+The fresh fictional database contains 10,000 accounts, 100,000 posts, 500,000
+comments, 50,000 follows, 23,000 relationship-policy rows, 12,000 listings,
+1,000 groups and 5,001 events/occurrences. All 100 existing normalized fixture
+images were byte-verified without overwriting them. Four variants per image
+occupy 131,406,400 bytes. Database size was 407,387,159 bytes. This is fresh
+fixture preparation, not recovery acceptance.
+
+The runner used an Intel Xeon Platinum 8573C, four logical CPUs, about 15.6 GiB
+memory, Node 24.21.0 and PostgreSQL 16.15. This runner leaves Prisma's pool
+settings at their defaults; the effective connection limit was not measured.
+HTTPS uses trusted loopback, no artificial latency, no bandwidth shaping and
+no think time. Images come from the isolated filesystem. MFA is off for this
+measurement; no browser, MFA challenge or physical-device check was run here.
+The earlier application browser/security receipts retain their own exact sources.
+
+### Service observations
+
+There are 20 serial measured reads per path after one warmup, or 220 measured
+reads and 11 warmups. Fifty initial Latest/Following reads across 25 actors are
+separate setup measurements. Existing Following reads reuse signed per-account
+cursors with current access checks. The service measurement window was
+00:40:52 to 00:41:13 UTC; setup occurred before that window.
+
+| Path | p50 ms | p95 ms | Maximum SELECTs | Maximum projection bytes | Store reads |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| feed-latest | 151.9 | 155.4 | 20 | 33,599 | 0 |
+| feed-following | 134.2 | 137.5 | 22 | 41,193 | 0 |
+| search-posts | 46.5 | 59.2 | 13 | 4,751 | 0 |
+| search-people | 19.9 | 21.2 | 13 | 3,076 | 0 |
+| exchange-newest | 257.3 | 263.0 | 16 | 14,403 | 0 |
+| exchange-price | 256.6 | 260.0 | 15 | 14,318 | 0 |
+| exchange-detail | 26.4 | 28.8 | 18 | 1,188 | 0 |
+| groups | 24.0 | 25.3 | 17 | 12,274 | 0 |
+| calendar-200 | 42.0 | 45.5 | 21 | 123,560 | 0 |
+| image-thumb | 60.8 | 101.4 | 26 | 21,064 | 1 |
+| image-medium | 61.2 | 64.2 | 26 | 351,408 | 1 |
+
+Initial Latest creation has median 152.8 ms and p95 192.5 ms; Following creation
+has median 726.9 ms and p95 802.1 ms. Projection bytes exclude full HTML and
+browser resources. SELECT counts include permission/lock reads; occasional
+maintenance can add a statement. These samples do not establish production tails.
+
+### Complete HTTPS observations
+
+All 920 workload requests returned 200 with expected content. Twenty warmups
+precede three 300-request stages with 30 observations per path at 1, 5 and 25
+clients. All 900 measured responses also retain no-store headers. Feed HTML
+checks a fictional-post marker; JSON checks expected row counts, while images
+check content type. Browser JavaScript, paint, subresources, uploads and writes
+are outside this workload.
+
+| Path | 1 client p95 ms | 5 clients p95 ms | 25 clients p95 ms | Largest response bytes |
+| --- | ---: | ---: | ---: | ---: |
+| feed-latest | 218.2 | 565.8 | 1,940.0 | 388,124 |
+| feed-following | 291.5 | 513.2 | 1,942.0 | 416,768 |
+| search-posts | 62.1 | 160.6 | 974.2 | 4,751 |
+| search-people | 30.5 | 85.7 | 867.9 | 3,076 |
+| exchange-newest | 272.2 | 409.8 | 2,110.4 | 14,403 |
+| exchange-price | 272.4 | 421.9 | 2,259.0 | 14,318 |
+| groups | 39.7 | 131.0 | 1,854.5 | 12,288 |
+| calendar-200 | 51.8 | 363.9 | 1,101.2 | 123,560 |
+| image-thumb | 69.1 | 454.6 | 2,027.6 | 21,064 |
+| image-medium | 69.3 | 448.6 | 1,762.8 | 351,408 |
+
+The stages achieved 8.33, 18.94 and 17.25 requests/second respectively, with
+peak in-flight counts matching their intended concurrency. HTTP measurement
+ran from 00:41:14 to 00:42:26 UTC and collected 124,174,838 response-body bytes.
+Server readiness and release identity reads are outside workload counters.
+Database statistics show zero rollbacks/deadlocks and no additional temporary
+bytes across HTTP measurement. Those cumulative counters do not isolate query
+plans or identify the cause of the higher latency.
+
+The harness caps workload requests at 1,000, each collected response at 8 MiB,
+and total collected response bodies at 256 MiB. A streaming reader reserves
+bytes across concurrent responses before retaining each chunk; exceeding a cap
+aborts sibling requests. These are collected-body limits, not wire/TLS limits.
+Six focused tests cover exact boundaries, oversize and concurrent cancellation,
+stream failures, empty bodies and invalid configuration. Only aggregate JSON
+measurements are uploaded; actors, cookies, databases and build output are excluded.
+
+### Interpretation and remaining gates
+
+Several paths exceed one second at 25 clients in this loopback run. Exchange
+listing reads are also relatively expensive serially, so their current query
+plans are the next bounded investigation. This does not establish a regression
+against September's different hardware, PostgreSQL version and fixture. The
+previous price-index repair is already present and must not be reimplemented.
+Production-equivalent PostgreSQL 17, external delivery, actual provider headroom,
+the 100-client target and responder acceptance remain open. No production
+connection, migration, write, send or provider workload occurred. Build-time
+dependency and font downloads are distinct from the measured application workload.
+
+## Saved feed pages verified in isolation, 3 October 2026 UTC
+
+Candidate `890c0f92ad9bb9c84ecdf91d17055c15fe76a725` preserves saved page order
+while rechecking current eligibility in increasing windows. It stops when 30
+eligible rows and one continuation are known, or the saved set is exhausted.
+The first window has 120 references and later windows grow to at most 1,920.
+Long revoked prefixes still fill the page. The cursor stays immediately after
+the last returned reference, so a restored gap is not skipped by lookahead.
+The same permission transaction, current source/hidden/repost filters and
+expired-page fallback remain in use for discovery and legacy saved feeds.
+
+The hosted fixture contains 10,000 fictional posts and 10,000 Likes. Each
+Public/Weekly size uses one warmup and seven measured reads of a real signed
+page cursor. Seeding and initial ranking are excluded. The 100/1,000/10,000
+reference sets share that same database. All reads assert the exact 30-row
+order and continuation. Additional cases cover long revoked prefixes, restored
+gaps, exactly 30 remaining rows and complete revocation. Seven pure paging
+tests also cover sparse/duplicate reference equivalence and read failures.
+
+| Saved references | Public median ms | Weekly median ms |
+| --- | ---: | ---: |
+| 100 | 115.727 | 85.528 |
+| 1,000 | 127.999 | 118.128 |
+| 10,000 | 133.478 | 123.819 |
+
+On baseline `6650d3a01fa3a4a609b9a8c43767163f19bce3f3`, the 10,000-reference
+case sent all 10,000 IDs to the eligibility query. The candidate sends 120 in
+this common eligible-page case. Across all queries in the read, fixture-ID
+occurrences fall from 10,270 to 390 and serialized query parameters from about
+463 KB to 19 KB. Ordinary SELECT counts remain 21 Public and 20 Weekly, with
+an occasional additional maintenance read. Parameter counts are not rows
+visited by the database or bytes transmitted over the network.
+
+The baseline used AMD EPYC 9V45; this candidate used AMD EPYC 7763. Both used
+Node 24.21.0 and PostgreSQL 16 on separate GitHub runners. Baseline 10,000-row
+medians were 1,311.643 ms Public and 1,205.595 ms Weekly. These observations
+are not a controlled latency speedup comparison across the different hosts.
+Seven-sample p95 is just the maximum, not a production tail estimate. Sparse
+revocation can require additional queries. The dense workload below, real
+provider headroom, production PostgreSQL 17 and 100-client hosted capacity
+remain separate acceptance gates.
+
+### Candidate verification
+
+[Source CI 37080713248](https://github.com/LifEXPAdmin/church-landing/actions/runs/37080713248)
+passes 112 guards, copy, generated-client types, advisory audit, provenance,
+lint and redacted history scanning. The 29 new pure checks cover ordering,
+paging and resource-candidate identity. [Hosted runtime 37080713094, attempt 2](https://github.com/LifEXPAdmin/church-landing/actions/runs/37080713094/attempts/2)
+passes 34 service/measurement cases, 22 browser groups, two HTTPS cases and
+production build `m1oyjnhORwjWb5rWERoaO`. Both server phases verify the exact
+serving SHA. Browser checks use MFA off; HTTPS uses enforce mode without
+exercising an MFA challenge. Narrow and enlarged-text screenshots were inspected.
+No physical-device acceptance is claimed.
+
+Preserved failures explain the QA corrections: await completed account-change
+concealment before restoring the original account; await rendered page IDs after
+navigation; normalize the isolated denomination fixture and run it before other
+fixtures. Assertions retain exact order and access behavior. The first attempt
+on the final source passed services but the unchanged Google Fonts loader failed
+to parse a returned font URL. The same-source retry passed without a font change.
+
+Private logs, all measurement samples, screenshots and the five-category receipt
+are retained. The release-evidence consistency checker passed on the clean
+candidate at 00:18:51 UTC. The shared hosted runner retains the artist profile
+and adds discovery verification without large workstation artifacts. This is
+ready for designated release-owner integration review, not merged or live.
+No production connection, migration, write, send or deployment occurred.
+
+## Discovery ordering measurement, 2 October 2026 UTC
+
+The exact-order optimization in candidate
+`b626ba8564a53c7572b3fae68196578764a0518f` replaces repeated remaining-list scans
+with per-author queues and a heap. It retains the earliest eligible candidate,
+the prior-19-post author window, church identity grouping and the earliest-row
+fallback when every remaining author is blocked. At most six author heads can
+be blocked in that window. Ranking stages, permission checks and cursor formats
+are unchanged.
+
+On Apple M4 and Node 22.23.2, `scripts/benchmark-discovery-variety.mjs` compares
+the frozen historical implementation with the candidate using one warmup and
+nine alternating timed pairs per size and pattern. It checks exact output object
+identity before timing and records all samples, source and dirty state. The
+recorded checkout was clean. Seven ordering tests cover boundary and fallback
+cases, duplicate entries, church/person namespaces and 150 seeded sequences.
+
+| 10,000-post pattern | Historical median ms | Candidate median ms |
+| --- | ---: | ---: |
+| One author | 825.892 | 0.730 |
+| Five author groups | 680.137 | 1.272 |
+| Round-robin 100 authors | 10.240 | 1.338 |
+| All distinct authors | 10.413 | 2.216 |
+
+These are isolated CPU microbenchmarks. They do not measure database access,
+request latency, client rendering or production capacity. The saved-page
+investigation and later runtime acceptance appear above. The dense resource
+workload below has not been rerun against this candidate. It is not integrated
+or live.
+
+## Historical dense workload, 18 September 2026 UTC
+
 Measured September 18, 2026 UTC against the application code in the verified
 2026.09.18.8 release. This is an initial engineering budget and measured local
 workload, not a user-capacity promise or a hosted service-level agreement.
@@ -202,6 +405,34 @@ to fewer than 1,000 calls and 256 MiB of response bodies. Retain failed attempts
 and initial set-creation evidence; do not disable application guards to complete
 a load test. Raw query parameters, actor credentials and detailed receipts remain
 private.
+
+### Current candidate identity contract
+
+The measurement helper now requires a clean checkout and an explicit private
+`measurement-candidate.json` beside `resource-fixture.json` before the service
+phase. Record the verified candidate rather than copying the historical release:
+
+```json
+{
+  "schema": 1,
+  "sourceSha": "<full 40-character checkout and serving commit>",
+  "productVersion": "<verified YYYY.MM.DD.N product version>",
+  "buildId": "<exact .next/BUILD_ID>",
+  "fixtureSha256": "<SHA-256 of the exact resource-fixture.json bytes>"
+}
+```
+
+The placeholders are instructions, not an accepted receipt. The helper rejects
+source, build and fixture mismatches, binds saved cursors and service/HTTP
+receipts to the same candidate, and checks the serving release SHA, product SHA
+and product version before and after HTTP measurement. `server-ready.json` must
+match the local HTTPS origin, candidate runtime source and recorded build ID.
+This checks receipt consistency; the readiness file is not an independent build
+attestation, and the fixture metadata digest is not a database snapshot digest.
+Preserve previous receipts and use a new owned fixture directory when changing
+candidates. Fifteen focused guard tests reject mismatched or missing identity.
+
+### Historical acceptance
 
 Fresh acceptance: fixture guards and migrations, 220 successful serial service
 observations, 50 initial feed reads, all 920 HTTPS reads, ten read-only query plans,
