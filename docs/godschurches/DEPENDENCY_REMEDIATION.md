@@ -1,5 +1,70 @@
 # Dependency remediation
 
+## Maintained Next security patch, 8 October 2026 UTC
+
+Next and eslint-config-next are now pinned to 15.5.27. This maintained patch
+addresses the two newly reviewed cache-poisoning advisories
+[GHSA-4jqv-mc3x-m676](https://github.com/advisories/GHSA-4jqv-mc3x-m676) and
+[GHSA-mcj8-r9mp-w47p](https://github.com/advisories/GHSA-mcj8-r9mp-w47p).
+The advisories describe specific SSG/ISR and routing conditions; this package
+finding is not evidence that the application was exploited. The repository has
+no Pages Router source directory. No attack was attempted against a live site.
+
+Only twelve Next-family package records and the root lock metadata change:
+Next, its environment package, eight optional SWC targets, ESLint config and
+ESLint plugin. Every unrelated lock record, package script and override remains
+identical. Both top-level Next packages are exactly pinned. Existing mobile
+scripts from other integration branches must be preserved when adopting this
+manifest delta.
+
+The four bundled React renderer files retain their original whole-file hashes
+and single insertion sites. The reviewed hydration backport, cache namespace and
+emitted-code guard remain unchanged; only the installer's exact version guard
+and its matching test fixture move to 15.5.27. No checksum was relaxed.
+
+A fresh Node 24.20.0 install with lifecycle scripts disabled succeeds, followed
+by the canonical hydration installer and Prisma generation. The installed graph
+is valid, and registry signature/provenance verification reports no invalid or
+missing entries. Fresh full audit changes from eight package findings (seven
+high, one moderate) to seven high findings, with both Next advisories absent.
+Production-only audit reports zero findings. The remaining braces family and
+embedded-tooling investigation are unchanged; the full gate still fails.
+
+Five hydration-installer tests, whole-project types, lint (zero errors and 39
+existing warnings), source security, copy and diff checks pass. Production build
+`DeX_VphulbusBSnV8sWvt` binds 1,712 source/SQL inputs, verifies the emitted
+hydration repair, 270 runtime traces and 377 public build files. The final
+canonical-script build is `ZoefCBYg5cmz6GYf88cHM`, with 1,712 source/SQL inputs
+verified unchanged before and after all seven runtime jobs. Thirteen actual
+HTTPS cases pass with zero skips: workspace (four), reader (three), recovery
+entry (two) and native session (four). Native MFA exercises the explicitly
+disabled phase; enabled-MFA and physical-device acceptance are not claimed.
+
+All 33 canonical browser groups pass with zero page errors: Discovery (eleven,
+including twelve streamed Public reloads), four feeds (eleven, including cold
+hydration) and linked navigation/owner boundaries (eleven). Account changes,
+retained drafts, exact retries, source revocation, browser Back and 320/390/1280
+pixel layouts are exercised. All writes use isolated fictional data; production
+writes and external sends remain zero. No integration or live release is claimed.
+
+The browser harness now inherits an explicitly supplied isolated fixture secret
+while retaining the existing fixture fallback. Discovery waits for the global
+changed-account notice before restoring the original account, so a pending
+check cannot invalidate the restored owner response. Navigation reveals the
+offscreen reserved card before waiting for its protected text and starts at the
+same top alignment that the reader restores. Original concealment, no-write,
+draft-recovery, browser Back and less-than-100-pixel scroll assertions remain.
+There are no product account/session or reader changes.
+
+Earlier attempts are retained privately: an alias preflight mismatch, a seed
+delivery-mode mismatch, the account-check race and the offscreen-card wait.
+A center-aligned navigation diagnostic reached every scenario but failed the
+scroll tolerance by 127 pixels; a subsequent top-aligned run passed unchanged
+assertions. That supports the setup correction without proving the exact cause
+of the earlier drift. One diagnostic transfer changed around process startup,
+so its exact executed bytes are uncertain and it is not acceptance evidence.
+
+
 ## Scoped parser follow-up, 7 October 2026 UTC
 
 The follow-up to the baseline below selects postcss-selector-parser 7.1.6 for

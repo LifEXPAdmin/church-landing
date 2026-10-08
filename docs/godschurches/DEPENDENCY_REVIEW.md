@@ -1,5 +1,22 @@
 # Dependency review
 
+## Current dependency disposition, 8 October 2026 UTC
+
+The maintained Next 15.5.27 patch removes the newly reported moderate Next
+package finding containing two cache-poisoning advisories. Its twelve package
+records and root metadata are the only lock changes; unrelated dependencies and
+all optional targets are preserved. The existing hydration backport retains its
+four renderer checksums, behavior, cache namespace and emitted-code guard.
+
+Clean install, registry signatures/provenance, the installed graph, five
+hydration tests, static checks, the production build, thirteen actual HTTPS
+cases and 33 canonical browser groups pass. Production-only audit reports zero findings; full audit still fails on seven high braces-family
+findings. The prior scoped selector-parser repair remains adopted. Earlier
+zero-advisory and selector-parser-blocked statements below are historical.
+See [dependency remediation](DEPENDENCY_REMEDIATION.md) for exact scope,
+verification and remaining integration/release limits.
+
+
 ## Current dependency disposition, 7 October 2026 UTC
 
 The September zero-advisory checkpoint below is historical. A fresh scan of the

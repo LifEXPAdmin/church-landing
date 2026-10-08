@@ -18,7 +18,8 @@ Object.assign(process.env, {
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
   ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET || "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: ""
 });
@@ -578,6 +579,14 @@ try {
     .fill("unsent private owner marker");
   await signIn(c);
   await resume();
+  // Finish the global identity check before returning to the original account.
+  // A synthetic blur cannot cancel an in-flight trusted session check.
+  await page
+    .getByText(
+      "The signed-in account changed. This tab keeps its original account and entries. Reload before using a different account.",
+      { exact: true }
+    )
+    .waitFor();
   await page
     .getByRole("button", { name: "Recheck current access", exact: true })
     .waitFor();
