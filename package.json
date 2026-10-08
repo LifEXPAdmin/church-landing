@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "node scripts/patch-next-hydration.mjs && prisma generate",
-    "build": "node scripts/verify-website-copy.mjs && node scripts/patch-next-hydration.mjs && NODE_OPTIONS=--max-old-space-size=6144 next build && node scripts/verify-hydration-output.mjs && node scripts/verify-runtime-traces.mjs && node scripts/verify-source-security.mjs --build",
+    "postinstall": "node scripts/patch-toolchain-depth.mjs && node scripts/patch-next-hydration.mjs && prisma generate",
+    "build": "node scripts/verify-website-copy.mjs && node scripts/patch-toolchain-depth.mjs && node scripts/patch-next-hydration.mjs && NODE_OPTIONS=--max-old-space-size=6144 next build && node scripts/verify-hydration-output.mjs && node scripts/verify-runtime-traces.mjs && node scripts/verify-source-security.mjs --build",
     "check:copy": "node scripts/verify-website-copy.mjs",
     "check:security": "node scripts/verify-source-security.mjs",
     "check:types": "tsc --noEmit --incremental false",
@@ -76,6 +76,7 @@
       "postcss-nested": {
         "postcss-selector-parser": "7.1.6"
       }
-    }
+    },
+    "braces": "npm:@dieub/braces-depth-guard@3.0.3-pn.3"
   }
 }

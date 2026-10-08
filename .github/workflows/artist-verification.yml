@@ -11,6 +11,9 @@ on:
       - package.json
       - package-lock.json
       - scripts/patch-next-hydration.mjs
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - tests/toolchain-depth-backport.test.mjs
       - scripts/verify-hydration-output.mjs
       - scripts/verify-runtime-traces.mjs
       - scripts/test-artists-isolated.mjs
@@ -48,6 +51,7 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
           node scripts/patch-next-hydration.mjs
       - name: Verify the pinned hydration repair and release content
         run: node --import ./tests/register.mjs --test tests/next-hydration-backport.test.ts tests/release-content.test.ts
@@ -152,7 +156,7 @@ jobs:
             }
           }
           const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
-          const tapTotals = [...log.matchAll(/^# (tests|suites|pass|fail|cancelled|skipped|todo) (\d+)$/gm)].map((match) => ({ metric: match[1], count: Number(match[2]) }));
+          const tapTotals = [...log.matchAll(/^(?:#|ℹ) (tests|suites|pass|fail|cancelled|skipped|todo) (\d+)$/gm)].map((match) => ({ metric: match[1], count: Number(match[2]) }));
           writeFileSync(join(output, "report.json"), JSON.stringify({ sourceSha, buildId, runtimeOutcome: process.env.ARTIST_RUNTIME_OUTCOME, environment: "isolated-fictional", tapTotals, browsers }, null, 2) + "\n");
           writeFileSync(join(output, "verification.log"), log);
           NODE
