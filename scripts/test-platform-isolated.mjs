@@ -36,13 +36,19 @@ assert.ok(
     "exchange-favorite",
     "exchange-search-favorite",
     "need-contribution",
-    "need-incoming"
+    "need-incoming",
+    "need-volunteer"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "need-volunteer": {
+    services: ["exchange-needs"],
+    browsers: ["qa-exchange-need-volunteer-privacy-browser", "qa-exchange-need-incoming-privacy-browser", "qa-exchange-need-contribution-privacy-browser", "qa-exchange-needs-browser"],
+    https: ["exchange-need-volunteer-http", "exchange-need-contribution-http", "exchange-http"]
+  },
   "need-incoming": {
     services: ["exchange-needs"],
     browsers: ["qa-exchange-need-incoming-privacy-browser", "qa-exchange-need-contribution-privacy-browser", "qa-exchange-needs-browser"],
@@ -620,11 +626,18 @@ async function verifyBuiltApplication() {
   }
 }
 try {
-  if (suite === "need-incoming") {
+  if (suite === "need-incoming" || suite === "need-volunteer") {
     const progressFixture = mkdtempSync(join(fixture, "need-progress-browser-"));
     await run(process.execPath, [
       "scripts/qa-exchange-need-progress-client.mjs",
       join(progressFixture, "results.json")
+    ]);
+  }
+  if (suite === "need-volunteer") {
+    const volunteerFixture = mkdtempSync(join(fixture, "need-volunteer-client-"));
+    await run(process.execPath, [
+      "scripts/qa-exchange-need-volunteer-client.mjs",
+      join(volunteerFixture, "results.json")
     ]);
   }
   const config = join(fixture, "localhost-cert.cnf");

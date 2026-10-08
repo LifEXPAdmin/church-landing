@@ -319,6 +319,7 @@ async function serverPage(after, account = owner) {
         NeedVolunteerReceipt: "volunteer"
       },
       "./exchange-need-contributions": { ExchangeNeedContributions },
+      "./exchange-need-volunteers": { ExchangeNeedVolunteers: "volunteers" },
       "./exchange-need-progress": {
         ExchangeNeedProgressProvider: ({ children }) => children,
         NeedSlotProgress: "progress"

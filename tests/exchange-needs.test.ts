@@ -947,6 +947,30 @@ test("Needs and the canonical event role race for one capacity pool; receipts re
   const signup = await db.postVolunteerSignup.findFirstOrThrow({
     where: { slotId: f.role.id, state: "ACTIVE" }
   });
+  const roster = await read(db, f.ada.token, {
+    view: "volunteers",
+    id: f.needSlot.id
+  });
+  assert.ok("volunteers" in roster && roster.volunteers);
+  assert.equal(roster.ownerId, f.ada.id);
+  assert.equal(roster.volunteerNeedId, need.id);
+  assert.equal(roster.volunteerSlotId, f.needSlot.id);
+  assert.deepEqual(roster.volunteers, [
+    {
+      id: signup.id,
+      version: signup.version,
+      state: signup.state,
+      completedAt: null,
+      name: signup.userId === f.val.id ? f.val.name : f.morgan.name
+    }
+  ]);
+  await denied(
+    read(db, f.val.token, {
+      view: "volunteers",
+      id: f.needSlot.id
+    }),
+    404
+  );
   const before = await read(db, f.val.token, {
     view: "need",
     listingId: f.listing.id

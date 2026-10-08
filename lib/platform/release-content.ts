@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "needs-volunteer-privacy", version: "2026.10.08.9", date: "2026-10-08",
+    summary: "Protect volunteer completion details and preserve original requests through interrupted access.",
+    added: [],
+    improved: ["Coordinators see volunteer completion records after checking their current account and organizer duties. Unfinished correction reasons remain available when the same account regains access.", "A completion change is confirmed against its original signup and saved version while other volunteers' unfinished entries are preserved."],
+    fixed: ["Initial page responses omit private volunteer records. Hidden and unfocused pages keep those records concealed until current access is checked.", "Delayed or mismatched responses cannot confirm a different completion change. Confirmed account changes clear the previous account's retained entries."],
+    featureIds: ["church-needs", "account"]
+  },
+  {
     id: "incoming-needs-progress", version: "2026.10.08.8", date: "2026-10-08",
     summary: "Protect incoming Needs contributions and keep progress current after confirmed receipts.",
     added: [],

@@ -22,9 +22,16 @@ on:
         codex/needs-contribution-privacy-20261003,
         codex/release-my-needs-contributions-20261008,
         codex/needs-incoming-privacy-20261003,
-        codex/release-needs-incoming-progress-20261008
+        codex/release-needs-incoming-progress-20261008,
+        codex/release-needs-volunteer-privacy-20261008
       ]
     paths:
+      - components/platform/exchange-need-volunteers.tsx
+      - tests/exchange-need-volunteer-privacy.test.mjs
+      - tests/exchange-need-volunteer-http.test.ts
+      - tests/exchange-needs.test.ts
+      - scripts/qa-exchange-need-volunteer-client.mjs
+      - scripts/qa-exchange-need-volunteer-privacy-browser.mjs
       - tests/exchange-need-incoming-privacy.test.mjs
       - tests/exchange-need-progress-freshness.test.mjs
       - scripts/qa-exchange-need-incoming-privacy-browser.mjs
@@ -126,7 +133,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      EXCHANGE_PROFILE: ${{ (github.ref_name == 'codex/release-needs-incoming-progress-20261008' || github.ref_name == 'codex/needs-incoming-privacy-20261003') && 'need-incoming' || (github.ref_name == 'codex/release-my-needs-contributions-20261008' || github.ref_name == 'codex/needs-contribution-privacy-20261003') && 'need-contribution' || github.ref_name == 'codex/release-exchange-search-favorites-20261008' && 'exchange-search-favorite' || github.ref_name == 'codex/exchange-favorite-privacy-20261003' && 'exchange-favorite' || github.ref_name == 'codex/exchange-saved-search-privacy-20261003' && 'exchange-saved-search' || github.ref_name == 'codex/release-exchange-handoffs-saved-20261008' && 'exchange-handoff-saved' || github.ref_name == 'codex/exchange-saved-list-privacy-20261003' && 'exchange-saved-list' || github.ref_name == 'codex/exchange-handoff-detail-privacy-20261003' && 'exchange-handoff-detail' || github.ref_name == 'codex/release-exchange-privacy-20261008' && 'exchange-privacy' || github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
+      EXCHANGE_PROFILE: ${{ github.ref_name == 'codex/release-needs-volunteer-privacy-20261008' && 'need-volunteer' || (github.ref_name == 'codex/release-needs-incoming-progress-20261008' || github.ref_name == 'codex/needs-incoming-privacy-20261003') && 'need-incoming' || (github.ref_name == 'codex/release-my-needs-contributions-20261008' || github.ref_name == 'codex/needs-contribution-privacy-20261003') && 'need-contribution' || github.ref_name == 'codex/release-exchange-search-favorites-20261008' && 'exchange-search-favorite' || github.ref_name == 'codex/exchange-favorite-privacy-20261003' && 'exchange-favorite' || github.ref_name == 'codex/exchange-saved-search-privacy-20261003' && 'exchange-saved-search' || github.ref_name == 'codex/release-exchange-handoffs-saved-20261008' && 'exchange-handoff-saved' || github.ref_name == 'codex/exchange-saved-list-privacy-20261003' && 'exchange-saved-list' || github.ref_name == 'codex/exchange-handoff-detail-privacy-20261003' && 'exchange-handoff-detail' || github.ref_name == 'codex/release-exchange-privacy-20261008' && 'exchange-privacy' || github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -186,6 +193,7 @@ jobs:
           const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
           const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((match) => ({ sourceSha: match[1], mode: match[2] }));
           const expectations = {
+            "need-volunteer": { tests: [18, 4], browsers: { "need-volunteer-browser": [5], "need-incoming-browser": [5], "need-contribution-browser": [10], "needs-browser": [10], "need-progress-browser": [17], "need-volunteer-client": [11] } },
             "need-incoming": { tests: [18, 2], browsers: { "need-incoming-browser": [5], "need-contribution-browser": [10], "needs-browser": [10], "need-progress-browser": [17] } },
             "need-contribution": { tests: [18, 2], browsers: { "need-contribution-browser": [10], "needs-browser": [10] } },
             "exchange-saved-search": { tests: [43, 3], browsers: { "exchange-saved-search-browser": [9], "exchange-browser": [8], "exchange-saved-list-browser": [8] } },
@@ -212,7 +220,7 @@ jobs:
           for (const name of fixtures) {
             const fixture = join(".account-test", name);
             for (const directory of readdirSync(fixture)) {
-              const match = /^(.*)-\d+$/.exec(directory) ?? /^(need-progress-browser)-[A-Za-z0-9]+$/.exec(directory);
+              const match = /^(.*)-\d+$/.exec(directory) ?? /^(need-progress-browser|need-volunteer-client)-[A-Za-z0-9]+$/.exec(directory);
               if (!match || !knownSuites.has(match[1])) continue;
               const suite = match[1];
               const pantry = suite === "pantry-browser";
@@ -220,12 +228,13 @@ jobs:
               const support = suite === "support-index-browser";
               const notifications = suite === "notification-integration-browser";
               const progress = suite === "need-progress-browser";
+              const volunteerClient = suite === "need-volunteer-client";
               const passPath = join(fixture, directory, "pass.json");
               const receiptName = topic ? "receipt.json" : support ? "result.json" : pantry ? existsSync(passPath) ? "pass.json" : "result.json" : "results.json";
               let result = null;
               try { result = JSON.parse(readFileSync(join(fixture, directory, receiptName), "utf8")); } catch {}
               // Only bounded counts/booleans are exported. Never copy private receipts.
-              const standardScope = !support && !notifications && !progress;
+              const standardScope = !support && !notifications && !progress && !volunteerClient;
               let detailsValid = empty(result?.errors);
               if (standardScope) detailsValid &&= result?.productionWrites === 0 && result?.externalSends === 0;
               if (pantry) detailsValid &&= existsSync(passPath);
@@ -233,7 +242,12 @@ jobs:
                 const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
                 detailsValid &&= result?.source === "components/platform/exchange-need-progress.tsx" && result?.sourceSha256 === hash("components/platform/exchange-need-progress.tsx") && result?.harnessSha256 === hash("scripts/qa-exchange-need-progress-client.mjs") && Array.isArray(result?.results) && result.results.every((entry) => entry.pass === true);
               }
-              if (["need-incoming-browser", "need-contribution-browser", "exchange-inquiry-composer-browser", "exchange-saved-list-browser", "exchange-saved-search-browser", "exchange-favorite-browser"].includes(suite)) detailsValid &&= empty(result?.layoutFailures);
+              if (volunteerClient) {
+                const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+                const sourcePaths = ["components/platform/exchange-need-volunteers.tsx", "components/platform/exchange-need-actions.tsx", "components/platform/use-private-choice-action.tsx", "components/platform/read-visibility.ts", "lib/platform/social-client.ts", "lib/platform/exchange-need-options.ts"];
+                detailsValid &&= result?.controlledForegroundScenarios === 2 && result?.externalRequests === 0 && result?.harnessSha256 === hash("scripts/qa-exchange-need-volunteer-client.mjs") && sourcePaths.every((path) => result?.sources?.[path] === hash(path)) && Array.isArray(result?.results) && result.results.every((entry) => entry.pass === true);
+              }
+              if (["need-volunteer-browser", "need-incoming-browser", "need-contribution-browser", "exchange-inquiry-composer-browser", "exchange-saved-list-browser", "exchange-saved-search-browser", "exchange-favorite-browser"].includes(suite)) detailsValid &&= empty(result?.layoutFailures);
               if (topic) detailsValid &&= result?.source === sourceSha && result?.buildId === buildId && empty(result?.routeErrors) && empty(result?.external) && empty(result?.writes);
               if (support) detailsValid &&= result?.fixtureOnly === true && empty(result?.externalRequests) && empty(result?.caseRequests) && Array.isArray(result?.browserWrites) && result.browserWrites.every((request) => request.foregroundActivity === true && request.method === "POST" && request.path === "/api/platform/session");
               browsers.push({
@@ -243,7 +257,7 @@ jobs:
                 detailsValid,
                 productionWrites: standardScope ? result?.productionWrites ?? null : null,
                 externalSends: standardScope ? result?.externalSends ?? null : null,
-                scopeEvidence: standardScope ? "explicit-fixture-receipt" : progress ? "controlled-component-with-blocked-network-and-stub-transport" : support ? "fixture-only-and-validated-browser-activity" : "guarded-runner-and-successful-suite",
+                scopeEvidence: standardScope ? "explicit-fixture-receipt" : progress || volunteerClient ? "controlled-component-with-blocked-network-and-stub-transport" : support ? "fixture-only-and-validated-browser-activity" : "guarded-runner-and-successful-suite",
                 explicitPantryPass: pantry ? existsSync(passPath) : null
               });
             }
@@ -280,6 +294,16 @@ jobs:
         with:
           name: exchange-browser-${{ github.sha }}
           path: |
+            .account-test/need-volunteer-hosted-*/need-volunteer-browser-*/volunteers-visible-390.png
+            .account-test/need-volunteer-hosted-*/need-volunteer-browser-*/volunteers-visible-320-200.png
+            .account-test/need-volunteer-hosted-*/need-volunteer-browser-*/volunteers-concealed.png
+            .account-test/need-volunteer-hosted-*/need-incoming-browser-*/incoming-visible-390.png
+            .account-test/need-volunteer-hosted-*/need-incoming-browser-*/incoming-visible-320-200.png
+            .account-test/need-volunteer-hosted-*/need-incoming-browser-*/incoming-concealed-after-revocation.png
+            .account-test/need-volunteer-hosted-*/need-contribution-browser-*/contribution-390.png
+            .account-test/need-volunteer-hosted-*/need-contribution-browser-*/contribution-320-200.png
+            .account-test/need-volunteer-hosted-*/needs-browser-*/contributions-390.png
+            .account-test/need-volunteer-hosted-*/needs-browser-*/contributions-320.png
             .account-test/need-incoming-hosted-*/need-incoming-browser-*/incoming-visible-390.png
             .account-test/need-incoming-hosted-*/need-incoming-browser-*/incoming-visible-320-200.png
             .account-test/need-incoming-hosted-*/need-incoming-browser-*/incoming-concealed-after-revocation.png

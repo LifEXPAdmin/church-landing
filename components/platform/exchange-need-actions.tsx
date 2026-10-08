@@ -530,7 +530,10 @@ export function NeedPostLinks({
 export function NeedVolunteerReceipt({
   owner,
   needId,
-  signup
+  signup,
+  privacy,
+  acceptedReceipt,
+  onRequest
 }: {
   owner: string;
   needId: string;
@@ -541,10 +544,85 @@ export function NeedVolunteerReceipt({
     state: string;
     completedAt: string | null;
   };
+  privacy?: PrivateChoiceAccess;
+  acceptedReceipt?: Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null;
+  onRequest?: (target: {
+    id: string;
+    expectedVersion: number;
+    completed: boolean;
+  }) => void;
 }) {
+  const visible = useReadVisibility();
   const id = useId(),
     [reason, setReason] = useState("");
-  const action = useExchangeAction(owner, !!reason, undefined, true);
+  const target = useRef<{ id: string; version: number } | null>(null);
+  const sentReason = useRef<string | null>(null);
+  const dispatching = useRef(false);
+  const confirmed = useRef<
+    Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null
+  >(null);
+  const action = usePrivateChoiceAction(
+    "/api/platform/exchange",
+    owner,
+    !!reason,
+    undefined,
+    true,
+    privacy
+      ? {
+          ...privacy,
+          preserveDirty: true,
+          expectedReceiptId: () => target.current?.id ?? null,
+          expectedReceiptVersion: () => target.current?.version ?? null,
+          onConfirmed(receipt) {
+            confirmed.current = receipt;
+            privacy.onConfirmed(receipt);
+          }
+        }
+      : undefined
+  );
+  const rearm = action.rearm;
+  useEffect(() => {
+    if (
+      !privacy ||
+      !visible ||
+      !acceptedReceipt ||
+      acceptedReceipt !== confirmed.current ||
+      signup.id !== acceptedReceipt.id ||
+      signup.version !== acceptedReceipt.version ||
+      !rearm(acceptedReceipt.version)
+    )
+      return;
+    const sent = sentReason.current;
+    setReason((value) => (value === sent ? "" : value));
+    sentReason.current = null;
+    confirmed.current = null;
+    target.current = null;
+  }, [privacy, visible, acceptedReceipt, signup, rearm]);
+  const complete = () => {
+    if (action.blocked || dispatching.current) return;
+    dispatching.current = true;
+    target.current = { id: signup.id, version: signup.version + 1 };
+    sentReason.current = reason;
+    confirmed.current = null;
+    onRequest?.({
+      id: signup.id,
+      expectedVersion: signup.version,
+      completed: !signup.completedAt
+    });
+    void action
+      .command({
+        operation: "need-complete-volunteer",
+        needId,
+        signupId: signup.id,
+        expectedVersion: signup.version,
+        completed: !signup.completedAt,
+        reason
+      })
+      .finally(() => {
+        dispatching.current = false;
+      });
+  };
+  if (privacy && !visible) return action.status;
   return (
     <section className="space-y-3 rounded-xl border border-gc-divider p-3">
       <h3 className="text-lg">{signup.name}</h3>
@@ -574,16 +652,7 @@ export function NeedVolunteerReceipt({
             type="button"
             className="gc-button"
             disabled={!!signup.completedAt && reason.trim().length < 3}
-            onClick={() =>
-              void action.command({
-                operation: "need-complete-volunteer",
-                needId,
-                signupId: signup.id,
-                expectedVersion: signup.version,
-                completed: !signup.completedAt,
-                reason
-              })
-            }
+            onClick={complete}
           >
             {signup.completedAt
               ? "Correct completion record"

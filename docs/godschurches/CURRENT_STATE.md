@@ -1,3 +1,21 @@
+## Volunteer completion privacy prepared, 8 October 2026 UTC
+
+The next bounded website candidate brings the preserved volunteer completion
+owner onto the verified eighth release. Initial HTML and RSC retain only routing
+context; private signup records load through current account and organizer-duty
+checks. Each completion or correction retains its original signup, version,
+request and reason until its exact receipt and canonical state are confirmed.
+Same-account recovery preserves sibling drafts; confirmed account replacement
+clears prior entries. The eighth release's current progress and contributor
+name-sharing boundaries remain in place.
+
+Two unfocused-read admission failures were reproduced on the preserved owner,
+then repaired with narrow foreground checks. The focused Node hook-harness
+suite passed 63 of 63 cases after the original 61 of 63 baseline. This is source
+and deterministic component evidence. Current full application, database, HTTPS,
+build, deployment and live acceptance remain pending. Version 2026.10.08.8 below
+is the current accepted live release. No schema or dependency change is proposed.
+
 ## Incoming Needs privacy and current progress, 8 October 2026 UTC
 
 Version **2026.10.08.8**, source `c2d6399a542dd2a47b78cb983138c2a40767d6f7`: **verified live**. [PR45](https://github.com/LifEXPAdmin/church-landing/pull/45) integrates coordinator incoming Needs privacy and the preserved progress freshness correction. Incoming contribution rows load through current account and appointment checks, and contributor names require the contributor's sharing choice. Confirmed card receipts refresh page-owned progress while preserving sibling drafts. Newer Need revisions replace older progress; conflicting projections conceal and require a current read.

@@ -135,6 +135,7 @@ export async function readExchangeNeeds(
       return {
         ownerId,
         volunteerNeedId: slot.needId,
+        volunteerSlotId: slot.id,
         volunteerRole: slot.volunteerSlot.role,
         volunteers: rows.slice(0, NEED_PAGE).map((r) => ({
           id: r.id,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PlatformShell } from "./platform-shell";
 import { ExchangeNeedContributions } from "./exchange-need-contributions";
+import { ExchangeNeedVolunteers } from "./exchange-need-volunteers";
 import {
   ExchangeNeedProgressProvider,
   NeedSlotProgress
@@ -23,8 +24,7 @@ import {
 import {
   NeedContributionCard,
   NeedOrganizerActions,
-  NeedPostLinks,
-  NeedVolunteerReceipt
+  NeedPostLinks
 } from "./exchange-need-actions";
 import { RegionalTime } from "./regional-presentation";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
@@ -499,6 +499,7 @@ export async function ExchangeNeedsPage({
             {user && query.volunteers && (
               <VolunteerNeeds
                 owner={user.id}
+                needId={listingId}
                 slotId={postId(query.volunteers)}
                 after={query.after}
                 path={path}
@@ -560,11 +561,13 @@ async function IncomingNeeds({
 }
 async function VolunteerNeeds({
   owner,
+  needId,
   slotId,
   after,
   path
 }: {
   owner: string;
+  needId: string;
   slotId: string;
   after?: unknown;
   path: string;
@@ -575,44 +578,21 @@ async function VolunteerNeeds({
       id: slotId,
       after
     });
-    if (!("volunteers" in result))
+    if (
+      !("volunteers" in result) ||
+      result.ownerId !== owner ||
+      result.volunteerNeedId !== needId ||
+      result.volunteerSlotId !== slotId
+    )
       throw new Error("Volunteer projection unavailable");
-    const params = new URLSearchParams({
-      view: "need-volunteers",
-      id: slotId,
-      ...(after ? { after: postId(after) } : {})
-    });
     return (
-      <PrivateSnapshotGuard
+      <ExchangeNeedVolunteers
         owner={owner}
-        url={`/api/platform/exchange?${params}`}
-        checksum={exchangeChecksum(result)}
-        label="current volunteer completion"
-      >
-        <section className="space-y-4">
-          <h2 className="text-2xl">
-            {result.volunteerRole}: completion records
-          </h2>
-          {!result.volunteers?.length && <p>No signups on this page.</p>}
-          {result.volunteers?.map((signup) => (
-            <NeedVolunteerReceipt
-              key={`${signup.id}:${signup.version}`}
-              owner={owner}
-              needId={result.volunteerNeedId!}
-              signup={signup}
-            />
-          ))}
-          {result.next && (
-            <Link
-              prefetch={false}
-              className="gc-button gc-button-quiet"
-              href={`${path}?volunteers=${encodeURIComponent(slotId)}&after=${encodeURIComponent(result.next)}`}
-            >
-              More volunteer signups
-            </Link>
-          )}
-        </section>
-      </PrivateSnapshotGuard>
+        needId={needId}
+        slotId={slotId}
+        path={path}
+        after={after ? postId(after) : undefined}
+      />
     );
   } catch (error) {
     return <ExchangeUnavailable error={error} href={path} />;
