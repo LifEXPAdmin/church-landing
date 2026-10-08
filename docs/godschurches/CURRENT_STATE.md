@@ -1,16 +1,35 @@
-## Discovery ordering and saved-feed loading prepared, 8 October 2026 UTC
+## Discovery ordering and saved-feed loading verified live, 8 October 2026 UTC
 
-The next candidate combines the accepted discovery ordering and bounded saved-page
-reads from PR 3 with the dense measurement profile from PR 4 and its immutable
-failure-evidence correction. Saved order, current reader permissions, restored
-references and account-bound cursors remain authoritative. A navigation browser
-check scrolls its target into view before testing the existing return-position
-contract. Version **2026.10.08.2** is candidate metadata, not a live-release claim.
+Version **2026.10.08.2**, application
+`77cd81a5ea7ceef9dd56f448e7b84107ba416d24`, is integrated and verified live on
+`godschurches.com` in READY deployment `dpl_21uwj6ZsV8F2umNJfG9DavnMUNXE`.
+Canonical identity was verified at **05:25:04 UTC**. Discovery ordering now uses
+author queues and saved-feed pages use bounded eligibility windows, preserving
+exact order, current reader permissions, restored references and account-bound
+cursors. Measurement attempts retain immutable failure evidence after started
+requests settle. No schema or dependency change belongs to this batch.
 
-Fresh source/security, service, HTTPS, browser and build checks on the combined
-candidate remain required. The fictional dense measurement does not establish
-production latency, provider headroom or 100-client capacity. No schema or
-dependency change is included. The verified live version remains recorded below.
+Fresh final-source checks passed 199 guards, 34 service checks, two HTTPS checks
+and 33 browser groups on isolated build `1bnwvQJiUSXNq6YEIMkDq`. Source and main
+CI passed types, copy, lint, history scanning, zero advisory findings, 496 registry
+signatures and 86 attestations. Lint retains 39 existing warnings and no errors.
+Artist regressions and dense measurements were reused from `3652f9c`, with
+identical application, dependency, schema and relevant test tooling; only
+navigation QA and its artifact selector changed afterward.
+
+All 31 staged GET checks, 198 live guest page/API/browser checks and five
+canonical health/release checks passed. Browser, CSP and scoped runtime errors,
+attempted mutations and external browser requests were zero. All 165 production
+table fingerprints remained unchanged at **05:26:47 UTC**, with 123 matching
+migrations and none applied. There were no production test writes or recipient
+sends. Fresh ordinary encrypted recovery restored 165 tables at **04:51:44 UTC**;
+this is separate from protected replay.
+
+The sequential Back journey passes, but rapid repeated Back remains unresolved.
+The fictional loopback measurements do not establish production latency, provider
+headroom or 100-client capacity. Broader discovery/navigation acceptance and real
+operator, provider and device gates remain open. See
+[deployment evidence](DEPLOYMENT_REPORT.md) and [resource budgets](RESOURCE_BUDGETS.md).
 
 ## Artist draft privacy and security maintenance verified live, 8 October 2026 UTC
 

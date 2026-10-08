@@ -1,5 +1,55 @@
 # Resource budgets for enabled modules
 
+## Integrated measurement and live scope, 8 October 2026 UTC
+
+The ordering and saved-page optimizations, dense fixture runner and immutable
+failure receipts are integrated in **2026.10.08.2**, source
+`77cd81a5ea7ceef9dd56f448e7b84107ba416d24`. Canonical serving identity matched
+at **05:25:04 UTC**. This supersedes integration-pending statements in the dated
+sections below for this slice; it does not convert historical measurements into
+new production capacity evidence.
+
+The [fresh dense run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37729422591)
+used `3652f9c22b8572c843484268815f9c36820bd6d5`, build `htBjCWjSwX2sRTSLn72Zi`.
+It passed 220 measured service reads after 11 warmups, then 920 workload HTTPS
+requests: 20 warmups and three 300-call stages at concurrency 1, 5 and 25.
+All 920 responses completed validation; retained and delivered body bytes were
+both **124,169,762**, within the 256 MiB total and 8 MiB per-response caps. Two
+serving-identity probes were separately verified. Receipts remain immutable and
+exclude actors, cookies, private cursors and raw query events from uploaded artifacts.
+Only navigation QA and its artifact selector changed afterward; application,
+measurement tooling, dependencies, schema and shared runner remained identical.
+This is applicable reused evidence, not a measurement rerun on final HEAD.
+
+The fictional fixture has 10,000 accounts, 100,000 posts, 500,000 comments,
+12,000 listings, 1,000 groups, 5,001 events/occurrences and 100 verified existing
+normalized images. It ran on an AMD EPYC 9V74 host with four logical CPUs, about
+15.6 GiB memory, Node 24.21.0 and PostgreSQL 16.15. HTTPS is warm loopback with
+no artificial latency, bandwidth shaping or think time; images use isolated
+filesystem storage. HTTP measurement ran from **04:56:07 to 04:57:07 UTC**.
+
+| Path | 1 client p95 ms | 5 clients p95 ms | 25 clients p95 ms |
+| --- | ---: | ---: | ---: |
+| feed-latest | 180.2 | 481.1 | 1,682.8 |
+| feed-following | 242.1 | 423.8 | 1,562.8 |
+| exchange-newest | 248.2 | 365.0 | 1,537.3 |
+| exchange-price | 245.8 | 357.0 | 1,784.5 |
+
+These selected observations retain 30 validated samples per path at each
+concurrency. Several p95 values still exceed one second at 25 clients. Different
+hosts and uncontrolled environment differences prevent treating comparisons with
+the 3 October run as an isolated causal speedup. No 100-client test, production
+latency or provider-headroom acceptance is established.
+
+Final-source checks passed 199 guards and the discovery service/HTTPS/browser
+suite. Live acceptance passed 198 guest checks and five health/release checks;
+all 165 table fingerprints stayed unchanged at **05:26:47 UTC**. Successful ranked
+GETs can allocate snapshot-cache rows, so live verification used Latest, Exchange
+and invalid-cursor/account boundaries instead of ranked load. Production queries
+and scoped logs are read-only observations, not a production capacity experiment.
+Rapid repeated Back and broader discovery/navigation acceptance remain open.
+
+
 ## Immutable failure evidence, 4 October 2026 UTC
 
 The measurement harness previously overwrote `http-budget-progress.json` after

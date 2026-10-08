@@ -1,3 +1,59 @@
+## Discovery ordering and saved-feed loading verified live, 8 October 2026 UTC
+
+Version **2026.10.08.2**, source `77cd81a5ea7ceef9dd56f448e7b84107ba416d24`,
+is integrated and verified live in READY deployment
+`dpl_21uwj6ZsV8F2umNJfG9DavnMUNXE`. Promotion completed at **05:24:40 UTC** and
+canonical serving identity matched at **05:25:04 UTC**. One exact Git-source
+production deployment was staged with automatic domain assignment disabled.
+All 31 staged GET checks passed while the prior deployment remained canonical;
+the same built deployment was then promoted without rebuilding.
+
+[Source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37730471639)
+passed 199 guards, types, copy, lint, history scanning, zero advisory findings,
+496 signatures and 86 attestations. [Main CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37731481643)
+also passed on the same source. Lint reports 39 existing warnings and no errors.
+[Discovery verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37730471754)
+passed 34 service checks, two HTTPS checks and 33 browser groups on isolated
+production-mode build `1bnwvQJiUSXNq6YEIMkDq`. These include 11 discovery,
+11 four-feed and 11 sequential navigation groups.
+
+Applicable [artist regressions](https://github.com/LifEXPAdmin/church-landing/actions/runs/37729422582)
+passed 25 service/recovery checks, five HTTPS/MFA checks and 26 browser groups on
+`3652f9c22b8572c843484268815f9c36820bd6d5`, build `Xaw5UbJeRLS0F0mgvMqqS`.
+[Dense measurements](https://github.com/LifEXPAdmin/church-landing/actions/runs/37729422591)
+on that source, build `htBjCWjSwX2sRTSLn72Zi`, passed 220 measured service reads
+and 920 bounded loopback HTTPS requests. Only navigation QA and its artifact
+selector changed before the final candidate. All application, dependency,
+schema, shared-runner, artist and measurement code remained identical. These
+are explicitly reused results, not fresh runs on the final SHA.
+
+All **198 live guest page/API/browser checks plus five canonical health/release
+checks** passed. Browser and CSP errors, blocked mutation attempts and external
+browser requests were zero. Deployment-scoped error, fatal and CSP log rows were
+zero during the observed window. Read-only notification inspection sent no new
+queue probe. All **165 current-column table fingerprints were unchanged at
+05:26:47 UTC**; all 123 migrations match and none was applied. Production test
+writes and recipient sends were zero. Live checks used Latest, Exchange and
+non-allocating boundary failures; successful ranked paging, private account
+journeys and load remain isolated-fixture evidence.
+
+Fresh ordinary encrypted recovery completed at **04:51:44 UTC**, restoring all
+165 tables with 123 matching migration checksums. Temporary plaintext was removed
+and owned restore processes stopped. It is a separate retained recovery copy;
+the installed nightly inventory was unchanged. No new protected replay or
+production restore is claimed. The schema-compatible **2026.10.08.1** deployment
+remains retained, but fallback removes this optimization and does not resolve
+rapid repeated Back. Prefer a reviewed forward fix. Report-only closeout does
+not require another product deployment.
+
+The earlier navigation failure is preserved. Waiting for each rendered
+intermediate destination makes the sequential journey pass while retaining exact
+post, URL, scroll and privacy assertions. Rapid repeated Back remains unresolved;
+this QA correction is not its product repair. Broader discovery/navigation,
+100-client capacity, production headroom and actual operator/provider/device
+acceptance remain open. The [resource report](RESOURCE_BUDGETS.md) records the
+measured scope and limits.
+
 ## Artist draft privacy and security maintenance verified live, 8 October 2026 UTC
 
 Version **2026.10.08.1**, application

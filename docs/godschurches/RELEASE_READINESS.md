@@ -1,11 +1,28 @@
-## Discovery batch awaiting combined acceptance, 8 October 2026 UTC
+## Discovery optimization release accepted, 8 October 2026 UTC
 
-Version **2026.10.08.2** prepares exact-order discovery optimization and bounded
-saved-feed reads together with their measurement evidence. It preserves the
-deployed security repairs and introduces no schema change. Independent source
-preflight found no blocker; exact combined-candidate hosted checks, final runtime
-review, integration, staged verification and canonical acceptance remain open.
-The historical measurements below are not fresh production-capacity evidence.
+The bounded discovery ordering, saved-page loading and immutable measurement
+slice is integrated and verified live as **2026.10.08.2**, source
+`77cd81a5ea7ceef9dd56f448e7b84107ba416d24`, READY deployment
+`dpl_21uwj6ZsV8F2umNJfG9DavnMUNXE`. Canonical identity matched at **05:25:04 UTC**.
+Final-source verification passed 199 guards, 34 services, two HTTPS checks and
+33 browser groups. Applicable artist and dense-load results retain their tested
+`3652f9c` source and explicit QA-only reuse boundary. Exact-source and main CI,
+full advisory audit, registry provenance, copy, types, lint and history gates pass.
+
+All 31 staged checks, 198 live guest checks and five health/release checks passed.
+The scoped runtime window contained no error, fatal or CSP rows. All 165 production
+table fingerprints stayed unchanged at **05:26:47 UTC**; 123 migrations match and
+none was applied. No production test writes or recipient sends occurred. Fresh
+ordinary encrypted recovery passed at **04:51:44 UTC**; protected replay remains
+separate applicable historical evidence because no schema or recovery owner changed.
+
+This completes the release gates for the bounded slice, not the broader discovery
+or navigation acceptance. Rapid repeated Back is still unresolved. The dense
+fictional loopback run does not certify production latency, provider headroom,
+PostgreSQL 17 load behavior or 100-client capacity. Actual operator, provider and
+physical-device acceptance remains separate. See [deployment evidence](DEPLOYMENT_REPORT.md)
+and [resource budgets](RESOURCE_BUDGETS.md); historical prepared-only entries below
+retain their original sources and dates.
 
 ## Artist draft privacy and security maintenance verified live, 8 October 2026 UTC
 
