@@ -434,9 +434,10 @@ const env = {
   NODE_EXTRA_CA_CERTS: cert
 };
 if (suite === "account-deactivation-owner") {
-  if (process.platform !== "darwin") assert.ok(process.env.DISPLAY, "Use headed Chromium under an owned Xvfb display");
+  if (process.platform !== "darwin") assert.ok(process.env.DISPLAY && process.env.XAUTHORITY, "Use headed Chromium under an owned, authenticated Xvfb display");
   Object.assign(env, {
     DISPLAY: process.env.DISPLAY,
+    XAUTHORITY: process.env.XAUTHORITY,
     ACCOUNT_GOOGLE_ENABLED: "true",
     GOOGLE_CLIENT_ID: "fixture.apps.googleusercontent.com",
     GOOGLE_CLIENT_SECRET: "fictional-deactivation-owner-secret"
