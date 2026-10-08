@@ -1613,6 +1613,109 @@ test("photo metadata and order use complete current listing versions; byte deliv
   );
 });
 
+test("ordered discovery windows preserve hidden boundaries, exhaustion and price ties", async () => {
+  const owner = await createPortalActor(db, "exwindowowner"),
+    viewer = await createPortalActor(db, "exwindowviewer");
+  const base = await publish(
+    owner,
+    await draft(
+      owner,
+      ready({
+        intent: "SALE",
+        currency: "USD",
+        price: "1.00"
+      })
+    )
+  );
+  const {
+    id: ignoredId,
+    createdAt: ignoredCreated,
+    updatedAt: ignoredUpdated,
+    ...source
+  } = await db.exchangeListing.findUniqueOrThrow({ where: { id: base.id } });
+  void ignoredId;
+  void ignoredCreated;
+  void ignoredUpdated;
+  const scenarios: Array<{
+    count: number;
+    visible: number[];
+    varied?: boolean;
+  }> = [
+    { count: 119, visible: [118] },
+    { count: 119, visible: [] },
+    { count: 120, visible: [] },
+    { count: 120, visible: [0, 119] },
+    { count: 121, visible: [120] },
+    { count: 121, visible: [...Array.from({ length: 20 }, (_, i) => i), 120] },
+    { count: 261, visible: Array.from({ length: 21 }, (_, i) => 240 + i) },
+    { count: 200, visible: Array.from({ length: 41 }, (_, i) => i) },
+    {
+      count: 261,
+      visible: Array.from({ length: 21 }, (_, i) => 120 + i),
+      varied: true
+    }
+  ];
+  for (const scenario of scenarios) {
+    const marker = "Fictional ordered window " + randomUUID();
+    const prefix = "fixture-window-" + randomUUID();
+    const at = new Date(Date.now() - 1000);
+    const records = Array.from({ length: scenario.count }, (_, index) => ({
+      ...source,
+      id: prefix + String(scenario.count - index).padStart(4, "0"),
+      title: marker,
+      priceMinor: scenario.varied ? index + 1 : source.priceMinor,
+      publishedAt: at,
+      updatedAt: at,
+      moderationState: scenario.visible.includes(index)
+        ? ("VISIBLE" as const)
+        : ("HIDDEN" as const)
+    }));
+    await db.exchangeListing.createMany({ data: records });
+    for (const sort of ["newest", "price-low", "price-high"] as const) {
+      const expected = records
+        .filter((row) => row.moderationState === "VISIBLE")
+        .sort((a, b) => {
+          const price =
+            sort === "newest"
+              ? 0
+              : (a.priceMinor! - b.priceMinor!) *
+                (sort === "price-low" ? 1 : -1);
+          return price || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
+        })
+        .map((row) => row.id);
+      const query = {
+        q: marker,
+        sort,
+        ...(sort === "newest"
+          ? {}
+          : { currency: "USD" as const, basis: "item" as const })
+      };
+      const found: string[] = [];
+      let after: string | undefined;
+      for (let page = 0; page < 4; page++) {
+        const value = await list(db, viewer.token, { ...query, after });
+        assert.ok(value.listings.length <= 20);
+        found.push(...value.listings.map((row) => row.id));
+        assert.deepEqual(
+          found,
+          expected.slice(0, found.length),
+          `${sort} preserves authorized order`
+        );
+        if (!value.after) break;
+        assert.equal(value.listings.length, 20);
+        after = value.after;
+        assert.ok(page < 3, "Fixture traversal finishes");
+      }
+      assert.deepEqual(
+        found,
+        expected,
+        `${sort} exhausts the entire authorized suffix`
+      );
+      assert.equal(new Set(found).size, found.length);
+    }
+  }
+});
+
 test("advanced availability, price basis, condition and church scope narrow current authorized rows", async () => {
   const owner = await createPortalActor(db, "exfilters"),
     viewer = await createPortalActor(db, "exfilterview"),
@@ -1850,11 +1953,16 @@ test("approximate nearest paging crosses authorized distance bands without candi
   void _updated;
   const at = new Date(Date.now() - 1000);
   const publicIds: string[] = [];
+  await db.exchangeListing.update({
+    where: { id: base.id },
+    data: { moderationState: "HIDDEN" }
+  });
   for (const band of bands) {
     const place = (await getDiscoveryPlace("US", band.placeIds[0]))!;
-    const rows = Array.from({ length: 12 }, (_, index) => {
-      const id = "fixture-distance-" + randomUUID();
-      if (index < 8) publicIds.push(id);
+    const rows = Array.from({ length: 130 }, (_, index) => {
+      const id = `fixture-distance-${band.radiusKm}-${String(130 - index).padStart(4, "0")}-${randomUUID()}`;
+      const visible = band !== bands[0] && index >= 122;
+      if (visible) publicIds.push(id);
       return {
         ...source,
         id,
@@ -1863,7 +1971,7 @@ test("approximate nearest paging crosses authorized distance bands without candi
         placeLabel: discoveryPlaceLabel(place),
         publishedAt: at,
         updatedAt: at,
-        ...(index >= 8
+        ...(!visible
           ? { audience: "CHURCH" as const, audienceChurchId: c.id }
           : {})
       };
@@ -1893,8 +2001,8 @@ test("approximate nearest paging crosses authorized distance bands without candi
     found.push(...page.listings);
     after = page.after ?? undefined;
   } while (after);
-  assert.equal(found.length, 41);
-  assert.equal(new Set(found.map((row) => row.id)).size, 41);
+  assert.equal(found.length, publicIds.length);
+  assert.equal(new Set(found.map((row) => row.id)).size, publicIds.length);
   assert.ok(publicIds.every((id) => found.some((row) => row.id === id)));
   assert.deepEqual(
     found.map((row) => row.distanceBandKm),
@@ -1905,7 +2013,14 @@ test("approximate nearest paging crosses authorized distance bands without candi
     sort: "newest",
     radiusKm: 10
   });
-  assert.ok(newest.listings.every((row) => row.distanceBandKm === 10));
+  assert.deepEqual(newest.listings, []);
+  const nextBand = await list(db, viewer.token, {
+    ...query,
+    sort: "newest",
+    radiusKm: 25
+  });
+  assert.ok(nextBand.listings.length > 0);
+  assert.ok(nextBand.listings.every((row) => row.distanceBandKm === 25));
 });
 
 test("favorite references are owned, exact retries do not duplicate them, and removed or inaccessible sources never leak content", async () => {

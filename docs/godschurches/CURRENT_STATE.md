@@ -31,6 +31,38 @@ headroom or 100-client capacity. Broader discovery/navigation acceptance and rea
 operator, provider and device gates remain open. See
 [deployment evidence](DEPLOYMENT_REPORT.md) and [resource budgets](RESOURCE_BUDGETS.md).
 
+
+## Exchange runtime verified; privacy timing and audit gates open, 3 October 2026 UTC
+
+Application repair `c8cdca51b303522e8768ae7c9dab8b5a7c47b337` narrows Exchange
+authorization joins with an ordered candidate window and complete canonical
+fallback. All 97 service cases and 72 paired full-response/cursor comparisons
+pass on `e9708e3`. Paired late-call medians improve from about 299 to 47 ms for
+newest and 304 to 35 ms for price-low, with little change for selective or owned
+reads. No schema, dependency, planner setting or permission policy changed.
+
+The existing bounded workload passes on `38f6158`, build
+`BI6SIaGnCfIKKSzCZ30dr`: 220 measured service reads and all 920 workload HTTPS
+requests. At 25 clients, Exchange p95 is about 856/903 ms for newest/price and
+the two feeds remain just above one second. The CPU differs from the previous
+workload run; these are not controlled before/after HTTP or production-capacity
+claims. [Query-plan evidence](RESOURCE_QUERY_PLANS.md) records paired and workload
+results, exact sources and limitations.
+
+Full run `37089319853` passes on `fb613b1`, build `CXMpwc5UiSg2TsppRxLiQ`: 97
+service cases, 24 browser groups and one HTTPS API/HTML/RSC/photo-access case.
+The runner verifies exact serving identity and restarts with MFA enforcement
+configured for HTTPS; an actual MFA challenge is not claimed. The account-switch
+case clears editor values after 29.6 seconds, so immediate concealment remains
+unproven and needs a focused privacy investigation.
+All 118 source guards, copy and types pass, but the unchanged dependency audit
+fails on new advisory GHSA-vfj7-8cjw-p6xm, affecting development-tool dependency
+`braces <=3.0.3`. No patched release is listed as of this check. Earlier clean
+audit receipts below remain historical and do not clear the current release.
+No bypass or forced major migration was applied. This candidate stays draft,
+not ready for release, integrated or live; designated-owner integration and
+combined live acceptance remain open. No production operation occurred.
+
 ## Artist draft privacy and security maintenance verified live, 8 October 2026 UTC
 
 Version **2026.10.08.1**, application

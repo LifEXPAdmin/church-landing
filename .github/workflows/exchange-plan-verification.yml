@@ -1,0 +1,83 @@
+name: Exchange prepared-plan investigation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/exchange-query-plans-20261003]
+    paths:
+      - .github/workflows/exchange-plan-verification.yml
+      - scripts/test-platform-isolated.mjs
+      - tests/exchange-prepared-plans.ts
+      - lib/platform/exchange-listings.ts
+      - lib/platform/exchange-policy.ts
+      - lib/platform/exchange-search.ts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exchange-plans-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  services:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+      - name: Locate runner-only PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+      - name: Verify fictional Exchange boundaries and compatibility
+        run: node scripts/test-platform-isolated.mjs exchange-services
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 20
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+      - name: Locate runner-only PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+      - name: Compare current fictional Exchange query plans
+        run: node scripts/test-platform-isolated.mjs exchange-plans
+      - name: Preserve aggregate plan measurements only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: exchange-plans-${{ github.sha }}
+          path: |
+            .account-test/exchange-plans-hosted-*/exchange-plans-summary.json
+            .account-test/exchange-plans-hosted-*/exchange-plans-progress.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

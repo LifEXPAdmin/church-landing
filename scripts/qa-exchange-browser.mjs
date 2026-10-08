@@ -10,27 +10,34 @@ assert.ok(fixtureDir, "Pass the existing isolated Exchange preview directory");
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
-assert.match(config.origin, /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/);
-assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
+assert.match(
+  config.origin,
+  /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/
+);
+const localOrigin = config.localOrigin ?? config.origin;
+assert.match(localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.localOrigin,
-  NEXT_PUBLIC_SITE_URL: config.localOrigin,
+  ACCOUNT_ORIGIN: localOrigin,
+  NEXT_PUBLIC_SITE_URL: localOrigin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  ACCOUNT_TEST_SINK_DIR:
+    process.env.ACCOUNT_TEST_SINK_DIR ?? fixtureDir + "/sink",
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: "",
-  PRIVILEGED_MFA_MODE: "enroll",
+  PRIVILEGED_MFA_MODE: process.env.PRIVILEGED_MFA_MODE ?? "enroll",
   COMMUNITY_REPORTS_ENABLED: "true",
   BLOB_READ_WRITE_TOKEN: "",
   RESEND_API_KEY: "",
   MAILERLITE_API_KEY: "",
   MEDIA_STORAGE_MODE: "local-test",
-  MEDIA_TEST_DIR: process.cwd() + "/" + fixtureDir + "/images"
+  MEDIA_TEST_DIR: process.env.MEDIA_TEST_DIR ?? fixtureDir + "/images"
 });
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
@@ -122,6 +129,12 @@ const waitUntil = async (work) => {
   }
   throw Error("Expected saved state was not observed");
 };
+const savedListingSettled = async (message = "Listing changes saved.") => {
+  await page.getByRole("status").filter({ hasText: message }).waitFor();
+  // A committed row precedes the editor's response readback and asynchronous
+  // removal of its unsaved-work history entry. Reload only after both settle.
+  await page.waitForFunction(() => !window.history.state?.gcPhotoWork);
+};
 const fetchIn = (path, body, owner, headers = {}) =>
   page.evaluate(
     async ({ path, body, owner, headers }) => {
@@ -196,7 +209,7 @@ try {
       dropped = true;
       firstBody = route.request().postData();
       const received = await route.fetch({
-        url: config.localOrigin + new URL(route.request().url()).pathname
+        url: localOrigin + new URL(route.request().url()).pathname
       });
       assert.ok([200, 202].includes(received.status()), await received.text());
       await route.abort("failed");
@@ -283,6 +296,7 @@ try {
       (await db.exchangeListing.findUniqueOrThrow({ where: { id } }))
         .priceMinor === 1001
   );
+  await savedListingSettled();
   await go(`/platform/exchange/${id}/edit`);
   assert.equal(
     await editor.getByLabel("Amount", { exact: true }).inputValue(),
@@ -387,7 +401,7 @@ try {
       uploadDetails = request.headers()["x-image-details"];
       uploadBytes = request.postDataBuffer();
       const received = await route.fetch({
-        url: config.localOrigin + new URL(request.url()).pathname
+        url: localOrigin + new URL(request.url()).pathname
       });
       assert.ok(
         [200, 201, 202].includes(received.status()),
@@ -446,6 +460,7 @@ try {
       (await db.mediaAsset.findUniqueOrThrow({ where: { id: secondImage.id } }))
         .position === 0
   );
+  await savedListingSettled();
   await go(`/platform/exchange/${id}/edit`);
   const firstPhoto = page.getByRole("button", {
     name: "Open listing photo 1 of 2",
@@ -486,6 +501,7 @@ try {
       (await db.exchangeListing.findUniqueOrThrow({ where: { id } })).state ===
       "ACTIVE"
   );
+  await savedListingSettled("Listing status updated.");
   await signIn(null);
   const publicResponse = await go(`/platform/exchange/${id}`);
   assert.match(publicResponse.headers()["cache-control"], /no-store/);
@@ -584,6 +600,7 @@ try {
       (await db.exchangeListing.findUniqueOrThrow({ where: { id } }))
         .description === "Preserved unsent conflict marker"
   );
+  await savedListingSettled();
   ok(
     "Another owner is denied and a concurrent saved version requires explicit review while retaining unsent entries"
   );
@@ -624,21 +641,50 @@ try {
       .state,
     "DRAFT"
   );
+  await savedListingSettled("Listing status updated.");
   ok(
     "Duplicate starts a private draft without copied photos; archive and explicit private reopening preserve the owned record"
   );
 
+  const accountSwitchStarted = performance.now();
+  const switchStage = (name) =>
+    console.log(
+      `Exchange account-switch stage ${name}: ${Math.round(performance.now() - accountSwitchStarted)} ms`
+    );
+  const recordIdentityResponse = (response) => {
+    const url = new URL(response.url());
+    const view = url.searchParams.get("view");
+    if (
+      url.pathname === "/api/platform/exchange" &&
+      ["context", "editor"].includes(view)
+    )
+      console.log(
+        "Exchange account-switch identity response: " +
+          JSON.stringify({
+            view,
+            status: response.status(),
+            milliseconds: Math.round(performance.now() - accountSwitchStarted)
+          })
+      );
+  };
+  page.on("response", recordIdentityResponse);
+  switchStage("settled");
   await editor
     .getByLabel("Description (required to publish)", { exact: true })
     .fill("PRIVATE ALTERNATE ACCOUNT MARKER");
+  switchStage("marker-entered");
   await signIn(other);
+  switchStage("cookies-replaced");
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  switchStage("focus-dispatched");
   await page
     .getByText(
       "Your sign-in changed. Private entries were cleared. Reload for your current account.",
       { exact: true }
     )
     .waitFor();
+  switchStage("identity-cleared");
+  page.off("response", recordIdentityResponse);
   assert.equal(
     await page
       .getByRole("textbox")
@@ -662,11 +708,26 @@ try {
 
   await signIn(owner);
   await go(`/platform/exchange/${id}/edit`);
+  await editor
+    .getByLabel("Title (required to publish)", { exact: true })
+    .waitFor();
   await page.setViewportSize({ width: 320, height: 780 });
+  await page.locator("#quick-appearance").selectOption("dark");
+  await page
+    .locator('.platform-design[data-reader-size][data-appearance="dark"]')
+    .waitFor();
+  assert.equal(
+    await page
+      .locator(".platform-design[data-reader-size]")
+      .evaluate((node) => getComputedStyle(node).colorScheme),
+    "dark"
+  );
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
-    document.documentElement.classList.add("dark");
   });
+  await editor
+    .getByLabel("Title (required to publish)", { exact: true })
+    .waitFor();
   await bounded();
   await page.screenshot({
     path: output + "/editor-320-large-dark.png",
@@ -674,9 +735,12 @@ try {
   });
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "";
-    document.documentElement.classList.remove("dark");
   });
+  await page.locator("#quick-appearance").selectOption("system");
   await page.setViewportSize({ width: 390, height: 844 });
+  await editor
+    .getByLabel("Title (required to publish)", { exact: true })
+    .waitFor();
   await bounded();
   await page.screenshot({
     path: output + "/editor-mobile.png",
@@ -729,6 +793,7 @@ try {
         })
       ).requestedItems === requested
   );
+  await savedListingSettled();
   await go(`/platform/exchange/${duplicateId}/edit`);
   assert.equal(
     await editor
@@ -748,6 +813,7 @@ try {
         })
       ).state === "ACTIVE"
   );
+  await savedListingSettled("Listing status updated.");
   await signIn(null);
   await go(`/platform/exchange/${duplicateId}`);
   await page.getByText(requested, { exact: true }).waitFor();
@@ -829,11 +895,28 @@ try {
     .click();
   await page.waitForURL((url) => url.searchParams.get("state") === "ARCHIVED");
   await page
-    .getByText(
-      "No saved listings match these choices. Create a private draft to begin.",
-      { exact: true }
-    )
+    .getByRole("heading", {
+      name: "No saved listings match these filters",
+      exact: true
+    })
     .waitFor();
+  const archived = await fetchIn(
+    `/api/platform/exchange?view=mine&state=ARCHIVED&q=${encodeURIComponent(title)}`
+  );
+  assert.equal(archived.status, 200);
+  assert.equal(archived.body.listings.length, 0);
+  assert.equal(
+    await page
+      .getByRole("link", { name: "Clear listing filters", exact: true })
+      .getAttribute("href"),
+    "/platform/exchange/mine"
+  );
+  assert.equal(
+    await page
+      .getByRole("link", { name: "Create a private draft", exact: true })
+      .getAttribute("href"),
+    "/platform/exchange/new"
+  );
   ok(
     "Wanted fields and calendar dates persist, including the reader's date format; type navigation, literal search, category chips and owned status filters use current authorized rows"
   );
@@ -890,6 +973,7 @@ try {
         })
       ).qualifications === qualifications
   );
+  await savedListingSettled();
   let typed = await db.exchangeListing.findUniqueOrThrow({
     where: { id: duplicateId }
   });
@@ -941,6 +1025,7 @@ try {
         })
       ).servicePricing === "FREE"
   );
+  await savedListingSettled();
   typed = await db.exchangeListing.findUniqueOrThrow({
     where: { id: duplicateId }
   });
@@ -985,11 +1070,20 @@ try {
       .version,
     typedCurrent.listing.version
   );
+  await editor
+    .getByLabel("Service pricing (required to publish)", { exact: true })
+    .waitFor();
   await page.setViewportSize({ width: 320, height: 780 });
+  await page.locator("#quick-appearance").selectOption("dark");
+  await page
+    .locator('.platform-design[data-reader-size][data-appearance="dark"]')
+    .waitFor();
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "200%";
-    document.documentElement.classList.add("dark");
   });
+  await editor
+    .getByLabel("Service pricing (required to publish)", { exact: true })
+    .waitFor();
   await bounded();
   await page.screenshot({
     path: output + "/service-editor-320-large-dark.png",
@@ -1000,8 +1094,8 @@ try {
   );
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "";
-    document.documentElement.classList.remove("dark");
   });
+  await page.locator("#quick-appearance").selectOption("system");
   await page.setViewportSize({ width: 390, height: 844 });
   const church = await db.church.create({
     data: {
@@ -1079,6 +1173,7 @@ try {
       (await db.exchangeListing.findUniqueOrThrow({ where: { id: needId } }))
         .state === "ACTIVE"
   );
+  await savedListingSettled("Listing status updated.");
   assert.equal(
     (await db.exchangeListing.findUniqueOrThrow({ where: { id: needId } }))
       .ownerChurchId,

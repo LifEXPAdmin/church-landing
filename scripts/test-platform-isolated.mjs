@@ -17,7 +17,14 @@ import { join, relative, resolve } from "node:path";
 
 const suite = process.argv[2] ?? "artists";
 assert.ok(
-  ["artists", "discovery", "resources"].includes(suite),
+  [
+    "artists",
+    "discovery",
+    "resources",
+    "exchange-plans",
+    "exchange-services",
+    "exchange"
+  ].includes(suite),
   "Choose a declared isolated suite"
 );
 const profile =
@@ -42,7 +49,19 @@ const profile =
           ],
           https: ["discovery-http", "four-feeds-http"]
         }
-      : { services: [], browsers: [], https: [] };
+      : ["exchange-services", "exchange"].includes(suite)
+        ? {
+            services: [
+              "exchange-input",
+              "exchange-listings",
+              "exchange-needs",
+              "interchurch-help",
+              "interchurch-help-compatibility"
+            ],
+            browsers: ["qa-exchange-browser", "qa-exchange-search-browser"],
+            https: ["exchange-http"]
+          }
+        : { services: [], browsers: [], https: [] };
 // This runner deliberately cannot start large artifacts on a local workstation.
 assert.equal(
   process.env.GITHUB_ACTIONS,
@@ -124,7 +143,7 @@ const env = {
   ARTIST_BUNDLED_CHROMIUM: "1",
   NODE_EXTRA_CA_CERTS: cert
 };
-if (suite === "resources")
+if (["resources", "exchange-plans"].includes(suite))
   Object.assign(env, {
     CAPACITY_FIXTURE_DIR: fixture,
     CAPACITY_STAIRCASE: "1",
@@ -250,104 +269,7 @@ async function start(mode) {
   }
   throw new Error("Production-mode server did not become healthy");
 }
-try {
-  const config = join(fixture, "localhost-cert.cnf");
-  writeFileSync(
-    config,
-    "[req]\nprompt=no\ndistinguished_name=dn\nx509_extensions=local_tls\n[dn]\nCN=localhost\n[local_tls]\nsubjectAltName=IP:127.0.0.1,DNS:localhost\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,digitalSignature,keyEncipherment,keyCertSign\nextendedKeyUsage=serverAuth\n",
-    { mode: 0o600 }
-  );
-  sync("openssl", [
-    "req",
-    "-x509",
-    "-newkey",
-    "rsa:2048",
-    "-sha256",
-    "-nodes",
-    "-days",
-    "2",
-    "-config",
-    config,
-    "-keyout",
-    key,
-    "-out",
-    cert
-  ]);
-  sync(join(pg, "initdb"), [
-    "-D",
-    cluster,
-    "-A",
-    "trust",
-    "-U",
-    "fixture",
-    "--no-locale",
-    "--encoding=UTF8"
-  ]);
-  sync(join(pg, "pg_ctl"), [
-    "-D",
-    cluster,
-    "-l",
-    join(fixture, "postgres.log"),
-    "-o",
-    `-h 127.0.0.1 -p ${databasePort} -c unix_socket_directories=''`,
-    "-w",
-    "start"
-  ]);
-  databaseStarted = true;
-  sync(join(pg, "createdb"), [
-    "-h",
-    "127.0.0.1",
-    "-p",
-    String(databasePort),
-    "-U",
-    "fixture",
-    "godschurches_security_test"
-  ]);
-  sync("npm", ["run", "prisma:deploy"]);
-  writeFileSync(join(fixture, "environment.json"), JSON.stringify(env), {
-    mode: 0o600
-  });
-  writeFileSync(
-    join(fixture, "browser-env.json"),
-    JSON.stringify({ origin, database, certificate: cert }),
-    { mode: 0o600 }
-  );
-  // Run the capacity-bound fixture before other suites create public Like
-  // candidates. Its cleanup withdraws only its own author's fictional posts.
-  if (suite === "discovery")
-    await run(process.execPath, [
-      "--import",
-      "./tests/register.mjs",
-      "--test",
-      "tests/feed-snapshot-cost.test.ts"
-    ]);
-  if (suite === "resources") {
-    await run(process.execPath, [
-      "--import",
-      "./tests/register.mjs",
-      "tests/seed-capacity.ts"
-    ]);
-    copyFileSync(
-      join(fixture, "actors.json"),
-      join(fixture, "dense-actors.json"),
-      constants.COPYFILE_EXCL
-    );
-    await run(process.execPath, [
-      "--import",
-      "./tests/register.mjs",
-      "scripts/qa-resource-budgets.mjs",
-      fixture,
-      "seed"
-    ]);
-  } else {
-    await run(process.execPath, [
-      "--import",
-      "./tests/register.mjs",
-      "--test",
-      "--test-concurrency=1",
-      ...profile.services.map((name) => `tests/${name}.test.ts`)
-    ]);
-  }
+async function verifyBuiltApplication() {
   await run("npm", ["run", "build"], {
     ...env,
     NODE_ENV: "production",
@@ -480,11 +402,124 @@ try {
       { ...env, PRIVILEGED_MFA_MODE: "enforce", ARTIST_HTTP_MFA_ENFORCED: "1" }
     );
   }
+}
+try {
+  const config = join(fixture, "localhost-cert.cnf");
+  writeFileSync(
+    config,
+    "[req]\nprompt=no\ndistinguished_name=dn\nx509_extensions=local_tls\n[dn]\nCN=localhost\n[local_tls]\nsubjectAltName=IP:127.0.0.1,DNS:localhost\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,digitalSignature,keyEncipherment,keyCertSign\nextendedKeyUsage=serverAuth\n",
+    { mode: 0o600 }
+  );
+  sync("openssl", [
+    "req",
+    "-x509",
+    "-newkey",
+    "rsa:2048",
+    "-sha256",
+    "-nodes",
+    "-days",
+    "2",
+    "-config",
+    config,
+    "-keyout",
+    key,
+    "-out",
+    cert
+  ]);
+  sync(join(pg, "initdb"), [
+    "-D",
+    cluster,
+    "-A",
+    "trust",
+    "-U",
+    "fixture",
+    "--no-locale",
+    "--encoding=UTF8"
+  ]);
+  sync(join(pg, "pg_ctl"), [
+    "-D",
+    cluster,
+    "-l",
+    join(fixture, "postgres.log"),
+    "-o",
+    `-h 127.0.0.1 -p ${databasePort} -c unix_socket_directories=''`,
+    "-w",
+    "start"
+  ]);
+  databaseStarted = true;
+  sync(join(pg, "createdb"), [
+    "-h",
+    "127.0.0.1",
+    "-p",
+    String(databasePort),
+    "-U",
+    "fixture",
+    "godschurches_security_test"
+  ]);
+  sync("npm", ["run", "prisma:deploy"]);
+  writeFileSync(join(fixture, "environment.json"), JSON.stringify(env), {
+    mode: 0o600
+  });
+  writeFileSync(
+    join(fixture, "browser-env.json"),
+    JSON.stringify({ origin, database, certificate: cert }),
+    { mode: 0o600 }
+  );
+  // Run the capacity-bound fixture before other suites create public Like
+  // candidates. Its cleanup withdraws only its own author's fictional posts.
+  if (suite === "discovery")
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "--test",
+      "tests/feed-snapshot-cost.test.ts"
+    ]);
+  if (["resources", "exchange-plans"].includes(suite)) {
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "tests/seed-capacity.ts"
+    ]);
+    copyFileSync(
+      join(fixture, "actors.json"),
+      join(fixture, "dense-actors.json"),
+      constants.COPYFILE_EXCL
+    );
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "scripts/qa-resource-budgets.mjs",
+      fixture,
+      "seed"
+    ]);
+  } else {
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "--test",
+      "--test-concurrency=1",
+      ...profile.services.map((name) => `tests/${name}.test.ts`)
+    ]);
+  }
+  if (suite === "exchange-plans") {
+    await run(process.execPath, [
+      "--import",
+      "./tests/register.mjs",
+      "tests/exchange-prepared-plans.ts",
+      fixture
+    ]);
+  } else if (suite !== "exchange-services") {
+    await verifyBuiltApplication();
+  }
   sync("git", ["diff", "--exit-code"]);
   console.log(
-    suite === "resources"
-      ? "PASS: fictional dense resource service and loopback HTTPS measurements. No production connection or delivery credentials; not production capacity acceptance."
-      : `PASS: fictional ${suite} services, production build, browser and enforced-MFA HTTPS checks. No production connection or delivery credentials.`
+    suite === "exchange-plans"
+      ? "PASS: current fictional Exchange service and prepared-plan measurements only; no build, browser, HTTPS or production acceptance."
+      : suite === "exchange-services"
+        ? "PASS: fictional Exchange input, listing, Needs and interchurch compatibility service regressions only."
+        : suite === "resources"
+          ? "PASS: fictional dense resource service and loopback HTTPS measurements. No production connection or delivery credentials; not production capacity acceptance."
+          : `PASS: fictional ${suite} services, production build, browser and enforced-MFA HTTPS checks. No production connection or delivery credentials.`
   );
 } finally {
   await stop(server);

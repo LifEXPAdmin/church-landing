@@ -9,27 +9,34 @@ assert.ok(fixtureDir, "Pass the existing isolated Exchange preview directory");
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
-assert.match(config.origin, /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/);
-assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
+assert.match(
+  config.origin,
+  /^https:\/\/(?:exchange-fixture\.example\.test|127\.0\.0\.1):\d+$/
+);
+const localOrigin = config.localOrigin ?? config.origin;
+assert.match(localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.localOrigin,
-  NEXT_PUBLIC_SITE_URL: config.localOrigin,
+  ACCOUNT_ORIGIN: localOrigin,
+  NEXT_PUBLIC_SITE_URL: localOrigin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  ACCOUNT_TEST_SINK_DIR:
+    process.env.ACCOUNT_TEST_SINK_DIR ?? fixtureDir + "/sink",
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: "",
-  PRIVILEGED_MFA_MODE: "enroll",
+  PRIVILEGED_MFA_MODE: process.env.PRIVILEGED_MFA_MODE ?? "enroll",
   COMMUNITY_REPORTS_ENABLED: "true",
   BLOB_READ_WRITE_TOKEN: "",
   RESEND_API_KEY: "",
   MAILERLITE_API_KEY: "",
   MEDIA_STORAGE_MODE: "local-test",
-  MEDIA_TEST_DIR: process.cwd() + "/" + fixtureDir + "/images"
+  MEDIA_TEST_DIR: process.env.MEDIA_TEST_DIR ?? fixtureDir + "/images"
 });
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
@@ -278,7 +285,7 @@ try {
       lost = true;
       originalBody = request.postData();
       const response = await route.fetch({
-        url: config.localOrigin + new URL(request.url()).pathname
+        url: localOrigin + new URL(request.url()).pathname
       });
       assert.equal(response.status(), 200, await response.text());
       return route.abort("failed");
@@ -350,6 +357,12 @@ try {
         where: { ownerId: viewer.id, deletedAt: null }
       })) === 0
   );
+  await page
+    .getByText(
+      "No favorite listings on this page. Open an available listing and choose Save favorite.",
+      { exact: true }
+    )
+    .waitFor();
   ok(
     "Favorites confirm a lost successful reply after tab resume once, survive sign-out, stay owner-only and conceal unavailable sources before removal"
   );
@@ -382,6 +395,16 @@ try {
         }
       })) === 1
   );
+  await saveForm
+    .getByRole("status")
+    .filter({ hasText: "Search saved privately. Matching alerts are off." })
+    .waitFor();
+  await waitUntil(
+    async () =>
+      (await saveForm
+        .getByLabel("Search name", { exact: true })
+        .inputValue()) === ""
+  );
   await page
     .getByRole("link", { name: "Manage saved searches", exact: true })
     .click();
@@ -399,6 +422,7 @@ try {
     .getByLabel("Search name", { exact: true })
     .fill("Fictional saved search updated");
   await editForm.getByLabel(alertLabel, { exact: true }).check();
+  const beforeAlertSave = await editForm.elementHandle();
   await editForm
     .getByRole("button", { name: "Update saved search", exact: true })
     .click();
@@ -413,11 +437,21 @@ try {
         }
       })) === 1
   );
+  await waitUntil(
+    async () => !(await beforeAlertSave.evaluate((node) => node.isConnected))
+  );
+  await beforeAlertSave.dispose();
+  await editForm.getByLabel("Search name", { exact: true }).waitFor();
+  assert.equal(
+    await editForm.getByLabel("Search name", { exact: true }).inputValue(),
+    "Fictional saved search updated"
+  );
   await page.getByRole("link", { name: "Clear filters", exact: true }).click();
   await editForm.waitFor();
   assert.ok(new URL(page.url()).searchParams.get("savedSearch"));
   assert.equal(new URL(page.url()).searchParams.has("q"), false);
   await editForm.getByLabel(alertLabel, { exact: true }).uncheck();
+  const beforeAlertRemoval = await editForm.elementHandle();
   await editForm
     .getByRole("button", { name: "Update saved search", exact: true })
     .click();
@@ -427,6 +461,15 @@ try {
         where: { ownerId: viewer.id, alertsSince: null, version: 3 }
       })) === 1
   );
+  await waitUntil(
+    async () => !(await beforeAlertRemoval.evaluate((node) => node.isConnected))
+  );
+  await beforeAlertRemoval.dispose();
+  await editForm.getByLabel("Search name", { exact: true }).waitFor();
+  assert.equal(
+    await editForm.getByLabel(alertLabel, { exact: true }).isChecked(),
+    false
+  );
   await editForm
     .getByLabel("Search name", { exact: true })
     .fill("Unsent private search name");
@@ -435,6 +478,11 @@ try {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
   });
+  await page
+    .getByRole("status")
+    .filter({ hasText: "Your sign-in changed. Reload before continuing." })
+    .first()
+    .waitFor();
   await waitUntil(async () => !(await editForm.isVisible()));
   assert.equal(
     await db.exchangeSavedSearch.count({ where: { ownerId: stranger.id } }),
@@ -456,6 +504,12 @@ try {
     await bounded();
   }
   await page.emulateMedia({ colorScheme: "dark" });
+  assert.equal(
+    await page
+      .locator(".platform-design[data-reader-size]")
+      .evaluate((node) => getComputedStyle(node).colorScheme),
+    "dark"
+  );
   await page.addStyleTag({ content: "html{font-size:24px!important}" });
   await bounded();
   await page.screenshot({
@@ -471,15 +525,18 @@ try {
         where: { ownerId: viewer.id, deletedAt: null }
       })) === 0
   );
+  await page
+    .getByText(
+      "No named searches on this page. Set your browse filters and choose Save this search.",
+      { exact: true }
+    )
+    .waitFor();
   ok(
     "Named searches default to alerts off; editing filters and explicit consent preserves ownership and versions; removal stops alerts; narrow, dark and enlarged layouts fit"
   );
   await go("/platform/exchange?q=NoMatchingFixture" + randomUUID());
   await page
-    .getByText(
-      "No listings match these filters",
-      { exact: true }
-    )
+    .getByText("No listings match these filters", { exact: true })
     .waitFor();
   await go("/platform/exchange?q=" + encodeURIComponent(marker));
   const currentCard = page.getByRole("link", {
@@ -551,9 +608,22 @@ try {
     "Empty searches explain recovery, failed access rechecks conceal stale rows and retry, and a 120-character unbroken title fits enlarged 320px results without a photo"
   );
   const settingsWrites = [];
+  let sessionActivityWrites = 0;
   const recordSettingsWrite = (request) => {
+    const path = new URL(request.url()).pathname;
+    // Normal foreground activity extends the current session, not preferences.
+    // Keep every other write, including unexpected session bodies, in the gate.
+    if (
+      path === "/api/platform/session" &&
+      request.method() === "POST" &&
+      request.postData() === '{"activity":"foreground"}' &&
+      request.headers()["x-expected-account"] === viewer.id
+    ) {
+      sessionActivityWrites++;
+      return;
+    }
     if (!["GET", "HEAD", "OPTIONS"].includes(request.method()))
-      settingsWrites.push(new URL(request.url()).pathname);
+      settingsWrites.push(path);
   };
   page.on("request", recordSettingsWrite);
   await go("/platform/settings/exchange");
@@ -563,35 +633,71 @@ try {
     ["setting-exchange-area", "/platform/exchange/new"],
     ["setting-exchange-saved", "/platform/exchange/saved"],
     ["related-privacy-messages", "/platform/settings/privacy/messages"],
-    ["related-notifications-availability", "/platform/settings/notifications/availability"]
-  ]) assert.equal(await page.locator("#" + id).getAttribute("href"), href);
+    [
+      "related-notifications-availability",
+      "/platform/settings/notifications/availability"
+    ]
+  ])
+    assert.equal(await page.locator("#" + id).getAttribute("href"), href);
   assert.match(await page.locator("main").innerText(), /One approved church/);
-  assert.match(await page.locator("main").innerText(), /Keep exact pickup instructions out of published text/);
-  assert.equal(await page.locator('input[autocomplete^="cc-"],input[name*="bank"],input[name*="address"]').count(), 0);
+  assert.match(
+    await page.locator("main").innerText(),
+    /Keep exact pickup instructions out of published text/
+  );
+  assert.equal(
+    await page
+      .locator(
+        'input[autocomplete^="cc-"],input[name*="bank"],input[name*="address"]'
+      )
+      .count(),
+    0
+  );
   await page.addStyleTag({ content: "html{font-size:24px!important}" });
   await bounded();
-  await page.screenshot({ path: output + "/exchange-settings-mobile.png", fullPage: true });
-  await page.route("**/api/platform/settings", (route) => route.fulfill({
-    status: 503, contentType: "application/json",
-    body: JSON.stringify({ message: "Fictional settings temporarily unavailable" })
-  }));
+  await page.screenshot({
+    path: output + "/exchange-settings-mobile.png",
+    fullPage: true
+  });
+  await page.route("**/api/platform/settings", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Fictional settings temporarily unavailable"
+      })
+    })
+  );
   await page.evaluate(() => {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("focus"));
   });
-  await page.getByText("Fictional settings temporarily unavailable", { exact: true }).waitFor();
-  assert.equal(await page.locator("#setting-exchange-saved").isVisible(), false);
+  await page
+    .getByText("Fictional settings temporarily unavailable", { exact: true })
+    .waitFor();
+  assert.equal(
+    await page.locator("#setting-exchange-saved").isVisible(),
+    false
+  );
   await page.unroute("**/api/platform/settings");
-  await page.getByRole("button", { name: "Retry settings", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Retry settings", exact: true })
+    .click();
   await page.locator("#setting-exchange-saved").waitFor();
   await page.locator("#setting-exchange-saved").click();
   await page.waitForURL("**/platform/exchange/saved");
-  await page.getByRole("heading", { name: "Saved listings and searches", exact: true }).waitFor();
+  await page
+    .getByRole("heading", { name: "Saved listings and searches", exact: true })
+    .waitFor();
   await go("/platform/settings?q=saved%20search");
   await page.locator("#setting-exchange-saved").waitFor();
   assert.deepEqual(settingsWrites, []);
   page.off("request", recordSettingsWrite);
-  ok("Settings finds current Exchange controls, preserves separate contact and alert owners, conceals failed reads, fits enlarged mobile text and adds no financial form or preference write");
+  console.log(
+    `Observed ${sessionActivityWrites} authenticated foreground session requests and no preference writes`
+  );
+  ok(
+    "Settings finds current Exchange controls, preserves separate contact and alert owners, conceals failed reads, fits enlarged mobile text and adds no financial form or preference write"
+  );
   assert.deepEqual(errors, []);
   ok("No browser errors in saved-search and favorite flows");
 } catch (error) {
