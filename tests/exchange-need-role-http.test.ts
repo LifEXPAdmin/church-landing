@@ -93,6 +93,41 @@ async function proveCoordinator(f: Fixture) {
   );
 }
 
+async function reconfirmCoordinator(f: Fixture) {
+  assert.equal(process.env.PRIVILEGED_MFA_MODE, "enforce");
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const factor = await db.adminAuthenticator.findUniqueOrThrow({
+      where: { userId: f.ada.id }
+    });
+    assert.ok(factor.confirmedAt, "Recheck the existing confirmed factor");
+    const current = BigInt(Math.floor(Date.now() / 30000));
+    const counter =
+      factor.lastCounter < current ? current : factor.lastCounter + BigInt(1);
+    if (counter <= current + BigInt(1)) {
+      await privilegedAuthenticatorCommand(
+        db,
+        f.ada.token,
+        {
+          operation: "mfa-challenge",
+          requestKey: randomUUID(),
+          expectedVersion: factor.version,
+          purpose: "privileged-work",
+          code: authenticatorTotp(
+            openAuthenticator(f.ada.id, factor.secretCiphertext),
+            counter
+          )
+        },
+        undefined
+      );
+      return;
+    }
+    assert.ok(attempt < 2, "A fresh authenticator counter must become available");
+    await new Promise((done) =>
+      setTimeout(done, 30000 - (Date.now() % 30000) + 50)
+    );
+  }
+}
+
 test("manager role choices stay out of initial HTML/RSC while current pinned API paginates21 roles", async () => {
   const f = await seedNeedRolePrivacy(db);
   await proveCoordinator(f);
@@ -179,8 +214,25 @@ test("enforced role slot command binds owner/MFA, replays exactly once and rejec
     f.ada.id,
     body
   );
-  assert.equal(unproven.status, 403);
+  // Bound sessions without current assurance receive no manager projection.
+  assert.equal(unproven.status, 404);
   privateResponse(unproven);
+  assert.deepEqual(await unproven.json(), {
+    message: "This need is unavailable to your current account or duties."
+  });
+  assert.equal(
+    await db.exchangeNeedSlot.count({ where: { id: JSON.parse(body).slotId } }),
+    0
+  );
+  assert.equal(
+    await db.socialOperation.count({
+      where: {
+        ownerId: f.ada.id,
+        key: "exchange-need:" + JSON.parse(body).mutationId
+      }
+    }),
+    0
+  );
   await proveCoordinator(f);
   const wrong = await request(
     "/api/platform/exchange",
@@ -263,6 +315,9 @@ test("enforced role slot command binds owner/MFA, replays exactly once and rejec
       volunteerSlotId: f.sourceRoles[2].id
     }
   });
+  // Removing a duty changes the proof's authority digest. Confirm remaining
+  // Exchange authority so this denial tests the missing volunteer duty itself.
+  await reconfirmCoordinator(f);
   const forbidden = await request(
     "/api/platform/exchange",
     f.ada.token,
@@ -271,6 +326,19 @@ test("enforced role slot command binds owner/MFA, replays exactly once and rejec
   );
   assert.equal(forbidden.status, 403);
   privateResponse(forbidden);
+  assert.deepEqual(await forbidden.json(), {
+    message:
+      "Link a current event role for this church using your separate volunteer organizer duty."
+  });
+  assert.equal(
+    await db.socialOperation.count({
+      where: {
+        ownerId: f.ada.id,
+        key: "exchange-need:" + JSON.parse(forbiddenBody).mutationId
+      }
+    }),
+    0
+  );
   assert.equal(
     await db.exchangeNeedSlot.count({ where: { id: forbiddenId } }),
     0

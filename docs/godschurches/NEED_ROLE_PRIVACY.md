@@ -24,6 +24,13 @@ progress versions, incoming contributions, volunteer owners and complete loan
 progress path are preserved. Canonical role permissions, schema, dependencies
 and transport are unchanged.
 
+Nested guards now relay pending recovery registrations to their enclosing
+guards. If a slot saves but its response is lost, a changed outer Need snapshot
+can expose the original confirmation action without revealing its concealed
+form. Every nested scope must still permit recovery. The original request,
+busy state and retained snapshot remain intact; cleanup removes the relayed
+registration after confirmation, unmount or confirmed account replacement.
+
 ## Verification required
 
 The current server-page and guard bodies reproduced three specific mocked
@@ -36,6 +43,16 @@ pending. The changed shared
 guard also requires current consumer regression evidence. The inquiry composer
 fixture must expect the parent's confirmed-account clearing to remove its child,
 while retaining same-account recovery and return-to-account assertions.
+
+A later full application run reproduced an inaccessible original-request
+confirmation after a slot saved but its response was lost. Five focused nested
+recovery regressions failed against the previous guard and pass after the relay
+repair. All 175 focused guard, foreground, role and Need consumer checks pass.
+The controlled hook fixture restores its outer context after manually rendering
+a provider subtree. These checks do not replace a fresh full application run.
+The enforced HTTPS fixture now checks the canonical generic 404 before MFA
+proof, then refreshes the same factor's proof after a duty change before testing
+the separate volunteer-duty denial. Fresh enforced HTTPS results remain pending.
 
 The candidate has not been deployed or accepted live. Source preparation and
 historical tests are not current runtime acceptance. Later post and inline

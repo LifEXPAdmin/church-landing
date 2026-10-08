@@ -16,7 +16,13 @@ import {
 } from "@/lib/platform/social-client";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
-type PendingRecovery = { retry: () => void; busy: boolean; allowed?: boolean };
+type PendingRecovery = {
+  retry: () => void;
+  busy: boolean;
+  allowed?: boolean;
+  // Relayed requests must retain every descendant guard's access decision.
+  scopeAllowed?: boolean;
+};
 const RecoveryContext = createContext<
   ((id: string, recovery: PendingRecovery | null) => void) | null
 >(null);
@@ -60,6 +66,7 @@ function SnapshotGuard({
   children
 }: Props) {
   const parentVisible = useReadVisibility();
+  const parentRecovery = useContext(RecoveryContext);
   const [visible, setVisible] = useState(false),
     [notice, setNotice] = useState(`Checking current ${label} access…`);
   const [currentAccess, setCurrentAccess] = useState(false);
@@ -92,6 +99,24 @@ function SnapshotGuard({
     },
     []
   );
+  useLayoutEffect(() => {
+    if (!parentRecovery) return;
+    const pending = Object.entries(recoveries);
+    for (const [id, recovery] of pending) {
+      // Keep the original request registered even while concealed or denied,
+      // so an ancestor cannot adopt a refreshed snapshot over pending intent.
+      parentRecovery(id, {
+        ...recovery,
+        scopeAllowed:
+          recovery.scopeAllowed !== false &&
+          (currentAccess ||
+            (recoverWithoutSnapshot && recovery.allowed === true))
+      });
+    }
+    return () => {
+      for (const [id] of pending) parentRecovery(id, null);
+    };
+  }, [parentRecovery, recoveries, currentAccess, recoverWithoutSnapshot]);
   const generation = useRef(0),
     identityGeneration = useRef(0),
     checking = useRef(false),
@@ -240,8 +265,9 @@ function SnapshotGuard({
           {Object.entries(recoveries)
             .filter(
               ([, recovery]) =>
-                currentAccess ||
-                (recoverWithoutSnapshot && recovery.allowed === true)
+                recovery.scopeAllowed !== false &&
+                (currentAccess ||
+                  (recoverWithoutSnapshot && recovery.allowed === true))
             )
             .map(([id, recovery]) => (
               <button

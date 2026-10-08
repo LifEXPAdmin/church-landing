@@ -421,3 +421,192 @@ test("stale identity result from an abandoned check cannot clear the newer scope
     s.props.children
   );
 });
+
+// Controlled hook lifetimes execute three real guards and the real leaf
+// registration hook. This is not React DOM or native browser-focus evidence.
+function nestedRecoverySetup(t) {
+  const events = new EventTarget();
+  const state = {
+    focused: true,
+    identity: "owner-a",
+    handler: null,
+    parentVisible: true,
+    pending: true,
+    busy: false,
+    allowed: true,
+    retried: []
+  };
+  const originalBody = Object.freeze({ operation: "need-slot", slotId: "original-slot", version: 1 });
+  const retry = () => state.retried.push(originalBody);
+  const external = new Map();
+  const outerRegister = (id, recovery) => {
+    if (recovery) external.set(id, recovery);
+    else external.delete(id);
+  };
+  const scopes = ["need", "intermediate", "roles"];
+  const data = Object.fromEntries(scopes.map((scope) => [scope, { scope, version: 1 }]));
+  const props = scopes.map((scope) => ({
+    owner: "owner-a",
+    url: "/api/" + scope,
+    checksum: createHash("sha256").update(JSON.stringify(data[scope])).digest("hex"),
+    children: { type: "form", props: { children: "Original " + scope } }
+  }));
+  const h = clientHarness({
+    window: events,
+    document: {
+      visibilityState: "visible",
+      hasFocus: () => state.focused,
+      addEventListener: events.addEventListener.bind(events),
+      removeEventListener: events.removeEventListener.bind(events)
+    },
+    navigator: { onLine: true },
+    TextEncoder,
+    crypto: { subtle: { digest: async (algorithm, bytes) => {
+      assert.equal(algorithm, "SHA-256");
+      return createHash("sha256").update(bytes).digest();
+    } } }
+  });
+  const { PrivateSnapshotGuard, usePrivateRecovery } = h.load(
+    "components/platform/private-snapshot-guard.tsx",
+    {
+      "@/lib/platform/social-client": {
+        SocialClientError: IdentityError,
+        currentSocialOwner: async () => state.identity,
+        socialRequest: async (url) => state.handler
+          ? state.handler(url)
+          : { data: data[url.slice(5)] }
+      },
+      "./read-visibility": {
+        ReadVisibility: { Provider: "visibility" },
+        useReadVisibility: () => state.parentVisible
+      }
+    }
+  );
+  let provider;
+  h.mount(() => {
+    provider?.({ value: outerRegister, children: null });
+    state.parentVisible = true;
+    const trees = props.map((p) => {
+      const wrapper = PrivateSnapshotGuard(p);
+      const tree = wrapper.type(wrapper.props);
+      provider = tree.type;
+      provider(tree.props);
+      state.parentVisible = nodes(tree, (n) => n.type === "visibility")[0].props.value;
+      return tree;
+    });
+    usePrivateRecovery("leaf-original", state.pending, state.busy, retry, state.allowed);
+    provider({ value: null, children: null });
+    return trees;
+  });
+  t.after(() => h.unmount());
+  return {
+    h, state, data, props, external, retry, originalBody,
+    async event(name) {
+      events.dispatchEvent(new Event(name));
+      await h.settle();
+    },
+    visible: (index) => nodes(h.output[index], (n) => n.type === "visibility")[0].props.value,
+    confirmations: (index) => nodes(h.output[index], (n) =>
+      n.type === "button" && /Confirm(?:ing)? original request/.test(n.props.children))
+  };
+}
+
+test("three nested guards expose only the exact original recovery outside a changed enclosing snapshot", async (t) => {
+  const s = nestedRecoverySetup(t);
+  await s.h.settle();
+  assert.equal(s.visible(2), true);
+  s.data.need = { scope: "need", version: 2 };
+  s.state.focused = false;
+  await s.event("blur");
+  s.state.focused = true;
+  await s.event("focus");
+  assert.equal(s.visible(0), false);
+  assert.equal(s.visible(2), false);
+  assert.equal(s.state.retried.length, 0);
+  const confirm = button(s.h.output[0], "Confirm original request");
+  assert.equal(confirm.props.onClick, s.retry);
+  assert.equal(confirm.props.disabled, false);
+  assert.equal(s.confirmations(1).length, 0);
+  assert.equal(s.confirmations(2).length, 0);
+  assert.deepEqual([...s.external.keys()], ["leaf-original"]);
+  confirm.props.onClick();
+  assert.deepEqual(s.state.retried, [s.originalBody]);
+  assert.equal(s.state.retried[0], s.originalBody);
+});
+
+test("descendant denial blocks ancestor recovery without rebasing pending children and later preserves busy and leaf permission", async (t) => {
+  const s = nestedRecoverySetup(t);
+  await s.h.settle();
+  const original = s.props[0].children;
+  s.data.need = { scope: "need", version: 2 };
+  s.state.handler = async (url) => {
+    if (url === "/api/intermediate") throw new IdentityError(403);
+    return { data: s.data[url.slice(5)] };
+  };
+  await s.event("social-relationships-changed");
+  assert.deepEqual([...s.external.keys()], ["leaf-original"]);
+  assert.equal(s.external.get("leaf-original").scopeAllowed, false);
+  assert.equal(s.confirmations(0).length, 0);
+  s.props[0].checksum = createHash("sha256").update(JSON.stringify(s.data.need)).digest("hex");
+  s.props[0].children = { type: "form", props: { children: "New server children" } };
+  s.state.busy = true;
+  s.state.allowed = false;
+  s.h.render();
+  await s.h.settle();
+  assert.equal(nodes(s.h.output[0], (n) => n.type === "form")[0], original);
+  assert.equal(s.external.get("leaf-original").allowed, false);
+  assert.equal(s.external.get("leaf-original").busy, true);
+  s.state.handler = null;
+  await s.event("focus");
+  assert.equal(s.visible(0), false);
+  const busy = button(s.h.output[0], "Confirming original request…");
+  assert.equal(busy.props.disabled, true);
+  assert.equal(busy.props.onClick, s.retry);
+  assert.equal(s.state.retried.length, 0);
+  s.state.pending = false;
+  s.h.render();
+  await s.h.settle();
+  assert.equal(s.external.size, 0);
+  assert.equal(s.confirmations(0).length, 0);
+  assert.equal(nodes(s.h.output[0], (n) => n.type === "form")[0], s.props[0].children);
+});
+
+for (const identity of ["owner-b", null])
+  test("inner confirmed identity " + identity + " clears all ancestor recovery registrations permanently", async (t) => {
+    const s = nestedRecoverySetup(t);
+    await s.h.settle();
+    s.data.need = { scope: "need", version: 2 };
+    await s.event("social-relationships-changed");
+    assert.equal(s.confirmations(0).length, 1);
+    s.state.identity = identity;
+    s.state.handler = async (url) => {
+      if (url === "/api/roles") throw new IdentityError(401);
+      return { data: s.data[url.slice(5)] };
+    };
+    await s.event("social-relationships-changed");
+    assert.equal(s.external.size, 0);
+    assert.equal(s.confirmations(0).length, 0);
+    assert.equal(nodes(s.h.output[2], (n) => n.type === "form").length, 0);
+    s.state.identity = "owner-a";
+    s.state.handler = null;
+    await s.event("focus");
+    assert.equal(s.external.size, 0);
+    assert.equal(s.confirmations(0).length, 0);
+    assert.equal(s.state.retried.length, 0);
+  });
+
+test("nested recovery registration changes retain one leaf ID and unmount clears its enclosing relay", async (t) => {
+  const s = nestedRecoverySetup(t);
+  await s.h.settle();
+  assert.deepEqual([...s.external.keys()], ["leaf-original"]);
+  assert.equal(s.external.get("leaf-original").retry, s.retry);
+  s.state.busy = true;
+  s.h.render();
+  await s.h.settle();
+  assert.deepEqual([...s.external.keys()], ["leaf-original"]);
+  assert.equal(s.external.get("leaf-original").busy, true);
+  assert.equal(s.external.get("leaf-original").allowed, true);
+  s.h.unmount();
+  assert.equal(s.external.size, 0);
+  assert.equal(s.state.retried.length, 0);
+});

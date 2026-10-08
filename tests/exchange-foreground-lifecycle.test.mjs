@@ -527,6 +527,8 @@ function favoriteEnvironment() {
     )[0].props.value;
     const leaf = nodes(state.entry, (n) => n.type === "favorite-leaf")[0];
     state.leaf = leaf ? controls.ExchangeFavoriteButton(leaf.props) : null;
+    // Restore the outer context after manually rendering this provider's subtree.
+    state.guard.type({ value: null, children: null });
     return [state.guard, state.entry, state.leaf];
   });
   return {
