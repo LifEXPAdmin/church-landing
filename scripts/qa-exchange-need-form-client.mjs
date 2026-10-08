@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync, mkdirSync, realpathSync } from "node:fs";
+import { readFileSync, writeFileSync, realpathSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { dirname, join, resolve, relative, isAbsolute } from "node:path";

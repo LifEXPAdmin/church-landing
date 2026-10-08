@@ -48,4 +48,3 @@ after an accepted legacy router refresh. Later inline, role, post, offer and
 organizer owner/rearm changes are separate work. Permanent cross-account draft
 retention, physical-device behavior, real provider delivery and broad security
 completion are not claimed.
-

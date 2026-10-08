@@ -327,8 +327,8 @@ try {
         }
       })
     );
-  const donation = await createSlot("DONATE", "Fictional donations"),
-    quote = await createSlot("SELL", "Fictional quotes");
+  await createSlot("DONATE", "Fictional donations");
+  const quote = await createSlot("SELL", "Fictional quotes");
   const currentListing = await db.exchangeListing.findUniqueOrThrow({
     where: { id: listing.id }
   });
@@ -399,6 +399,17 @@ try {
       name: "Edit slot Fictional donations",
       exact: true
     });
+  const openSlotEditor = async () => {
+    const details = slotSection()
+      .locator("details")
+      .filter({
+        has: page.locator('form[aria-label="Edit slot Fictional donations"]')
+      });
+    assert.equal(await details.count(), 1);
+    if (!(await details.evaluate((el) => el.open)))
+      await details.locator("summary").click();
+    await slotForm().waitFor({ state: "visible" });
+  };
   const organizer = () =>
     page.getByRole("textbox", { name: "Public organizer update", exact: true });
   // Whole-document assertion applies to denied/non-owner data. The existing
@@ -454,12 +465,7 @@ try {
       exact: true
     })
   );
-  await slotSection()
-    .locator("details")
-    .filter({ has: slotForm() })
-    .evaluate((el) => {
-      el.open = true;
-    });
+  await openSlotEditor();
   const zone = () =>
     setup().getByRole("textbox", {
       name: "Time zone, for example America/Chicago",
@@ -480,12 +486,7 @@ try {
     assert.equal(writes.length, beforeManager);
     await resume();
     await ready(zone());
-    await slotSection()
-      .locator("details")
-      .filter({ has: slotForm() })
-      .evaluate((el) => {
-        el.open = true;
-      });
+    await openSlotEditor();
     assert.equal(await zone().inputValue(), "America/Chicago");
     assert.equal(await slotLabel().inputValue(), "Fictional unsent slot");
     assert.equal(
