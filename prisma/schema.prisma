@@ -812,6 +812,7 @@ enum DirectoryAudience {
 }
 
 model Church {
+  volunteerDutyTemplates VolunteerDutyTemplate[]
   mediaPlaylists MediaPlaylist[]
   catalogItems MediaCatalogItem[]
   gatherGroups GatherGroup[]
@@ -2360,6 +2361,24 @@ enum VolunteerApplicationState {
   WITHDRAWN
   DECLINED
   ACCEPTED
+}
+
+// Reusable church duty text only. No person, appointment, application or consent
+// is attached to a template; copied opportunity text is independently owned.
+model VolunteerDutyTemplate {
+  id String @id @default(cuid())
+  churchId String?
+  version Int @default(1)
+  title String @default("")
+  duties String @default("")
+  requirements String @default("")
+  commitment String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  removedAt DateTime?
+  recoveryRequired Boolean @default(false)
+  church Church? @relation(fields: [churchId], references: [id], onDelete: SetNull)
+  @@index([churchId, removedAt, recoveryRequired, id])
 }
 
 // The church post owns publication/audience. Timed opportunities reference one

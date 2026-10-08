@@ -214,6 +214,7 @@ export function volunteerEditorContext(
       ownerId: context.actorId!,
       postId: post.id,
       postVersion: post.version,
+      churchId: post.authorChurchId!,
       event: post.eventOccurrence
         ? {
             id: post.eventOccurrence.id,
