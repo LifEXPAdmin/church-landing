@@ -1,6 +1,10 @@
-## Sixth candidate applicability, 8 October 2026 UTC
+## Saved-search and favorite release measurement scope, 8 October 2026 UTC
 
-The saved-search/favorite candidate adds no dependency or schema change. Existing measured backend contracts are retained, subject to final source/hash review. Its source and browser work is not a fresh load test; the prior fictional-loopback measurements, unresolved rapid repeated Back behavior and open production/100-client capacity limits remain explicit. Fresh Discovery behavioral verification is required for the changed shared guard. No production latency or provider headroom improvement is inferred.
+Version **2026.10.08.6**, source `dca251e58aedf04ce20aa016981242dc22ce11fe`: **verified live**. No new dense resource measurement is claimed. Applicable evidence remains [run 37733434001](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001), source `bbc5589`, build `htYDOyxWxYnqSM6MpLwIJ`: **220 measured service reads after 11 warmups, 920 HTTPS calls including 20 warmups and 900 measured calls, and 124,168,694 delivered response-body bytes**. Source and artifact equality was checked for those unchanged measured contracts, not the entire current frontend.
+
+Fresh Discovery’s snapshot diagnostics and fresh Exchange/Discovery browser results establish their stated behavioral checks, not a new load or production-capacity result. Reused 25-client loopback Exchange newest **1100.89 ms p95** and price **1033.13 ms p95** remain above the provisional one-second target. Preserve original measurement attribution and immutable evidence below. These are not physical transport-byte or 100-client/provider-headroom proofs.
+
+Canonical identity: **source dca251e58aedf04ce20aa016981242dc22ce11fe and version 2026.10.08.6 matched the READY canonical deployment at 2026-10-08T08:55:49.988Z**. Live guest checks: **249 guest checks passed at 2026-10-08T08:56:55.498Z with zero browser/CSP errors or attempted test mutations**. Production-data comparison: **165 original table fingerprints and 123 migration records remained unchanged in read-only comparison at 2026-10-08T08:57:22.850Z; no migration was applied**. Rapid repeated Back and broad performance acceptance remain open. See [Deployment report](DEPLOYMENT_REPORT.md).
 
 # Resource budgets for enabled modules
 

@@ -1,6 +1,8 @@
-## Sixth candidate applicability, 8 October 2026 UTC
+## Saved-search and favorite release applicability, 8 October 2026 UTC
 
-Saved-search editing and favorite privacy change client ownership and presentation. Query implementations, schema and measured plan tooling are unchanged in this preparation. Prior query-plan results remain historical until their exact source and retained artifacts are bound by the final applicability review. No new plan execution or performance result is claimed. The changed shared snapshot guard requires fresh Discovery behavior checks and cannot be described as unchanged frontend evidence.
+Version **2026.10.08.6**, source `dca251e58aedf04ce20aa016981242dc22ce11fe`: **verified live**. Its client privacy changes preserve the measured query, current authorization, order, cursor, schema and plan-tooling contracts. The reviewed [original plan run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079) remains source `bbc5589`: **97 service checks, 72 full-response/cursor comparisons across eight shapes and 168 prepared executions**. No new query-plan or performance execution is claimed; retain all original timings and host/fixture limits below.
+
+Current behavioral verification is fresh: **65/8/118 Exchange** and separate **34/2/33 Discovery** service/HTTPS/browser checks. The changed shared reader’s inquiry, Topic, Support and scheduled-post consumers were included. Canonical identity: **source dca251e58aedf04ce20aa016981242dc22ce11fe and version 2026.10.08.6 matched the READY canonical deployment at 2026-10-08T08:55:49.988Z**. Data comparison: **165 original table fingerprints and 123 migration records remained unchanged in read-only comparison at 2026-10-08T08:57:22.850Z; no migration was applied**. Read-only release checks do not measure load or production capacity. [Deployment report](DEPLOYMENT_REPORT.md) records the acceptance scope.
 
 # Measured resource query plans and bounded traversal
 

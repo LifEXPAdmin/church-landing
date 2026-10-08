@@ -1,8 +1,42 @@
-## Sixth release preparation, 8 October 2026 UTC
+## Saved-search editing and favorite controls, 8 October 2026 UTC
 
-The saved-search editor and favorite-control batch is under verification for version **2026.10.08.6**. No sixth deployment or promotion has occurred at this checkpoint. The canonical accepted product is still version 2026.10.08.5, source `284e054dd35222d47896562506364cdd1989af0f`.
+Version **2026.10.08.6**, application `dca251e58aedf04ce20aa016981242dc22ce11fe`: **verified live** at [God’s Churches](https://godschurches.com). [PR43](https://github.com/LifEXPAdmin/church-landing/pull/43) integrates the two preserved PR13/14 scopes and the applicable shared-guard correction.
 
-Publication will use one deliberate exact-source deployment and promote that same accepted build, subject to the rolling twelve-release ceiling. Required source, isolated service, HTTPS, production-build, browser, recovery and live checks remain gates. A report-only closeout will not create another product deployment.
+Saved-search fields and favorite choices are omitted from initial private server props and presented only after current account-pinned reads. Same-account interruptions preserve unsent fields and exact uncertain request bytes for deliberate recovery. Receipt and canonical-read checks prevent a mismatched response from confirming another action. Confirmed account replacement clears the old owner’s private work; A-to-B-to-A draft restoration is not claimed.
+
+The historical guard correction was reproduced before application: seven of ten deterministic cases failed on its exact preimage. A separate fourteen-case actual-component probe reproduced unfocused return events restarting reads across six Exchange owners and the shared read-only snapshot, including an outer favorite-recovery button. Narrow focus checks repair those observed paths. These probes and the added controlled browser-focus assertions do not establish native-window or physical-device acceptance. Existing handoff receipt and unrelated-draft rules are preserved.
+
+### Source and isolated verification
+
+[Push Source security](https://github.com/LifEXPAdmin/church-landing/actions/runs/37750164148) and [PR Source security](https://github.com/LifEXPAdmin/church-landing/actions/runs/37750180662) passed **477/477** checks, types, authored copy, lint and reachable-history scanning. The advisory audit reported zero vulnerabilities; registry verification accepted 496 signatures and 86 attestations. Lint reported **42 warnings and zero errors**. Fatal security gates remain intact.
+
+[Fresh Exchange verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37750164221) passed **65 service tests, 8 HTTPS cases and 118 browser groups**, build `huHXAZH37MkSSfXkzfXna`. Groups comprise favorites 8, saved-search editing 9, saved lists 8, handoff detail 8, search 8, inquiry composition 11, defaults 11, handoffs 9, inquiry lists 10, Topics 9, Support 13 and notification/scheduled-post integration 14. The runtime step ran 08:30:18 to 08:36:40 UTC.
+
+[Fresh Discovery verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37750222454) passed **34 services, 2 HTTPS cases and 33 browser groups**, build `5u7vclEUS23TuWqWDweEm`. Its groups comprise Discovery 11, four feeds 11 and navigation journeys 11; the runtime step ran 08:31:06 to 08:36:14 UTC. Both exact-source profiles served browser fixtures with MFA off and HTTPS fixtures with enforcement configured. This does not establish a new real operator authenticator ceremony. Support, notification and Discovery fixture receipts do not independently measure production-write or external-send counters; their documented fixture/guarded-runner scopes are retained.
+
+Supplementary evidence is explicitly **reused from `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`** under reviewed source and artifact equality:
+
+- [Artist](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733431156): 25 service tests, 5 HTTPS cases and 26 browser groups.
+- [Query plans](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079): 97 service checks, 72 full-response/cursor comparisons across eight shapes and 168 prepared executions.
+- [Resources](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001): 220 measured service reads and 920 workload HTTPS calls.
+
+Those supplementary profiles were not rerun on the sixth candidate. Older Discovery and inquiry-list evidence is excluded from current acceptance because their shared frontend contracts changed. No fresh sixth performance result is inferred.
+
+### Integration, staging and live evidence
+
+Independent final review: **accepted without blockers for the exact source and receipt at 2026-10-08T08:50:01.062025+00:00**. Main integration: **ordinary fast-forward to the exact candidate at 2026-10-08T08:50:50.448Z**. Exact main CI: **[run 37752565791](https://github.com/LifEXPAdmin/church-landing/actions/runs/37752565791) completed successfully at 2026-10-08T08:52:21Z**. Deployment readiness: **one exact-source production deployment reached READY; it is the same deployment verified canonical**.
+
+Staged read-only checks: **70 read-only checks passed at 2026-10-08T08:55:11.784Z**. Same-build promotion: **the accepted staged deployment was promoted without rebuilding at 2026-10-08T08:55:31.253Z**. Canonical source/version and health/release checks: **source dca251e58aedf04ce20aa016981242dc22ce11fe and version 2026.10.08.6 matched the READY canonical deployment at 2026-10-08T08:55:49.988Z**; **5 health/release checks passed**.
+
+Live guest checks: **249 guest checks passed at 2026-10-08T08:56:55.498Z with zero browser/CSP errors or attempted test mutations**. Scoped runtime observations: **the scoped window 2026-10-08T08:55:49.988Z to 2026-10-08T08:57:08.379Z recorded zero error, fatal and CSP diagnostic rows**. Production table and migration comparison: **165 original table fingerprints and 123 migration records remained unchanged in read-only comparison at 2026-10-08T08:57:22.850Z; no migration was applied**. Retained-run deployment/promotion and test-write/send/queue scope: **1 deployment submission and 1 promotion in this retained run, with zero production test writes, recipient sends or queue publications; queue-consumer execution was not verified**. Acceptance closed: **2026-10-08T08:57:52.580Z**. Independent post-live review: **accepted without blockers at 2026-10-08T09:00:23.531567+00:00**. Failed attempts or diagnostic corrections, if any: **The report-only checkout initially hit a Git alternate-object-store depth limit. Only the new checkout generated alternate references were flattened to seven retained object-store paths; original repositories and stores were preserved. This documentation preparation involved no deployment retry or product failure.**. These are retained-run observations, not an account-wide provider inventory.
+
+### Recovery and limits
+
+Recovery applicability: **the ordinary encrypted-copy/restore completed at 2026-10-08T04:51:44.297Z remained applicable and was rechecked at 2026-10-08T08:50:36.602Z against 123 migration checksums; no new copy, restore or protected replay was performed**. Installed scheduled-backup health: **read-only inspection at 2026-10-08T08:57:04.658Z found the scheduler loaded, last exit 0 and no operational problems. Its retained daily copy was 23.84 hours old, above the 20-hour refresh threshold. This separate inventory was not refreshed**. Keep the fresh ordinary encrypted-copy/restore, protected replay and installed daily inventory distinct. Read-only inspection does not run a backup or refresh its receipt.
+
+No schema, dependency or recovery-owner change belongs to this batch. Broad SEC-01/SEC-02 acceptance, unfinished export/native work and actual operator/provider/adult-pilot/physical-device gates remain separate. Historical dependency blockers are not current findings: this candidate’s full advisory audit passed without weakening the gate.
+
+Rapid repeated Back remains unresolved. Reused fictional 25-client loopback Exchange newest **1100.89 ms p95** and price **1033.13 ms p95** exceed the provisional one-second target. They do not establish production speed, provider headroom, PostgreSQL 17 workload behavior or 100-client capacity. Guest live reads do not certify authenticated private flows, successful ranked snapshot paging, dense production load, provider delivery or queue-consumer execution.
 
 ## Private Exchange handoffs and saved choices, 8 October 2026 UTC
 
