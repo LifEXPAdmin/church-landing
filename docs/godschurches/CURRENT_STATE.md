@@ -31,8 +31,32 @@ headroom or 100-client capacity. Broader discovery/navigation acceptance and rea
 operator, provider and device gates remain open. See
 [deployment evidence](DEPLOYMENT_REPORT.md) and [resource budgets](RESOURCE_BUDGETS.md).
 
+## Exchange editor privacy runtime verified, 3 October 2026 UTC
 
-## Exchange runtime verified; privacy timing and audit gates open, 3 October 2026 UTC
+Candidate `b03105b078cf8d91ead18de8a69229dc17b6d90d` removes private editor and
+photo presentation during unconfirmed access, retains unsaved work and exact
+retry state, and prevents late saves from reopening a concealed editor. Changed
+identity can clear the editor despite a session-level blur. Access reads have a
+15-second cancellation deadline, so a stalled read cannot block retries forever.
+
+[Full runtime 37094012583](https://github.com/LifEXPAdmin/church-landing/actions/runs/37094012583)
+passes with build `Ze_PFo6JpW52PXV7CdGTA`: 97 service cases, 27 browser groups and
+one HTTPS API/HTML/RSC/photo-access case. All 38 focused Exchange/artist recovery
+cases, 139 exact-source guards, copy and types pass. After account replacement,
+private markers were absent at the first 23 ms observation; clearing was
+confirmed at 1,029 ms. These fictional-run observations supersede the older
+unresolved timing investigation below, not a general latency guarantee.
+
+[Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) records reproduction,
+recovery, failed test attempts and exact-source limits. Initial authorized owner
+HTML/RSC still contains the saved listing snapshot and remains the next privacy
+slice. The unchanged dependency audit still fails on `braces <=3.0.3`, with no
+patched release listed at the latest check. This candidate remains draft and
+has no complete release receipt, integration or live acceptance. No production
+write, deployment or external send occurred; designated release ownership and
+the prior artist, church-binding and performance handoffs are preserved.
+
+## Exchange query runtime verified; prior privacy timing investigation, 3 October 2026 UTC
 
 Application repair `c8cdca51b303522e8768ae7c9dab8b5a7c47b337` narrows Exchange
 authorization joins with an ordered candidate window and complete canonical

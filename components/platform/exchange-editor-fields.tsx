@@ -22,12 +22,16 @@ export function ExchangeEditorFields({
   onChange,
   churches,
   churchOwned,
+  placeQuery,
+  onPlaceQueryChange,
   disabled
 }: {
   value: Fields;
   onChange: (fields: Fields) => void;
   churches: { id: string; name: string }[];
   churchOwned: boolean;
+  placeQuery?: string;
+  onPlaceQueryChange?: (value: string) => void;
   disabled: boolean;
 }) {
   const id = useId();
@@ -357,6 +361,8 @@ export function ExchangeEditorFields({
         </p>
         <DiscoveryPlacePicker
           country={value.country || null}
+          queryValue={placeQuery}
+          onQueryChange={onPlaceQueryChange}
           placeId={value.placeId}
           disabled={disabled}
           onCountry={(country) =>

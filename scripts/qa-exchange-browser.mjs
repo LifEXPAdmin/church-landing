@@ -307,6 +307,102 @@ try {
     "The complete editor persists exact KWD minor units and an explicitly selected catalog town across reload"
   );
 
+  console.log(
+    "Exchange initial serialized snapshot observation: " +
+      JSON.stringify(
+        await page.evaluate(() => ({
+          retainedSavedDescription: [
+            ...document.querySelectorAll("script")
+          ].some((node) =>
+            node.textContent.includes("Fictional retained draft description")
+          )
+        }))
+      )
+  );
+  const concealedSaveMarker = "PRIVATE SAVED WHILE CONCEALED";
+  const beforeConcealedSave = await db.exchangeListing.findUniqueOrThrow({
+    where: { id }
+  });
+  await editor
+    .getByLabel("Description (required to publish)", { exact: true })
+    .fill(concealedSaveMarker);
+  let releaseSave,
+    serverAccepted = false,
+    saveAttempts = 0;
+  const saveGate = new Promise((resolve) => {
+    releaseSave = resolve;
+  });
+  const heldSave = async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    saveAttempts++;
+    const received = await route.fetch({
+      url: localOrigin + new URL(route.request().url()).pathname
+    });
+    assert.ok([200, 202].includes(received.status()));
+    serverAccepted = true;
+    await saveGate;
+    await route.fulfill({ response: received });
+  };
+  await page.route("**/api/platform/exchange", heldSave);
+  try {
+    await editor
+      .getByRole("button", { name: "Save private draft", exact: true })
+      .click();
+    await waitUntil(() => serverAccepted);
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await page.waitForFunction(
+      (marker) =>
+        ![...document.querySelectorAll("textarea")].some(
+          (node) => node.value === marker
+        ),
+      concealedSaveMarker,
+      { timeout: 2000 }
+    );
+    releaseSave();
+    await page
+      .getByText("Confirming this listing change…", { exact: true })
+      .waitFor({ state: "hidden" });
+    assert.equal(
+      await page
+        .locator("textarea")
+        .evaluateAll(
+          (nodes, marker) => nodes.some((node) => node.value === marker),
+          concealedSaveMarker
+        ),
+      false
+    );
+    assert.equal(
+      await page
+        .getByRole("button", {
+          name: "Retry the same listing request",
+          exact: true
+        })
+        .count(),
+      0
+    );
+  } finally {
+    releaseSave();
+    await page.unroute("**/api/platform/exchange", heldSave);
+  }
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await editor
+    .getByLabel("Description (required to publish)", { exact: true })
+    .waitFor();
+  assert.equal(
+    await editor
+      .getByLabel("Description (required to publish)", { exact: true })
+      .inputValue(),
+    concealedSaveMarker
+  );
+  assert.equal(saveAttempts, 1);
+  assert.equal(
+    (await db.exchangeListing.findUniqueOrThrow({ where: { id } })).version,
+    beforeConcealedSave.version + 1
+  );
+  ok(
+    "An accepted save finishing after blur stays absent from the DOM and resumes once without another write"
+  );
+
   await editor
     .getByLabel("Title (required to publish)", { exact: true })
     .fill("Unsaved local marker");
@@ -346,6 +442,63 @@ try {
     mimeType: "image/png",
     buffer: bytes
   });
+  const selectedCaption = "PRIVATE SELECTED UPLOAD CAPTION";
+  await page.getByLabel("Caption", { exact: true }).fill(selectedCaption);
+  const galleryRoute = (url) =>
+    url.pathname === "/api/platform/exchange" &&
+    url.searchParams.get("view") === "gallery";
+  await page.route(galleryRoute, (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Fictional gallery check unavailable" })
+    })
+  );
+  try {
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await page.waitForFunction(
+      (marker) =>
+        ![...document.querySelectorAll("textarea")].some(
+          (node) => node.value === marker
+        ),
+      selectedCaption,
+      { timeout: 2000 }
+    );
+    assert.equal(
+      await page.getByText("fictional-item.png", { exact: true }).count(),
+      0
+    );
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await page
+      .getByText("Fictional gallery check unavailable", { exact: true })
+      .waitFor();
+    assert.equal(
+      await page.getByText("fictional-item.png", { exact: true }).count(),
+      0
+    );
+    assert.equal(
+      await page
+        .locator("textarea")
+        .evaluateAll(
+          (nodes, marker) => nodes.some((node) => node.value === marker),
+          selectedCaption
+        ),
+      false
+    );
+  } finally {
+    await page.unroute(galleryRoute);
+  }
+  await page
+    .getByRole("button", { name: "Check listing photos", exact: true })
+    .click();
+  await page.getByText("fictional-item.png", { exact: true }).waitFor();
+  assert.equal(
+    await page.getByLabel("Caption", { exact: true }).inputValue(),
+    selectedCaption
+  );
+  ok(
+    "A selected file and caption survive blur and a failed gallery check while their DOM presentation stays absent"
+  );
   await page.getByRole("button", { name: "Save photo", exact: true }).click();
   await page
     .getByRole("button", { name: "Edit photo 1 description", exact: true })
@@ -363,6 +516,19 @@ try {
   assert.equal(
     await page.getByLabel("Photo caption", { exact: true }).isVisible(),
     false
+  );
+  assert.equal(
+    await page
+      .locator("input,textarea")
+      .evaluateAll((nodes) =>
+        nodes.some(
+          (node) =>
+            node.value === "Fictional blue item" ||
+            node.value === "Blue rectangle, synthetic photo"
+        )
+      ),
+    false,
+    "Concealed photo metadata must be absent from the DOM"
   );
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await page.getByLabel("Photo caption", { exact: true }).waitFor();
@@ -386,6 +552,14 @@ try {
     where: { exchangeListingId: id, status: "READY" }
   });
   assert.equal(image.alt, "Blue rectangle, synthetic photo");
+  // The committed metadata row can precede the form's receipt and gallery
+  // refresh. File-input automation can target a still-disabled fieldset.
+  await savedListingSettled();
+  const choosePhotos = page.getByLabel("Choose photos", { exact: true });
+  await waitUntil(
+    async () =>
+      (await choosePhotos.isVisible()) && (await choosePhotos.isEnabled())
+  );
   ok(
     "Actual local photo upload, caption and alternative text use the listing gallery; blur conceals and preserves unsent photo edits"
   );
@@ -413,7 +587,7 @@ try {
     assert.deepEqual(request.postDataBuffer(), uploadBytes);
     return route.continue();
   });
-  await page.getByLabel("Choose photos", { exact: true }).setInputFiles({
+  await choosePhotos.setInputFiles({
     name: "fictional-second-item.png",
     mimeType: "image/png",
     buffer: await sharp({
@@ -422,6 +596,12 @@ try {
       .png()
       .toBuffer()
   });
+  await page
+    .getByRole("listitem", {
+      name: "Upload fictional-second-item.png",
+      exact: true
+    })
+    .waitFor();
   await page.getByRole("button", { name: "Save photo", exact: true }).click();
   const retryPhoto = page.getByRole("button", {
     name: "Retry same upload",
@@ -646,6 +826,59 @@ try {
     "Duplicate starts a private draft without copied photos; archive and explicit private reopening preserve the owned record"
   );
 
+  await editor
+    .getByLabel("Description (required to publish)", { exact: true })
+    .fill("PRIVATE ALTERNATE ACCOUNT MARKER");
+  await editor
+    .getByLabel("Find a town or area", { exact: true })
+    .fill("Unselected private town query");
+  let releaseIdentity;
+  let identityHeld = false;
+  const identityGate = new Promise((resolve) => {
+    releaseIdentity = resolve;
+  });
+  const holdIdentity = async (route) => {
+    identityHeld = true;
+    await identityGate;
+    await route.continue();
+  };
+  await page.route("**/api/platform/profile?view=identity", holdIdentity);
+  try {
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await waitUntil(() => identityHeld);
+    await page.waitForFunction(
+      () =>
+        ![...document.querySelectorAll("textarea")].some((node) =>
+          node.value.includes("PRIVATE ALTERNATE ACCOUNT MARKER")
+        ),
+      undefined,
+      { timeout: 2000 }
+    );
+  } finally {
+    releaseIdentity();
+    // Let released handlers finish before removing the page's temporary routes.
+    // The context's local-origin restriction remains installed.
+    await page.unrouteAll({ behavior: "wait" });
+  }
+  await editor
+    .getByLabel("Description (required to publish)", { exact: true })
+    .waitFor();
+  assert.equal(
+    await editor
+      .getByLabel("Description (required to publish)", { exact: true })
+      .inputValue(),
+    "PRIVATE ALTERNATE ACCOUNT MARKER"
+  );
+  assert.equal(
+    await editor
+      .getByLabel("Find a town or area", { exact: true })
+      .inputValue(),
+    "Unselected private town query"
+  );
+  ok(
+    "A held current-identity check removes private fields from the DOM and preserves the original account's draft and unselected town query"
+  );
+
   const accountSwitchStarted = performance.now();
   const switchStage = (name) =>
     console.log(
@@ -667,6 +900,86 @@ try {
           })
       );
   };
+  const identityRequestStarted = new Map();
+  const isIdentityRequest = (request) => {
+    const url = new URL(request.url());
+    return (
+      url.pathname === "/api/platform/profile" &&
+      url.searchParams.get("view") === "identity"
+    );
+  };
+  const recordIdentityRequest = (request) => {
+    if (!isIdentityRequest(request)) return;
+    const at = Math.round(performance.now() - accountSwitchStarted);
+    identityRequestStarted.set(request, at);
+    console.log(
+      "Exchange account-switch identity request: " +
+        JSON.stringify({ milliseconds: at })
+    );
+  };
+  const recordProfileResponse = (response) => {
+    if (!isIdentityRequest(response.request())) return;
+    console.log(
+      "Exchange account-switch profile response: " +
+        JSON.stringify({
+          status: response.status(),
+          started: identityRequestStarted.get(response.request()),
+          milliseconds: Math.round(performance.now() - accountSwitchStarted)
+        })
+    );
+  };
+  const recordIdentityFailure = (request) => {
+    if (!isIdentityRequest(request)) return;
+    console.log(
+      "Exchange account-switch identity failure: " +
+        JSON.stringify({
+          started: identityRequestStarted.get(request),
+          milliseconds: Math.round(performance.now() - accountSwitchStarted),
+          error: request.failure()?.errorText
+        })
+    );
+  };
+  await page.evaluate(() => {
+    const events = [];
+    const started = performance.now();
+    const record = (event) =>
+      events.push({
+        event: event.type,
+        milliseconds: Math.round(performance.now() - started),
+        visibility: document.visibilityState,
+        focused: document.hasFocus()
+      });
+    window.gcExchangePrivacyDiagnostic = { events, record };
+    for (const event of ["focus", "blur", "pageshow", "pagehide"])
+      window.addEventListener(event, record);
+    document.addEventListener("visibilitychange", record);
+    record({ type: "started" });
+  });
+  const markerSnapshot = async (stage) => {
+    const state = await page.evaluate(() => {
+      const markers = [...document.querySelectorAll("textarea")].filter(
+        (node) => node.value.includes("PRIVATE ALTERNATE ACCOUNT MARKER")
+      );
+      return {
+        retainedMarkers: markers.length,
+        visibleMarkers: markers.filter((node) => node.checkVisibility()).length,
+        visibility: document.visibilityState,
+        focused: document.hasFocus()
+      };
+    });
+    console.log(
+      "Exchange account-switch marker state: " +
+        JSON.stringify({
+          stage,
+          milliseconds: Math.round(performance.now() - accountSwitchStarted),
+          ...state
+        })
+    );
+    return state;
+  };
+  page.on("request", recordIdentityRequest);
+  page.on("response", recordProfileResponse);
+  page.on("requestfailed", recordIdentityFailure);
   page.on("response", recordIdentityResponse);
   switchStage("settled");
   await editor
@@ -677,13 +990,36 @@ try {
   switchStage("cookies-replaced");
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   switchStage("focus-dispatched");
+  await markerSnapshot("after-focus");
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  assert.equal(
+    (await markerSnapshot("one-second-after-focus")).retainedMarkers,
+    0
+  );
   await page
     .getByText(
       "Your sign-in changed. Private entries were cleared. Reload for your current account.",
       { exact: true }
     )
-    .waitFor();
+    .waitFor({ timeout: 5000 });
   switchStage("identity-cleared");
+  await markerSnapshot("after-clearing");
+  console.log(
+    "Exchange account-switch lifecycle: " +
+      JSON.stringify(
+        await page.evaluate(() => {
+          const { events, record } = window.gcExchangePrivacyDiagnostic;
+          for (const event of ["focus", "blur", "pageshow", "pagehide"])
+            window.removeEventListener(event, record);
+          document.removeEventListener("visibilitychange", record);
+          delete window.gcExchangePrivacyDiagnostic;
+          return events;
+        })
+      )
+  );
+  page.off("request", recordIdentityRequest);
+  page.off("response", recordProfileResponse);
+  page.off("requestfailed", recordIdentityFailure);
   page.off("response", recordIdentityResponse);
   assert.equal(
     await page
