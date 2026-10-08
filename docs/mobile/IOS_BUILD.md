@@ -277,3 +277,17 @@ fields with Show password available. The sign-out confirmation describes the
 fixture's in-memory response. The software keyboard was not opened. This adds
 only the sign-out and fresh-form observation; both managed sessions shut down
 successfully.
+
+Feed-choice preparation, 8 October 2026: a stateless presentation component adds
+Latest, Friends, Top This Week and Trending through the existing canonical modes,
+plus Refresh feed. Its three handler tests pass, as do all 27 reading tests after
+strengthening the returned-page fixture. Tests verify selection, mode and cursor
+requests, second-page content after Back, refresh, empty and interrupted reads,
+and rejection of superseded responses. Mobile types, scoped lint and the
+43-module boundary check pass. Source review found no actionable issues.
+
+This component is not yet wired into the native journey, which still exposes its
+previous controls. These source and handler results do not establish native
+layout, large-text or VoiceOver behavior, actual feed ranking, scroll restoration
+or real-backend acceptance. Shared-screen integration and a fresh native check
+remain next; this preparation adds no dependency or native configuration change.
