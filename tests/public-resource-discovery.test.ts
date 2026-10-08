@@ -668,6 +668,7 @@ test("both resource sitemap kinds traverse every bounded partition and drop sour
       ...mediaTemplate,
       id,
       details: { preachedOn: null },
+      chapters: mediaTemplate.chapters ?? [],
       scriptureRanges: []
     }))
   });

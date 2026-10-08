@@ -4,6 +4,7 @@ import { PortalError } from "./portal-policy";
 import { socialInput } from "./social-operations";
 import { catalogSource } from "./media-catalog-sources";
 import { normalizeScripture } from "./media-scripture";
+import { mediaTranscript } from "./media-transcript";
 import {
   MEDIA_POLICY,
   mediaFormats,
@@ -85,6 +86,8 @@ export function mediaFields(value: unknown) {
       "presentation",
       "audience",
       "durationSeconds",
+      "transcriptText",
+      "chapters",
       "languageIds",
       "speakers",
       "churchCredit",
@@ -167,13 +170,19 @@ export function mediaFields(value: unknown) {
         400,
         "Choose a listed language, or leave it unclassified."
       );
+  const durationSeconds = number(
+    v.durationSeconds,
+    604800,
+    "duration in seconds"
+  );
   return {
     title: mediaText(v.title, 160, "title"),
     description: mediaText(v.description, 5000, "description"),
     format,
     presentation,
     audience,
-    durationSeconds: number(v.durationSeconds, 604800, "duration in seconds"),
+    durationSeconds,
+    ...mediaTranscript(v.transcriptText, v.chapters, durationSeconds),
     languageIds,
     speakers: list(v.speakers, 10, 120, "speaker names"),
     churchCredit: mediaText(v.churchCredit, 160, "church attribution"),
@@ -188,10 +197,18 @@ export function mediaFields(value: unknown) {
   };
 }
 export type MediaFields = ReturnType<typeof mediaFields>;
-export const mediaFingerprint = (fields: MediaFields) =>
-  createHash("sha256")
-    .update(JSON.stringify([MEDIA_POLICY, fields]))
+export function mediaFingerprint(fields: MediaFields) {
+  const { transcriptText, chapters, ...legacy } = fields;
+  // Empty additive fields preserve already reviewed legacy content identities.
+  // Supplied text or markers are part of the exact rights review thereafter.
+  const reviewed =
+    transcriptText || chapters.length
+      ? { ...legacy, transcriptText, chapters }
+      : legacy;
+  return createHash("sha256")
+    .update(JSON.stringify([MEDIA_POLICY, reviewed]))
     .digest("hex");
+}
 export function mediaAcknowledgment(value: unknown, fields: MediaFields) {
   if (!fields.sourceUrl) return null;
   const v = object(

@@ -21,6 +21,7 @@ import { catalogSource } from "./media-catalog-sources";
 import { MEDIA_POLICY } from "./media-catalog-options";
 import { recordDiscoveryControl } from "./retention-controls";
 import type { PostTx } from "./post-access";
+import { MEDIA_COMMAND_MAX_BYTES } from "./media-transcript";
 const operations = [
   "create",
   "save",
@@ -82,7 +83,7 @@ export function mediaCatalogCommand(
       ? ["fields", "acknowledgment", "rights"]
       : [])
   ]);
-  if (Buffer.byteLength(JSON.stringify(input)) > 32768)
+  if (Buffer.byteLength(JSON.stringify(input)) > MEDIA_COMMAND_MAX_BYTES)
     throw new PortalError(413, "These media entries are too large.");
   return socialCommand(
     db,
@@ -93,12 +94,28 @@ export function mediaCatalogCommand(
       const { c, row, church } = await authorize(tx, actorId, op, input);
       if (row) expected(input.expectedVersion, row.version);
       if (row?.removedAt) throw mediaUnavailable();
+      await tx.$executeRaw`SELECT set_config('gc.media_transcript_writer', 'v1', true)`;
       const id = row?.id ?? randomUUID(),
         version = (row?.version ?? 0) + 1,
         now = new Date();
       let data: Prisma.MediaCatalogItemUpdateInput;
       if (["create", "save", "publish"].includes(op)) {
         const fields = mediaFields(input.fields);
+        if (
+          row &&
+          (row.transcriptText ||
+            (Array.isArray(row.chapters) && row.chapters.length)) &&
+          !(
+            input.fields &&
+            typeof input.fields === "object" &&
+            Object.hasOwn(input.fields, "transcriptText") &&
+            Object.hasOwn(input.fields, "chapters")
+          )
+        )
+          throw new PortalError(
+            409,
+            "This media has transcript or chapter text. Reload the current editor before saving so that text is preserved."
+          );
         if (
           row &&
           Array.isArray(row.scriptureRanges) &&
@@ -241,7 +258,9 @@ export function mediaCatalogCommand(
             attribution: "",
             removedAt: now,
             recordedOn: null,
-            durationSeconds: null
+            durationSeconds: null,
+            transcriptText: "",
+            chapters: []
           });
           await tx.mediaCatalogRights.deleteMany({ where: { itemId: id } });
         }

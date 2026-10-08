@@ -15,6 +15,7 @@ import { PortalError } from "./portal-policy";
 import { normalizeScripture } from "./media-scripture";
 import { SCRIPTURE_REGISTRY_VERSION } from "./scripture-registry";
 import type { PostContext, PostTx } from "./post-access";
+import { mediaTranscript } from "./media-transcript";
 export const mediaPublicSelect = {
   id: true,
   version: true,
@@ -40,11 +41,19 @@ export const mediaPublicSelect = {
   ownerChurch: { select: { id: true, name: true } },
   owner: { select: { name: true, username: true } }
 } satisfies Prisma.MediaCatalogItemSelect;
-export async function mediaReadableIn(tx: PostTx, c: PostContext, id: string) {
+const mediaDetailSelect = {
+  ...mediaPublicSelect,
+  transcriptText: true,
+  chapters: true
+} satisfies Prisma.MediaCatalogItemSelect;
+async function mediaIdReadableIn(tx: PostTx, c: PostContext, id: string) {
   const rows = await tx.$queryRaw<{ id: string }[]>(
     Prisma.sql`SELECT m.id FROM "MediaCatalogItem" m WHERE m.id=${id} AND (${mediaReadableSql(c)})`
   );
-  return rows.length
+  return rows.length > 0;
+}
+export async function mediaReadableIn(tx: PostTx, c: PostContext, id: string) {
+  return (await mediaIdReadableIn(tx, c, id))
     ? tx.mediaCatalogItem.findUnique({
         where: { id },
         select: mediaPublicSelect
@@ -53,6 +62,26 @@ export async function mediaReadableIn(tx: PostTx, c: PostContext, id: string) {
 }
 export type MediaPublic = NonNullable<
   Awaited<ReturnType<typeof mediaReadableIn>>
+>;
+async function mediaDetailIn(tx: PostTx, c: PostContext, id: string) {
+  if (!(await mediaIdReadableIn(tx, c, id))) return null;
+  const row = await tx.mediaCatalogItem.findUnique({
+    where: { id },
+    select: mediaDetailSelect
+  });
+  return row
+    ? {
+        ...row,
+        ...mediaTranscript(
+          row.transcriptText,
+          row.chapters,
+          row.durationSeconds
+        )
+      }
+    : null;
+}
+export type MediaDetail = NonNullable<
+  Awaited<ReturnType<typeof mediaDetailIn>>
 >;
 export function mediaCatalogRead(
   db: PrismaClient,
@@ -109,7 +138,7 @@ export function mediaCatalogRead(
             AND: [{ id: postId(query.get("id")) }, mediaManagementWhere(c)]
           },
           select: {
-            ...mediaPublicSelect,
+            ...mediaDetailSelect,
             state: true,
             ownerChurchId: true,
             sourceState: true,
@@ -133,6 +162,11 @@ export function mediaCatalogRead(
           churches,
           item: {
             ...row,
+            ...mediaTranscript(
+              row.transcriptText,
+              row.chapters,
+              row.durationSeconds
+            ),
             canPublish: mediaCanPublish(c, {
               ownerChurchId: row.ownerChurchId,
               ownerId: row.ownerChurchId ? null : actorId
@@ -164,7 +198,7 @@ export function mediaCatalogRead(
       return { actorId, churches, items: rows, total, page };
     }
     if (view === "detail") {
-      const item = await mediaReadableIn(tx, c, postId(query.get("id")));
+      const item = await mediaDetailIn(tx, c, postId(query.get("id")));
       if (!item) throw mediaUnavailable();
       return { actorId, item };
     }
@@ -207,7 +241,7 @@ export function mediaCatalogRead(
     const contains = (value: string) => `%${value.replace(/[\\%_]/g, "\\$&")}%`;
     if (q)
       clauses.push(
-        Prisma.sql`(m.title ILIKE ${contains(q)} OR m.description ILIKE ${contains(q)})`
+        Prisma.sql`(m.title ILIKE ${contains(q)} OR m.description ILIKE ${contains(q)} OR m."transcriptText" ILIKE ${contains(q)})`
       );
     if (format) clauses.push(Prisma.sql`m.format=${format}`);
     if (speaker)

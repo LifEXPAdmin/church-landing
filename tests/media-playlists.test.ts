@@ -627,6 +627,7 @@ async function fixtureEntries(playlistId: string, count: number) {
       ...row,
       id,
       details: row.details ?? Prisma.JsonNull,
+      chapters: row.chapters ?? [],
       scriptureRanges: row.scriptureRanges ?? []
     }))
   });

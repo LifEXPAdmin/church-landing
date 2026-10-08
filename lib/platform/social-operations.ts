@@ -4,6 +4,7 @@ import { withOwnedSession } from "./account-sessions";
 import { PortalError } from "./portal-policy";
 import { type PostTx } from "./post-access";
 import { postId } from "./post-input";
+import { MEDIA_COMMAND_MAX_BYTES } from "./media-transcript";
 export type SocialReceipt = { id: string; version: number; message: string };
 export function socialInput(input: Record<string, unknown>, allowed: string[]) {
   if (
@@ -26,7 +27,7 @@ export function socialKey(value: unknown) {
     );
   return key;
 }
-function digest(value: unknown): string {
+function digest(value: unknown, maximumBytes: number): string {
   function sorted(v: unknown, depth = 0): unknown {
     if (depth > 8) throw new PortalError(400, "Too many nested fields.");
     return Array.isArray(v)
@@ -40,7 +41,7 @@ function digest(value: unknown): string {
         : v;
   }
   const body = JSON.stringify(sorted(value));
-  if (Buffer.byteLength(body) > 65536)
+  if (Buffer.byteLength(body) > maximumBytes)
     throw new PortalError(400, "These entries are too large.");
   return createHash("sha256").update(body).digest("hex");
 }
@@ -54,7 +55,10 @@ export function socialCommand(
   policyAccess: "exclusive" | "shared" = "exclusive"
 ) {
   const key = `${domain}:${socialKey(input.mutationId)}`,
-    fingerprint = digest(input);
+    fingerprint = digest(
+      input,
+      domain === "media-catalog" ? MEDIA_COMMAND_MAX_BYTES : 65536
+    );
   return withOwnedSession(
     db,
     token,
