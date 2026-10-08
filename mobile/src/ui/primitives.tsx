@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type Ref } from "react";
 import {
   Platform, Pressable, ScrollView, Text as NativeText, TextInput, View,
   type TextProps, type TextInputProps, type ViewProps, type ScrollViewProps
@@ -40,13 +40,13 @@ export function Button({ label, onPress, secondary = false, disabled = false, se
   </Pressable>;
 }
 
-export function Input({ label, error, style, onFocus, onBlur, ...props }:
-  Omit<TextInputProps, "allowFontScaling" | "maxFontSizeMultiplier"> & { label: string; error?: string }) {
+export function Input({ label, error, inputRef, style, onFocus, onBlur, ...props }:
+  Omit<TextInputProps, "allowFontScaling" | "maxFontSizeMultiplier"> & { label: string; error?: string; inputRef?: Ref<TextInput> }) {
   const { theme } = useTheme();
   const [focused, setFocused] = useState(false);
   return <View style={{ gap: theme.space.inline, minWidth: 0 }}>
     <Text variant="small">{label}</Text>
-    <TextInput {...props} allowFontScaling accessibilityLabel={props.accessibilityLabel ?? label}
+    <TextInput {...props} ref={inputRef} allowFontScaling accessibilityLabel={props.accessibilityLabel ?? label}
       accessibilityHint={error ?? props.accessibilityHint}
       accessibilityState={{ ...props.accessibilityState, disabled: props.editable === false || props.accessibilityState?.disabled }}
       placeholderTextColor={theme.color.muted}

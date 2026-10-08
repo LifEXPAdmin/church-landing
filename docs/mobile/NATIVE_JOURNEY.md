@@ -62,8 +62,33 @@ fixture build; this is JavaScript size, not download size or a performance resul
 
 Password entry uses the canonical native input contract. Values stay in the
 short-lived form and are cleared before submission. A session-generation change
-or concealment unmounts the form. Fixture mode presents a demo button and never
-asks for real credentials. Native activation remains a separate acceptance gate.
+or concealment unmounts the form. Email Next focuses Password without dismissing
+the keyboard; Password Go and the button share the same submit handler. Each
+invalid attempt clears the password and announces generic feedback on iOS while
+the signed-out form is foregrounded. Email is trimmed; passwords are preserved.
+The canonical runtime remains responsible for admission and pending requests.
+
+Fixture mode starts with a demo button and can explicitly show that same password
+form with the fixed fictional credentials and a warning against real account
+details. It retains the fictional banner and memory-only runtime. Returning to
+the demo button unmounts the form and discards drafts. The preview choice also
+resets after concealment or a session-generation change. This choice is local to
+the fixture screen and cannot enable native mode, change an endpoint or accept a
+backend. Native activation remains a separate acceptance gate.
+
+The password-entry checkpoint passes 231 mobile tests, including retained-handler
+regressions for a prior session generation and an unmounted form. Removing the
+new lifecycle guard reproduces both failures. Component handler tests use a
+controlled JavaScript harness, not a React or native renderer. On the Xcode 27
+Release Simulator build, iPhone SE with iOS 18.3.1 passed software-keyboard Next
+and Go, masked entry, repeated invalid submission, fictional rejection and
+successful sign-in, sign-out, and draft clearing after leaving or backgrounding
+the form. Controls remain reachable by scrolling with the largest accessibility
+text size and the keyboard visible. Entries used accessibility automation with
+fixed fictional values; password-manager autofill, physical keyboard behavior,
+VoiceOver announcement delivery and native pending-cancellation interaction
+remain separate checks. The 1,735,762-byte Hermes bundle adds 2,175 JavaScript
+bytes to the application-owner checkpoint, without a performance claim.
 
 The feed replaces each finite page. Post detail always uses a new authorized
 read. Content notes conceal text, scripture and link metadata until reveal.
