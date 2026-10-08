@@ -187,6 +187,19 @@ minimum, physical devices or complete accessibility. Its private receipt keeps
 the tested executable identity, screenshots, observations and remaining gates
 separate from the earlier build and iOS 27 acceptance evidence.
 
+Further primitive checks used that retained small-screen device and unchanged
+executable. System appearance updated the open app, input and software keyboard,
+and the app followed a changed appearance after a confirmed Home transition.
+Explicit light and dark choices overrode the opposite device setting; restoring
+the system choice restored the device appearance. Multiline sample text remained
+editable with the software keyboard, and native selection handles and the edit
+menu appeared in both themes. A software key replaced the selected word. Reading
+controls updated their visual and accessibility selected state while the keyboard
+remained open. These observations cover the sample control only: its lower border
+was at the keyboard edge, so complete keyboard clearance, password forms,
+hardware-keyboard traversal and VoiceOver behavior still need separate acceptance.
+No theme or primitive source change was required by these checks.
+
 Separately verify the real journey against an accepted nonproduction
 HTTPS endpoint with fictional accounts. Source checks, Hermes exports, native
 compilation, Simulator behavior and physical-device acceptance are distinct.
