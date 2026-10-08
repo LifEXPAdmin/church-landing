@@ -8,7 +8,7 @@ import {
 import { resolve, relative, isAbsolute } from "node:path";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 assert.ok(

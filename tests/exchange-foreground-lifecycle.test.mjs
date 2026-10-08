@@ -504,7 +504,12 @@ function favoriteEnvironment() {
   };
   h.mount(() => {
     state.readVisible = true;
-    state.guard = guard.PrivateSnapshotGuard(guardProps);
+    const wrapper = guard.PrivateSnapshotGuard(guardProps);
+    // Resolve the owner-keyed component before executing its recovery Provider.
+    state.guard =
+      wrapper.props.owner === owner && typeof wrapper.type === "function"
+        ? wrapper.type(wrapper.props)
+        : wrapper;
     // Execute the real recovery Provider so the actual hook registers with the
     // actual enclosing guard. Visibility propagation is explicit in this harness.
     state.guard.type(state.guard.props);
