@@ -9,6 +9,7 @@ const invalidMessage = "Enter your email and a password of 8 to 128 characters."
 /** The signed-out owner unmounts this form on concealment or generation change. */
 export function PasswordSignIn({ runtime }: { runtime: ReturnType<typeof createNativeRuntime> }) {
   const [email, setEmail] = useState(""), [password, setPassword] = useState(""), [invalid, setInvalid] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const passwordInput = useRef<TextInput>(null);
   const generation = useRef(runtime.session.getSnapshot().generation), mounted = useRef(true);
   useEffect(() => {
@@ -21,6 +22,7 @@ export function PasswordSignIn({ runtime }: { runtime: ReturnType<typeof createN
   }
   function submit() {
     if (!available()) return;
+    setPasswordVisible(false);
     let input;
     try { input = nativePasswordInput.parse({ email: email.trim(), password }); }
     catch {
@@ -38,9 +40,11 @@ export function PasswordSignIn({ runtime }: { runtime: ReturnType<typeof createN
       autoCapitalize="none" autoCorrect={false} textContentType="username" autoComplete="username"
       returnKeyType="next" submitBehavior="submit"
       onSubmitEditing={() => { if (available()) passwordInput.current?.focus(); }} />
-    <Input label="Password" inputRef={passwordInput} value={password} onChangeText={setPassword} maxLength={128} secureTextEntry
+    <Input label="Password" inputRef={passwordInput} value={password} onChangeText={setPassword} maxLength={128} secureTextEntry={!passwordVisible}
       autoCapitalize="none" autoCorrect={false} textContentType="password" autoComplete="current-password"
       returnKeyType="go" onSubmitEditing={submit} />
+    <Button label={passwordVisible ? "Hide password" : "Show password"} secondary selected={passwordVisible}
+      onPress={() => { if (available()) setPasswordVisible(current => !current); }} />
     {invalid ? <Text accessibilityLiveRegion="polite" tone="error">{invalidMessage}</Text> : null}
     <Button label="Sign in" onPress={submit} />
   </>;
