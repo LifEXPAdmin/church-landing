@@ -923,7 +923,7 @@ const run = async () => {
   );
 
   // The first four independent groups are complete. Start a separate original
-  // owner/document for the inseparable retry/revocation/discard chain below.
+  // owner/document for the inseparable original retry/revocation chain below.
   // No old owner's retained private frame or request is adopted by this actor.
   assert.equal(restoredGrants.size, 0);
   assert.equal(await retry.count(), 0);
@@ -1155,6 +1155,39 @@ const run = async () => {
   assert.notEqual(nextAudit.requestKey, firstAudit.requestKey);
   await effectCount(6);
   assert.equal(downloads.length, 2);
+  // The original retry chain and its deliberate next export are complete.
+  // Discard is an independent scenario: preserve B's receipts and use a fresh
+  // fictional owner, rather than exhausting its real authenticator budget.
+  assert.equal(restoredGrants.size, 0);
+  assert.equal(await retry.count(), 0);
+  assert.equal(await discard.count(), 0);
+  assert.equal(await page.evaluate(() => window.__metricsDocument), "original");
+  await page.goto("about:blank");
+  actor = await createPortalActor(db, "metricdiscard");
+  cohortOwners.push(actor.id);
+  await seedOperatorGrants(db, actor, [
+    "VIEW_PLATFORM_METRICS",
+    "EXPORT_PLATFORM_METRICS"
+  ]);
+  const discardGrants = await db.platformOperatorGrant.findMany({
+    where: { userId: actor.id }
+  });
+  viewGrant = discardGrants.find((g) => g.capability === "VIEW_PLATFORM_METRICS");
+  exportGrant = discardGrants.find(
+    (g) => g.capability === "EXPORT_PLATFORM_METRICS"
+  );
+  assert.ok(viewGrant && exportGrant);
+  await confirmWork(actor, "export-metrics");
+  await signIn(actor);
+  const discardPage = await page.goto(config.origin + growthPath);
+  assert.equal(discardPage.status(), 200);
+  await valuesAre(reportDates);
+  assert.equal(await page.evaluate(() => window.__metricsDocument), undefined);
+  await from.fill(draftDates.from);
+  await through.fill(draftDates.through);
+  await page.evaluate(() => {
+    window.__metricsDocument = "original";
+  });
   let discardBody;
   const removeDiscard = register(command, async (route) => {
     discardBody = route.request().postData();
@@ -1246,9 +1279,9 @@ const run = async () => {
         })
       )
     ),
-    [4, 3]
+    [4, 2, 1]
   );
-  assert.equal(mfaCommands.size, 2);
+  assert.equal(mfaCommands.size, 3);
   assert.ok([...mfaCommands.values()].every((n) => n <= 10));
   assert.deepEqual(errors, []);
   assert.deepEqual(routeErrors, []);
@@ -1284,14 +1317,14 @@ const run = async () => {
     },
     sessionActivityWrites,
     fixtureEffects: {
-      createdActors: 3,
-      seededOperatorGrants: 4,
-      independentOwnerCohorts: 2,
+      createdActors: 4,
+      seededOperatorGrants: 6,
+      independentOwnerCohorts: 3,
       metricExportOperations: 7,
       grantRevokeRestoreUpdates: grantUpdates,
       sharedMetricConfigurationWrites: 0,
       otherActorMetricFlagWrites: 0,
-      localVerificationMessages: 3
+      localVerificationMessages: 4
     },
     authenticatorCommandsByCohort: cohortOwners.map(
       (id) => mfaCommands.get(id) ?? 0
@@ -1303,7 +1336,7 @@ const run = async () => {
       "Held/lost responses and 401/403/404/429/503 are explicit response simulations. Actual owner checks, grant revocation, exports, duplicate 409 and audit hashes use the isolated server and database.",
       "Aggregate correctness beyond displayed current population, selected report period and downloaded audit hash remains covered by existing Metrics service/browser suites.",
       "Actors use existing test-sink signup helpers, including their existing isolated authentication-rate fixture reset. No shared metric configuration or unrelated measurement choices are changed.",
-      "Two independent fictional owner cohorts use canonical authenticator commands with the current enforced policy; each retry/revocation chain keeps its original actor. This is isolated browser evidence, not provider or release acceptance."
+      "Three independent fictional owner cohorts use canonical authenticator commands with the current enforced policy; each retry/revocation chain keeps its original actor. This is isolated browser evidence, not provider or release acceptance."
     ]
   });
   console.log("ADMIN_METRICS_PRIVACY_BROWSER_PASS " + results.length);

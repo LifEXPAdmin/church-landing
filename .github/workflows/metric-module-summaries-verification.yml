@@ -159,6 +159,10 @@ jobs:
                 const privacy = suite === "admin-metrics-privacy-browser";
                 const receiptsValid = privacy
                   ? v.fixtureEffects?.metricExportOperations === 7 &&
+                    v.fixtureEffects?.createdActors === 4 &&
+                    v.fixtureEffects?.seededOperatorGrants === 6 &&
+                    v.fixtureEffects?.independentOwnerCohorts === 3 &&
+                    v.fixtureEffects?.localVerificationMessages === 4 &&
                     v.fixtureEffects?.sharedMetricConfigurationWrites === 0 &&
                     v.fixtureEffects?.otherActorMetricFlagWrites === 0 &&
                     count(v.browserWrites) === 13 &&
@@ -171,7 +175,7 @@ jobs:
                   : v.authenticatorCommandCounts;
                 const mfaValid =
                   Array.isArray(mfaCounts) &&
-                  mfaCounts.length === (privacy ? 2 : 1) &&
+                  mfaCounts.length === (privacy ? 3 : 1) &&
                   mfaCounts.every((n) => Number.isSafeInteger(n) && n > 0 && n <= 10);
                 const mutationKeys = ["all", "metricExports", "sessionActivity", "unexpected"];
                 const mutationCounts = privacy
