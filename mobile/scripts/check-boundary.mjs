@@ -28,4 +28,5 @@ function walk(path) { for (const item of readdirSync(path, { withFileTypes: true
   if (item.isDirectory()) walk(child); else if (/\.tsx?$/.test(item.name)) inspect(child);
 } }
 walk(join(mobile, "src")); inspect(join(mobile, "App.tsx")); inspect(join(mobile, "index.ts"));
+inspect(join(mobile, "application-configuration.js"));
 console.log("Mobile boundary check passed for " + count + " authored modules.");

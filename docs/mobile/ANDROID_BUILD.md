@@ -40,6 +40,23 @@ does not establish those results, real staging authorization, physical-device
 acceptance, accessibility or Play distribution. Release identifiers, signing
 ownership and the production configuration remain separate owner gates.
 
+## Guarded application startup
+
+The Android checkout consumes the shared application owner. An absent application
+mode or `EXPO_PUBLIC_APPLICATION_MODE=fixture` selects the fictional journey.
+The accepted native configuration is currently `null`, so `native` and invalid
+modes show an unavailable screen without opening a credential form or binding
+native transport and storage. Configuration cannot provide an arbitrary endpoint
+through an environment variable. The shared owner disposes its own runtime on
+cleanup, and Android keyboard-first Back applies to either supported owner.
+
+Metro separates cached transforms by application mode and resolved selection.
+The existing Android build launcher still requires the fictional configuration;
+this source integration does not enable native-mode APK generation. Real native
+acceptance requires the canonical nonproduction HTTPS receipt, reviewed launcher
+admission and newly generated or inspected manifests without fixture networking
+exceptions, followed by the full Android sign-in and sign-out journey.
+
 ## Source verification and dependency installation
 
 The Android checkout consumes the canonical root security and mobile CI tooling.
