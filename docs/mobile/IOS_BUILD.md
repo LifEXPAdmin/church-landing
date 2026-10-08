@@ -220,3 +220,60 @@ It compiles the Foundation-only policy under Swift 6 with warnings as errors and
 retains its executable and cache in a fresh generated directory. This check is
 separate from the Expo/UIKit build and actual snapshot acceptance described in
 the [native journey](NATIVE_JOURNEY.md#native-ios-privacy-cover).
+
+The subsequent password-visibility checkpoint consumes the reviewed shared
+Show/Hide form and handler tests without changing the session or native cover.
+All 244 mobile tests, full and focused TypeScript, lint, boundary checks and an
+unsigned Xcode 27 Release build pass. The 1,741,115-byte Hermes bundle adds
+473 JavaScript bytes to the privacy checkpoint, without a performance claim.
+
+On iPhone SE with iOS 18.3.1 and on iOS 27, visible masking, explicit reveal,
+full-value preservation and keyboard use were observed. On iOS 27 the initial
+keyboard covered the toggle; scrolling dismissed the keyboard, and refocusing
+the repositioned field left the toggle usable above it. Both versions moved a
+selected range to the end after Hide then Show. A software key appended there
+without losing the existing value. Selection preservation is not established.
+
+The SE run also verified software Next/Go, invalid submission clearing and
+remasking, valid fictional sign-in through the button, sign-out, and fresh empty
+masked forms after replacement. Both Simulators concealed a revealed form in
+the app switcher and discarded its draft on return. The iOS 27 transition began
+with the software keyboard visibly open; that condition was not captured for
+the SE switcher sequence. Screenshots and accessibility observations establish
+bounded states, not every intermediate frame. VoiceOver speech, actual autofill,
+physical-device, minimum-version and real-account acceptance remain open.
+These build results apply to the recorded dependency graph; later dependency
+repairs require their own source and native validation.
+
+Dependency-integration checkpoint, 8 October 2026: the reviewed locked root and
+mobile graphs passed fresh guarded installation and the existing root patch
+checks. All 248 mobile tests, 54 focused root regressions, 92 portable checks and
+seven shared-core tests pass, alongside types, mobile lint, boundary and Expo
+compatibility checks. Root lint reports no errors and 39 warnings in unchanged
+QA scripts. The root audit reports zero vulnerabilities; the mobile audit still
+fails with four high findings through node-forge. That gate remains open.
+
+A fresh unsigned Xcode 27 Release build installed on the retained iPhone SE
+Simulator with iOS 18.3.1. Its installed JavaScript, native executable and
+Info.plist match the completed build receipt. The 1,741,115-byte Hermes bundle is
+unchanged from the password-visibility checkpoint. The development-only diagnostic
+module and its source metadata are absent from this Release bundle; equal
+JavaScript hashes do not indicate stale embedded provenance. Build receipts and
+exact source hashes retain the dependency and native artifact identities.
+
+The bounded native smoke check observed password reveal/hide, fictional sign-in,
+feed and post detail, Back to feed, an opaque app-switcher cover and a resumed
+feed. UI automation timed out during this session. A later screenshot confirms
+the resumed feed; these
+tool timeouts do not establish an app hang. No sign-out or fresh-form sequence
+was attempted in that session. Software-keyboard, iOS 27, stalled-JavaScript and real
+backend behavior were not reverified in this run. The earlier password and
+privacy observations remain separate historical evidence, with their original
+scope and limitations.
+
+A separate follow-up on the same verified build recovered UI automation,
+signed in with the demo account, signed out, and reopened empty email and password
+fields with Show password available. The sign-out confirmation describes the
+fixture's in-memory response. The software keyboard was not opened. This adds
+only the sign-out and fresh-form observation; both managed sessions shut down
+successfully.
