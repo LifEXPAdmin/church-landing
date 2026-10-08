@@ -83,6 +83,13 @@ async function fixture() {
         capability: "MANAGE_EXCHANGE_LISTINGS"
       }
     });
+    await db.churchCapabilityGrant.create({
+      data: {
+        churchId: f.churchA.id,
+        userId: f.val.id,
+        capability: "MODERATE_EXCHANGE_LISTINGS"
+      }
+    });
     await db.socialPreferences.upsert({
       where: { ownerId: f.ada.id },
       create: { ownerId: f.ada.id, contactRequests: "EVERYONE" },
