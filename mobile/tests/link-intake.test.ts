@@ -58,6 +58,27 @@ test("Android delivers a warm intent while paused before foreground verification
   assert.equal(f.values.at(-1), "opened");
 });
 
+test("iPhone first Open confirmation delivers a guest link during concealment", async t => {
+  const f = fixture(t); await f.runtime.setForeground(true); f.start();
+  // Observed native order: a previously active guest conceals for the OS
+  // confirmation, receives its URL, then resumes through verification.
+  await f.runtime.setForeground(false); f.send(prayer); await flush();
+  assert.equal(f.runtime.navigation.getSnapshot().hasPendingReturn, false);
+  assert.equal(f.runtime.navigation.getSnapshot().destination, null);
+  assert.equal(f.runtime.reading.getSnapshot().kind, "concealed");
+  assert.equal(f.values.filter(value => value !== null).length, 0);
+  await f.runtime.setForeground(true); await flush();
+  assert.equal(f.runtime.navigation.getSnapshot().hasPendingReturn, true);
+  assert.equal(f.values.at(-1), "sign-in-required");
+  await f.signIn();
+  const reading = f.runtime.reading.getSnapshot();
+  assert.equal(reading.kind, "post");
+  if (reading.kind === "post") {
+    assert.equal(reading.post.id, "fixture-prayer");
+    assert.equal(reading.revealed, false);
+  }
+});
+
 for (const delivery of ["before", "during", "after"] as const) {
   test(`cold launch URL resolving ${delivery} the first verification reaches contextual sign-in`, async t => {
     const f = fixture(t); f.start();
