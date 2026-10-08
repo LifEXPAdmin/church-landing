@@ -64,7 +64,9 @@ await context.route("**/*", (route) => {
 });
 const page = await context.newPage(),
   errors = [],
-  results = [];
+  results = [],
+  commands = [];
+let sessionActivityPosts = 0;
 page.setDefaultTimeout(20000);
 page.on("pageerror", (error) => errors.push(error.message));
 const output = fixtureDir + "/calendar-sharing-browser-" + Date.now();
@@ -81,6 +83,7 @@ const go = async (path) => {
 const { randomUUID } = await import("node:crypto");
 const { calendarCommand } =
   await import("../lib/platform/calendar-commands.ts");
+let sessionOwner = null;
 const signIn = async (actor) => {
   await context.clearCookies();
   await context.addCookies([
@@ -93,6 +96,7 @@ const signIn = async (actor) => {
       sameSite: "Lax"
     }
   ]);
+  sessionOwner = actor.id;
 };
 const folder = async () => {
   await go("/platform/settings/calendar");
@@ -131,10 +135,34 @@ try {
   });
   const calendarPath = "/platform/calendars/" + calendar.id;
   const eventPath = "/platform/events/" + occurrence.id;
-  const commands = [];
   page.on("request", (request) => {
-    if (request.method() === "POST")
-      commands.push(new URL(request.url()).pathname);
+    if (request.method() !== "POST") return;
+    const url = new URL(request.url());
+    const headers = request.headers();
+    let body;
+    try {
+      body = request.postDataJSON();
+    } catch {
+      // Malformed activity requests remain unexpected commands below.
+    }
+    if (
+      url.origin === config.origin &&
+      url.pathname === "/api/platform/session" &&
+      url.search === "" &&
+      headers.origin === config.origin &&
+      headers["content-type"] === "application/json" &&
+      sessionOwner !== null &&
+      headers["x-expected-account"] === sessionOwner &&
+      body !== null &&
+      typeof body === "object" &&
+      !Array.isArray(body) &&
+      Object.keys(body).length === 1 &&
+      body.activity === "foreground"
+    ) {
+      sessionActivityPosts++;
+      return;
+    }
+    commands.push(url.pathname);
   });
   await signIn(owner);
   await folder();
@@ -207,7 +235,7 @@ try {
     document.documentElement.style.fontSize = "";
   });
   ok(
-    "Settings entry, empty month, actual redacted/full source previews, keyboard expansion and enlarged text; previewing writes nothing"
+    "Settings entry, empty month, actual redacted/full source previews, keyboard expansion and enlarged text; previewing changes no sharing grants"
   );
 
   await go(eventPath);
@@ -340,6 +368,7 @@ try {
     );
   }
   await context.clearCookies();
+  sessionOwner = null;
   await go(eventPath);
   assert.equal(
     await page
@@ -366,6 +395,7 @@ try {
         browserErrors: errors,
         externalRequests: blockedRequests,
         fixtureCommands: commands.length,
+        sessionActivityPosts,
         productionWrites: 0
       },
       null,
@@ -393,6 +423,8 @@ try {
         url: page.url(),
         results,
         errors,
+        commands,
+        sessionActivityPosts,
         overflow: await page.evaluate(() =>
           [...document.querySelectorAll("body *")]
             .map((e) => ({

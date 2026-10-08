@@ -490,14 +490,23 @@ test("built resource previews never expand for owners and discard old PNG copy a
   const oldImages = await Promise.all(
     f.records.map(async (record) => (await page(record.path)).tags["og:image"])
   );
-  await db.exchangeListing.update({
-    where: { id: f.listing.id },
-    data: {
-      audience: "CHURCH",
-      audienceChurchId: f.church.id,
-      title: "PRIVATE HTTPS TABLE"
-    }
-  });
+  await db.$transaction([
+    db.churchConnection.create({
+      data: {
+        userId: f.author.id,
+        churchId: f.church.id,
+        state: "APPROVED"
+      }
+    }),
+    db.exchangeListing.update({
+      where: { id: f.listing.id },
+      data: {
+        audience: "CHURCH",
+        audienceChurchId: f.church.id,
+        title: "PRIVATE HTTPS TABLE"
+      }
+    })
+  ]);
   await db.mediaCatalogItem.update({
     where: { id: f.media.id },
     data: { audience: "MEMBERS", title: "PRIVATE HTTPS RECORDING" }

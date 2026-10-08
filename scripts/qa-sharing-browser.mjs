@@ -270,6 +270,13 @@ try {
       timeZone: "UTC"
     }
   });
+  // The church overview lists the next 30 days, so keep this fixture upcoming.
+  const eventStart = new Date();
+  eventStart.setUTCDate(eventStart.getUTCDate() + 7);
+  eventStart.setUTCHours(10, 0, 0, 0);
+  const eventEnd = new Date(eventStart.getTime() + 60 * 60 * 1000);
+  const startLocal = eventStart.toISOString().slice(0, 16);
+  const endLocal = eventEnd.toISOString().slice(0, 16);
   const event = await db.calendarEvent.create({
     data: {
       calendarId: calendar.id,
@@ -277,18 +284,18 @@ try {
       title: "PUBLIC EVENT " + marker,
       visibility: "PUBLIC",
       timeZone: "UTC",
-      startLocal: "2026-10-01T10:00",
-      endLocal: "2026-10-01T11:00",
+      startLocal,
+      endLocal,
       occurrences: {
         create: {
           ordinal: 0,
           title: "PUBLIC EVENT " + marker,
           allDay: false,
           timeZone: "UTC",
-          startLocal: "2026-10-01T10:00",
-          endLocal: "2026-10-01T11:00",
-          startAt: new Date("2026-10-01T10:00Z"),
-          endAt: new Date("2026-10-01T11:00Z")
+          startLocal,
+          endLocal,
+          startAt: eventStart,
+          endAt: eventEnd
         }
       }
     },
