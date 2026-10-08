@@ -104,6 +104,39 @@ signing and distribution remain open. The canonical dependency checkpoint reduce
 the mobile audit to four high findings, which remain a failing gate; this layout
 change does not repair or waive that gate.
 
+## JavaScript interruption checkpoint
+
+On 8 October 2026, the native privacy source `a73860a3` was verified with its
+unchanged development APK, SHA256
+`ddf901c9db76943a76877a0fa07e1d30cd5c6ac538ce91bc6de5a030cbec5b94`.
+A separate private test-only instrumentation APK used the same local debug signer.
+It attached without restarting the already prepared fictional app. No application
+rebuild, JavaScript hook, debugger or whole-process pause was used.
+
+Two independent cases held the actual React Native `mqt_v_js` queue for 15,000
+milliseconds: a revealed fictional church prayer, and a focused, intentionally
+visible fictional password with the keyboard open. A queued JavaScript sentinel
+could not run during either hold. Each case recorded 37 native main-thread
+heartbeats, actual Activity pause/resume and window focus loss/return while
+JavaScript remained blocked. The application process stayed the same within each
+case. The test latch, watchdog and native-main waits were bounded.
+
+On return, the generic native cover remained visible and descendant accessibility
+and focus stayed blocked before the JavaScript queue resumed. Each case recorded
+34 covered, focused native heartbeats during that interval; captured frames show
+the generic cover and no old content or keyboard. After release, the sentinel ran
+and the cover cleared following the shared session check. The prayer returned to
+the freshly checked feed without its old reveal. The sign-in form closed; opening
+it again showed empty inputs and a masked password field.
+
+These observations resolve the stalled-JavaScript gate only for this API 36
+fictional first journey. Reading native accessibility flags is not physical
+TalkBack acceptance. Exact marker detach/reattach, older Android, additional
+windows, real staging sessions, broader process/battery behavior, dependency
+security, signing and store acceptance remain open. The test package was removed,
+the original emulator settings restored and owned runtimes stopped. The installed
+target APK still matched the retained binary after the test.
+
 ## Source verification and dependency installation
 
 The Android checkout consumes the canonical root security and mobile CI tooling.
