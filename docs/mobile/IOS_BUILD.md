@@ -145,7 +145,10 @@ sign-in, feed, detail, explicit reveal, pagination, retry, empty feed, sign-out
 and foreground recovery were observed on iOS 27. Cold plain restart cleared the
 in-memory session. Cold and repeat warm app links reached the intended post
 after sign-in. The first OS link-confirmation interruption required reopening
-the link; this remains a recorded limitation, with session invalidation preserved.
+the link in that earlier build. The later shared admission repair and ordinary
+Release verification resolve that fictional-journey case; see the
+[first-confirmation diagnosis](NATIVE_NAVIGATION.md#iphone-first-confirmation-diagnosis-8-october-2026).
+Session invalidation remains preserved.
 Native secure-store verification exposed missing Simulator entitlements and
 prompted the app-only linker identity above. The rebuilt app launched and its
 real native Keychain write, read and removal probe passed. All 110 inspected
