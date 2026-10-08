@@ -242,6 +242,11 @@ try {
   await signIn(viewer);
   await go("/platform?feed=latest&mode=list");
   const chosenPost = posts[4];
+  // Reserved offscreen cards validate their source only when visible. Start
+  // at the reading position that the reader restores after browser Back.
+  await page
+    .locator(`[data-post="${chosenPost.id}"]`)
+    .evaluate((node) => node.scrollIntoView({ block: "start", behavior: "instant" }));
   await page.getByText(chosenPost.content, { exact: true }).waitFor();
   await page
     .getByText(chosenPost.content, { exact: true })

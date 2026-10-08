@@ -1,5 +1,25 @@
 # Interrupted streaming hydration
 
+## Next 15.5.27 compatibility, 8 October 2026 UTC
+
+The maintained security patch adopts Next 15.5.27. Its four bundled renderer
+files have exactly the same original SHA256 values as the reviewed 15.5.25
+renderers below, and still need the interrupted-host-hydration backport.
+Only the installer's exact version guard/comment and test fixture version
+change. Patch logic, whole-file pins, single insertion checks, cached-install
+verification, cache namespace and emitted-code guard remain unchanged.
+
+All five installer tests pass on a clean dependency install, including rejected
+unknown versions and altered renderer/cached-patch bytes. The production build
+verifies the actual emitted repair. Final canonical browser acceptance passes
+33 groups with zero page errors, including twelve streamed Public reloads and
+cold hydration across the four feeds. Thirteen actual HTTPS cases also pass
+with zero skips. See
+[dependency remediation](DEPENDENCY_REMEDIATION.md) for current runtime
+acceptance and the remaining security/release gates. The original repair and
+live acceptance below remain their dated evidence.
+
+
 September 15, 2026 UTC · verified live in 2026.09.15.1 / ee6071c.
 
 Production-build fixture diagnostics reproduced React error 418 while hydrating
