@@ -9,7 +9,6 @@ import {
   type ExchangeQuery
 } from "./exchange-page-ui";
 import {
-  ExchangeContactChoice,
   ExchangeHandoffActions,
   ExchangeInquiryForm
 } from "./exchange-handoff-controls";
@@ -68,42 +67,6 @@ export async function ExchangeInquiryEntry({
       <ExchangeUnavailable
         error={error}
         href={`/platform/exchange/${listingId}`}
-      />
-    );
-  }
-}
-
-export async function ExchangeContactRegion({
-  owner,
-  listingId
-}: {
-  owner: string;
-  listingId: string;
-}) {
-  try {
-    const result = await exchangeHandoffPage({ view: "contact", listingId });
-    return (
-      <PrivateSnapshotGuard
-        owner={owner}
-        url={`/api/platform/exchange?${new URLSearchParams({ view: "handoff-contact", listingId })}`}
-        checksum={exchangeChecksum(result)}
-        label="listing inquiry choices"
-      >
-        {result.contact && (
-          <ExchangeContactChoice
-            key={`${listingId}:${result.contact.version}`}
-            owner={owner}
-            contact={result.contact}
-            intake={!!result.intake}
-          />
-        )}
-      </PrivateSnapshotGuard>
-    );
-  } catch (error) {
-    return (
-      <ExchangeUnavailable
-        error={error}
-        href={`/platform/exchange/${listingId}/edit`}
       />
     );
   }

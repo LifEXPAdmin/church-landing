@@ -111,14 +111,19 @@ export function ExchangeInquiryForm({
 export function ExchangeContactChoice({
   owner,
   contact,
-  intake
+  intake,
+  onSaved
 }: {
   owner: string;
   contact: Contact;
   intake: boolean;
+  onSaved?: () => void;
 }) {
   const [confirmed, setConfirmed] = useState(false);
-  const saved = useCallback(() => setConfirmed(false), []);
+  const saved = useCallback(() => {
+    setConfirmed(false);
+    onSaved?.();
+  }, [onSaved]);
   const action = useExchangeAction(owner, confirmed, saved, true);
   return (
     <section

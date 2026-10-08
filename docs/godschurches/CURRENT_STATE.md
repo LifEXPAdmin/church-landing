@@ -31,6 +31,38 @@ headroom or 100-client capacity. Broader discovery/navigation acceptance and rea
 operator, provider and device gates remain open. See
 [deployment evidence](DEPLOYMENT_REPORT.md) and [resource budgets](RESOURCE_BUDGETS.md).
 
+## Exchange private bootstrap runtime verified, 3 October 2026 UTC
+
+[Draft PR 7](https://github.com/LifEXPAdmin/church-landing/pull/7) removes saved
+editor fields, church choices, pantry seed values and inquiry-choice snapshots
+from initial editor HTML/RSC. Server authorization recovery remains; the client
+receives identifiers and initializes only after current account-pinned reads.
+Saved-ID denials cannot become new drafts. Pantry changes require fresh review
+without replacing local entries. Inquiry controls retain uncertain requests and
+refresh clean saved state after confirmed consent or a listing version change.
+
+Application source `fc684352cc5a0d78f2e7dbde6ca64ae0b39f0520` passed 141 service
+tests and production build `eoeAU9e20hNBqibRp9LOD`. Its first hosted runtime
+passed 20 listing, eight search and two handoff browser groups, including the
+new first-read privacy and consent recovery cases, before an older handoff
+test used an undefined local origin. It did not reach pantry or HTTPS acceptance.
+Five source-test assertions also ran before asynchronous checksum completion;
+their fixture now uses real deterministic SHA-256 with an awaited WebCrypto
+comparison. All 61 focused recovery tests pass locally.
+
+Candidate `80b07c31411a474cda895fe7b95b7afe17203017` contains those harness and
+diagnostic corrections. [Full runtime 37097129768](https://github.com/LifEXPAdmin/church-landing/actions/runs/37097129768)
+passes with build `Qo74UnjISEnVkRW7G_Uvz`: 141 services, 50 browser groups across
+listing/search/handoff/pantry flows, and one HTTPS API/HTML/RSC/photo-access
+case. The owner editor's draft and archived HTML/RSC omit private fields while
+its authorized API returns them; public published reading remains intact.
+All 162 hosted source checks, copy and project types pass; the existing
+dependency audit still fails and skips later source-pipeline stages.
+[Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) preserves the
+scope and attempt evidence. Final independent review closed without findings and
+verified all 23 retained artifact hashes and sizes. No integration,
+deployment or live acceptance is claimed; designated release ownership remains.
+
 ## Exchange editor privacy runtime verified, 3 October 2026 UTC
 
 Candidate `b03105b078cf8d91ead18de8a69229dc17b6d90d` removes private editor and

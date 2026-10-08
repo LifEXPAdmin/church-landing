@@ -13,6 +13,69 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Exchange initial-payload privacy runtime verified, 3 October 2026 UTC
+
+The preceding editor repair still serialized the owner's saved snapshot into
+authorized HTML/RSC. Its browser observation confirmed the saved description in
+initial scripts. Application candidate
+`fc684352cc5a0d78f2e7dbde6ca64ae0b39f0520` removes the editor context, listing,
+pantry seed and inquiry snapshot props. Existing server authorization retains
+the initial sign-in, verification and authenticator recovery affordances.
+Only identifiers reach the client editor, which initializes after current
+account-pinned context/listing/pantry reads. Failed or obsolete first reads
+cannot reveal fields or turn a saved listing into a blank creation.
+
+The contact loader has a 15-second owned deadline and checks owner and listing
+identity before accepting its snapshot. It retains the existing snapshot guard
+and uncertain command owner across concealment and saved listing version
+refreshes. A confirmed contact receipt permits a clean reload; an uncertain
+reply does not. API versions newer than the editor's held parent version are
+accepted without a read loop. Clean consent is reviewed again after a changed
+listing version. This slice removes initial payloads; it does not claim that
+every private Exchange reader or retained inquiry DOM subtree is repaired.
+
+The first [hosted runtime 37096533512](https://github.com/LifEXPAdmin/church-landing/actions/runs/37096533512)
+passed 141 services, production build `eoeAU9e20hNBqibRp9LOD`, 20 listing and
+eight search browser groups, and the first two handoff groups. It verified
+initial HTML/script absence, held and denied first-read recovery, same-page
+draft publication followed by consent, and exact lost-response consent recovery.
+An older handoff harness then constructed a URL from an absent optional origin.
+Pantry browser and HTTPS acceptance were not reached. The source job passed
+157 of 162 checks; five new contact tests asserted before Node WebCrypto's
+worker-pool completion. These are recorded harness failures, not passing gates.
+
+Candidate `80b07c31411a474cda895fe7b95b7afe17203017` uses the validated local
+origin and a deterministic real SHA-256 fixture, checked against awaited
+WebCrypto. The controlled held-checksum deadline test remains. All 30 parent
+editor, 14 contact and 17 artist recovery cases pass locally. Full hosted
+runtime verification now passes. The corrected
+[source job 37097129777](https://github.com/LifEXPAdmin/church-landing/actions/runs/37097129777)
+passes all 162 checks, copy and project types, then fails the unchanged `braces`
+dependency audit. Later signature, whole-project lint and secret CI steps are
+skipped; changed-file local lint is a separate pass.
+
+[Final runtime 37097129768](https://github.com/LifEXPAdmin/church-landing/actions/runs/37097129768)
+verifies serving source `80b07c31411a474cda895fe7b95b7afe17203017` and build
+`Qo74UnjISEnVkRW7G_Uvz`, with 141 service cases, 20 listing, eight search, nine
+handoff and 13 pantry browser groups, and one HTTPS boundary case. Draft and
+archived owner HTML/RSC omit the saved fields and contact snapshot; the current
+owner's editor API still returns the saved data, mismatched-account requests
+fail, and public published HTML/RSC and photo access retain their intended
+behavior. Pantry replenishment initializes the reviewed church-owned draft
+without recipient history, contact or pickup data. Browser result files report
+no page errors, production writes or external sends. Browser MFA mode is off;
+the challenge-retention browser case injects its response. The HTTPS server
+restarts with MFA enforcement, without claiming an actual authenticator ceremony.
+
+The account-switch marker is absent at the first 47 ms observation and clearing
+is confirmed at 1,057 ms in this run; these are observations, not latency
+guarantees. Mobile editor, handoff and pantry screenshots were inspected, with
+narrow and enlarged-text overflow checks passing. Final independent review
+closed without findings across implementation, recovery, isolation and evidence;
+all 23 retained artifact hashes and sizes match, totaling 4,713,402 bytes.
+No complete release receipt,
+integration, production write or live acceptance is claimed.
+
 ## Exchange editor privacy and recovery, 3 October 2026 UTC
 
 The unchanged baseline `b399140ea7628b71f23ae1ad8b48dc850129dc39` retained

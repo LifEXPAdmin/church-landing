@@ -307,17 +307,67 @@ try {
     "The complete editor persists exact KWD minor units and an explicitly selected catalog town across reload"
   );
 
-  console.log(
-    "Exchange initial serialized snapshot observation: " +
-      JSON.stringify(
-        await page.evaluate(() => ({
-          retainedSavedDescription: [
-            ...document.querySelectorAll("script")
-          ].some((node) =>
-            node.textContent.includes("Fictional retained draft description")
-          )
-        }))
+  assert.equal(
+    await page.evaluate(() =>
+      [...document.querySelectorAll("script")].some((node) =>
+        node.textContent.includes("Fictional retained draft description")
       )
+    ),
+    false,
+    "Initial scripts must omit the saved private snapshot"
+  );
+  // Navigation must not briefly expose the server snapshot while its first
+  // client authority read is unresolved, nor turn a denied saved ID into create.
+  let bootstrapReadStarted = false;
+  let releaseBootstrap;
+  const bootstrapGate = new Promise((resolve) => {
+    releaseBootstrap = resolve;
+  });
+  await page.route("**/api/platform/exchange?view=editor&*", async (route) => {
+    bootstrapReadStarted = true;
+    await bootstrapGate;
+    await route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "Fictional first editor access denied" })
+    });
+  });
+  try {
+    const response = await go(`/platform/exchange/${id}/edit`);
+    assert.ok(
+      !(await response.text()).includes("Fictional retained draft description")
+    );
+    await waitUntil(() => bootstrapReadStarted);
+    assert.equal(await editor.count(), 0);
+    releaseBootstrap();
+    await page
+      .getByText("Fictional first editor access denied", { exact: true })
+      .waitFor();
+    assert.equal(await editor.count(), 0);
+    assert.equal(
+      await page
+        .getByRole("button", { name: "Save a private draft", exact: true })
+        .count(),
+      0
+    );
+  } finally {
+    releaseBootstrap();
+    await page.unrouteAll({ behavior: "wait" });
+  }
+  await page
+    .getByRole("button", { name: "Check current listing access", exact: true })
+    .click();
+  await editor
+    .getByLabel("Title (required to publish)", { exact: true })
+    .waitFor();
+  assert.equal(
+    await editor
+      .getByLabel("Title (required to publish)", { exact: true })
+      .inputValue(),
+    title
+  );
+  ok(
+    "Initial HTML and scripts omit private fields; held and denied first reads stay concealed and retry restores the saved editor"
   );
   const concealedSaveMarker = "PRIVATE SAVED WHILE CONCEALED";
   const beforeConcealedSave = await db.exchangeListing.findUniqueOrThrow({

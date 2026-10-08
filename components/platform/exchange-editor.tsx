@@ -29,6 +29,7 @@ import {
 } from "@/lib/platform/social-client";
 import { ExchangeEditorFields } from "./exchange-editor-fields";
 import { ExchangePhotos } from "./exchange-photos";
+import { ExchangeContactEntry } from "./exchange-contact-entry";
 import { ReadVisibility } from "./read-visibility";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import { settlePhotoNavigation } from "./use-photo-back-guard";
@@ -65,40 +66,29 @@ const actionLabel = (state: ExchangeState) =>
         : `Mark ${exchangeStateLabels[state].toLowerCase()}`;
 
 export function ExchangeEditor({
-  access,
-  initial = null,
-  replenishmentSeed
+  owner,
+  listingId,
+  pantryCategory
 }: {
-  access: Context;
-  initial?: Snapshot | null;
-  replenishmentSeed?: PantrySnapshot["replenishmentSeed"];
+  owner: string;
+  listingId?: string;
+  pantryCategory?: string;
 }) {
   const fieldId = useId();
-  const router = useRouter(),
-    owner = access.ownerId;
-  const [context, setContext] = useState(access),
-    [record, setRecord] = useState(initial);
-  const [fields, setFields] = useState(
-    initial?.fields ?? {
-      ...emptyExchangeFields(),
-      ...(replenishmentSeed
-        ? {
-            intent: "CHURCH_NEED" as const,
-            title: replenishmentSeed.title,
-            requestedItems: replenishmentSeed.requestedItems,
-            audience: replenishmentSeed.audience,
-            audienceChurchId:
-              replenishmentSeed.audience === "CHURCH"
-                ? replenishmentSeed.churchId
-                : ""
-          }
-        : {})
-    }
-  );
+  const router = useRouter();
+  const [context, setContext] = useState<Context>({
+      ownerId: owner,
+      churches: [],
+      publishingChurchIds: [],
+      managingChurchIds: []
+    }),
+    [record, setRecord] = useState<Snapshot | null>(null);
+  const [fields, setFields] = useState(emptyExchangeFields);
   const [placeQuery, setPlaceQuery] = useState("");
-  const [ownerChurchId, setOwnerChurchId] = useState(
-    replenishmentSeed?.churchId ?? ""
-  );
+  const [ownerChurchId, setOwnerChurchId] = useState("");
+  const initialized = useRef(false);
+  const replenishmentSeed =
+    useRef<PantrySnapshot["replenishmentSeed"]>(undefined);
   const defaultSeed = useRef<Fields | null>(null);
   const [visible, setVisible] = useState(false),
     [changedAccount, setChangedAccount] = useState(false);
@@ -198,6 +188,7 @@ export function ExchangeEditor({
     // SessionActivity may emit blur while this request detects a changed owner.
     try {
       const current = recordRef.current;
+      const savedId = current?.listing.id ?? listingId;
       const [ctx, saved] = await Promise.all([
         socialRequest<Context>(
           "/api/platform/exchange?view=context",
@@ -207,9 +198,9 @@ export function ExchangeEditor({
           undefined,
           controller.signal
         ),
-        current
+        savedId
           ? socialRequest<Snapshot>(
-              `/api/platform/exchange?view=editor&id=${encodeURIComponent(current.listing.id)}`,
+              `/api/platform/exchange?view=editor&id=${encodeURIComponent(savedId)}`,
               undefined,
               owner,
               "POST",
@@ -218,35 +209,71 @@ export function ExchangeEditor({
             )
           : Promise.resolve(null)
       ]);
-      if (!current && replenishmentSeed) {
+      if (
+        ctx.data.ownerId !== owner ||
+        (savedId && (!saved?.data.fields || saved.data.listing.id !== savedId))
+      )
+        throw new Error(
+          "Current listing access could not be confirmed. Try again."
+        );
+      let seed: PantrySnapshot["replenishmentSeed"];
+      if (!savedId && pantryCategory) {
         const source = await socialRequest<PantrySnapshot>(
-          `/api/platform/pantry?view=replenish&id=${encodeURIComponent(replenishmentSeed.categoryId)}`,
+          `/api/platform/pantry?view=replenish&id=${encodeURIComponent(pantryCategory)}`,
           undefined,
           owner,
           "POST",
           undefined,
           controller.signal
         );
+        seed = source.data.replenishmentSeed;
         if (
-          JSON.stringify(source.data.replenishmentSeed) !==
-          JSON.stringify(replenishmentSeed)
+          !seed ||
+          seed.categoryId !== pantryCategory ||
+          (initialized.current &&
+            JSON.stringify(seed) !== JSON.stringify(replenishmentSeed.current))
         )
           throw new Error(
             "This stock category or your duties changed. Reload to review a current replenishment draft."
           );
       }
       if (seq !== generation.current) return;
-      setContext(ctx.data);
-      setVisible(true);
-      setAccessNotice("");
-      if (!current) setConflict(false);
-      if (saved && saved.data.listing.version !== current?.listing.version) {
+      if (!initialized.current) {
+        const snapshot = saved?.data ?? null;
+        setRecord(snapshot);
+        recordRef.current = snapshot;
+        setFields(
+          snapshot?.fields ?? {
+            ...emptyExchangeFields(),
+            ...(seed
+              ? {
+                  intent: "CHURCH_NEED" as const,
+                  title: seed.title,
+                  requestedItems: seed.requestedItems,
+                  audience: seed.audience,
+                  audienceChurchId:
+                    seed.audience === "CHURCH" ? seed.churchId : ""
+                }
+              : {})
+          }
+        );
+        setOwnerChurchId(seed?.churchId ?? "");
+        replenishmentSeed.current = seed;
+        initialized.current = true;
+      } else if (
+        saved &&
+        saved.data.listing.version !== current?.listing.version
+      ) {
         setNewer(saved.data);
         setConflict(true);
         setNotice(
           "The saved listing changed. Your local entries are retained. Review the current saved version below before another change."
         );
       }
+      setContext(ctx.data);
+      setVisible(true);
+      setAccessNotice("");
+      if (!current) setConflict(false);
       await finishNavigation(seq);
     } catch (error) {
       if (seq === generation.current) {
@@ -286,7 +313,7 @@ export function ExchangeEditor({
         void latestCheck.current();
       }
     }
-  }, [owner, clearAccount, replenishmentSeed, finishNavigation]);
+  }, [owner, listingId, pantryCategory, clearAccount, finishNavigation]);
   latestCheck.current = check;
   const resume = useCallback(() => {
     if (document.visibilityState === "hidden" || !navigator.onLine) return;
@@ -634,6 +661,15 @@ export function ExchangeEditor({
                     Owned by {church?.name ?? "your account"}. Ownership cannot
                     be transferred in this editor.
                   </p>
+                  {record.listing.intent === "CHURCH_NEED" && (
+                    <Link
+                      prefetch={false}
+                      className="gc-button"
+                      href={`/platform/exchange/${record.listing.id}/needs`}
+                    >
+                      Configure need actions and commitments
+                    </Link>
+                  )}
                   {record.recoveryRequired && (
                     <p>
                       This listing needs a fresh publication review after
@@ -996,6 +1032,13 @@ export function ExchangeEditor({
           ) : visible ? (
             <p>Save a private draft first to add up to eight listing photos.</p>
           ) : null}
+          {record && !record.structuredNeed && (
+            <ExchangeContactEntry
+              owner={owner}
+              listingId={record.listing.id}
+              listingVersion={record.listing.version}
+            />
+          )}
         </div>
         {(dirty || conflict || pending) &&
           !busy &&

@@ -10,6 +10,7 @@ import {
 
 const titleLabel = "Title (required to publish)";
 const descriptionLabel = "Description (required to publish)";
+const requestedItemsLabel = "Requested items (required to publish)";
 const draftTitle = "Unsent private title";
 const draftDescription = "Unsent private description";
 const noop = () => null;
@@ -54,7 +55,7 @@ function stalledReads() {
   return { pending, hold };
 }
 
-function setup(t, { fresh = false } = {}) {
+function setup(t, { fresh = false, pantryCategory } = {}) {
   const window = new EventTarget(),
     document = new EventTarget();
   let focused = true,
@@ -94,6 +95,8 @@ function setup(t, { fresh = false } = {}) {
     AbortController,
     AbortSignal,
     DOMException,
+    Error,
+    TypeError,
     setTimeout: schedule,
     clearTimeout: unschedule,
     setInterval: (fn, delay) => {
@@ -115,6 +118,11 @@ function setup(t, { fresh = false } = {}) {
         return response(access);
       if (path.startsWith("/api/platform/exchange?view=editor&id="))
         return response(saved);
+      if (path.startsWith("/api/platform/pantry?view=replenish&id="))
+        return response({
+          viewer: { id: owner, eligible: true },
+          replenishmentSeed: seed
+        });
       assert.fail(`Unexpected request: ${path}`);
     }
   };
@@ -126,9 +134,17 @@ function setup(t, { fresh = false } = {}) {
   });
   const access = {
     ownerId: "owner-a",
-    churches: [],
-    publishingChurchIds: [],
-    managingChurchIds: []
+    churches: pantryCategory ? [{ id: "church-a", name: "Seed church" }] : [],
+    publishingChurchIds: pantryCategory ? ["church-a"] : [],
+    managingChurchIds: pantryCategory ? ["church-a"] : []
+  };
+  let seed = {
+    categoryId: pantryCategory,
+    churchId: "church-a",
+    version: 3,
+    title: "Food parcels replenishment",
+    requestedItems: "Food parcels (parcels)",
+    audience: "CHURCH"
   };
   let saved = {
     listing: { id: "listing-a", version: 4, state: "DRAFT", ownerChurch: null },
@@ -170,6 +186,7 @@ function setup(t, { fresh = false } = {}) {
     "@/lib/platform/exchange-options": options,
     "@/lib/platform/social-client": social,
     "./exchange-editor-fields": { ExchangeEditorFields },
+    "./exchange-contact-entry": { ExchangeContactEntry: noop },
     "./exchange-photos": { ExchangePhotos: noop },
     "./read-visibility": { ReadVisibility: { Provider: "read-visibility" } },
     "./use-unsaved-social-work": {
@@ -195,8 +212,14 @@ function setup(t, { fresh = false } = {}) {
     };
   }
   const dom = () => expand(h.output);
-  const initial = fresh ? null : saved;
-  h.mount(() => ExchangeEditor({ access, initial }));
+  // Bootstrap props identify the intended editor; all private values and
+  // authority enter through the real expected-owner transport after mounting.
+  const props = {
+    owner: "owner-a",
+    ...(fresh ? {} : { listingId: saved.listing.id }),
+    ...(pantryCategory ? { pantryCategory } : {})
+  };
+  h.mount(() => ExchangeEditor(props));
   t.after(() => {
     h.unmount();
     fieldsHarness.unmount();
@@ -208,6 +231,13 @@ function setup(t, { fresh = false } = {}) {
     navigations,
     guards,
     social,
+    access,
+    get seed() {
+      return seed;
+    },
+    set seed(value) {
+      seed = value;
+    },
     get saved() {
       return saved;
     },
@@ -230,8 +260,10 @@ function setup(t, { fresh = false } = {}) {
       defaultsHandler = value;
     },
     get visible() {
-      return nodes(h.output, (n) => n.type === "read-visibility")[0].props
-        .value;
+      return (
+        nodes(h.output, (n) => n.type === "read-visibility")[0]?.props.value ??
+        false
+      );
     },
     event(type) {
       if (type === "blur") focused = false;
@@ -304,9 +336,273 @@ async function dirtyEditor(t, options) {
 test("initial identity check physically omits saved private fields", async (t) => {
   const s = setup(t);
   assert.equal(s.visible, false);
+  assert.equal(s.guards.at(-1).dirty, false);
   assertPrivateAbsent(s, "Saved private title", "Saved private description");
   await s.h.settle();
   assert.equal(input(s.dom(), titleLabel).props.value, "Saved private title");
+  assert.equal(s.guards.at(-1).dirty, false);
+  const savedRead = s.requests.find(
+    (request) =>
+      request.path === "/api/platform/exchange?view=editor&id=listing-a"
+  );
+  assert.ok(savedRead, "The route ID must be loaded before presenting fields");
+  assert.equal(savedRead.headers["X-Expected-Account"], "owner-a");
+});
+
+function assertNoEditor(s) {
+  assert.equal(s.visible, false);
+  assert.equal(
+    nodes(
+      s.dom(),
+      (node) =>
+        node.type === "form" && node.props["aria-label"] === "Listing editor"
+    ).length,
+    0,
+    "Incomplete initialization must not offer a blank creation form"
+  );
+  assert.equal(s.requests.filter((request) => request.body).length, 0);
+}
+
+test("held first listing read cannot present fields after context alone succeeds", async (t) => {
+  const s = setup(t),
+    held = deferred();
+  s.readHandler = (path) =>
+    path.includes("view=editor") ? held.promise : response(s.access);
+  await s.h.settle();
+  assertNoEditor(s);
+  assert.equal(s.guards.at(-1).dirty, false);
+  assertPrivateAbsent(s, "Saved private title", "Saved private description");
+  s.saved = {
+    ...s.saved,
+    listing: { ...s.saved.listing, version: 5 },
+    fields: {
+      ...s.saved.fields,
+      title: "Current private title from first read"
+    }
+  };
+  held.resolve(response(s.saved));
+  await s.h.settle();
+  assert.equal(
+    input(s.dom(), titleLabel).props.value,
+    "Current private title from first read"
+  );
+  assert.equal(s.guards.at(-1).dirty, false);
+  assert.equal(s.guards.at(-1).conflict, false);
+});
+
+test("failed initial context read retries the complete saved editor without creating a draft", async (t) => {
+  const s = setup(t);
+  s.readHandler = (path) =>
+    path.includes("view=context")
+      ? response({ message: "Current listing duties unavailable" }, 503)
+      : response(s.saved);
+  await s.h.settle();
+  assertNoEditor(s);
+  assertPrivateAbsent(s, "Saved private title", "Saved private description");
+  assert.equal(s.guards.at(-1).dirty, false);
+  s.readHandler = null;
+  button(s.dom(), "Check current listing access").props.onClick();
+  await s.h.settle();
+  assert.equal(input(s.dom(), titleLabel).props.value, "Saved private title");
+  assert.equal(s.guards.at(-1).dirty, false);
+  assert.equal(s.guards.at(-1).conflict, false);
+  assert.equal(s.requests.filter((request) => request.body).length, 0);
+});
+
+test("initial saved-ID denial remains unavailable instead of becoming a new listing", async (t) => {
+  const s = setup(t);
+  s.readHandler = (path) =>
+    path.includes("view=editor")
+      ? response({ message: "This listing is unavailable." }, 404)
+      : response(s.access);
+  await s.h.settle();
+  assertNoEditor(s);
+  assert.ok(textContent(s.dom()).includes("This listing is unavailable."));
+  s.event("focus");
+  await s.h.settle();
+  assertNoEditor(s);
+  assert.equal(s.guards.at(-1).dirty, false);
+  assertPrivateAbsent(s, "Saved private title", "Saved private description");
+  assert.equal(
+    s.requests.filter(
+      (request) =>
+        request.path === "/api/platform/exchange?view=editor&id=listing-a"
+    ).length,
+    2,
+    "Retry must keep the original saved listing target"
+  );
+});
+
+test("account replacement during first data reads never initializes the previous owner's fields", async (t) => {
+  const s = setup(t),
+    held = deferred();
+  s.readHandler = (path) =>
+    held.promise.then(() =>
+      response(path.includes("view=context") ? s.access : s.saved)
+    );
+  await s.h.settle();
+  assert.equal(
+    s.requests.filter((request) => request.path.includes("/exchange?")).length,
+    2
+  );
+  s.owner = "owner-b";
+  held.resolve();
+  await s.h.settle();
+  assertNoEditor(s);
+  assertPrivateAbsent(s, "Saved private title", "Saved private description");
+  assert.equal(s.guards.at(-1).dirty, false);
+  button(s.dom(), "Reload for current account");
+  assert.deepEqual(s.navigations, []);
+});
+
+test("first read completed after blur stays concealed until a fresh current snapshot initializes", async (t) => {
+  const s = setup(t),
+    held = deferred(),
+    earlier = s.saved;
+  s.readHandler = (path) =>
+    path.includes("view=editor") ? held.promise : response(s.access);
+  await s.h.settle();
+  s.event("blur");
+  held.resolve(response(earlier));
+  await s.h.settle();
+  assertNoEditor(s);
+  assertPrivateAbsent(s, "Saved private title", "Saved private description");
+  s.saved = {
+    ...s.saved,
+    listing: { ...s.saved.listing, version: 5 },
+    fields: { ...s.saved.fields, title: "Current foreground title" }
+  };
+  s.readHandler = null;
+  s.event("focus");
+  await s.h.settle();
+  assert.equal(
+    input(s.dom(), titleLabel).props.value,
+    "Current foreground title"
+  );
+  assert.equal(s.guards.at(-1).dirty, false);
+  assert.equal(s.guards.at(-1).conflict, false);
+});
+
+test("pantry initialization waits for its authorized seed before offering the reviewed church draft", async (t) => {
+  const s = setup(t, { fresh: true, pantryCategory: "category-a" }),
+    held = deferred();
+  s.readHandler = (path) =>
+    path.startsWith("/api/platform/pantry?")
+      ? held.promise
+      : response(s.access);
+  await s.h.settle();
+  assertNoEditor(s);
+  assert.equal(s.guards.at(-1).dirty, false);
+  const pantryRead = s.requests.find(
+    (request) =>
+      request.path === "/api/platform/pantry?view=replenish&id=category-a"
+  );
+  assert.ok(pantryRead);
+  assert.equal(pantryRead.headers["X-Expected-Account"], "owner-a");
+  held.resolve(response({ replenishmentSeed: s.seed }));
+  await s.h.settle();
+  assert.equal(input(s.dom(), titleLabel).props.value, s.seed.title);
+  assert.equal(
+    input(s.dom(), requestedItemsLabel).props.value,
+    s.seed.requestedItems
+  );
+  assert.equal(input(s.dom(), descriptionLabel).props.value, "");
+  assert.equal(s.guards.at(-1).dirty, true);
+  assert.equal(s.requests.filter((request) => request.body).length, 0);
+  s.readHandler = null;
+  s.submit();
+  await s.h.settle();
+  const requests = s.requests.filter((request) => request.body);
+  assert.equal(requests.length, 1);
+  const command = JSON.parse(requests[0].body);
+  assert.equal(command.operation, "create");
+  assert.equal(command.expectedVersion, 0);
+  assert.equal(command.ownerChurchId, "church-a");
+  assert.equal(command.fields.intent, "CHURCH_NEED");
+  assert.equal(command.fields.title, s.seed.title);
+  assert.equal(command.fields.requestedItems, s.seed.requestedItems);
+  assert.equal(command.fields.audience, "CHURCH");
+  assert.equal(command.fields.audienceChurchId, "church-a");
+});
+
+test("an unavailable pantry seed cannot fall back to an empty personal draft", async (t) => {
+  const s = setup(t, { fresh: true, pantryCategory: "category-a" });
+  s.readHandler = (path) =>
+    path.startsWith("/api/platform/pantry?")
+      ? response({ message: "This assistance category is unavailable." }, 404)
+      : response(s.access);
+  await s.h.settle();
+  assertNoEditor(s);
+  assert.equal(s.guards.at(-1).dirty, false);
+  s.readHandler = null;
+  button(s.dom(), "Check current listing access").props.onClick();
+  await s.h.settle();
+  assert.equal(input(s.dom(), titleLabel).props.value, s.seed.title);
+  assert.equal(
+    input(s.dom(), requestedItemsLabel).props.value,
+    s.seed.requestedItems
+  );
+  assert.equal(s.requests.filter((request) => request.body).length, 0);
+});
+
+test("failed same-owner pantry revalidation preserves the complete unsent seed edits for retry", async (t) => {
+  const s = await dirtyEditor(t, { fresh: true, pantryCategory: "category-a" });
+  s.edit(requestedItemsLabel, "Deliberately reviewed quantities");
+  s.readHandler = (path) =>
+    path.startsWith("/api/platform/pantry?")
+      ? response({ message: "Current pantry access unavailable" }, 503)
+      : response(s.access);
+  s.event("focus");
+  await s.h.settle();
+  assertNoEditor(s);
+  assertPrivateAbsent(
+    s,
+    draftTitle,
+    draftDescription,
+    "Deliberately reviewed quantities"
+  );
+  assert.equal(s.guards.at(-1).dirty, true);
+  s.readHandler = null;
+  button(s.dom(), "Check current listing access").props.onClick();
+  await s.h.settle();
+  assert.equal(input(s.dom(), titleLabel).props.value, draftTitle);
+  assert.equal(input(s.dom(), descriptionLabel).props.value, draftDescription);
+  assert.equal(
+    input(s.dom(), requestedItemsLabel).props.value,
+    "Deliberately reviewed quantities"
+  );
+  assert.equal(s.guards.at(-1).dirty, true);
+});
+
+test("a changed pantry seed requires a new review without replacing or saving dirty entries", async (t) => {
+  const s = await dirtyEditor(t, { fresh: true, pantryCategory: "category-a" });
+  s.edit(requestedItemsLabel, "Deliberately reviewed quantities");
+  s.seed = {
+    ...s.seed,
+    version: s.seed.version + 1,
+    title: "Changed stock category title",
+    requestedItems: "Changed stock category unit"
+  };
+  s.event("focus");
+  await s.h.settle();
+  assertNoEditor(s);
+  assertPrivateAbsent(
+    s,
+    draftTitle,
+    draftDescription,
+    s.seed.title,
+    s.seed.requestedItems
+  );
+  assert.equal(s.guards.at(-1).dirty, true);
+  assert.ok(
+    textContent(s.dom()).includes(
+      "Reload to review a current replenishment draft."
+    )
+  );
+  s.event("focus");
+  await s.h.settle();
+  assertNoEditor(s);
+  assert.equal(s.guards.at(-1).dirty, true);
 });
 
 test("same-owner conceal and resume retains unsaved fields and dirty guard", async (t) => {
