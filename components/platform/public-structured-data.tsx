@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { CSP_NONCE_HEADER } from "@/lib/security/content-security-policy";
+import type { PublicResourceKind } from "@/lib/platform/public-resource-discovery";
 import {
   publicStructuredData,
   serializeStructuredData
@@ -10,7 +11,7 @@ export async function PublicStructuredData({
   kind,
   id
 }: {
-  kind: "church" | "event";
+  kind: "church" | "event" | PublicResourceKind;
   id: string;
 }) {
   try {

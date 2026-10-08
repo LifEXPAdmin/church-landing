@@ -1,3 +1,7 @@
+## Public resource sharing prepared, 8 October 2026 UTC
+
+The public resource candidate reuses current sharing controls and dynamically loads the existing QR encoder. QR download adds a fresh existing preview request with normal account checks. Sitemap enumeration adds listing/media counts and ordered pages bounded to 500 entries. Metadata and preview reads select source ID, title and description; no provider fetch or new background worker is introduced. These are source observations, not measured speed or capacity improvements. Prior unrelated resource measurements retain their original scope.
+
 ## Volunteer completion privacy, 2026-10-08 UTC
 
 Version **2026.10.08.9**, source 1a202ceecd44e1fde40296e198f45bb30df1ef8f: **verified live**. [PR46](https://github.com/LifEXPAdmin/church-landing/pull/46). Response-budget applicability: the accepted source-applicability inventory retains historical response-budget evidence under its original source, artifact hashes and limits; no current ninth measurement or production-capacity result is claimed. Functional browser and privacy checks are not new load or production-capacity measurements. Rapid repeated Back and production/100-client headroom remain open. Historical budget evidence below is preserved; see [Deployment report](DEPLOYMENT_REPORT.md).

@@ -5,7 +5,20 @@ import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { parse, type DefaultTreeAdapterMap } from "parse5";
 import { seedSharing } from "./seed-sharing";
-import { assertPortalTestDatabase } from "./seed-portal";
+import {
+  assertPortalTestDatabase,
+  createPortalActor,
+  seedOperatorGrants
+} from "./seed-portal";
+import { exchangeListingCommand } from "../lib/platform/exchange-listings";
+import {
+  emptyExchangeFields,
+  EXCHANGE_EDITOR_SCHEMA,
+  EXCHANGE_ITEM_POLICY
+} from "../lib/platform/exchange-options";
+import { mediaCatalogCommand } from "../lib/platform/media-catalog-commands";
+import { mediaFields } from "../lib/platform/media-catalog-input";
+import { MEDIA_POLICY } from "../lib/platform/media-catalog-options";
 const db = new PrismaClient(),
   origin = process.env.ACCOUNT_ORIGIN!;
 assert.match(origin, /^https:\/\/127\.0\.0\.1:\d+$/);
@@ -287,4 +300,249 @@ test("audience changes and cancellation remove indexing and structured data whil
   assert.ok(canceled.html.includes("Canceled"));
   assert.match(canceled.tags.robots, /noindex/);
   assert.equal(canceled.structured.length, 0);
+});
+
+async function seedPublicResources() {
+  const f = await seedSharing(db);
+  const reviewer = await createPortalActor(db, "httpsresreview");
+  await seedOperatorGrants(db, reviewer, ["REVIEW_COMMUNITY_REPORTS"]);
+  const command = (operation: string, fields: Record<string, unknown>) => ({
+    operation,
+    mutationId: randomUUID(),
+    ...fields
+  });
+  const draft = await exchangeListingCommand(
+    db,
+    f.author.token,
+    command("create", {
+      expectedVersion: 0,
+      ownerChurchId: null,
+      schema: EXCHANGE_EDITOR_SCHEMA,
+      fields: {
+        ...emptyExchangeFields(),
+        title: "Fictional HTTPS public table",
+        description: "Supplied public table description.",
+        category: "FURNITURE",
+        condition: "GOOD",
+        country: "US",
+        placeId: 4887398,
+        audience: "PUBLIC"
+      }
+    })
+  );
+  const listing = await exchangeListingCommand(
+    db,
+    f.author.token,
+    command("status", {
+      listingId: draft.id,
+      expectedVersion: draft.version,
+      state: "ACTIVE",
+      itemPolicy: EXCHANGE_ITEM_POLICY,
+      itemConfirmed: true
+    })
+  );
+  const fields = mediaFields({
+    title: "Fictional HTTPS public recording",
+    description: "Supplied public recording description.",
+    format: "SERMON",
+    presentation: "VIDEO",
+    audience: "PUBLIC",
+    details: { preachedOn: null },
+    sourceUrl: "https://youtu.be/abcdefghijk"
+  });
+  const reviewed = {
+    fields,
+    acknowledgment: {
+      policy: MEDIA_POLICY,
+      sourceUrl: fields.sourceUrl,
+      audience: fields.audience,
+      accepted: true
+    },
+    rights: {
+      basis: "OWN",
+      reviewed: true,
+      publicRecording: true,
+      textRights: true
+    }
+  };
+  const mediaDraft = await mediaCatalogCommand(
+    db,
+    f.author.token,
+    command("create", { ownerChurchId: null, ...reviewed })
+  );
+  const media = await mediaCatalogCommand(
+    db,
+    f.author.token,
+    command("publish", {
+      itemId: mediaDraft.id,
+      expectedVersion: mediaDraft.version,
+      ...reviewed
+    })
+  );
+  await db.mediaCatalogRights.update({
+    where: { itemId: media.id },
+    data: {
+      evidenceReference: "PRIVATE-HTTPS-RIGHTS-REFERENCE",
+      consentReference: "PRIVATE-HTTPS-CONSENT-REFERENCE"
+    }
+  });
+  return {
+    ...f,
+    listing,
+    media,
+    records: [
+      {
+        kind: "listing",
+        id: listing.id,
+        path: "/platform/exchange/" + listing.id,
+        sitemap: "listings",
+        title: "Fictional HTTPS public table",
+        description: "Supplied public table description."
+      },
+      {
+        kind: "media",
+        id: media.id,
+        path: "/platform/media/" + media.id,
+        sitemap: "media",
+        title: fields.title,
+        description: fields.description
+      }
+    ]
+  };
+}
+function publicNoStore(response: Response) {
+  for (const key of [
+    "cache-control",
+    "cdn-cache-control",
+    "vercel-cdn-cache-control"
+  ])
+    assert.match(response.headers.get(key) ?? "", /no-store/, key);
+}
+test("built listing and media HTML, JSON, PNG and sitemap use current public canonical facts", async () => {
+  const f = await seedPublicResources();
+  for (const record of f.records) {
+    for (const token of ["", f.author.token])
+      for (const agent of ["Googlebot", "Mozilla/5.0"]) {
+        const p = await page(record.path + "?utm_source=fixture", token, agent);
+        assert.equal(p.response.status, 200);
+        assert.match(p.response.headers.get("cache-control")!, /no-store/);
+        assert.doesNotMatch(p.tags.robots, /noindex/);
+        assert.equal(p.tags.canonical, origin + record.path);
+        assert.equal(p.tags["og:url"], origin + record.path);
+        assert.equal(p.tags.title, record.title + " | God’s Churches");
+        assert.deepEqual(p.structured, [
+          {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            name: record.title,
+            description: record.description,
+            url: origin + record.path
+          }
+        ]);
+        const metadata = JSON.stringify([p.tags, p.structured]);
+        for (const privateValue of [
+          f.author.email,
+          "PRIVATE-HTTPS-RIGHTS",
+          "PRIVATE-HTTPS-CONSENT",
+          "youtu.be",
+          "abcdefghijk"
+        ])
+          assert.ok(!metadata.includes(privateValue), privateValue);
+        const query = new URLSearchParams({
+          kind: record.kind,
+          id: record.id,
+          title: "UNTRUSTED-PREVIEW-COPY"
+        });
+        const response = await get(
+          "/api/platform/share-preview?" + query,
+          token,
+          agent
+        );
+        assert.equal(response.status, 200);
+        publicNoStore(response);
+        const preview = await response.json();
+        assert.equal(preview.available, true);
+        assert.equal(preview.url, origin + record.path);
+        assert.equal(preview.title, record.title);
+        assert.ok(!JSON.stringify(preview).includes("UNTRUSTED-PREVIEW-COPY"));
+      }
+    const p = await page(record.path);
+    const png = await get(p.tags["og:image"]);
+    assert.equal(png.status, 200);
+    publicNoStore(png);
+    assert.equal(png.headers.get("content-type"), "image/png");
+    assert.deepEqual(
+      Buffer.from(await png.arrayBuffer()).subarray(0, 8),
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+    );
+    assert.ok((await sitemap(record.sitemap)).includes(record.id));
+    const unknown = await page(record.path + "?comment=private");
+    assert.match(unknown.tags.robots, /noindex/);
+    assert.equal(unknown.structured.length, 0);
+    assert.equal(unknown.tags.canonical, origin + record.path);
+  }
+});
+test("built resource previews never expand for owners and discard old PNG copy after audience or rights loss", async () => {
+  const f = await seedPublicResources();
+  const fallback = Buffer.from(
+    await (await get("/brand/share-card.png")).arrayBuffer()
+  );
+  const oldImages = await Promise.all(
+    f.records.map(async (record) => (await page(record.path)).tags["og:image"])
+  );
+  await db.exchangeListing.update({
+    where: { id: f.listing.id },
+    data: {
+      audience: "CHURCH",
+      audienceChurchId: f.church.id,
+      title: "PRIVATE HTTPS TABLE"
+    }
+  });
+  await db.mediaCatalogItem.update({
+    where: { id: f.media.id },
+    data: { audience: "MEMBERS", title: "PRIVATE HTTPS RECORDING" }
+  });
+  async function excluded() {
+    for (const [index, record] of f.records.entries()) {
+      for (const token of ["", f.author.token]) {
+        const p = await page(record.path, token);
+        assert.equal(p.response.status, 200);
+        assert.match(p.tags.robots, /noindex/);
+        assert.equal(p.tags.title, "God’s Churches");
+        assert.equal(p.structured.length, 0);
+        assert.ok(!JSON.stringify(p.tags).includes("PRIVATE HTTPS"));
+        const response = await get(
+          "/api/platform/share-preview?" +
+            new URLSearchParams({
+              kind: record.kind,
+              id: record.id
+            }),
+          token
+        );
+        assert.equal(response.status, 200);
+        publicNoStore(response);
+        const preview = await response.json();
+        assert.equal(preview.available, false);
+        assert.ok(!JSON.stringify(preview).includes("PRIVATE HTTPS"));
+        const png = await get(oldImages[index], token);
+        publicNoStore(png);
+        assert.deepEqual(Buffer.from(await png.arrayBuffer()), fallback);
+      }
+      assert.ok(!(await sitemap(record.sitemap)).includes(record.id));
+    }
+  }
+  await excluded();
+  await db.exchangeListing.update({
+    where: { id: f.listing.id },
+    data: { audience: "PUBLIC", audienceChurchId: null, state: "CLOSED" }
+  });
+  await db.mediaCatalogItem.update({
+    where: { id: f.media.id },
+    data: { audience: "PUBLIC" }
+  });
+  await db.mediaCatalogRights.update({
+    where: { itemId: f.media.id },
+    data: { revokedAt: new Date() }
+  });
+  await excluded();
 });

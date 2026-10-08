@@ -1,3 +1,7 @@
+## Public resource sharing prepared, 8 October 2026 UTC
+
+Candidate version 2026.10.08.10 combines public listing/media discovery with Copy, Share and QR controls. Public metadata remains constrained to anonymous eligibility, and signed-in preview access may only narrow it. Current listing/favorite and Need privacy boundaries are retained. No dependency graph or schema change is included. Fresh combined verification is pending; the verified live version remains 2026.10.08.9.
+
 ## Volunteer completion privacy, 2026-10-08 UTC
 
 Version **2026.10.08.9**, source 1a202ceecd44e1fde40296e198f45bb30df1ef8f: **verified live**. [PR46](https://github.com/LifEXPAdmin/church-landing/pull/46). Volunteer completion privacy uses routing-only bootstrap and current account-pinned roster reads. Private names and correction fields conceal on access or foreground loss. Original completion requests require the exact signup and next revision; canonical confirmation preserves sibling drafts. Same-account recovery retains work, while confirmed account replacement clears prior entries.

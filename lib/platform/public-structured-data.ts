@@ -1,6 +1,11 @@
 import type { PrismaClient } from "@prisma/client";
 import { publicChurchWhere, publicEventWhere } from "./public-discovery-policy";
 import { indexingEnvironment } from "../indexing-policy";
+import { withPostRead } from "./post-access";
+import {
+  publicResourceProjection,
+  type PublicResourceKind
+} from "./public-resource-discovery";
 
 export function serializeStructuredData(value: unknown) {
   return JSON.stringify(value)
@@ -12,11 +17,26 @@ export function serializeStructuredData(value: unknown) {
 }
 export async function publicStructuredData(
   db: PrismaClient,
-  kind: "church" | "event",
+  kind: "church" | "event" | PublicResourceKind,
   id: string
 ) {
   if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) return null;
   const origin = indexingEnvironment().origin;
+  if (kind === "listing" || kind === "media") {
+    const row = await withPostRead(db, null, (tx, context) =>
+      publicResourceProjection(tx, context, kind, id)
+    );
+    if (!row) return null;
+    // Describe the supplied public page. A listing is not a verified product
+    // offer, and attested media does not establish provider ownership or a file.
+    return {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: row.title,
+      url: `${origin}/platform/${kind === "listing" ? "exchange" : "media"}/${id}`,
+      ...(row.description ? { description: row.description } : {})
+    };
+  }
   if (kind === "church") {
     const row = await db.church.findFirst({
       where: { ...publicChurchWhere, id },

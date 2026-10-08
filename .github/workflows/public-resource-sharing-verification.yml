@@ -1,0 +1,164 @@
+name: Public resource sharing isolated verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/release-public-resource-sharing-20261008
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-resource-sharing-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
+      - name: Prepare runner-only browser and PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+          npm install --prefix "$RUNNER_TEMP/public-sharing-browser" --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/public-sharing-browser/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/public-sharing-browser/node_modules/playwright/package.json" >> "$GITHUB_ENV"
+          chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/public-sharing-browser/node_modules/playwright")"
+          echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
+      - name: Build and verify fictional resource sharing over local HTTPS
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs public-resource-sharing 2>&1 | tee "$RUNNER_TEMP/public-resource-sharing-verification.log"
+      - name: Record exact source, build and observed test totals
+        if: always()
+        env:
+          SHARING_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { createHash } from "node:crypto";
+          import { execFileSync } from "node:child_process";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const profile = "public-resource-sharing";
+          const output = join(process.env.RUNNER_TEMP, profile + "-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, profile + "-verification.log");
+          const lines = existsSync(logPath) ? readFileSync(logPath, "utf8").split(/\r?\n/) : [];
+          // Export only aggregate diagnostics. No raw exceptions, DOM, signed
+          // cursors, actor identities, personal invitation codes or environment.
+          const safeLines = lines.filter((line) => /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line) || /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) || /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
+          const log = safeLines.join("\n") + "\n";
+          const totals = (metric) => [...log.matchAll(new RegExp("^(?:#|ℹ) " + metric + " (\\d+)$", "gm"))].map((match) => Number(match[1]));
+          const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
+          const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((match) => ({ sourceSha: match[1], mode: match[2] }));
+          const definitions = {
+            "public-resource-browser": { file: "results.json", groups: 3, errors: "errors", external: "external", fictional: true },
+            "resource-sharing-browser": { file: "results.json", groups: 10, errors: "errors", external: "external", fictional: true },
+            "sharing-browser": { file: "receipt.json", groups: 10, errors: "pageErrors" },
+            "calendar-sharing-browser": { file: "summary.json", groups: 4, errors: "browserErrors", external: "externalRequests", productionWrites: true },
+            "friend-invitations-browser": { file: "results.json", groups: 8, errors: "errors", productionWrites: true, physicalDevice: false }
+          };
+          const fixtures = (existsSync(".account-test") ? readdirSync(".account-test") : []).filter((name) => name.startsWith(profile + "-hosted-"));
+          const count = (value) => Array.isArray(value) ? value.length : null;
+          const empty = (value) => Array.isArray(value) && value.length === 0;
+          const browsers = [], controlled = [];
+          for (const name of fixtures) {
+            const fixture = join(".account-test", name);
+            for (const directory of readdirSync(fixture)) {
+              if (/^share-qr-client-[A-Za-z0-9]+$/.test(directory)) {
+                let result = null;
+                try { result = JSON.parse(readFileSync(join(fixture, directory, "results.json"), "utf8")); } catch {}
+                const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+                const detailsValid = result?.suite === "share-qr-client" && result?.source === "components/platform/public-share-controls.tsx" && result?.sourceSha256 === hash("components/platform/public-share-controls.tsx") && result?.harnessSha256 === hash("scripts/qa-share-qr-client.mjs") && result?.scopeEvidence === "controlled-component-with-blocked-network-and-stub-transport" && result?.productionWrites === null && result?.externalSends === null && result?.blockedNetworkRequests === 0 && empty(result?.errors) && count(result?.results) === 8 && result.results.every((entry) => entry.pass === true);
+                controlled.push({ suite: "share-qr-client", reportedGroups: count(result?.results), errorCount: count(result?.errors), detailsValid, sourceSha256: result?.sourceSha256 ?? null, harnessSha256: result?.harnessSha256 ?? null, productionWrites: null, externalSends: null, blockedNetworkRequests: result?.blockedNetworkRequests ?? null, scopeEvidence: "controlled-component-with-blocked-network-and-stub-transport", encoder: "stubbed" });
+                continue;
+              }
+              const suite = directory.replace(/-\d+$/, "");
+              const definition = definitions[suite];
+              if (!definition) continue;
+              let result = null;
+              try { result = JSON.parse(readFileSync(join(fixture, directory, definition.file), "utf8")); } catch {}
+              let detailsValid = empty(result?.[definition.errors]) && count(result?.results) === definition.groups;
+              if (definition.external) detailsValid &&= empty(result?.[definition.external]);
+              if (definition.fictional) detailsValid &&= result?.fictionalOnly === true && result?.productionMode === true && result?.physicalDevice === false;
+              if (definition.productionWrites) detailsValid &&= result?.productionWrites === 0;
+              if (Object.hasOwn(definition, "physicalDevice")) detailsValid &&= result?.physicalDevice === definition.physicalDevice;
+              browsers.push({
+                suite, reportedGroups: count(result?.results), errorCount: count(result?.[definition.errors]), detailsValid,
+                productionWrites: definition.productionWrites ? result?.productionWrites ?? null : null,
+                externalSends: null, externalRequestCount: definition.external ? count(result?.[definition.external]) : null,
+                scopeEvidence: "guarded-fictional-runner-and-successful-child-exit",
+                clipboardAndNativeShare: "simulated", physicalDevice: false
+              });
+            }
+          }
+          const controlledReady = controlled.length === 1 && controlled[0].detailsValid;
+          const runtimeOutcome = process.env.SHARING_RUNTIME_OUTCOME;
+          const expectedBrowserGroups = Object.values(definitions).reduce((sum, value) => sum + value.groups, 0);
+          const report = { sourceSha, profile, buildId, servingIdentities, runtimeOutcome, complete: false, environment: "isolated-fictional", omittedLogLines: lines.filter(Boolean).length - safeLines.length, tests: totals("tests"), pass: totals("pass"), fail: totals("fail"), cancelled: totals("cancelled"), skipped: totals("skipped"), todo: totals("todo"), expectedBrowserGroups, browsers, controlled };
+          const save = () => writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
+          save();
+          writeFileSync(join(output, "verification.log"), log);
+          if (runtimeOutcome === "success") {
+            assert.equal(fixtures.length, 1);
+            assert.match(buildId ?? "", /^[A-Za-z0-9_-]+$/);
+            assert.deepEqual([...log.matchAll(/^Platform production build ID: ([A-Za-z0-9_-]+)$/gm)].map((match) => match[1]), [buildId]);
+            assert.deepEqual(servingIdentities, [{ sourceSha, mode: "off" }, { sourceSha, mode: "enforce" }]);
+            assert.deepEqual(report.tests, [24, 7]);
+            assert.deepEqual(report.pass, [24, 7]);
+            for (const metric of ["fail", "cancelled", "skipped", "todo"]) assert.deepEqual(report[metric], [0, 0]);
+            assert.equal(browsers.length, Object.keys(definitions).length);
+            for (const [suite, definition] of Object.entries(definitions)) assert.deepEqual(browsers.filter((entry) => entry.suite === suite).map((entry) => entry.reportedGroups), [definition.groups]);
+            assert.ok(browsers.every((entry) => entry.detailsValid));
+            assert.equal(browsers.reduce((sum, entry) => sum + entry.reportedGroups, 0), expectedBrowserGroups);
+            assert.ok(controlledReady, "Current source-bound controlled QR receipt required");
+            report.complete = true;
+            save();
+          }
+          NODE
+      - name: Preserve aggregate results and fictional resource screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: public-resource-sharing-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/public-resource-sharing-evidence/report.json
+            ${{ runner.temp }}/public-resource-sharing-evidence/verification.log
+            .account-test/public-resource-sharing-hosted-*/public-resource-browser/listing-320.png
+            .account-test/public-resource-sharing-hosted-*/public-resource-browser/listing-1440.png
+            .account-test/public-resource-sharing-hosted-*/public-resource-browser/media-320.png
+            .account-test/public-resource-sharing-hosted-*/public-resource-browser/media-1440.png
+            .account-test/public-resource-sharing-hosted-*/resource-sharing-browser/listing-320.png
+            .account-test/public-resource-sharing-hosted-*/resource-sharing-browser/listing-1440.png
+            .account-test/public-resource-sharing-hosted-*/resource-sharing-browser/media-320.png
+            .account-test/public-resource-sharing-hosted-*/resource-sharing-browser/media-1440.png
+            .account-test/public-resource-sharing-hosted-*/calendar-sharing-browser-*/sharing-390-large.png
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,10 +1,17 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from "react";
 import { Share2, Copy } from "lucide-react";
 import {
   usePrivatePostWorkspace,
   usePrivatePostConcealed
 } from "./private-post-workspace";
+import { useReadVisibility } from "./read-visibility";
 import { ActionPopover } from "./action-popover";
 import { socialRequest } from "@/lib/platform/social-client";
 type Preview = {
@@ -16,19 +23,23 @@ type Preview = {
 export function PublicShareControls({
   kind,
   id,
+  accountId,
   siteUrl,
   showSiteQr = false,
   compact = false
 }: {
-  kind: "post" | "church" | "event" | "site" | "topic";
+  kind: "post" | "church" | "event" | "site" | "topic" | "listing" | "media";
   id: string;
+  accountId?: string | null;
   siteUrl?: string;
   showSiteQr?: boolean;
   compact?: boolean;
 }) {
   const privateScope = usePrivatePostWorkspace(),
-    concealed = usePrivatePostConcealed();
-  const privateOwner = privateScope?.owner,
+    concealed = usePrivatePostConcealed(),
+    sourceVisible = useReadVisibility();
+  const privateOwner =
+      accountId === undefined ? privateScope?.owner : accountId,
     privateAccess = privateScope?.accessVersion;
   const [open, setOpen] = useState(showSiteQr && kind === "site"),
     [preview, setPreview] = useState<Preview | null>(null),
@@ -36,6 +47,19 @@ export function PublicShareControls({
     [message, setMessage] = useState(""),
     [native, setNative] = useState(false),
     [qr, setQr] = useState<string | null>(null);
+  const active = useRef(false),
+    focused = useRef(false),
+    connected = useRef(false);
+  const canAct = useCallback(
+    () =>
+      active.current &&
+      focused.current &&
+      connected.current &&
+      document.hasFocus() &&
+      document.visibilityState !== "hidden" &&
+      navigator.onLine,
+    []
+  );
   const generation = useRef(0),
     inFlight = useRef(false),
     returnFocus = useRef<HTMLElement | null>(null);
@@ -53,14 +77,21 @@ export function PublicShareControls({
     return r.data;
   }, [path, kind, siteUrl, privateOwner]);
   const load = useCallback(async () => {
-    if (inFlight.current) return;
+    const access = privateAccess?.();
+    if (!canAct() || inFlight.current || (privateAccess && access == null))
+      return;
     inFlight.current = true;
     setBusy(true);
     setPreview(null);
+    setQr(null);
     const seq = ++generation.current;
     try {
       const p = await read();
-      if (seq === generation.current) {
+      if (
+        seq === generation.current &&
+        canAct() &&
+        (!privateAccess || privateAccess() === access)
+      ) {
         setPreview(p);
         setMessage(
           p.available
@@ -69,22 +100,23 @@ export function PublicShareControls({
         );
       }
     } catch (e) {
-      if (seq === generation.current)
+      if (seq === generation.current) {
+        setPreview(null);
+        setQr(null);
         setMessage(
           e instanceof Error
             ? e.message
             : "The public link could not be checked."
         );
+      }
     } finally {
       if (seq === generation.current) {
         inFlight.current = false;
         setBusy(false);
       }
     }
-  }, [read]);
-  useEffect(() => {
-    if (!open || concealed) return;
-    void load();
+  }, [read, privateAccess, canAct]);
+  useLayoutEffect(() => {
     const conceal = () => {
       generation.current++;
       inFlight.current = false;
@@ -92,47 +124,92 @@ export function PublicShareControls({
       setPreview(null);
       setQr(null);
     };
-    const restore = () => {
-      if (document.visibilityState !== "hidden") void load();
+    conceal();
+    active.current = open && sourceVisible && !concealed;
+    if (!active.current) return;
+    focused.current = document.hasFocus();
+    connected.current = navigator.onLine;
+    const refresh = () => {
+      conceal();
+      void load();
+    };
+    const blur = () => {
+      focused.current = false;
+      conceal();
+    };
+    const focus = () => {
+      focused.current = document.hasFocus();
+      refresh();
+    };
+    const offline = () => {
+      connected.current = false;
+      conceal();
+    };
+    const online = () => {
+      connected.current = navigator.onLine;
+      refresh();
     };
     const visibility = () =>
-      document.visibilityState === "hidden" ? conceal() : restore();
-    window.addEventListener("blur", conceal);
-    window.addEventListener("focus", restore);
-    window.addEventListener("social-relationships-changed", restore);
+      document.visibilityState === "hidden" ? blur() : focus();
+    void load();
+    window.addEventListener("blur", blur);
+    window.addEventListener("pagehide", blur);
+    window.addEventListener("focus", focus);
+    window.addEventListener("pageshow", focus);
+    window.addEventListener("offline", offline);
+    window.addEventListener("online", online);
+    window.addEventListener("social-relationships-changed", refresh);
     document.addEventListener("visibilitychange", visibility);
     return () => {
+      active.current = false;
       conceal();
-      window.removeEventListener("blur", conceal);
-      window.removeEventListener("focus", restore);
-      window.removeEventListener("social-relationships-changed", restore);
+      window.removeEventListener("blur", blur);
+      window.removeEventListener("pagehide", blur);
+      window.removeEventListener("focus", focus);
+      window.removeEventListener("pageshow", focus);
+      window.removeEventListener("offline", offline);
+      window.removeEventListener("online", online);
+      window.removeEventListener("social-relationships-changed", refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [open, load, concealed]);
-  async function act(action: "copy" | "share" | "qr") {
+  }, [open, load, concealed, sourceVisible]);
+  async function act(
+    action: "copy" | "share" | "qr" | "download",
+    expectedUrl?: string
+  ) {
     const access = privateAccess?.();
-    if (inFlight.current || (privateAccess && access == null)) return;
+    if (!canAct() || inFlight.current || (privateAccess && access == null))
+      return false;
     inFlight.current = true;
     setBusy(true);
     setMessage("Checking the public link…");
-    returnFocus.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+    if (action === "qr")
+      returnFocus.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
     const seq = ++generation.current;
+    let checked = false;
     try {
       const p = await read();
+      checked = true;
       if (
         seq !== generation.current ||
+        !canAct() ||
         (privateAccess && privateAccess() !== access)
       )
-        return;
+        return false;
       setPreview(p);
-      if (!p.available) {
+      if (
+        !p.available ||
+        (expectedUrl !== undefined && p.url !== expectedUrl)
+      ) {
         setQr(null);
+        setPreview(null);
         setMessage("A public share link is not available for this page.");
-        return;
+        return false;
       }
+      if (action === "download") return true;
       if (action === "copy") {
         if (!navigator.clipboard?.writeText)
           throw new Error(
@@ -153,7 +230,7 @@ export function PublicShareControls({
       if (action === "share") {
         if (!navigator.share) {
           setMessage("Native sharing is unavailable. Use Copy public link.");
-          return;
+          return false;
         }
         try {
           await navigator.share({ title: p.title, url: p.url });
@@ -175,20 +252,26 @@ export function PublicShareControls({
         setMessage("");
       }
     } catch (e) {
-      if (seq === generation.current)
+      if (seq === generation.current) {
+        if (!checked) {
+          setPreview(null);
+          setQr(null);
+        }
         setMessage(
           e instanceof Error
             ? e.message
             : "The public link could not be checked. Try again."
         );
+      }
     } finally {
       if (seq === generation.current) {
         inFlight.current = false;
         setBusy(false);
       }
     }
+    return false;
   }
-  const choices = open && (
+  const choices = open && sourceVisible && !concealed && (
     <div role="group" aria-label="Public sharing choices" className="space-y-3">
       <p role="status">{busy ? "Checking the public link…" : message}</p>
       {preview?.available && (
@@ -254,6 +337,7 @@ export function PublicShareControls({
       {qr && (
         <ShareQr
           url={qr}
+          onDownload={(url) => act("download", url)}
           onClose={() => {
             setQr(null);
             returnFocus.current?.focus();
@@ -314,13 +398,20 @@ export function ShareQr({
   personal?: boolean;
   onDownload?: (url: string) => Promise<boolean>;
 }) {
+  const renderGeneration = useRef(0),
+    downloadPending = useRef<number | null>(null);
   const dialog = useRef<HTMLDialogElement>(null),
     canvas = useRef<HTMLCanvasElement>(null),
     [error, setError] = useState(""),
     [ready, setReady] = useState(false),
     [downloading, setDownloading] = useState(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     let active = true;
+    renderGeneration.current = renderGeneration.current + 1;
+    downloadPending.current = null;
+    setDownloading(false);
+    setReady(false);
+    setError("");
     const node = dialog.current;
     node?.showModal();
     void import("qrcode")
@@ -350,6 +441,7 @@ export function ShareQr({
       });
     return () => {
       active = false;
+      renderGeneration.current++;
       if (node?.open) node.close();
     };
   }, [url]);
@@ -392,22 +484,38 @@ export function ShareQr({
         className="gc-button gc-button-quiet"
         disabled={!ready || !!error || downloading}
         onClick={async () => {
-          if (!canvas.current || downloading) return;
-          if (onDownload) {
-            setDownloading(true);
-            try {
-              if (!(await onDownload(url))) return;
-            } finally {
-              setDownloading(false);
+          const currentCanvas = canvas.current,
+            generation = renderGeneration.current;
+          if (!currentCanvas || downloadPending.current !== null || !ready)
+            return;
+          downloadPending.current = generation;
+          setDownloading(true);
+          try {
+            if (onDownload && !(await onDownload(url))) return;
+            if (
+              generation !== renderGeneration.current ||
+              canvas.current !== currentCanvas ||
+              (!inline && !dialog.current?.open)
+            )
+              return;
+            const link = document.createElement("a");
+            link.href = currentCanvas.toDataURL("image/png");
+            link.download = personal
+              ? "godschurches-invitation-qr.png"
+              : "godschurches-qr.png";
+            link.click();
+          } catch {
+            if (generation === renderGeneration.current)
+              setError(
+                "The QR image could not be downloaded. Check the link and try again."
+              );
+          } finally {
+            if (downloadPending.current === generation) {
+              downloadPending.current = null;
+              if (generation === renderGeneration.current)
+                setDownloading(false);
             }
           }
-          if (!canvas.current) return;
-          const link = document.createElement("a");
-          link.href = canvas.current.toDataURL("image/png");
-          link.download = personal
-            ? "godschurches-invitation-qr.png"
-            : "godschurches-qr.png";
-          link.click();
         }}
       >
         Download QR PNG
@@ -427,7 +535,11 @@ export function ShareQr({
     <dialog
       ref={dialog}
       aria-label="Public link QR code"
-      onClose={onClose}
+      onClose={() => {
+        if (dialog.current?.open) return;
+        renderGeneration.current++;
+        onClose?.();
+      }}
       className="max-h-[90dvh] w-[min(90vw,36rem)] overflow-auto rounded-xl border border-gc-divider bg-gc-surface p-4 text-gc-text backdrop:bg-black/50"
     >
       {content}

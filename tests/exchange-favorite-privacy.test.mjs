@@ -293,6 +293,14 @@ test("favorite server bootstrap retains listing authorization but sends no favor
   const projection = h.load("lib/platform/exchange-listing-snapshot.ts");
   const { default: Page } = h.load("app/platform/exchange/[id]/page.tsx", {
     "next/link": { default: "a" },
+    "@/lib/platform/share-metadata": { publicResourceMetadata: async () => ({}) },
+    "@/lib/indexing-policy": { publicPageIdentity: () => ({ filtered: false }) },
+    "@/components/platform/public-structured-data": {
+      PublicStructuredData: "public-structured-data"
+    },
+    "@/components/platform/public-share-controls": {
+      PublicShareControls: "public-share-controls"
+    },
     "@/components/platform/interchurch-help-page": {
       InterchurchHelpPage: "help"
     },

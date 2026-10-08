@@ -1,11 +1,15 @@
 import { InterchurchHelpPage } from "@/components/platform/interchurch-help-page";
 import { ExchangeInquiryEntry } from "@/components/platform/exchange-handoff-page";
 import type { Metadata } from "next";
+import { publicResourceMetadata } from "@/lib/platform/share-metadata";
+import { publicPageIdentity, type PublicQuery } from "@/lib/indexing-policy";
+import { PublicStructuredData } from "@/components/platform/public-structured-data";
 import Link from "next/link";
 import { exchangeReturnHref } from "@/lib/platform/exchange-navigation";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { TopicReadBoundary } from "@/components/platform/topic-read-boundary";
 import { RelationshipControls } from "@/components/platform/relationship-controls";
+import { PublicShareControls } from "@/components/platform/public-share-controls";
 import {
   ExchangeFavoriteEntry,
   ExchangeListingGuard
@@ -32,21 +36,31 @@ import {
   type ExchangeCondition
 } from "@/lib/platform/exchange-options";
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
-  title: "Exchange listing",
-  robots: { index: false, follow: false }
-};
+export async function generateMetadata({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<PublicQuery>;
+}): Promise<Metadata> {
+  return publicResourceMetadata(
+    "listing",
+    (await params).id,
+    await searchParams
+  );
+}
 export default async function Page({
   params,
   searchParams
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ returnTo?: string | string[] }>;
+  searchParams: Promise<PublicQuery>;
 }) {
   const user = await getCurrentPlatformUser(),
     { id } = await params,
     path = `/platform/exchange/${encodeURIComponent(id)}`;
-  const returnHref = exchangeReturnHref((await searchParams).returnTo);
+  const query = await searchParams;
+  const returnHref = exchangeReturnHref(query.returnTo);
   let content;
   try {
     const result = await exchangeListingPage(id),
@@ -209,6 +223,15 @@ export default async function Page({
             />
           )}
         </section>
+        {listing.audience === "PUBLIC" &&
+          (listing.state === "ACTIVE" || listing.state === "RESERVED") && (
+            <PublicShareControls
+              key={`${user?.id ?? "guest"}:listing:${listing.id}`}
+              kind="listing"
+              id={listing.id}
+              accountId={user?.id ?? null}
+            />
+          )}
         {user && result.canSave && (
           <ExchangeFavoriteEntry
             key={`${user.id}:${listing.id}`}
@@ -252,6 +275,9 @@ export default async function Page({
   }
   return (
     <PlatformShell user={user}>
+      {!publicPageIdentity(path, query).filtered && (
+        <PublicStructuredData kind="listing" id={id} />
+      )}
       <section className="container-shell py-8 sm:py-10">
         <div className="mx-auto max-w-3xl space-y-6">
           <ExchangeNavigation />

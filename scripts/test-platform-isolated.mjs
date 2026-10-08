@@ -37,13 +37,19 @@ assert.ok(
     "exchange-search-favorite",
     "need-contribution",
     "need-incoming",
-    "need-volunteer"
+    "need-volunteer",
+    "public-resource-sharing"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "public-resource-sharing": {
+    services: ["public-resource-discovery", "public-discoverability", "gallery-sharing", "share-card-images"],
+    browsers: ["qa-public-resource-metadata", "qa-resource-sharing-browser", "qa-sharing-browser", "qa-calendar-sharing-browser", "qa-friend-invitations-browser"],
+    https: ["discoverability-http"]
+  },
   "need-volunteer": {
     services: ["exchange-needs"],
     browsers: ["qa-exchange-need-volunteer-privacy-browser", "qa-exchange-need-incoming-privacy-browser", "qa-exchange-need-contribution-privacy-browser", "qa-exchange-needs-browser"],
@@ -595,20 +601,32 @@ async function verifyBuiltApplication() {
         phase
       ]);
   } else {
+    const browserFailures = [];
     for (const name of profile.browsers) {
-      await run(process.execPath, [
-        "--import",
-        "./tests/register.mjs",
-        `scripts/${name}.mjs`,
-        [
-          "qa-navigation-journey-browser",
-          "qa-topic-catalogue-privacy-browser",
-          "qa-support-index-browser",
-          "qa-notification-integration-browser"
-        ].includes(name)
-          ? relative(root, fixture)
-          : fixture
-      ]);
+      try {
+        await run(process.execPath, [
+          "--import",
+          "./tests/register.mjs",
+          `scripts/${name}.mjs`,
+          [
+            "qa-navigation-journey-browser",
+            "qa-sharing-browser",
+            "qa-calendar-sharing-browser",
+            "qa-friend-invitations-browser",
+            "qa-topic-catalogue-privacy-browser",
+            "qa-support-index-browser",
+            "qa-notification-integration-browser"
+          ].includes(name)
+            ? relative(root, fixture)
+            : fixture
+        ]);
+      } catch (error) {
+        if (suite !== "public-resource-sharing") throw error;
+        // Collect independent fixture failures in one hosted run. Each failed
+        // suite remains fatal after the remaining browser and HTTPS checks.
+        browserFailures.push(name);
+        console.error("Isolated browser suite failed:", name, error);
+      }
     }
     await stop(server);
     await start("enforce");
@@ -623,9 +641,17 @@ async function verifyBuiltApplication() {
       ],
       { ...env, PRIVILEGED_MFA_MODE: "enforce", ARTIST_HTTP_MFA_ENFORCED: "1" }
     );
+    assert.deepEqual(browserFailures, [], "All declared browser suites must pass");
   }
 }
 try {
+  if (suite === "public-resource-sharing") {
+    const qrFixture = mkdtempSync(join(fixture, "share-qr-client-"));
+    await run(process.execPath, [
+      "scripts/qa-share-qr-client.mjs",
+      join(qrFixture, "results.json")
+    ]);
+  }
   if (suite === "need-incoming" || suite === "need-volunteer") {
     const progressFixture = mkdtempSync(join(fixture, "need-progress-browser-"));
     await run(process.execPath, [
@@ -696,6 +722,11 @@ try {
   writeFileSync(join(fixture, "environment.json"), JSON.stringify(env), {
     mode: 0o600
   });
+  if (suite === "public-resource-sharing")
+    writeFileSync(join(fixture, "test-env.json"), JSON.stringify(env), {
+      mode: 0o600,
+      flag: "wx"
+    });
   writeFileSync(
     join(fixture, "browser-env.json"),
     JSON.stringify({ origin, database, certificate: cert }),

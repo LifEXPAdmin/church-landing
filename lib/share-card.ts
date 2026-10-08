@@ -3,7 +3,14 @@ import { brandColors, churchMarkPaths } from "./brand";
 export type PublicShareCardInput = {
   title?: string;
   description?: string;
-  variant?: "post" | "comment" | "church" | "event" | "topic";
+  variant?:
+    | "post"
+    | "comment"
+    | "church"
+    | "event"
+    | "topic"
+    | "listing"
+    | "media";
 };
 export const shareCardSize = { width: 1200, height: 630 };
 export const shareCardLabel = "God’s Churches: faith and community";
@@ -62,7 +69,9 @@ export function shareCardLayout(input: PublicShareCardInput = {}) {
         comment: "PUBLIC CONVERSATION",
         church: "CHURCH COMMUNITY",
         event: "PUBLIC EVENT",
-        topic: "PUBLIC TOPIC"
+        topic: "PUBLIC TOPIC",
+        listing: "PUBLIC LISTING",
+        media: "PUBLIC MEDIA"
       }[input.variant]
     : "";
   return [

@@ -1,5 +1,15 @@
 # Public route metadata inventory
 
+## Listing and media extension, October 7, 2026 UTC
+
+The [public resource metadata report](PUBLIC_RESOURCE_METADATA.md) classifies
+the new conditional public candidates `/platform/exchange/[id]` and
+`/platform/media/[id]`, their current-permission exclusions, sitemap partitions
+and truthful WebPage markup. Catalogs, private management routes, interchurch help
+and unimplemented business/venture modules remain excluded. This is a local
+candidate, with integration and live acceptance open. The dated inventory below
+is retained as its historical checkpoint, not a current whole-site route count.
+
 ## Current candidate — September 15, 2026 UTC
 
 Enumerated directly from the current checkout: **108 page routes**, with

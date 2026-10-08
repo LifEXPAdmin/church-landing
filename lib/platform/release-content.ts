@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "public-resource-sharing", version: "2026.10.08.10", date: "2026-10-08",
+    summary: "Share eligible public listings and media with current previews, clean links and QR codes.",
+    added: ["Public listings and media pages offer Copy, Share and QR controls. QR images can be downloaded after checking that the source is still public."],
+    improved: ["Eligible public pages provide canonical previews and structured facts. Public sitemaps include currently available listings and media."],
+    fixed: ["Private, closed, withdrawn or rights-revoked resources stop providing public preview content. Signed-in access does not make a private resource public.", "Interrupted sharing actions cannot reuse an old account, closed dialog or unavailable source."],
+    featureIds: ["exchange-listings", "media-catalog"]
+  },
+  {
     id: "needs-volunteer-privacy", version: "2026.10.08.9", date: "2026-10-08",
     summary: "Protect volunteer completion details and preserve original requests through interrupted access.",
     added: [],
