@@ -3,11 +3,28 @@ name: Exchange prepared-plan investigation
 on:
   workflow_dispatch:
   push:
-    branches: [codex/exchange-query-plans-20261003]
+    branches: [codex/exchange-query-plans-20261003, codex/release-exchange-20261008]
     paths:
       - .github/workflows/exchange-plan-verification.yml
+      - package.json
+      - package-lock.json
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - scripts/patch-next-hydration.mjs
+      - lib/platform/release-*.ts
+      - app/api/platform/release/route.ts
+      - prisma/**
       - scripts/test-platform-isolated.mjs
+      - scripts/qa-resource-budgets.mjs
+      - scripts/resource-budget-identity.mjs
+      - scripts/resource-measurement-receipts.mjs
+      - tests/seed-capacity.ts
+      - tests/resource-budget-fixture.ts
       - tests/exchange-prepared-plans.ts
+      - tests/exchange-input.test.ts
+      - tests/exchange-listings.test.ts
+      - tests/exchange-needs.test.ts
+      - tests/interchurch-help*.test.ts
       - lib/platform/exchange-listings.ts
       - lib/platform/exchange-policy.ts
       - lib/platform/exchange-search.ts
@@ -36,6 +53,8 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
       - name: Locate runner-only PostgreSQL tooling
         shell: bash
         run: |
@@ -44,7 +63,55 @@ jobs:
           test -x "$pg_bin/initdb"
           echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
       - name: Verify fictional Exchange boundaries and compatibility
-        run: node scripts/test-platform-isolated.mjs exchange-services
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs exchange-services 2>&1 | tee "$RUNNER_TEMP/exchange-services.log"
+      - name: Record complete service acceptance
+        if: always()
+        env:
+          EXCHANGE_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const output = join(process.env.RUNNER_TEMP, "exchange-services-evidence");
+          mkdirSync(output, { recursive: true });
+          const path = join(process.env.RUNNER_TEMP, "exchange-services.log");
+          const lines = existsSync(path) ? readFileSync(path, "utf8").split(/\r?\n/) : [];
+          const safeLines = lines.filter((line) => /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line));
+          const log = safeLines.join("\n") + "\n";
+          const totals = (metric) => [...log.matchAll(new RegExp("^(?:#|ℹ) " + metric + " (\\d+)$", "gm"))].map((match) => Number(match[1]));
+          const runtimeOutcome = process.env.EXCHANGE_RUNTIME_OUTCOME;
+          const report = { sourceSha, profile: "exchange-services", runtimeOutcome, complete: false, environment: "isolated-fictional", omittedLogLines: lines.filter(Boolean).length - safeLines.length, tests: totals("tests"), pass: totals("pass"), fail: totals("fail"), cancelled: totals("cancelled"), skipped: totals("skipped"), todo: totals("todo"), buildBrowserOrHttpsAcceptance: false };
+          const save = () => writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
+          save();
+          writeFileSync(join(output, "verification.log"), log);
+          if (runtimeOutcome === "success") {
+            assert.deepEqual(report.tests, [97]);
+            assert.deepEqual(report.pass, [97]);
+            for (const metric of ["fail", "cancelled", "skipped", "todo"]) assert.deepEqual(report[metric], [0]);
+            report.complete = true;
+            save();
+          }
+          NODE
+      - name: Preserve sanitized service evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: exchange-services-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/exchange-services-evidence/report.json
+            ${{ runner.temp }}/exchange-services-evidence/verification.log
+          if-no-files-found: ignore
+          retention-days: 7
   measure:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -52,7 +119,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 20
+          fetch-depth: 0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
@@ -61,6 +128,8 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
       - name: Locate runner-only PostgreSQL tooling
         shell: bash
         run: |
@@ -69,13 +138,73 @@ jobs:
           test -x "$pg_bin/initdb"
           echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
       - name: Compare current fictional Exchange query plans
-        run: node scripts/test-platform-isolated.mjs exchange-plans
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs exchange-plans 2>&1 | tee "$RUNNER_TEMP/exchange-plans.log"
+      - name: Record exact paired-plan completion and identity
+        if: always()
+        env:
+          EXCHANGE_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { createHash } from "node:crypto";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const baselineSource = "6d81eb56f088062de5726cfaef8f45464ffdd6b9";
+          const output = join(process.env.RUNNER_TEMP, "exchange-plans-evidence");
+          mkdirSync(output, { recursive: true });
+          const path = join(process.env.RUNNER_TEMP, "exchange-plans.log");
+          const lines = existsSync(path) ? readFileSync(path, "utf8").split(/\r?\n/) : [];
+          const safeLines = lines.filter((line) => /^Measured (?:newest|price-low|price-high|selective|no-match|guest|owned|second-page): 9 exact baseline\/candidate pairs and (?:0|24) prepared-plan executions$/.test(line) || line === "PASS: 72 exact baseline/candidate pairs plus one second-page setup read; at most 192 prepared-plan executions. Aggregate evidence excludes SQL, parameters and credentials.");
+          const fixtures = (existsSync(".account-test") ? readdirSync(".account-test") : []).filter((name) => name.startsWith("exchange-plans-hosted-"));
+          const summaries = fixtures.map((name) => {
+            const path = join(".account-test", name, "exchange-plans-summary.json");
+            let summary = null;
+            try { summary = JSON.parse(readFileSync(path, "utf8")); } catch {}
+            return summary;
+          });
+          const summary = summaries.length === 1 ? summaries[0] : null;
+          const measurements = Array.isArray(summary?.measurements) ? summary.measurements : [];
+          const runtimeOutcome = process.env.EXCHANGE_RUNTIME_OUTCOME;
+          const report = { sourceSha, baselineSource, profile: "exchange-plans", runtimeOutcome, complete: false, environment: "isolated-fictional", omittedLogLines: lines.filter(Boolean).length - safeLines.length, summaryCount: summaries.filter(Boolean).length, shapes: measurements.length, pairs: measurements.reduce((n, shape) => n + (Array.isArray(shape.samples) ? shape.samples.length : 0), 0), preparedExecutions: measurements.reduce((n, shape) => n + (Array.isArray(shape.plans) ? shape.plans.reduce((count, plan) => count + (Array.isArray(plan.executions) ? plan.executions.length : 0), 0) : 0), 0), buildBrowserOrHttpsAcceptance: false };
+          const save = () => writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
+          save();
+          writeFileSync(join(output, "verification.log"), safeLines.join("\n") + "\n");
+          if (runtimeOutcome === "success") {
+            assert.equal(fixtures.length, 1);
+            assert.ok(summary);
+            assert.equal(summary.source, sourceSha);
+            assert.equal(summary.baselineSource, baselineSource);
+            const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
+            assert.equal(summary.baselineModuleSha256, digest(execFileSync("git", ["show", baselineSource + ":lib/platform/exchange-listings.ts"])));
+            assert.equal(summary.fixtureSha256, digest(readFileSync(join(".account-test", fixtures[0], "resource-fixture.json"))));
+            assert.ok(Number.isFinite(Date.parse(summary.completedAt)));
+            assert.notEqual(summary.partial, true);
+            assert.deepEqual(measurements.map((shape) => shape.name), ["newest", "price-low", "price-high", "selective", "no-match", "guest", "owned", "second-page"]);
+            assert.ok(measurements.every((shape) => shape.samples.length === 9));
+            assert.equal(report.pairs, 72);
+            assert.ok(report.preparedExecutions > 0 && report.preparedExecutions <= 192);
+            assert.ok(measurements.every((shape) => shape.plans.length === (shape.querySha256 ? 3 : 0) && shape.plans.every((plan) => plan.executions.length === 8)));
+            report.complete = true;
+            save();
+          }
+          NODE
       - name: Preserve aggregate plan measurements only
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: exchange-plans-${{ github.sha }}
           path: |
+            ${{ runner.temp }}/exchange-plans-evidence/report.json
+            ${{ runner.temp }}/exchange-plans-evidence/verification.log
             .account-test/exchange-plans-hosted-*/exchange-plans-summary.json
             .account-test/exchange-plans-hosted-*/exchange-plans-progress.json
           include-hidden-files: true

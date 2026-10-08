@@ -7,10 +7,21 @@ on:
       [
         codex/exchange-query-plans-20261003,
         codex/exchange-editor-privacy-20261003,
-        codex/exchange-editor-bootstrap-20261003
+        codex/exchange-editor-bootstrap-20261003,
+        codex/release-exchange-20261008
       ]
     paths:
       - .github/workflows/exchange-verification.yml
+      - package.json
+      - package-lock.json
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - scripts/patch-next-hydration.mjs
+      - scripts/verify-hydration-output.mjs
+      - scripts/verify-runtime-traces.mjs
+      - lib/platform/release-*.ts
+      - app/api/platform/release/route.ts
+      - prisma/**
       - scripts/test-platform-isolated.mjs
       - scripts/qa-exchange-browser.mjs
       - scripts/qa-exchange-search-browser.mjs
@@ -29,6 +40,7 @@ on:
       - lib/platform/social-client.ts
       - lib/platform/exchange-listings.ts
       - tests/exchange-listings.test.ts
+      - tests/fixtures/client-hook-harness.mjs
 
 permissions:
   contents: read
@@ -41,6 +53,8 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    env:
+      EXCHANGE_PROFILE: ${{ (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -54,6 +68,8 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
       - name: Prepare runner-only browser and PostgreSQL tooling
         shell: bash
         run: |
@@ -67,25 +83,89 @@ jobs:
           chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/exchange-browser/node_modules/playwright")"
           echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
       - name: Build and verify fictional Exchange over local HTTPS
-        run: node scripts/test-platform-isolated.mjs ${{ github.ref_name == 'codex/exchange-editor-bootstrap-20261003' && 'exchange-bootstrap' || 'exchange' }}
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs "$EXCHANGE_PROFILE" 2>&1 | tee "$RUNNER_TEMP/exchange-verification.log"
+      - name: Record exact source, build and complete acceptance counts
+        if: always()
+        env:
+          EXCHANGE_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const output = join(process.env.RUNNER_TEMP, "exchange-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, "exchange-verification.log");
+          const lines = existsSync(logPath) ? readFileSync(logPath, "utf8").split(/\r?\n/) : [];
+          // No raw exceptions, DOM, environment, signed cursors or actor values.
+          const safeLines = lines.filter((line) => /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line) || /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) || /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
+          const log = safeLines.join("\n") + "\n";
+          const totals = (metric) => [...log.matchAll(new RegExp("^(?:#|ℹ) " + metric + " (\\d+)$", "gm"))].map((match) => Number(match[1]));
+          const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
+          const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((match) => ({ sourceSha: match[1], mode: match[2] }));
+          const profile = process.env.EXCHANGE_PROFILE;
+          assert.ok(["exchange", "exchange-bootstrap"].includes(profile));
+          const fixtures = (existsSync(".account-test") ? readdirSync(".account-test") : []).filter((name) => name.startsWith(profile + "-hosted-"));
+          const browsers = [];
+          for (const name of fixtures) {
+            const fixture = join(".account-test", name);
+            for (const suite of readdirSync(fixture)) {
+              if (!/^(?:exchange-browser|exchange-handoff-browser|pantry-browser)-\d+$/.test(suite)) continue;
+              const pantry = suite.startsWith("pantry-browser-");
+              const passPath = join(fixture, suite, "pass.json");
+              const resultPath = join(fixture, suite, pantry ? existsSync(passPath) ? "pass.json" : "result.json" : "results.json");
+              let result = null;
+              try { result = JSON.parse(readFileSync(resultPath, "utf8")); } catch {}
+              // These result files can be written in finally after a failure.
+              // Their existence alone never establishes completed acceptance.
+              browsers.push({ suite: suite.replace(/-\d+$/, ""), reportedGroups: Array.isArray(result?.results) ? result.results.length : null, errorCount: Array.isArray(result?.errors) ? result.errors.length : null, productionWrites: result?.productionWrites ?? null, externalSends: result?.externalSends ?? null, explicitPantryPass: pantry ? existsSync(passPath) : null });
+            }
+          }
+          const runtimeOutcome = process.env.EXCHANGE_RUNTIME_OUTCOME;
+          const report = { sourceSha, profile, buildId, servingIdentities, runtimeOutcome, complete: false, environment: "isolated-fictional", omittedLogLines: lines.filter(Boolean).length - safeLines.length, tests: totals("tests"), pass: totals("pass"), fail: totals("fail"), cancelled: totals("cancelled"), skipped: totals("skipped"), todo: totals("todo"), browsers };
+          const save = () => writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
+          save();
+          writeFileSync(join(output, "verification.log"), log);
+          if (runtimeOutcome === "success") {
+            assert.equal(fixtures.length, 1);
+            assert.match(buildId ?? "", /^[A-Za-z0-9_-]+$/);
+            assert.deepEqual([...log.matchAll(/^Platform production build ID: ([A-Za-z0-9_-]+)$/gm)].map((match) => match[1]), [buildId]);
+            assert.deepEqual(servingIdentities, [{ sourceSha, mode: "off" }, { sourceSha, mode: "enforce" }]);
+            const expected = [profile === "exchange-bootstrap" ? 141 : 97, 1];
+            assert.deepEqual(report.tests, expected);
+            assert.deepEqual(report.pass, expected);
+            for (const metric of ["fail", "cancelled", "skipped", "todo"]) assert.deepEqual(report[metric], [0, 0]);
+            const counts = (suite) => browsers.filter((result) => result.suite === suite).map((result) => result.reportedGroups).sort((a, b) => a - b);
+            assert.deepEqual(counts("exchange-browser"), [8, 20]);
+            assert.deepEqual(counts("exchange-handoff-browser"), profile === "exchange-bootstrap" ? [9] : []);
+            assert.deepEqual(counts("pantry-browser"), profile === "exchange-bootstrap" ? [13] : []);
+            assert.equal(browsers.length, profile === "exchange-bootstrap" ? 4 : 2);
+            assert.ok(browsers.every((result) => result.errorCount === 0 && result.productionWrites === 0 && result.externalSends === 0 && result.explicitPantryPass !== false));
+            report.complete = true;
+            save();
+          }
+          NODE
       - name: Preserve fictional browser results and screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: exchange-browser-${{ github.sha }}
           path: |
+            ${{ runner.temp }}/exchange-evidence/report.json
+            ${{ runner.temp }}/exchange-evidence/verification.log
             .account-test/exchange-hosted-*/exchange-browser-*/*.png
-            .account-test/exchange-hosted-*/exchange-browser-*/results.json
             .account-test/exchange-bootstrap-hosted-*/exchange-browser-*/*.png
-            .account-test/exchange-bootstrap-hosted-*/exchange-browser-*/results.json
-            .account-test/exchange-bootstrap-hosted-*/exchange-browser-*/failure.txt
             .account-test/exchange-bootstrap-hosted-*/exchange-handoff-browser-*/*.png
-            .account-test/exchange-bootstrap-hosted-*/exchange-handoff-browser-*/results.json
-            .account-test/exchange-bootstrap-hosted-*/exchange-handoff-browser-*/failure.txt
             .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/*.png
-            .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/pass.json
-            .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/result.json
-            .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/failure.txt
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7

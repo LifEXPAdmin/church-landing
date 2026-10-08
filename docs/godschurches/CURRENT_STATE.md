@@ -1,3 +1,20 @@
+## Exchange search and private editing prepared, 8 October 2026 UTC
+
+The next bounded candidate combines the preserved Exchange query optimization
+from PR 5 with editor recovery and private initial-page loading from PRs 6 and 7.
+Ordered candidate windows retain complete canonical fallback, current permissions
+and exact page boundaries. Editor fields, photos and saved-response continuations
+respect the original account and current access while preserving local work.
+Saved listing, pantry preparation and contact-choice snapshots are omitted from
+initial editor payloads and loaded through current account-pinned reads.
+
+Version **2026.10.08.3** is candidate metadata. This combined candidate still
+requires fresh source, service, paired-query, HTTPS, browser and build acceptance,
+independent final review, integration and canonical live checks. No schema or
+dependency changes are included; the current security repairs are preserved.
+Production remains the verified **2026.10.08.2** release below. Broader capacity,
+rapid Back, operator, provider and physical-device acceptance remains open.
+
 ## Discovery ordering and saved-feed loading verified live, 8 October 2026 UTC
 
 Version **2026.10.08.2**, application

@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "exchange-search-and-private-editing", version: "2026.10.08.3", date: "2026-10-08",
+    summary: "Browse Exchange with less repeated work and keep private editing details protected during access changes.",
+    added: [],
+    improved: ["Exchange browsing checks a smaller ordered group of listings before using its complete search when needed. Current permissions, results and page boundaries remain authoritative.", "Listing drafts, selected photos and uncertain saves remain available for deliberate recovery when the same account's editing access is confirmed again."],
+    fixed: ["Private listing fields and photo controls leave the page while access is unconfirmed. Saved editor details, pantry preparation and inquiry choices load only after current account checks, with recovery for interrupted reads."],
+    featureIds: ["exchange-listings", "exchange-search-saved", "exchange-private-handoffs", "church-pantry"]
+  },
+  {
     id: "discovery-ordering-and-saved-feed-loading", version: "2026.10.08.2", date: "2026-10-08",
     summary: "Load saved feed pages more efficiently while keeping their order and current access checks.",
     added: [],

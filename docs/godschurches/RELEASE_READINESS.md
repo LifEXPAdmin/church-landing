@@ -1,3 +1,16 @@
+## Exchange batch awaits combined acceptance, 8 October 2026 UTC
+
+PR 5 query optimization and the combined PR 6/7 private editor/bootstrap work
+are integrated locally on the accepted discovery release. Candidate version
+**2026.10.08.3** is not yet merged or live. Fresh exact-source security, full
+Exchange bootstrap service/browser/HTTPS, paired-query comparisons and affected
+artist/discovery/measurement regressions remain required, followed by a matching
+release receipt, independent final review and one staged canonical publication.
+No schema or dependency delta is included. Preserve exact permissions, complete
+fallback, original-owner drafts and retries, pantry privacy and contact consent.
+Production remains **2026.10.08.2**. Historical checks below retain their actual
+source and scope; they do not establish acceptance of this combined candidate.
+
 ## Discovery optimization release accepted, 8 October 2026 UTC
 
 The bounded discovery ordering, saved-page loading and immutable measurement
