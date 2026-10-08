@@ -1,3 +1,11 @@
+## Volunteer completion privacy, 2026-10-08 UTC
+
+Version **2026.10.08.9**, source 1a202ceecd44e1fde40296e198f45bb30df1ef8f: **verified live**. [PR46](https://github.com/LifEXPAdmin/church-landing/pull/46). Volunteer completion privacy uses routing-only bootstrap and current account-pinned roster reads. Private names and correction fields conceal on access or foreground loss. Original completion requests require the exact signup and next revision; canonical confirmation preserves sibling drafts. Same-account recovery retains work, while confirmed account replacement clears prior entries.
+
+Fresh hosted verification: 553 source/security checks, 18 service tests, 4 HTTPS cases and 30 full application browser groups. Separately, 28 controlled component scenarios use actual components with blocked network and stub transport; their write/send counters remain null (unmeasured). Build: XzLip6_5O1BrrWpw-r7Ws. Both serving identities matched the candidate. Full application browser fixtures used MFA off and HTTPS fixtures used enforcement configuration. The runtime step ran 2026-10-08T13:03:29Z to 2026-10-08T13:08:16Z; this does not establish an actual operator MFA ceremony. 84 staged read-only checks at 2026-10-08T13:28:26.438Z; 5 health/release checks and exact canonical identity at 2026-10-08T13:29:09.499Z; 266 guest checks at 2026-10-08T13:35:55.067Z. Observed browser/CSP errors, attempted test mutations, production test writes, recipient sends and queue publications were zero. Queue-consumer execution was not verified. 165 table fingerprints and 123 migration records remained unchanged at 2026-10-08T13:36:24.843Z; no migration was applied. [Deployment report](DEPLOYMENT_REPORT.md) records exact provenance, recovery and exceptions.
+
+Broad SEC-01 remains open. Later Needs forms, offers and organizer settings, service history, native activation, authenticated production operator acceptance and physical-device behavior remain separate. Guest release checks do not establish provider delivery, queue-consumer execution, rapid repeated Back or production/100-client headroom.
+
 ## Volunteer completion privacy prepared, 8 October 2026 UTC
 
 The next bounded website candidate brings the preserved volunteer completion

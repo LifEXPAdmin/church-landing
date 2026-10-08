@@ -1,3 +1,7 @@
+## Volunteer completion privacy, 2026-10-08 UTC
+
+Version **2026.10.08.9**, source 1a202ceecd44e1fde40296e198f45bb30df1ef8f: **verified live**. [PR46](https://github.com/LifEXPAdmin/church-landing/pull/46). This is a bounded roster privacy and receipt-controller release. Query-plan applicability: the accepted source-applicability inventory retains historical query-plan evidence under its original source, artifact hashes and limits; no current ninth query-plan run is claimed. No fresh query-plan comparison or wider database performance result is claimed. Historical measurements retain their original source and fixture attribution; see [Deployment report](DEPLOYMENT_REPORT.md).
+
 ## Incoming Needs query-plan evidence scope, 8 October 2026 UTC
 
 Version **2026.10.08.8**, source `c2d6399a542dd2a47b78cb983138c2a40767d6f7`: **verified live**. [PR45](https://github.com/LifEXPAdmin/church-landing/pull/45) integrates coordinator incoming Needs privacy and the preserved progress freshness correction. The scoped Need read projection now respects contributor sharing consent. No new query-plan measurement was run for this release. Previously measured resource-query contracts are reusable only under the recorded source-applicability review; existing counts, source identity and limitations below are unchanged.

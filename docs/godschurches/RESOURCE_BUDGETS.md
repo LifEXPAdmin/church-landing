@@ -1,3 +1,7 @@
+## Volunteer completion privacy, 2026-10-08 UTC
+
+Version **2026.10.08.9**, source 1a202ceecd44e1fde40296e198f45bb30df1ef8f: **verified live**. [PR46](https://github.com/LifEXPAdmin/church-landing/pull/46). Response-budget applicability: the accepted source-applicability inventory retains historical response-budget evidence under its original source, artifact hashes and limits; no current ninth measurement or production-capacity result is claimed. Functional browser and privacy checks are not new load or production-capacity measurements. Rapid repeated Back and production/100-client headroom remain open. Historical budget evidence below is preserved; see [Deployment report](DEPLOYMENT_REPORT.md).
+
 ## Incoming Needs measurement scope, 8 October 2026 UTC
 
 Version **2026.10.08.8**, source `c2d6399a542dd2a47b78cb983138c2a40767d6f7`: **verified live**. [PR45](https://github.com/LifEXPAdmin/church-landing/pull/45) integrates coordinator incoming Needs privacy and the preserved progress freshness correction. This release adds no resource workload or capacity measurement. Reused measurements keep their original source, build, fixture and timings, subject to the recorded applicability review. Fresh privacy/progress acceptance establishes only its stated behavior.
