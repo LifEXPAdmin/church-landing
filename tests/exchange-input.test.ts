@@ -8,6 +8,7 @@ import {
   townDistanceKm
 } from "../lib/platform/discovery-places";
 import assert from "node:assert/strict";
+import { PortalError } from "../lib/platform/portal-policy";
 import {
   EXCHANGE_EDITOR_SCHEMA,
   changeExchangeIntent,
@@ -205,6 +206,85 @@ test("listing forms reject stale schemas, omitted fields, forged scope and overs
       description: "a".repeat(5001)
     })
   );
+});
+
+test("listing text errors name the current field and retain its publication bounds without changing unsent entries", () => {
+  const item = {
+    ...emptyExchangeFields(),
+    title: "Fictional item",
+    description: "A fictional item description.",
+    category: "BOOKS",
+    condition: "GOOD",
+    country: "US",
+    placeId: 12345
+  };
+  const request = {
+    ...item,
+    intent: "WANTED",
+    requestedItems: "Two fictional books"
+  };
+  const service = {
+    ...item,
+    intent: "SERVICE",
+    category: "HOME_GARDEN",
+    condition: "",
+    serviceArea: "Fictional service area",
+    availability: "By agreement",
+    qualifications: "Self-stated amateur experience",
+    servicePricing: "FREE"
+  };
+  for (const [field, label, maximum, ready] of [
+    ["title", "Title", 120, item],
+    ["description", "Description", 5000, item],
+    ["requestedItems", "Requested items", 2000, request],
+    ["serviceArea", "Service area", 500, service],
+    ["availability", "Availability", 1000, service],
+    ["qualifications", "Self-stated qualifications", 2000, service]
+  ] as const) {
+    const minimum = field === "title" ? 3 : 1;
+    const unsent = Object.freeze({ ...ready, [field]: " \r\n " });
+    const before = JSON.stringify(unsent);
+    assert.throws(
+      () => parseExchangeFields(EXCHANGE_EDITOR_SCHEMA, unsent, true),
+      (error: unknown) => {
+        assert.ok(error instanceof PortalError);
+        assert.equal(error.status, 400);
+        assert.equal(
+          error.message,
+          `${label}: Use ${minimum} to ${maximum} characters for this field. Your text has not been shortened.`
+        );
+        return true;
+      },
+      field
+    );
+    assert.equal(JSON.stringify(unsent), before);
+    assert.equal(
+      parseExchangeFields(
+        EXCHANGE_EDITOR_SCHEMA,
+        { ...unsent, [field]: "  Corrected\r\nentry  " },
+        true
+      )[field],
+      "Corrected\nentry"
+    );
+  }
+});
+
+test("named field errors keep private incomplete drafts valid", () => {
+  for (const intent of [
+    "FREE",
+    "SALE",
+    "WANTED",
+    "CHURCH_NEED",
+    "SERVICE"
+  ] as const) {
+    const incomplete = { ...emptyExchangeFields(), intent, title: "ab" };
+    assert.deepEqual(
+      exchangeEditorFields(
+        parseExchangeFields(EXCHANGE_EDITOR_SCHEMA, incomplete)
+      ),
+      incomplete
+    );
+  }
 });
 
 test("requests require requested items, preserve calendar dates and reject stale money or service details", () => {

@@ -78,10 +78,14 @@ const context = await browser.newContext({
   viewport: { width: 390, height: 844 },
   hasTouch: true
 });
+const external = [];
+const admitOrigin = (route) => {
+  if (new URL(route.request().url()).origin === config.origin) return true;
+  external.push("unexpected-origin");
+  return false;
+};
 await context.route("**/*", (route) =>
-  new URL(route.request().url()).origin === config.origin
-    ? route.continue()
-    : route.abort()
+  admitOrigin(route) ? route.continue() : route.abort()
 );
 const page = await context.newPage(),
   errors = [],
@@ -141,6 +145,7 @@ const fetchIn = (path, body, owner, headers = {}) =>
       const response = await fetch(path, {
         method: body ? "POST" : "GET",
         cache: "no-store",
+        redirect: "error",
         headers: {
           ...(body ? { "content-type": "application/json" } : {}),
           ...(owner ? { "x-expected-account": owner } : {}),
@@ -205,10 +210,12 @@ try {
   let dropped = false,
     firstBody;
   await page.route("**/api/platform/exchange", async (route) => {
+    if (!admitOrigin(route)) return route.abort();
     if (route.request().method() === "POST" && !dropped) {
       dropped = true;
       firstBody = route.request().postData();
       const received = await route.fetch({
+        maxRedirects: 0,
         url: localOrigin + new URL(route.request().url()).pathname
       });
       assert.ok([200, 202].includes(received.status()), await received.text());
@@ -246,7 +253,11 @@ try {
       exact: true
     })
     .click();
-  await page.waitForURL(/\/platform\/exchange\/[^/]+\/edit$/);
+  await page.waitForURL(
+    (url) =>
+      /\/platform\/exchange\/[^/]+\/edit$/.test(url.pathname) &&
+      url.hash === "#listing-editor-heading"
+  );
   await page.unroute("**/api/platform/exchange");
   const id = new URL(page.url()).pathname.split("/")[3];
   await editor
@@ -324,6 +335,7 @@ try {
     releaseBootstrap = resolve;
   });
   await page.route("**/api/platform/exchange?view=editor&*", async (route) => {
+    if (!admitOrigin(route)) return route.abort();
     bootstrapReadStarted = true;
     await bootstrapGate;
     await route.fulfill({
@@ -383,9 +395,11 @@ try {
     releaseSave = resolve;
   });
   const heldSave = async (route) => {
+    if (!admitOrigin(route)) return route.abort();
     if (route.request().method() !== "POST") return route.continue();
     saveAttempts++;
     const received = await route.fetch({
+      maxRedirects: 0,
       url: localOrigin + new URL(route.request().url()).pathname
     });
     assert.ok([200, 202].includes(received.status()));
@@ -498,11 +512,13 @@ try {
     url.pathname === "/api/platform/exchange" &&
     url.searchParams.get("view") === "gallery";
   await page.route(galleryRoute, (route) =>
-    route.fulfill({
-      status: 503,
-      contentType: "application/json",
-      body: JSON.stringify({ message: "Fictional gallery check unavailable" })
-    })
+    !admitOrigin(route)
+      ? route.abort()
+      : route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "Fictional gallery check unavailable" })
+        })
   );
   try {
     await page.evaluate(() => window.dispatchEvent(new Event("blur")));
@@ -618,6 +634,7 @@ try {
     uploadDetails,
     uploadBytes;
   await page.route("**/api/platform/images", async (route) => {
+    if (!admitOrigin(route)) return route.abort();
     const request = route.request();
     if (request.method() !== "POST") return route.continue();
     if (!lostPhotoReply) {
@@ -625,6 +642,7 @@ try {
       uploadDetails = request.headers()["x-image-details"];
       uploadBytes = request.postDataBuffer();
       const received = await route.fetch({
+        maxRedirects: 0,
         url: localOrigin + new URL(request.url()).pathname
       });
       assert.ok(
@@ -888,6 +906,7 @@ try {
     releaseIdentity = resolve;
   });
   const holdIdentity = async (route) => {
+    if (!admitOrigin(route)) return route.abort();
     identityHeld = true;
     await identityGate;
     await route.continue();
@@ -1548,7 +1567,11 @@ try {
   await editor
     .getByRole("button", { name: "Save a private draft", exact: true })
     .click();
-  await page.waitForURL(/\/platform\/exchange\/[^/]+\/edit$/);
+  await page.waitForURL(
+    (url) =>
+      /\/platform\/exchange\/[^/]+\/edit$/.test(url.pathname) &&
+      url.hash === "#listing-editor-heading"
+  );
   const needId = new URL(page.url()).pathname.split("/")[3];
   await confirmItem();
   await page
@@ -1603,6 +1626,7 @@ try {
     "A current church manager creates and publishes Church need through the real form; approved readers see it, guests cannot, and revoked management conceals the editor"
   );
   assert.deepEqual(errors, []);
+  assert.deepEqual(external, []);
   ok("No browser page errors in the exercised listing flows");
 } catch (error) {
   await page
@@ -1625,7 +1649,9 @@ try {
         errors,
         at: new Date().toISOString(),
         productionWrites: 0,
-        externalSends: 0
+        externalSends: 0,
+        external,
+        externalRequests: external.length
       },
       null,
       2

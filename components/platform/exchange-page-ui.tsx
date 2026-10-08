@@ -429,7 +429,11 @@ export async function ExchangeEditorPage({
     <PlatformShell user={user}>
       <section className="container-shell py-8 sm:py-10">
         <div className="mx-auto max-w-3xl space-y-6">
-          <h1 className="text-4xl">
+          <h1
+            id="listing-editor-heading"
+            tabIndex={-1}
+            className="text-4xl focus:outline-none focus:ring-2 focus:ring-gc-focus"
+          >
             {id ? "Manage listing" : "Create a listing"}
           </h1>
           <ExchangeNavigation />

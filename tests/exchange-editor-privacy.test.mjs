@@ -816,11 +816,15 @@ test("accepted create waits through blur and a held current-owner check, then na
   assertPrivateAbsent(s, draftTitle, draftDescription);
   identity.resolve(response({ id: "owner-a" }));
   await s.h.settle();
-  assert.deepEqual(s.navigations, ["/platform/exchange/listing-a/edit"]);
+  assert.deepEqual(s.navigations, [
+    "/platform/exchange/listing-a/edit#listing-editor-heading"
+  ]);
   s.identityHandler = null;
   s.event("focus");
   await s.h.settle();
-  assert.deepEqual(s.navigations, ["/platform/exchange/listing-a/edit"]);
+  assert.deepEqual(s.navigations, [
+    "/platform/exchange/listing-a/edit#listing-editor-heading"
+  ]);
   assert.equal(s.requests.filter((request) => request.body).length, 1);
 });
 

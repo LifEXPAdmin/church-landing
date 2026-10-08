@@ -39,13 +39,37 @@ assert.ok(
     "need-incoming",
     "need-volunteer",
     "public-resource-sharing",
-    "resource-feeds"
+    "resource-feeds",
+    "c19-journeys"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "c19-journeys": {
+    services: [
+      "exchange-input",
+      "exchange-listings",
+      "reading-preferences",
+      "media-catalog-input",
+      "discovery-resource-preferences"
+    ],
+    browsers: [
+      "qa-accessibility-journeys-browser",
+      "qa-media-catalog-browser",
+      "qa-exchange-browser",
+      "qa-resource-feed-preferences-browser",
+      "qa-resource-feed-reader-browser"
+    ],
+    https: [
+      "exchange-http",
+      "media-catalog-http",
+      "discovery-http",
+      "four-feeds-http",
+      "post-reader-http"
+    ]
+  },
   "resource-feeds": {
     services: [
       "discovery-options",
@@ -521,6 +545,14 @@ async function verifyBuiltApplication() {
     "Platform production build ID:",
     readFileSync(".next/BUILD_ID", "utf8").trim()
   );
+  if (suite === "c19-journeys") {
+    assert.equal(process.env.DATA_SAVER_BASELINE_SOURCE, undefined);
+    await run(process.execPath, ["scripts/qa-data-saver-browser.mjs"], {
+      ...env,
+      DATA_SAVER_QA_DIR: join(fixture, "data-saver-client"),
+      DATA_SAVER_QA_CSS: join(root, ".next/static/css")
+    });
+  }
   proxy = createHttpsServer(
     { key: readFileSync(key), cert: readFileSync(cert) },
     (request, response) => {
@@ -662,18 +694,34 @@ async function verifyBuiltApplication() {
         ...env,
         PRIVILEGED_MFA_MODE: "enforce",
         ARTIST_HTTP_MFA_ENFORCED: "1",
-        ...(suite === "resource-feeds" ? { POST_RENDER_PHASE: "production" } : {})
+        ...(["resource-feeds", "c19-journeys"].includes(suite)
+          ? { POST_RENDER_PHASE: "production" }
+          : {}),
+        ...(suite === "c19-journeys" ? { B1_MEDIA_MFA_HTTP: "1" } : {})
       }
     );
     assert.deepEqual(browserFailures, [], "All declared browser suites must pass");
   }
 }
 try {
-  if (suite === "resource-feeds") {
+  if (suite === "c19-journeys") {
+    assert.equal(process.env.PHOTO_FOREGROUND_SOURCE_ROOT, undefined);
+    assert.equal(process.env.PHOTO_FOREGROUND_CASE_FILTER, undefined);
+    assert.equal(process.env.DATA_SAVER_BASELINE_SOURCE, undefined);
+    const { NODE_EXTRA_CA_CERTS: pendingCertificate, ...controlledEnv } = env;
+    assert.equal(pendingCertificate, cert);
+    await run(process.execPath, [
+      "scripts/qa-photo-foreground-client.mjs",
+      join(fixture, "photo-foreground-client")
+    ], controlledEnv);
+  }
+  if (["resource-feeds", "c19-journeys"].includes(suite)) {
+    const { NODE_EXTRA_CA_CERTS: pendingCertificate, ...controlledEnv } = env;
+    assert.equal(pendingCertificate, cert);
     await run(process.execPath, [
       "scripts/qa-resource-foreground-client.mjs",
       join(fixture, "resource-foreground-client")
-    ]);
+    ], suite === "c19-journeys" ? controlledEnv : env);
   }
   if (suite === "public-resource-sharing") {
     const qrFixture = mkdtempSync(join(fixture, "share-qr-client-"));
@@ -752,7 +800,7 @@ try {
   writeFileSync(join(fixture, "environment.json"), JSON.stringify(env), {
     mode: 0o600
   });
-  if (["public-resource-sharing", "resource-feeds"].includes(suite))
+  if (["public-resource-sharing", "resource-feeds", "c19-journeys"].includes(suite))
     writeFileSync(join(fixture, "test-env.json"), JSON.stringify(env), {
       mode: 0o600,
       flag: "wx"

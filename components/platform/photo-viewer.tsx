@@ -5,6 +5,12 @@ import Link from "next/link";
 import type { ImageView } from "@/lib/platform/media";
 import { socialRequest } from "@/lib/platform/social-client";
 import { useReadVisibility } from "./read-visibility";
+import { useReadingPreferences } from "./reading-preferences";
+
+const hasPhotoForeground = () =>
+  document.hasFocus() &&
+  document.visibilityState === "visible" &&
+  navigator.onLine;
 
 export function PhotoViewer({
   source,
@@ -22,8 +28,12 @@ export function PhotoViewer({
   removeWhenHidden?: boolean;
 }) {
   const sourceVisible = useReadVisibility();
+  const { preferences } = useReadingPreferences();
+  const [largerPhoto, setLargerPhoto] = useState(false);
   const titleId = useId(),
-    dialog = useRef<HTMLDialogElement>(null);
+    dialog = useRef<HTMLDialogElement>(null),
+    closeControl = useRef<HTMLButtonElement>(null),
+    photoViewport = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose),
     generation = useRef(0),
     historyKey = useRef("");
@@ -34,24 +44,27 @@ export function PhotoViewer({
     [zoom, setZoom] = useState(1),
     [failed, setFailed] = useState<string | null>(null);
   const load = useCallback(async () => {
+    if (!sourceVisible || !hasPhotoForeground()) return;
     const seq = ++generation.current;
     setImages([]);
     setStatus("Checking photo access…");
     setFailed(null);
+    setLargerPhoto(false);
     try {
       const result = await socialRequest<{ images: ImageView[] }>(
         source,
         undefined,
         accountId
       );
-      if (seq !== generation.current) return;
+      if (seq !== generation.current || !sourceVisible || !hasPhotoForeground())
+        return;
       setImages(result.data.images.slice(0, pageLimit));
       setStatus("");
     } catch {
-      if (seq === generation.current)
+      if (seq === generation.current && sourceVisible && hasPhotoForeground())
         setStatus("This photo is unavailable. Reconnect to check again.");
     }
-  }, [source, accountId, pageLimit]);
+  }, [source, accountId, pageLimit, sourceVisible]);
   useEffect(() => {
     const node = dialog.current!,
       opener = document.activeElement as HTMLElement | null;
@@ -88,7 +101,8 @@ export function PhotoViewer({
       setStatus("Return to check current photo access.");
     };
     const refresh = () => {
-      if (document.visibilityState !== "hidden") void load();
+      if (hasPhotoForeground()) void load();
+      else conceal();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? conceal() : refresh();
@@ -122,10 +136,18 @@ export function PhotoViewer({
       setSelected(next.id);
       setZoom(1);
       setFailed(null);
+      setLargerPhoto(false);
     }
   }
+  function keepPhotoFocus(control: HTMLButtonElement) {
+    // A deliberate action can remove or disable its own focused control.
+    // Move to the existing photo surface before that synchronous update.
+    if (document.activeElement === control)
+      (photoViewport.current ?? closeControl.current)?.focus();
+  }
   const touch = useRef<{ x: number; y: number } | null>(null);
-  const variant = image?.variants.large;
+  const smallPreview = preferences.reduceData && !largerPhoto;
+  const variant = image?.variants[smallPreview ? "thumb" : "large"];
   // Support keeps the viewer controller and its single history entry mounted
   // while removing private media presentation during current-access checks.
   if (removeWhenHidden && !sourceVisible) return null;
@@ -153,6 +175,7 @@ export function PhotoViewer({
           Photo viewer
         </h2>
         <button
+          ref={closeControl}
           type="button"
           className="gc-button gc-button-quiet"
           onClick={close}
@@ -166,9 +189,37 @@ export function PhotoViewer({
             ? "This photo is no longer available."
             : `Photo ${index + 1} of ${images.length}`)}
       </p>
+      {image && preferences.reduceData && (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm">
+            {smallPreview
+              ? "Data saver is showing a small preview."
+              : "You selected the larger photo."}
+          </p>
+          {smallPreview && failed !== image.id && (
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              onClick={(event) => {
+                keepPhotoFocus(event.currentTarget);
+                setLargerPhoto(true);
+              }}
+            >
+              Load larger photo
+            </button>
+          )}
+          {smallPreview && image.variants.large?.bytes > 0 && (
+            <span className="text-sm text-gc-muted">
+              About {Math.max(1, Math.ceil(image.variants.large.bytes / 1024))}{" "}
+              KB
+            </span>
+          )}
+        </div>
+      )}
       {image && variant && failed !== image.id ? (
         <figure className="min-w-0 space-y-3">
           <div
+            ref={photoViewport}
             className="gc-photo-viewport"
             tabIndex={0}
             aria-label={
@@ -214,7 +265,17 @@ export function PhotoViewer({
               className={zoom === 1 ? "gc-photo-fit" : "gc-photo-zoom"}
               style={zoom > 1 ? { width: `${zoom * 100}%` } : undefined}
               decoding="async"
-              onError={() => setFailed(image.id)}
+              onError={() => {
+                if (
+                  sourceVisible &&
+                  document.hasFocus() &&
+                  document.visibilityState === "visible" &&
+                  navigator.onLine &&
+                  document.activeElement === photoViewport.current
+                )
+                  closeControl.current?.focus();
+                setFailed(image.id);
+              }}
             />
           </div>
           {image.caption && (
@@ -256,7 +317,10 @@ export function PhotoViewer({
                 type="button"
                 className="gc-button"
                 disabled={index <= 0}
-                onClick={() => move(-1)}
+                onClick={(event) => {
+                  if (index === 1) keepPhotoFocus(event.currentTarget);
+                  move(-1);
+                }}
               >
                 Previous photo
               </button>
@@ -264,7 +328,11 @@ export function PhotoViewer({
                 type="button"
                 className="gc-button"
                 disabled={index >= images.length - 1}
-                onClick={() => move(1)}
+                onClick={(event) => {
+                  if (index === images.length - 2)
+                    keepPhotoFocus(event.currentTarget);
+                  move(1);
+                }}
               >
                 Next photo
               </button>
@@ -274,7 +342,10 @@ export function PhotoViewer({
             type="button"
             className="gc-button gc-button-quiet"
             disabled={zoom >= 3}
-            onClick={() => setZoom((value) => Math.min(3, value + 1))}
+            onClick={(event) => {
+              if (zoom === 2) keepPhotoFocus(event.currentTarget);
+              setZoom((value) => Math.min(3, value + 1));
+            }}
           >
             Zoom in
           </button>
@@ -282,7 +353,10 @@ export function PhotoViewer({
             type="button"
             className="gc-button gc-button-quiet"
             disabled={zoom === 1}
-            onClick={() => setZoom(1)}
+            onClick={(event) => {
+              keepPhotoFocus(event.currentTarget);
+              setZoom(1);
+            }}
           >
             Fit photo
           </button>

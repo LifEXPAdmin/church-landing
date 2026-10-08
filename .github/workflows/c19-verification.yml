@@ -1,0 +1,355 @@
+name: C19 Data Saver and accessibility isolated verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/release-data-saver-accessibility-20261008
+    paths:
+      - .github/workflows/c19-verification.yml
+      - package.json
+      - package-lock.json
+      - prisma/**
+      - scripts/test-platform-isolated.mjs
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - scripts/patch-next-hydration.mjs
+      - scripts/verify-hydration-output.mjs
+      - scripts/verify-runtime-traces.mjs
+      - scripts/qa-resource-feed-*-browser.mjs
+      - scripts/qa-resource-foreground-client.mjs
+      - scripts/qa-discovery-browser.mjs
+      - scripts/qa-four-feeds-browser.mjs
+      - tests/discovery*.test.*
+      - tests/four-feeds*.test.*
+      - tests/post-reader*.test.*
+      - tests/reader-navigation.test.ts
+      - tests/resource-*.test.*
+      - tests/feed-snapshot-page.test.mjs
+      - components/platform/discovery-settings.tsx
+      - components/platform/repost-source-boundary.tsx
+      - components/platform/post-resource-cards.tsx
+      - components/platform/feed-reader.tsx
+      - lib/platform/discovery*.ts
+      - lib/platform/feed-reads.ts
+      - lib/platform/feed-snapshot-page.ts
+      - lib/platform/release-*.ts
+      - app/api/platform/release/route.ts
+      - scripts/qa-accessibility-journeys-browser.mjs
+      - scripts/qa-data-saver-browser.mjs
+      - scripts/qa-photo-foreground-client.mjs
+      - scripts/qa-media-catalog-browser.mjs
+      - scripts/qa-exchange-browser.mjs
+      - tests/exchange-input.test.ts
+      - tests/exchange-listings.test.ts
+      - tests/reading-preferences.test.ts
+      - tests/media-catalog*.test.ts
+      - tests/exchange-http.test.ts
+      - tests/*foreground*.test.mjs
+      - tests/exchange-editor-privacy.test.mjs
+      - components/platform/photo-viewer.tsx
+      - components/platform/reading-preferences.tsx
+      - components/platform/exchange-editor.tsx
+      - components/platform/exchange-page-ui.tsx
+      - components/platform/feed-choice.tsx
+      - components/platform/media-catalog-editor.tsx
+      - lib/platform/exchange-input.ts
+      - lib/platform/reading-preferences.ts
+      - lib/platform/settings-registry.ts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c19-journeys-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
+      - name: Prepare runner-only browser and PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/c19-chromium"
+          echo "PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH" >> "$GITHUB_ENV"
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+          npm install --prefix "$RUNNER_TEMP/c19-browser" --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/c19-browser/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/c19-browser/node_modules/playwright/package.json" >> "$GITHUB_ENV"
+          chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/c19-browser/node_modules/playwright")"
+          echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
+      - name: Build and verify fictional C19 journeys over local HTTPS
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs c19-journeys 2>&1 | tee "$RUNNER_TEMP/c19-journeys-verification.log"
+      - name: Record exact source, build and observed test totals
+        if: always()
+        env:
+          C19_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { createHash } from "node:crypto";
+          import { createRequire } from "node:module";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { dirname, join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const profile = "c19-journeys";
+          const output = join(process.env.RUNNER_TEMP, profile + "-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, profile + "-verification.log");
+          const lines = existsSync(logPath) ? readFileSync(logPath, "utf8").split(/\r?\n/) : [];
+          // Only aggregate diagnostics are exported. Raw errors, fixture identities,
+          // API bodies, signed cursors, history and environment remain excluded.
+          const safeLines = lines.filter((line) => /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line) || /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) || /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
+          const log = safeLines.join("\n") + "\n";
+          const totals = (metric) => [...log.matchAll(new RegExp("^(?:#|ℹ) " + metric + " (\\d+)$", "gm"))].map((match) => Number(match[1]));
+          const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
+          const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((match) => ({ sourceSha: match[1], mode: match[2] }));
+          const definitions = {
+            "accessibility-journeys-browser": { file: "results.json", groups: 7, accessibility: true, external: true },
+            "media-catalog-browser": { file: "result.json", groups: 13, media: true },
+            "exchange-browser": { file: "results.json", groups: 20, external: true, productionWrites: true, externalSends: true },
+            "resource-feed-preferences-browser": { file: "results.json", groups: 6, external: true, productionWrites: true },
+            "resource-feed-reader-browser": { file: "results.json", groups: 8, external: true, productionWrites: true, reader: true }
+          };
+          const fixtures = (existsSync(".account-test") ? readdirSync(".account-test") : []).filter((name) => name.startsWith(profile + "-hosted-"));
+          const count = (value) => Array.isArray(value) ? value.length : null;
+          const empty = (value) => Array.isArray(value) && value.length === 0;
+          const browsers = [], controlled = [], conditionalObservations = [];
+          const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+          const require = createRequire(join(process.cwd(), "package.json"));
+          const controlledSources = [
+            "components/platform/repost-source-boundary.tsx",
+            "components/platform/discovery-settings.tsx",
+            "components/platform/read-visibility.ts",
+            "lib/platform/discovery-options.ts",
+            "lib/platform/feed-options.ts",
+            "lib/platform/post-options.ts",
+            "lib/platform/portal-policy.ts",
+            "lib/platform/portal-types.ts",
+            "data/discovery/countries.json",
+            "data/discovery/languages.json"
+          ];
+          const controlledRuntimeModules = [
+            ["react", "react", "react.development.js"],
+            ["react/jsx-runtime", "react", "react-jsx-runtime.development.js"],
+            ["react-dom", "react-dom", "react-dom.development.js"],
+            ["react-dom/client", "react-dom", "react-dom-client.development.js"],
+            ["scheduler", "scheduler", "scheduler.development.js"]
+          ];
+
+          const dataSaverSources = [
+            "components/platform/photo-viewer.tsx",
+            "components/platform/reading-preferences.tsx",
+            "components/platform/read-visibility.ts",
+            "components/platform/display-preview.tsx",
+            "components/platform/use-unsaved-social-work.ts",
+            "components/platform/private-post-workspace.tsx",
+            "components/platform/use-photo-back-guard.ts",
+            "components/platform/draft-workspace-provider.tsx",
+            "lib/platform/reading-preferences.ts",
+            "lib/platform/social-client.ts",
+            "lib/platform/privileged-auth-navigation.ts"
+          ];
+          const cssRoot = ".next/static/css";
+          const cssBindings = existsSync(cssRoot) ? readdirSync(cssRoot).filter((name) => name.endsWith(".css")).sort().map((name) => {
+            const path = join(cssRoot, name);
+            return { path, sha256: hash(path), bytes: readFileSync(path).length };
+          }) : [];
+          const readJson = (path) => { try { return JSON.parse(readFileSync(path, "utf8")); } catch { return null; } };
+          for (const name of fixtures) {
+            const fixture = join(".account-test", name);
+            for (const directory of readdirSync(fixture)) {
+              if (directory === "data-saver-client") {
+                const result = readJson(join(fixture, directory, "results.json"));
+                const labels = result?.passed;
+                const bundle = join(fixture, directory, "bundle.js");
+                const detailsValid = result?.suite === "data-saver-browser" && count(labels) === 7 && labels.every((entry) => typeof entry === "string" && entry.length > 0) && empty(result?.errors) && result?.scopeEvidence === "controlled-component-with-fictional-gallery-and-image-transport" && result?.productionWrites === null && result?.externalSends === null && empty(result?.external) && result?.failure === null && cssBindings.length > 0 && existsSync(bundle);
+                controlled.push({
+                  suite: "data-saver-browser", reportedGroups: count(labels), errorCount: count(result?.errors), detailsValid,
+                  sourceBindings: dataSaverSources.map((path) => ({ path, sha256: hash(path), bytes: readFileSync(path).length })),
+                  runtimeModules: controlledRuntimeModules.map(([name, pkg, file]) => ({ name, package: pkg, file, sha256: hash(join(dirname(require.resolve(pkg + "/package.json")), "cjs", file)) })),
+                  harnessSha256: hash("scripts/qa-data-saver-browser.mjs"), cssBindings, buildId,
+                  bundleSha256: existsSync(bundle) ? hash(bundle) : null,
+                  productionWrites: null, externalSends: null, unexpectedExternalRequests: count(result?.external),
+                  scopeEvidence: "controlled-component-with-fictional-gallery-and-image-transport"
+                });
+                continue;
+              }
+              if (directory === "photo-foreground-client") {
+                const result = readJson(join(fixture, directory, "results.json"));
+                const sourceBindings = ["components/platform/photo-viewer.tsx", "components/platform/read-visibility.ts"].map((path) => ({ path, sha256: hash(path), bytes: readFileSync(path).length }));
+                const runtimeModules = controlledRuntimeModules.map(([name, pkg, file]) => ({
+                  name, package: pkg, file, sha256: hash(join(dirname(require.resolve(pkg + "/package.json")), "cjs", file))
+                }));
+                const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+                const detailsValid = result?.suite === "photo-foreground-client" && result?.status === "passed" && result?.passed === 8 && result?.failed === 0 && count(result?.results) === 8 && result.results.every((entry) => entry.pass === true) && empty(result?.errors) && result?.blockedNetworkRequests === 0 && result?.productionWrites === null && result?.externalSends === null && result?.scopeEvidence === "controlled-component-with-blocked-network-and-stub-transport" && result?.sourceOverride === false && result?.caseFilter === null && same(result?.sourceBindings, sourceBindings) && same(result?.runtimeModules, runtimeModules) && result?.harnessSha256 === hash("scripts/qa-photo-foreground-client.mjs");
+                controlled.push({
+                  suite: "photo-foreground-client", reportedGroups: count(result?.results), errorCount: count(result?.errors), detailsValid,
+                  sourceBindings, runtimeModules, harnessSha256: hash("scripts/qa-photo-foreground-client.mjs"),
+                  productionWrites: null, externalSends: null, blockedNetworkRequests: result?.blockedNetworkRequests ?? null,
+                  sourceOverride: result?.sourceOverride ?? null, caseFilter: result?.caseFilter ?? null,
+                  scopeEvidence: "controlled-component-with-blocked-network-and-stub-transport"
+                });
+                continue;
+              }
+              if (directory === "resource-foreground-client") {
+                const result = readJson(join(fixture, directory, "results.json"));
+                const sourceBindings = controlledSources.map((path) => ({ path, sha256: hash(path), bytes: readFileSync(path).length }));
+                const runtimeModules = controlledRuntimeModules.map(([name, pkg, file]) => ({
+                  name, package: pkg, file,
+                  sha256: hash(join(dirname(require.resolve(pkg + "/package.json")), "cjs", file))
+                }));
+                const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+                const detailsValid = result?.suite === "resource-foreground-client" && result?.status === "passed" && result?.passed === 12 && result?.failed === 0 && count(result?.results) === 12 && result.results.every((entry) => entry.pass === true) && empty(result?.errors) && result?.blockedNetworkRequests === 0 && result?.productionWrites === null && result?.externalSends === null && result?.scopeEvidence === "controlled-component-with-blocked-network-and-stub-transport" && same(result?.sourceBindings, sourceBindings) && same(result?.runtimeModules, runtimeModules) && result?.harnessSha256 === hash("scripts/qa-resource-foreground-client.mjs");
+                controlled.push({
+                  suite: "resource-foreground-client", reportedGroups: count(result?.results), errorCount: count(result?.errors), detailsValid,
+                  sourceBindings, runtimeModules, harnessSha256: hash("scripts/qa-resource-foreground-client.mjs"),
+                  productionWrites: null, externalSends: null, blockedNetworkRequests: result?.blockedNetworkRequests ?? null,
+                  scopeEvidence: "controlled-component-with-blocked-network-and-stub-transport"
+                });
+                continue;
+              }
+              const suite = /^browser-\d+$/.test(directory) ? "media-catalog-browser" : directory.replace(/-\d+$/, "");
+              const definition = definitions[suite];
+              if (!definition) continue;
+              const result = readJson(join(fixture, directory, definition.file));
+              let detailsValid = empty(result?.errors) && count(result?.results) === definition.groups && result.results.every((entry) => definition.accessibility ? typeof entry?.phase === "string" && typeof entry?.message === "string" && entry.message.length > 0 : typeof entry === "string" && entry.length > 0);
+              if (definition.accessibility) detailsValid &&= empty(result?.findings) && result?.runtime?.sourceCommit === sourceSha && result?.runtime?.buildId === buildId && ["light", "dark"].every((scheme) => Number.isSafeInteger(result?.contrastChecks?.[scheme]?.text) && result.contrastChecks[scheme].text > 0 && Number.isSafeInteger(result?.contrastChecks?.[scheme]?.focus) && result.contrastChecks[scheme].focus > 0);
+              if (definition.media) detailsValid &&= result?.providerAttempts === 1 && empty(result?.unexpectedExternal) && result?.unexpectedExternalRequests === 0;
+
+              if (definition.external) detailsValid &&= empty(result?.external) && (definition.accessibility || result?.externalRequests === 0);
+              if (definition.productionWrites) detailsValid &&= result?.productionWrites === 0;
+              if (definition.externalSends) detailsValid &&= result?.externalSends === 0;
+              if (Object.hasOwn(definition, "physicalDevice")) detailsValid &&= result?.physicalDeviceTested === definition.physicalDevice;
+              if (definition.reader) {
+                detailsValid &&= result?.initialPosts === 35 && result?.firstSet === 30 && result?.continuation === 5;
+                const held = readJson(join(fixture, directory, "withdrawal-held-permission.json"));
+                const heldValid = typeof held?.cachedPostPresent === "boolean" && held?.heldTextVisible === false && Number.isSafeInteger(held?.heldResponses) && held.heldResponses >= 0 && (!held.cachedPostPresent || (held.heldResponses >= 1 && existsSync(join(fixture, directory, "withdrawal-held-permission.png"))));
+                detailsValid &&= heldValid;
+                conditionalObservations.push({
+                  suite,
+                  cachedPostPresent: typeof held?.cachedPostPresent === "boolean" ? held.cachedPostPresent : null,
+                  heldTextVisible: typeof held?.heldTextVisible === "boolean" ? held.heldTextVisible : null,
+                  heldResponses: Number.isSafeInteger(held?.heldResponses) ? held.heldResponses : null,
+                  heldResponseBranchObserved: heldValid ? held.cachedPostPresent : null,
+                  detailsValid: heldValid
+                });
+              }
+              browsers.push({
+                suite, reportedGroups: count(result?.results), errorCount: count(result?.errors), detailsValid,
+                productionWrites: definition.productionWrites ? result?.productionWrites ?? null : null,
+                externalSends: definition.externalSends ? result?.externalSends ?? null : null,
+                externalRequestCount: definition.external ? count(result?.external) : null,
+                scopeEvidence: "guarded-fictional-runner-and-successful-child-exit",
+                physicalDevice: false,
+                findingCount: definition.accessibility ? count(result?.findings) : null,
+                contrastChecks: definition.accessibility ? Object.fromEntries(["light", "dark"].map((scheme) => [scheme, { text: result?.contrastChecks?.[scheme]?.text ?? null, focus: result?.contrastChecks?.[scheme]?.focus ?? null }])) : null,
+                intentionalBlockedProviderAttempts: definition.media ? result?.providerAttempts ?? null : null,
+                unexpectedExternalRequests: definition.media ? result?.unexpectedExternalRequests ?? null : null
+              });
+            }
+          }
+          const runtimeOutcome = process.env.C19_RUNTIME_OUTCOME;
+          const expectedBrowserGroups = Object.values(definitions).reduce((sum, value) => sum + value.groups, 0);
+          const report = { sourceSha, profile, buildId, servingIdentities, runtimeOutcome, complete: false, environment: "isolated-fictional", omittedLogLines: lines.filter(Boolean).length - safeLines.length, tests: totals("tests"), pass: totals("pass"), fail: totals("fail"), cancelled: totals("cancelled"), skipped: totals("skipped"), todo: totals("todo"), expectedBrowserGroups, browsers, controlled, conditionalObservations };
+          const save = () => writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
+          save();
+          writeFileSync(join(output, "verification.log"), log);
+          if (runtimeOutcome === "success") {
+            assert.equal(fixtures.length, 1);
+            assert.match(buildId ?? "", /^[A-Za-z0-9_-]+$/);
+            assert.deepEqual([...log.matchAll(/^Platform production build ID: ([A-Za-z0-9_-]+)$/gm)].map((match) => match[1]), [buildId]);
+            assert.deepEqual(servingIdentities, [{ sourceSha, mode: "off" }, { sourceSha, mode: "enforce" }]);
+            assert.deepEqual(report.tests, [59, 9]);
+            assert.deepEqual(report.pass, [59, 9]);
+            for (const metric of ["fail", "cancelled", "skipped", "todo"]) assert.deepEqual(report[metric], [0, 0]);
+            assert.equal(browsers.length, Object.keys(definitions).length);
+            for (const [suite, definition] of Object.entries(definitions)) assert.deepEqual(browsers.filter((entry) => entry.suite === suite).map((entry) => entry.reportedGroups), [definition.groups]);
+            assert.ok(browsers.every((entry) => entry.detailsValid));
+            assert.equal(browsers.reduce((sum, entry) => sum + entry.reportedGroups, 0), expectedBrowserGroups);
+            assert.equal(conditionalObservations.length, 1);
+            assert.ok(conditionalObservations[0].detailsValid);
+            assert.equal(controlled.length, 3);
+            assert.deepEqual(controlled.filter((entry) => entry.suite === "data-saver-browser").map((entry) => entry.reportedGroups), [7]);
+            assert.deepEqual(controlled.filter((entry) => entry.suite === "resource-foreground-client").map((entry) => entry.reportedGroups), [12]);
+            assert.deepEqual(controlled.filter((entry) => entry.suite === "photo-foreground-client").map((entry) => entry.reportedGroups), [8]);
+            assert.ok(controlled.every((entry) => entry.detailsValid), "Current source-bound controlled component receipts required");
+            report.complete = true;
+            save();
+          }
+          NODE
+      - name: Preserve aggregate results and fictional C19 screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: c19-journeys-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/c19-journeys-evidence/report.json
+            ${{ runner.temp }}/c19-journeys-evidence/verification.log
+            .account-test/c19-journeys-hosted-*/resource-feed-preferences-browser-*/resource-choices-large-text-320.png
+            .account-test/c19-journeys-hosted-*/resource-feed-preferences-browser-*/settings-large-text-320.png
+            .account-test/c19-journeys-hosted-*/resource-feed-preferences-browser-*/current-resource-access.png
+            .account-test/c19-journeys-hosted-*/resource-feed-reader-browser-*/pages-320.png
+            .account-test/c19-journeys-hosted-*/resource-feed-reader-browser-*/pages-1440.png
+            .account-test/c19-journeys-hosted-*/resource-feed-reader-browser-*/list-resource-320.png
+            .account-test/c19-journeys-hosted-*/resource-feed-reader-browser-*/list-resource-1440.png
+            .account-test/c19-journeys-hosted-*/resource-feed-reader-browser-*/focused-resource-320.png
+            .account-test/c19-journeys-hosted-*/resource-feed-reader-browser-*/focused-resource-1440.png
+            .account-test/c19-journeys-hosted-*/resource-feed-reader-browser-*/withdrawal-held-permission.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/listing-editor-320-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/listing-editor-viewport-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/listing-detail-320-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/listing-detail-viewport-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/media-editor-320-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/media-editor-viewport-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/media-detail-share-320-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/media-detail-share-viewport-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/media-qr-320-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/media-qr-viewport-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/feed-settings-320-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/feed-settings-viewport-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/reading-settings-320-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/reading-settings-viewport-text200.png
+            .account-test/c19-journeys-hosted-*/accessibility-journeys-browser-*/failed-photo-close-focus.png
+            .account-test/c19-journeys-hosted-*/browser-*/library-390.png
+            .account-test/c19-journeys-hosted-*/browser-*/detail-390.png
+            .account-test/c19-journeys-hosted-*/browser-*/detail-320-double.png
+            .account-test/c19-journeys-hosted-*/browser-*/detail-390-double.png
+            .account-test/c19-journeys-hosted-*/exchange-browser-*/editor-320-large-dark.png
+            .account-test/c19-journeys-hosted-*/exchange-browser-*/editor-mobile.png
+            .account-test/c19-journeys-hosted-*/exchange-browser-*/owned-listings-mobile.png
+            .account-test/c19-journeys-hosted-*/exchange-browser-*/wanted-search-mobile.png
+            .account-test/c19-journeys-hosted-*/exchange-browser-*/service-detail-mobile.png
+            .account-test/c19-journeys-hosted-*/exchange-browser-*/service-editor-320-large-dark.png
+            .account-test/c19-journeys-hosted-*/data-saver-client/data-saver-mobile.png
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+

@@ -98,6 +98,9 @@ export function ExchangeEditor({
     [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState(""),
     [confirmed, setConfirmed] = useState(false);
+  const resultRef = useRef<HTMLParagraphElement>(null),
+    resultFocus = useRef<number | null>(null);
+  const [focusRequest, setFocusRequest] = useState(0);
   const [accessNotice, setAccessNotice] = useState(
     "Checking your current listing access…"
   );
@@ -116,6 +119,20 @@ export function ExchangeEditor({
     changedRef = useRef(false);
   recordRef.current = record;
   navigationRouter.current = router;
+  useEffect(() => {
+    const request = resultFocus.current;
+    if (request === null || busy) return;
+    resultFocus.current = null;
+    if (
+      request === generation.current &&
+      !changedRef.current &&
+      visible &&
+      document.hasFocus() &&
+      document.visibilityState === "visible" &&
+      navigator.onLine
+    )
+      resultRef.current?.focus();
+  }, [focusRequest, busy, visible]);
   const dirty =
     !sameFields(fields, record?.fields ?? emptyExchangeFields()) ||
     (!record && !!ownerChurchId);
@@ -364,11 +381,13 @@ export function ExchangeEditor({
       return false;
     const seq = ++generation.current;
     const identity = ++identityGeneration.current;
+    resultFocus.current = null;
     flight.current = true;
     setBusy(true);
     setPending(request);
     setNotice("");
     let receiptConfirmed = false;
+    let navigating = false;
     try {
       const result = await socialRequest<{
         id?: string;
@@ -403,7 +422,7 @@ export function ExchangeEditor({
       if (changedRef.current) return false;
       const navigate = id !== recordRef.current?.listing.id;
       if (navigate)
-        pendingNavigation.current = `/platform/exchange/${encodeURIComponent(id)}/edit`;
+        pendingNavigation.current = `/platform/exchange/${encodeURIComponent(id)}/edit#listing-editor-heading`;
       const canPresent =
         seq === generation.current &&
         active.current &&
@@ -422,7 +441,10 @@ export function ExchangeEditor({
         setVisible(canPresent);
         setNotice(result.data.message ?? "Photo removed from the listing.");
       });
-      if (navigate && canPresent) await finishNavigation(seq);
+      if (navigate && canPresent) {
+        navigating = true;
+        await finishNavigation(seq);
+      }
       return true;
     } catch (error) {
       if (
@@ -453,6 +475,16 @@ export function ExchangeEditor({
     } finally {
       flight.current = false;
       setBusy(false);
+      // The retained read generation cancels action focus after concealment.
+      // A new listing returns focus through its deferred navigation destination.
+      if (
+        !navigating &&
+        !pendingNavigation.current &&
+        seq === generation.current
+      ) {
+        resultFocus.current = seq;
+        setFocusRequest((value) => value + 1);
+      }
       if (queued.current && active.current && !changedRef.current) {
         queued.current = false;
         void latestCheck.current();
@@ -577,7 +609,13 @@ export function ExchangeEditor({
   return (
     <ReadVisibility.Provider value={visible}>
       <div className="space-y-5">
-        <p role="status" aria-live="polite">
+        <p
+          ref={resultRef}
+          role="status"
+          aria-live="polite"
+          tabIndex={-1}
+          className="focus:outline-none focus:ring-2 focus:ring-gc-focus"
+        >
           {busy
             ? "Confirming this listing change…"
             : visible

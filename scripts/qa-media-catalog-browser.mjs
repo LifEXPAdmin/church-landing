@@ -34,6 +34,7 @@ const der = execFileSync("openssl", ["pkey", "-pubin", "-outform", "DER"], {
 const browser = await chromium.launch({
   headless: true,
   executablePath:
+    process.env.CHROMIUM_PATH ??
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   args: [
     "--ignore-certificate-errors-spki-list=" +
@@ -45,10 +46,19 @@ const context = await browser.newContext({
   viewport: { width: 390, height: 844 }
 });
 context.setDefaultTimeout(15000);
+let providerAttempts = 0,
+  allowProviderAttempt = false,
+  expectedProviderUrl = null;
+const unexpectedExternal = [];
+const admitOrigin = (route) => {
+  if (new URL(route.request().url()).origin === origin) return true;
+  providerAttempts++;
+  if (!allowProviderAttempt || route.request().url() !== expectedProviderUrl)
+    unexpectedExternal.push("unexpected-origin");
+  return false;
+};
 await context.route("**/*", (route) =>
-  new URL(route.request().url()).hostname === "127.0.0.1"
-    ? route.continue()
-    : route.abort()
+  admitOrigin(route) ? route.continue() : route.abort()
 );
 const page = await context.newPage(),
   errors = [],
@@ -84,14 +94,6 @@ await context.addCookies([
     sameSite: "Lax"
   }
 ]);
-let providerAttempts = 0;
-await context.unroute("**/*");
-await context.route("**/*", (route) => {
-  if (new URL(route.request().url()).hostname === "127.0.0.1")
-    return route.continue();
-  providerAttempts++;
-  return route.abort();
-});
 const title = "Fictional browser media " + randomUUID();
 const acknowledge = () =>
   page.getByLabel("I understand this source and catalog audience.").check();
@@ -189,9 +191,13 @@ try {
   await page.screenshot({ path: output + "/detail-390.png", fullPage: true });
   ok("library and detail render readable metadata with zero provider requests");
   const popupPromise = context.waitForEvent("page");
+  expectedProviderUrl = row.sourceUrl;
+  assert.match(expectedProviderUrl, /^https:\/\//);
+  allowProviderAttempt = true;
   await page.getByRole("button", { name: "Open source", exact: true }).click();
   const popup = await popupPromise;
   await wait(async () => providerAttempts === 1);
+  allowProviderAttempt = false;
   assert.equal(await popup.evaluate(() => window.opener === null), true);
   await popup.close();
   await page.bringToFront();
@@ -205,10 +211,15 @@ try {
   let releaseSourceRead,
     sourceReadIntercepted = false;
   const delayedSourceRead = async (route) => {
+    if (!admitOrigin(route)) return route.abort();
     if (route.request().method() !== "GET" || sourceReadIntercepted)
       return route.continue();
     sourceReadIntercepted = true;
-    const response = await route.fetch();
+    const response = await route.fetch({ maxRedirects: 0 });
+    assert.ok(
+      response.status() < 300 || response.status() >= 400,
+      "API redirects are not fixture responses"
+    );
     await new Promise((resolve) => {
       releaseSourceRead = resolve;
     });
@@ -310,10 +321,15 @@ try {
   await page.getByLabel("Title", { exact: true }).fill(retryTitle);
   let intercepted = false;
   const swapResponse = async (route) => {
+    if (!admitOrigin(route)) return route.abort();
     if (route.request().method() !== "POST" || intercepted)
       return route.continue();
     intercepted = true;
-    const response = await route.fetch();
+    const response = await route.fetch({ maxRedirects: 0 });
+    assert.ok(
+      response.status() < 300 || response.status() >= 400,
+      "API redirects are not fixture responses"
+    );
     await context.addCookies([
       {
         name: sessionCookieFixtureName(origin),
@@ -428,9 +444,14 @@ try {
   await page.getByText("Manage availability", { exact: true }).click();
   let lost = false;
   const loseRemoval = async (route) => {
+    if (!admitOrigin(route)) return route.abort();
     if (route.request().method() !== "POST" || lost) return route.continue();
     lost = true;
-    await route.fetch();
+    const response = await route.fetch({ maxRedirects: 0 });
+    assert.ok(
+      response.status() < 300 || response.status() >= 400,
+      "API redirects are not fixture responses"
+    );
     await route.abort();
   };
   await context.route("**/api/platform/media-catalog", loseRemoval);
@@ -460,9 +481,14 @@ try {
     "lost removal response recovers its original receipt without a second removal"
   );
   assert.deepEqual(errors, []);
+  assert.deepEqual(unexpectedExternal, []);
   writeFileSync(
     output + "/result.json",
-    JSON.stringify({ results, providerAttempts, errors }, null, 2)
+    JSON.stringify(
+      { results, providerAttempts, errors, unexpectedExternal, unexpectedExternalRequests: unexpectedExternal.length },
+      null,
+      2
+    )
   );
   console.log(
     JSON.stringify({ output, passed: results.length, providerAttempts, errors })

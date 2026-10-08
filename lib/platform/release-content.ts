@@ -801,7 +801,7 @@ export const features: Feature[] = [
     name: "View photos",
     description: "Open readable photos, move through a gallery and zoom in.",
     steps:
-      "Tap a profile photo, cover or post photo. Use Previous and Next, swipe or arrow keys to move through a post's photos. Zoom in for detail, then Fit photo. Close, Escape or Back returns to your place.",
+      "Tap a profile photo, cover or post photo. With Data saver enabled, choose Load larger photo when you want more detail. Use Previous and Next, swipe or arrow keys to move through a post's photos. Zoom in for detail, then Fit photo. Close, Escape or Back returns to your place.",
     href: "/platform",
     eligibility:
       "Each photo keeps its current source audience. Member profiles require sign-in. Unavailable photos remain private; opening the viewer adds no access.",
@@ -1047,6 +1047,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "data-saver-and-accessible-resource-journeys", version: "2026.10.08.12", date: "2026-10-08",
+    summary: "Choose when to load larger photos and move through resource forms with clearer keyboard focus and errors.",
+    added: ["Data saver opens small photo previews. Load larger photo is an explicit choice for the current photo, and changing photos or refreshing access resets that choice."],
+    improved: ["Listing and media forms identify fields that need attention and guide keyboard focus through errors and saved changes.", "Feed settings and photo actions preserve useful focus, and resource forms fit better with enlarged text."],
+    fixed: ["Photo actions keep keyboard focus on the viewer when their controls disappear or become unavailable. Delayed image errors do not interrupt a different focused control.", "The photo viewer stays concealed while the page is unfocused or offline, including when an earlier photo check finishes late."],
+    featureIds: ["photo-viewer", "media-settings-layout", "exchange-listings", "media-catalog", "discovery-feeds"]
+  },
   {
     id: "resource-feed-choices-and-reader-return", version: "2026.10.08.11", date: "2026-10-08",
     summary: "Choose which resource posts appear in Home feeds and keep your place when returning from a resource page.",

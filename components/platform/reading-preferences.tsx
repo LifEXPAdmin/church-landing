@@ -255,7 +255,7 @@ export function ReadingSettings({
             <br />
             <span className="text-sm font-normal text-gc-muted">
               Load smaller previews. Post galleries show one photo at a time;
-              large images load only when you open them.
+              choose Load larger photo in the viewer for more detail.
             </span>
           </span>
           <input
