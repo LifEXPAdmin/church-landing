@@ -32,5 +32,13 @@
   "devDependencies": {
     "@types/react": "19.2.4",
     "typescript": "6.0.3"
+  },
+  "overrides": {
+    "micromatch@4.0.8": {
+      "braces": "npm:@dieub/braces-depth-guard@3.0.3-pn.3"
+    },
+    "xcode@3.0.1": {
+      "uuid": "11.1.1"
+    }
   }
 }
