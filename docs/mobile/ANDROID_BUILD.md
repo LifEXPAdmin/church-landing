@@ -27,7 +27,8 @@ rejects a stale package variant, a different signing configuration or a changed
 SDK matrix. Regenerate the selected native variant when changing APP_VARIANT.
 
 Gradle uses one worker, no parallel projects and no persistent daemon. Kotlin
-compiles in the same process; Metro and CMake each get one worker. Task-scoped
+compiles in the same process; Metro gets one worker. CMake compilation and linking
+share a single-slot Ninja pool, including when Gradle invokes Ninja directly. Task-scoped
 Gradle, Android user, temporary, Expo and npm caches stay on the verified volume.
 The shared heavy-job lock also excludes another launcher in this worktree.
 
