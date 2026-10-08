@@ -27,7 +27,7 @@ function fixture() {
     randomId: () => `00000000-0000-4000-8000-${String(++nonce).padStart(12, "0")}`
   });
   const requests: NativeWireRequest[] = [], factoryConfigurations: NativeApiConfiguration[] = [], scopes: string[] = [];
-  const state = { intercept: null as ((request: NativeWireRequest) => Promise<void>) | null };
+  const state = { liked: false, likeVersion: 0, intercept: null as ((request: NativeWireRequest) => Promise<void>) | null };
   const ports: NativeApplicationPorts = {
     wire(fixed) {
       factoryConfigurations.push(fixed);
@@ -36,9 +36,19 @@ function fixture() {
         const path = new URL(request.url).pathname;
         const activity = { owner, legacy: false, deadline: "2026-10-08T12:01:00.000Z",
           absoluteExpiresAt: "2026-11-07T12:00:00.000Z", serverTime: "2026-10-08T12:00:00.000Z" };
-        const data = path.endsWith("/session") ? apiResponseExamples.session.data :
+        let receipt = null;
+        if (path.endsWith("/like") && request.method === "POST") {
+          const body = JSON.parse(request.body!);
+          assert.equal(body.mutationId, "fictional-native-choice");
+          assert.equal(body.expectedVersion, state.likeVersion);
+          state.liked = body.desired; state.likeVersion++;
+          receipt = { id: examplePost.id, version: state.likeVersion, message: "Fictional result" };
+        }
+        const data = path.endsWith("/like") ? receipt ?? { id: examplePost.id, liked: state.liked,
+          count: null, version: state.likeVersion } : path.endsWith("/session") ? apiResponseExamples.session.data :
           path.endsWith("/session/activity") ? activity : path.endsWith("/capabilities") ? {
-            supportedVersions: ["1"], features: [{ name: "feed.read", available: true }, { name: "post.read", available: true }]
+            supportedVersions: ["1"], features: [{ name: "feed.read", available: true }, { name: "post.read", available: true },
+              { name: "likes.read", available: true }, { name: "likes.write", available: true }]
           } : path.endsWith("/feed") ? apiResponseExamples.feed.data : path.endsWith("/posts/" + examplePost.id) ? examplePost : null;
         assert.notEqual(data, null, "Only the expected fictional reads are available");
         return { status: 200, apiVersion: "1", contentType: "application/json", cacheControl: "no-store", retryAfter: null,
@@ -140,4 +150,24 @@ test("effect cleanup fences a late restore and setup creates a fresh owner using
   assert.equal(second.session.getSnapshot().account?.id, owner);
   assert.equal(f.factoryConfigurations.length, 2);
   assert.deepEqual(f.scopes, ["staging|" + configuration.origin, "staging|" + configuration.origin]);
+});
+
+
+test("native composition passes the ID port without invoking it during construction or reads", async t => {
+  const f = fixture(); await f.seed(); let calls = 0;
+  f.ports.mutationId = () => { calls++; return "fictional-native-choice"; };
+  const runtime = ready(f); t.after(runtime.dispose);
+  assert.equal(calls, 0);
+  await runtime.setForeground(true);
+  assert.equal(calls, 0);
+  await runtime.open({ kind: "post", postId: examplePost.id });
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => { stop(); reject(Error("Like status was not ready")); }, 1000);
+    const check = () => { if (runtime.likes.getSnapshot().canChoose) { clearTimeout(timer); stop(); resolve(); } };
+    const stop = runtime.likes.subscribe(check); check();
+  });
+  assert.equal(calls, 0);
+  await runtime.setLike(runtime.likes.getSnapshot(), true);
+  assert.equal(calls, 1); assert.equal(f.state.liked, true);
+  assert.equal(f.requests.filter(r => r.method === "POST" && r.url.endsWith("/like")).length, 1);
 });

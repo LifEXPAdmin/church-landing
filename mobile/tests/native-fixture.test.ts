@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 import { createNativeFixture } from "../src/spike/native-fixture.ts";
 import { handleAndroidBack } from "../src/platform/android-back.ts";
 
@@ -124,4 +127,147 @@ test("a delayed fictional read cancels promptly when the runtime is concealed", 
   const opening = f.runtime.open({ kind: "post", postId: "fixture-prayer" });
   await f.runtime.setForeground(false); await opening;
   assert.equal(f.runtime.reading.getSnapshot().kind, "concealed");
+});
+
+
+type Runtime = ReturnType<typeof createNativeFixture>["runtime"];
+type Like = ReturnType<Runtime["likes"]["getSnapshot"]>;
+function waitLike(runtime: Runtime, predicate: (state: Like) => boolean) {
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => { stop(); reject(Error("Expected Like state was not reached")); }, 1000);
+    const check = () => { if (predicate(runtime.likes.getSnapshot())) { clearTimeout(timer); stop(); resolve(); } };
+    const stop = runtime.likes.subscribe(check); check();
+  });
+}
+async function detail(runtime: Runtime, id: string) {
+  await runtime.open({ kind: "post", postId: id });
+  await waitLike(runtime, state => state.currentPostId === id && state.phase !== "loading");
+  return runtime.likes.getSnapshot();
+}
+
+test("fictional Like receipts are reconciled once and current counts come from a new read", async t => {
+  const f = fixture(t), r = f.runtime; await r.setForeground(true); await f.signIn();
+  let state = await detail(r, "fixture-quote");
+  assert.equal(state.liked, false); assert.equal(state.count, 0);
+  f.interruptNextLikeReply(); await r.setLike(state, true);
+  state = r.likes.getSnapshot(); assert.equal(state.phase, "unconfirmed");
+  assert.equal(state.canChoose, false); assert.equal(state.hasPending, true);
+  await r.backToFeed();
+  assert.equal(r.likes.getSnapshot().currentPostId, null);
+  assert.equal(r.likes.getSnapshot().canReviewPending, true);
+  await r.reviewPendingLike(r.likes.getSnapshot());
+  await waitLike(r, next => next.canRetry);
+  state = r.likes.getSnapshot(); assert.equal(state.currentPostId, "fixture-quote");
+  assert.equal(state.liked, true); assert.equal(state.count, 1);
+  await r.retryLike(state);
+  state = r.likes.getSnapshot(); assert.equal(state.phase, "ready");
+  assert.equal(state.hasPending, false); assert.equal(state.liked, true); assert.equal(state.count, 1);
+  await r.backToFeed(); await r.nextPage();
+  const refreshed = r.reading.getSnapshot(); assert.equal(refreshed.kind, "feed");
+  if (refreshed.kind === "feed") assert.equal(refreshed.feed.page.items.find(p => p.id === "fixture-quote")?.likeCount, 1);
+  state = await detail(r, "fixture-quote");
+  await r.setLike(state, false);
+  state = r.likes.getSnapshot(); assert.equal(state.liked, false); assert.equal(state.count, 0);
+});
+
+test("plain repost Like uses the original while hidden counts remain hidden and quotes stay separate", async t => {
+  const f = fixture(t), r = f.runtime; await r.setForeground(true); await f.signIn();
+  let state = await detail(r, "fixture-repost");
+  assert.equal(state.currentPostId, "fixture-repost"); assert.equal(state.count, null);
+  await r.setLike(state, true);
+  state = r.likes.getSnapshot(); assert.equal(state.liked, true); assert.equal(state.count, null);
+  state = await detail(r, "fixture-welcome"); assert.equal(state.liked, true); assert.equal(state.count, null);
+  state = await detail(r, "fixture-quote"); assert.equal(state.liked, false); assert.equal(state.count, 0);
+  await r.open({ kind: "post", postId: "fixture-unavailable" });
+  assert.equal(r.likes.getSnapshot().canChoose, false);
+  assert.equal(r.likes.getSnapshot().liked, null);
+});
+
+type Element = { type: unknown; props: Record<string, unknown> };
+type LikeButton = { label: string; disabled?: boolean; onPress(): void };
+const likeCode = ts.transpileModule(readFileSync(new URL("../src/ui/NativePostLike.tsx", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 }
+}).outputText;
+/** Real leaf callbacks and canonical fixture runtime; no React/native rendering
+ * or announcement-delivery claim is made by this descriptor harness. */
+function likeUi(runtime: Runtime) {
+  const pending: Promise<unknown>[] = [], cleanups: (() => void)[] = []; let activities = 0;
+  const uiRuntime: Runtime = { ...runtime,
+    recordForegroundActivity() { activities++; return runtime.recordForegroundActivity(); },
+    setLike(...args) { const work = runtime.setLike(...args); pending.push(work); return work; },
+    retryLike(...args) { const work = runtime.retryLike(...args); pending.push(work); return work; },
+    refreshLike(...args) { const work = runtime.refreshLike(...args); pending.push(work); return work; },
+    reviewPendingLike(...args) { const work = runtime.reviewPendingLike(...args); pending.push(work); return work; }
+  };
+  const jsx = (type: unknown, props: Element["props"]): Element => ({ type, props });
+  const modules: Record<string, unknown> = {
+    "react": { useEffect() {}, useRef: (value: unknown) => ({ current: value }),
+      useLayoutEffect(work: () => () => void) { cleanups.push(work()); }, useSyncExternalStore(_subscribe: unknown, get: () => unknown) { return get(); } },
+    "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: "Fragment" },
+    "react-native": { Platform: { OS: "ios" }, AccessibilityInfo: { announceForAccessibility() {} } },
+    "./primitives": { Button: "Button", Text: "Text" }
+  };
+  const output: { NativePostLike?: (props: { runtime: Runtime; postId: string }) => unknown;
+    NativePendingLike?: (props: { runtime: Runtime }) => unknown } = {};
+  runInNewContext(likeCode, { exports: output, require(name: string) {
+    assert.ok(Object.hasOwn(modules, name), "Unexpected Like UI dependency: " + name); return modules[name];
+  } }, { timeout: 1000 });
+  function elements(value: unknown): Element[] {
+    if (Array.isArray(value)) return Array.from(value).flatMap(elements);
+    if (!value || typeof value !== "object") return [];
+    const element = value as Element; return [element, ...elements(element.props?.children)];
+  }
+  return {
+    render(postId: string | null) {
+      const tree = [postId ? output.NativePostLike!({ runtime: uiRuntime, postId }) : null,
+        output.NativePendingLike!({ runtime: uiRuntime })];
+      return { buttons: elements(tree).filter(x => x.type === "Button").map(x => x.props as unknown as LikeButton),
+        text: JSON.stringify(tree) };
+    },
+    activities: () => activities,
+    unmount() { for (const cleanup of cleanups.splice(0)) cleanup(); },
+    async drain() { await Promise.all(pending.splice(0)); }
+  };
+}
+
+test("Like UI shows hidden totals and rejects retained callbacks before renewing activity", async t => {
+  const f = fixture(t), r = f.runtime; await r.setForeground(true); await f.signIn();
+  await detail(r, "fixture-welcome"); const ui = likeUi(r); t.after(ui.unmount);
+  const first = ui.render("fixture-welcome"), stale = first.buttons.find(b => b.label === "Like");
+  assert.ok(stale); assert.ok(first.text.includes("Like count hidden")); assert.equal(ui.activities(), 0);
+  stale.onPress(); stale.onPress(); await ui.drain();
+  assert.equal(ui.activities(), 1); assert.equal(r.likes.getSnapshot().liked, true);
+  assert.ok(ui.render("fixture-welcome").buttons.some(b => b.label === "Unlike"));
+  await detail(r, "fixture-quote"); stale.onPress(); await ui.drain();
+  assert.equal(ui.activities(), 1); assert.equal(r.likes.getSnapshot().liked, false);
+  assert.equal(ui.render("fixture-welcome").text.includes("Like count hidden"), false);
+  const concealStale = ui.render("fixture-quote").buttons.find(b => b.label === "Like")!;
+  await r.setForeground(false); concealStale.onPress(); await ui.drain();
+  assert.equal(ui.activities(), 1); assert.deepEqual(ui.render("fixture-quote").buttons, []);
+});
+
+test("Like UI offers explicit pending review and exact retry without creating a second choice", async t => {
+  const f = fixture(t), r = f.runtime; await r.setForeground(true); await f.signIn();
+  await detail(r, "fixture-quote"); const ui = likeUi(r); t.after(ui.unmount);
+  f.interruptNextLikeReply(); ui.render("fixture-quote").buttons.find(b => b.label === "Like")!.onPress(); await ui.drain();
+  let view = ui.render("fixture-quote");
+  assert.equal(view.buttons.find(b => b.label === "Like")?.disabled, true);
+  assert.ok(view.buttons.some(b => b.label === "Retry same Like choice"));
+  await r.backToFeed();
+  const review = ui.render(null).buttons.find(b => b.label === "Review pending Like choice"); assert.ok(review);
+  review.onPress(); review.onPress(); await ui.drain(); await waitLike(r, s => s.canRetry);
+  view = ui.render("fixture-quote");
+  const retry = view.buttons.find(b => b.label === "Retry same Like choice"); assert.ok(retry);
+  retry.onPress(); retry.onPress(); await ui.drain();
+  assert.equal(r.likes.getSnapshot().hasPending, false); assert.equal(r.likes.getSnapshot().count, 1);
+  assert.equal(ui.activities(), 3);
+});
+
+
+test("an unmounted Like leaf cannot dispatch or renew activity while its runtime remains ready", async t => {
+  const f = fixture(t), r = f.runtime; await r.setForeground(true); await f.signIn();
+  await detail(r, "fixture-quote"); const ui = likeUi(r);
+  const retained = ui.render("fixture-quote").buttons.find(b => b.label === "Like")!;
+  ui.unmount(); retained.onPress(); await ui.drain();
+  assert.equal(ui.activities(), 0); assert.equal(r.likes.getSnapshot().liked, false);
 });

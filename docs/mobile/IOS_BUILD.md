@@ -341,3 +341,65 @@ Real backend and feed-ranking acceptance, physical devices, minimum supported
 iOS, signing and store readiness remain open. This run does not repeat earlier
 keyboard, iOS 27 or stalled-JavaScript privacy checks. The unchanged mobile audit
 still has four high node-forge findings; no security gate was waived.
+
+
+## Detail Like and live text verification
+
+This checkpoint adds detail Like/Unlike, current status and explicit
+recovery of one interrupted in-memory command. It consumes the existing shared
+API schema and preserves the prepared-request generation guard. The labeled
+fictional preview can save a choice and interrupt its reply for recovery checks.
+Native activation remains unavailable until a separate accepted HTTPS backend
+and session receipt are supplied.
+
+The JavaScript, Swift and Kotlin route policies admit only the exact Like path
+and reviewed GET/POST forms. The current Swift 6 warnings-as-errors harness passes
+14 macOS Foundation policy/transport groups. Xcode's strict capture diagnostic
+required spelling out the existing strong capture on the serial reserve closure;
+the nested deadline handler retains its weak capture. No compiler flag or native
+transport bound was weakened. Kotlin assertion source still needs execution with
+the Android toolchain. Foundation success is distinct from an iOS binary or real
+HTTPS acceptance.
+
+All 301 mobile tests pass, along with mobile types, focused test types, lint,
+the 46-module boundary check, copy, source security and staged secret scanning.
+Fresh iOS project and Pods preparation completed. The first Like binary exposed
+clipped labels when system text size changed on an already mounted screen.
+The corrected theme subscribes to the public font-scale event and remounts only
+the iOS text host when that scale changes. Inputs, buttons and runtime owners
+retain their identity; native font scaling remains enabled without an extra
+multiplier. Descriptor tests cover these boundaries, not Fabric focus behavior.
+
+The corrected Release build passed. An earlier attempt stalled during dependency
+directory enumeration; its failure was retained, and verified duplicate package
+directories were preserved outside the source tree before the successful retry.
+No package lock or application source changed for that build repair.
+
+The installed iPhone SE Simulator app on iOS 18.3.1 matches the corrected build's
+JavaScript, executable and Info.plist hashes. Its Hermes bundle is 1,771,751 bytes,
+25,375 bytes above the feed checkpoint. This is an artifact measurement, not a
+download-size or performance claim. The managed session ended with unchanged
+source, restored normal system text size and successful device shutdown.
+
+The corrected fictional sign-in form redraws after live normal-to-largest and
+largest-to-normal system text changes without leaving the form. Its complete
+fictional values survive and successfully sign in. The enlarged password-toggle
+label wraps. Single-line input text remains horizontally scrollable; this run
+does not establish software-keyboard, selection or VoiceOver focus preservation.
+
+Like sets the visible quote count from zero to one. An interrupted Unlike stays
+unconfirmed with a disabled new-choice control; a current read retains the exact
+pending choice, and explicit retry reconciles to zero. The largest-text retry
+and status controls wrap. Pending state survives live sizing and the native
+privacy cover, then becomes reviewable after fresh session verification. Sign-out
+clears it, and a fresh sign-in has no executable retry. The earlier Like binary
+also exercised hidden counts and Back-to-feed recovery; that evidence remains
+separate from the corrected binary.
+
+Accessibility automation can scroll controls into view. Periodic authorized
+detail reads also remounted content during inspection, so the nonperiodic form
+provides the direct live-resize evidence. Detail scroll continuity needs separate
+follow-up. Full assistive-technology checks, Kotlin execution, Android acceptance
+and its separately reported feed-label clipping remain open. These observations
+do not replace real HTTPS/session, physical-device, minimum-iOS, signing, security
+or store gates. The four existing high mobile dependency findings remain open.

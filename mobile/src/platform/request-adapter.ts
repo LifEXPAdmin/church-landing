@@ -73,10 +73,14 @@ function requestUrl(origin: string, input: RequestData): URL {
     url = new URL(input.path, origin);
   } catch { throw fail(); }
   if (url.origin !== origin || url.username || url.password || url.hash) throw fail();
+  const like = /^\/api\/platform\/v1\/posts\/[A-Za-z0-9_-]{1,100}\/like$/.test(url.pathname);
+  // URL.search hides an empty query delimiter. This new route accepts none.
+  if (like && input.path.includes("?")) throw fail();
   if (input.method === "POST") {
-    if (!["/api/platform/v1/auth/password", "/api/platform/v1/session/activity", "/api/platform/v1/session/logout"].includes(url.pathname) || url.search)
+    if (!(like || ["/api/platform/v1/auth/password", "/api/platform/v1/session/activity", "/api/platform/v1/session/logout"].includes(url.pathname)) || url.search)
       throw fail();
   } else if (input.method !== "GET" || !(
+    like ||
     ["/api/platform/v1/capabilities", "/api/platform/v1/session", "/api/platform/v1/session/activity", "/api/platform/v1/feed", "/api/platform/v1/churches"].includes(url.pathname) ||
     /^\/api\/platform\/v1\/(?:posts|profiles|churches)\/[A-Za-z0-9_-]{1,100}$/.test(url.pathname)
   )) throw fail();
