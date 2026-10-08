@@ -249,3 +249,12 @@ not prove software-keyboard, selection or VoiceOver focus preservation. Android'
 separately reported feed-label clipping remains unresolved by this iOS-only fix.
 See [the build receipt summary](IOS_BUILD.md#detail-like-and-live-text-verification)
 for exact validation boundaries and open native/release gates.
+
+The subsequent shared Button correction stretches its existing label to the
+available padded width while preserving centered text, native wrapping and
+intrinsic height. All 301 existing mobile regressions and a fresh iPhone Release
+build pass. The small iPhone shows the complete normal-size weekly label in both
+selection states and a longer four-line button at maximum text size. The weekly
+control at maximum size and separate heading overflow remain explicit visual
+follow-ups. Android's measured text-view/layout mismatch still requires its own
+corrected-binary acceptance. See [the bounded width check](IOS_BUILD.md#shared-button-label-width).

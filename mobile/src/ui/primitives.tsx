@@ -38,7 +38,7 @@ export function Button({ label, onPress, secondary = false, disabled = false, se
         : pressed ? theme.color.hover : theme.color.action,
       alignItems: "center", justifyContent: "center", alignSelf: "stretch"
     })}>
-    <Text variant="control" style={{ textAlign: "center", color: disabled ? theme.color.muted : secondary ? theme.color.text : theme.color["on-action"] }}>{label}</Text>
+    <Text variant="control" style={{ alignSelf: "stretch", textAlign: "center", color: disabled ? theme.color.muted : secondary ? theme.color.text : theme.color["on-action"] }}>{label}</Text>
   </Pressable>;
 }
 
