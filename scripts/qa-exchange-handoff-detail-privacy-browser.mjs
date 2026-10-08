@@ -421,13 +421,27 @@ try {
           message: "Wrong fictional receipt"
         })
       });
-    if (step === 3)
+    if (step >= 3 && step <= 5) {
+      const sent = JSON.parse(body);
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: sent.id,
+          version: [0, sent.expectedVersion, sent.expectedVersion + 99][
+            step - 3
+          ],
+          message: "Wrong fictional revision"
+        })
+      });
+    }
+    if (step === 6)
       return route.fulfill({
         status: 429,
         contentType: "application/json",
         body: JSON.stringify({ message: "Injected bounded retry" })
       });
-    if (step === 4)
+    if (step === 7)
       return route.fulfill({
         status: 503,
         contentType: "application/json",
@@ -443,9 +457,9 @@ try {
     async () => !(await exact("Confirm original save").isDisabled())
   );
   assert.equal(await details.locator("textarea").count(), 0);
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 7; i++) {
     await exact("Confirm original save").click();
-    if (i < 3)
+    if (i < 6)
       await waitUntil(
         async () =>
           (await exact("Confirm original save").count()) === 1 &&
@@ -456,7 +470,7 @@ try {
   assert.equal(await noteField.inputValue(), note);
   assert.equal(await pickupField.inputValue(), uncertain);
   await clearIntercepts();
-  assert.equal(bodies.length, 5);
+  assert.equal(bodies.length, 8);
   assert.ok(bodies.every((body) => body === bodies[0]));
   const original = JSON.parse(bodies[0]);
   assert.equal((await read()).version, original.expectedVersion + 1);
@@ -471,7 +485,7 @@ try {
     1
   );
   ok(
-    "Lost accepted plan plus changed snapshot, wrong receipt, 429 and 503 recover five byte-identical requests with one plan audit and the sibling draft intact"
+    "Lost accepted plan plus changed snapshot, wrong target, zero/stale/future revisions, 429 and 503 recover eight byte-identical requests with one plan audit and the sibling draft intact"
   );
   // Cancellation acknowledges only its note; retain an unrelated private plan draft.
   const unsentPlan = uncertain + " UNSENT sibling";

@@ -1,5 +1,30 @@
 # Exchange inquiries and handoff implementation
 
+## Detail receipt revision correction, 6 October 2026 UTC
+
+The current privacy owner reproduced all eight detail actions accepting a zero,
+stale or future receipt revision after submitting expected version three. This
+could acknowledge an unconfirmed save and remove original-request recovery.
+
+Select, plan, confirm, decline, withdraw, complete, cancel and participant-local
+clear now capture the original inquiry ID and exactly the submitted version plus
+one before dispatch. The existing private-choice hook checks that retained
+identity and revision on every response and retry, even if newer inquiry props
+arrive meanwhile. A second synchronous action cannot replace the in-flight
+submission. Wrong receipts preserve original bytes, drafts and dirty protection;
+only exact acknowledgment followed by canonical readback can rearm the owner.
+
+The correction is local to inquiry detail actions. Inquiry creation, receiver
+contact consent and listing archive retain their separate server contracts;
+archive can legitimately advance more than once while ending a held handoff.
+No server authorization, schema, dependency or shared receipt rule changed.
+
+All 64 focused handoff source tests pass, including 37 new operation, held-response
+and retry cases. The full browser scenario now checks a committed lost reply,
+a wrong target, zero/stale/future revisions, rate limiting and temporary failure
+before an exact byte-identical retry with one plan audit. Full production-mode
+browser/database/HTTPS verification is next. No publication is claimed.
+
 ## Verified live, September 16, 2026 UTC
 
 **2026.09.16.12 / eebbe643b6f526bcbb5ca5fbaa7bc203e0d11d3e** is READY in

@@ -277,6 +277,242 @@ function actionHarness(t, extra = {}) {
 const pickupLabel = "Private pickup instructions (optional)",
   noteLabel = "Private explanation (optional)";
 
+function operationHarness(t, operation) {
+  const s = actionHarness(t);
+  const pickup = `Fictional retained pickup for ${operation}`;
+  const note = `Fictional retained explanation for ${operation}`;
+  s.change(pickupLabel, pickup);
+  s.change(noteLabel, note);
+  const extra =
+    operation === "select" || operation === "decline"
+      ? { state: "INQUIRED" }
+      : operation === "withdraw"
+        ? { state: "INQUIRED", side: "outgoing" }
+        : operation === "confirm"
+          ? { side: "outgoing" }
+          : operation === "complete"
+            ? { state: "RESERVED" }
+            : operation === "clear"
+              ? { state: "COMPLETED", canClear: true, available: false }
+              : {};
+  s.adopt(inquiry(extra));
+  if (operation === "confirm") {
+    nodes(
+      s.h.output,
+      (node) => node.props.type === "checkbox"
+    )[0].props.onChange({
+      target: { checked: true }
+    });
+    s.h.render();
+  }
+  return {
+    ...s,
+    dispatch() {
+      if (operation === "select" || operation === "plan") s.submitPlan();
+      else {
+        const labels = {
+          confirm: "Agree to pickup plan",
+          decline: "Decline inquiry",
+          withdraw: "Withdraw inquiry",
+          complete: "Mark handoff complete",
+          cancel: "Cancel handoff",
+          clear: "Clear from my history"
+        };
+        button(s.h.output, labels[operation]).props.onClick();
+        s.h.render();
+      }
+    },
+    assertDrafts() {
+      const presented = [
+        textContent(s.h.output),
+        ...nodes(s.h.output, (node) =>
+          ["input", "textarea"].includes(node.type)
+        ).map((node) => node.props.value)
+      ].join("\n");
+      assert.ok(
+        presented.includes(pickup),
+        "The original pickup draft remains"
+      );
+      assert.ok(
+        presented.includes(note),
+        "The original cancellation draft remains"
+      );
+      assert.equal(s.state.guard.dirty, true);
+    }
+  };
+}
+
+for (const operation of [
+  "select",
+  "plan",
+  "confirm",
+  "decline",
+  "withdraw",
+  "complete",
+  "cancel",
+  "clear"
+]) {
+  for (const version of [0, 3, 99])
+    test(`${operation} rejects receipt version ${version} for submitted version 3 and retries the unchanged command`, async (t) => {
+      const s = operationHarness(t, operation);
+      s.state.receiptVersion = version;
+      s.dispatch();
+      await s.h.settle();
+      const original = s.writes()[0].body;
+      assert.equal(JSON.parse(original).operation, `handoff-${operation}`);
+      assert.equal(JSON.parse(original).expectedVersion, 3);
+      assert.equal(
+        s.confirmed.length,
+        0,
+        "A different version is not acknowledgment"
+      );
+      assert.match(textContent(s.h.output), /response could not be confirmed/i);
+      s.assertDrafts();
+      assert.equal(
+        button(s.h.output, "Confirm original save").props.disabled,
+        false
+      );
+      s.dispatch();
+      await s.h.settle();
+      assert.equal(
+        s.writes().length,
+        1,
+        "An uncertain receipt cannot mint another command"
+      );
+      s.state.receiptVersion = 4;
+      button(s.h.output, "Confirm original save").props.onClick();
+      await s.h.settle();
+      assert.equal(s.writes().length, 2);
+      assert.equal(
+        s.writes()[1].body,
+        original,
+        "Retry preserves the mutation ID and every original byte"
+      );
+      assert.equal(s.confirmed.length, 1);
+      assert.equal(s.confirmed[0].id, "inquiry-a");
+      assert.equal(s.confirmed[0].version, 4);
+      assert.equal(
+        nodes(
+          s.h.output,
+          (node) =>
+            node.type === "button" &&
+            textContent(node) === "Confirm original save"
+        ).length,
+        0
+      );
+      assert.equal(
+        s.state.guard.dirty,
+        true,
+        "Acknowledgment preserves unrelated local choices"
+      );
+    });
+
+  test(`${operation} accepts the exact next inquiry version once`, async (t) => {
+    const s = operationHarness(t, operation);
+    s.dispatch();
+    await s.h.settle();
+    assert.equal(s.writes().length, 1);
+    assert.equal(JSON.parse(s.writes()[0].body).expectedVersion, 3);
+    assert.equal(s.confirmed.length, 1);
+    assert.equal(s.confirmed[0].version, 4);
+    s.h.render();
+    await s.h.settle();
+    assert.equal(
+      s.confirmed.length,
+      1,
+      "Rerender cannot consume the receipt twice"
+    );
+  });
+}
+
+test("a held handoff response remains bound to the original inquiry and version after props change", async (t) => {
+  const s = operationHarness(t, "plan"),
+    held = deferred();
+  s.state.writeHandler = () => held.promise;
+  s.dispatch();
+  await s.h.settle();
+  const original = s.writes()[0].body;
+  s.adopt(inquiry({ id: "inquiry-b", version: 40, planVersion: 8 }));
+  s.assertDrafts();
+  held.resolve(
+    response({ id: "inquiry-a", version: 4, message: "Original plan saved" })
+  );
+  await s.h.settle();
+  assert.equal(s.confirmed.length, 1);
+  assert.equal(s.confirmed[0].id, "inquiry-a");
+  assert.equal(s.confirmed[0].version, 4);
+  assert.equal(s.writes().length, 1);
+  assert.equal(s.writes()[0].body, original);
+});
+
+test("a second synchronous action cannot replace the submitted plan before rerender", async (t) => {
+  const s = actionHarness(t),
+    held = deferred();
+  s.change(pickupLabel, "Fictional first submitted plan");
+  s.change(noteLabel, "Fictional cancellation must remain unsent");
+  s.state.writeHandler = () => held.promise;
+  const submit = nodes(s.h.output, (node) => node.type === "form")[0].props
+    .onSubmit;
+  const cancel = button(s.h.output, "Cancel handoff").props.onClick;
+  submit({ preventDefault() {} });
+  cancel();
+  s.h.render();
+  await s.h.settle();
+  assert.equal(s.writes().length, 1);
+  assert.equal(JSON.parse(s.writes()[0].body).operation, "handoff-plan");
+  assert.deepEqual(s.requested, ["plan"]);
+  held.resolve(
+    response({ id: "inquiry-a", version: 4, message: "First plan saved" })
+  );
+  await s.h.settle();
+  assert.equal(s.confirmed.length, 1);
+  assert.equal(
+    input(s.h.output, noteLabel).props.value,
+    "Fictional cancellation must remain unsent"
+  );
+  assert.equal(
+    input(s.h.output, pickupLabel).props.value,
+    "Fictional first submitted plan"
+  );
+  assert.equal(s.state.guard.dirty, true);
+});
+
+for (const reply of [
+  { id: "inquiry-b", version: 4 },
+  { id: "inquiry-a", version: 41 },
+  { id: "inquiry-b", version: 41 }
+])
+  test(`changed handoff props cannot authorize receipt ${reply.id} version ${reply.version} on original retry`, async (t) => {
+    const s = operationHarness(t, "plan"),
+      held = deferred();
+    s.state.writeHandler = () => held.promise;
+    s.dispatch();
+    await s.h.settle();
+    const original = s.writes()[0].body;
+    s.adopt(inquiry({ id: "inquiry-b", version: 40, planVersion: 8 }));
+    held.resolve(
+      response({ ...reply, message: "Wrong reply for changed props" })
+    );
+    await s.h.settle();
+    assert.equal(s.confirmed.length, 0);
+    s.assertDrafts();
+    s.state.writeHandler = () =>
+      response({ ...reply, message: "Wrong original retry reply" });
+    button(s.h.output, "Confirm original save").props.onClick();
+    await s.h.settle();
+    assert.equal(s.confirmed.length, 0);
+    assert.equal(s.writes()[1].body, original);
+    s.assertDrafts();
+    s.state.writeHandler = null;
+    s.state.receiptVersion = 4;
+    button(s.h.output, "Confirm original save").props.onClick();
+    await s.h.settle();
+    assert.equal(s.writes()[2].body, original);
+    assert.equal(s.confirmed.length, 1);
+    assert.equal(s.confirmed[0].id, "inquiry-a");
+    assert.equal(s.confirmed[0].version, 4);
+  });
+
 test("server detail bootstrap keeps authorization but serializes only owner and inquiry identity", async () => {
   const h = clientHarness({ URLSearchParams });
   const ExchangeHandoffDetail = () => null,

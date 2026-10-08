@@ -289,12 +289,14 @@ export function ExchangeHandoffActions({
   const dirty =
     planDirty || agree !== null || !!note || reason !== "CHANGED_PLANS";
   const submitted = useRef<{
+    target: Readonly<{ id: string; version: number }>;
     operation: string;
     plan: typeof plan;
     agree: number | null;
     reason: ExchangeCancellationReason;
     note: string;
   } | null>(null);
+  const dispatching = useRef(false);
   const confirmed = useRef<number | null>(null);
   const latest = useRef({
     plan,
@@ -333,7 +335,8 @@ export function ExchangeHandoffActions({
     {
       ...privacy,
       preserveDirty: true,
-      expectedReceiptId: () => inquiry.id,
+      expectedReceiptId: () => submitted.current?.target.id ?? null,
+      expectedReceiptVersion: () => submitted.current?.target.version ?? null,
       onConfirmed(receipt) {
         const sent = submitted.current;
         if (!sent) return;
@@ -388,16 +391,28 @@ export function ExchangeHandoffActions({
     inquiry.available &&
     ["SELECTED", "RESERVED"].includes(inquiry.state);
   const command = (operation: string, extra: Record<string, unknown> = {}) => {
-    if (action.blocked) return;
+    if (action.blocked || dispatching.current) return;
     invalidateCopy();
-    submitted.current = { operation, plan, agree, reason, note };
+    submitted.current = {
+      target: Object.freeze({ id: inquiry.id, version: inquiry.version + 1 }),
+      operation,
+      plan,
+      agree,
+      reason,
+      note
+    };
+    dispatching.current = true;
     onRequest?.(operation);
-    return action.command({
-      operation: `handoff-${operation}`,
-      id: inquiry.id,
-      expectedVersion: inquiry.version,
-      ...extra
-    });
+    return action
+      .command({
+        operation: `handoff-${operation}`,
+        id: inquiry.id,
+        expectedVersion: inquiry.version,
+        ...extra
+      })
+      .finally(() => {
+        dispatching.current = false;
+      });
   };
   const discard = () => {
     invalidateCopy();
