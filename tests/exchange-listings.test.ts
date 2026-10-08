@@ -862,7 +862,9 @@ test("enforced church listing duties require a real session-bound authenticator 
         operation: "mfa-confirm",
         requestKey: randomUUID(),
         expectedVersion: factor.version,
-        code: authenticatorTotp(secret, counter - BigInt(1))
+        // Current then next counter stays valid across a 30-second rollover.
+        // Real verification and one-use counter enforcement remain enabled.
+        code: authenticatorTotp(secret, counter)
       },
       undefined
     );
@@ -877,7 +879,7 @@ test("enforced church listing duties require a real session-bound authenticator 
         requestKey: randomUUID(),
         expectedVersion: enrolled.version,
         purpose: "privileged-work",
-        code: authenticatorTotp(secret, counter)
+        code: authenticatorTotp(secret, counter + BigInt(1))
       },
       undefined
     );

@@ -13,6 +13,7 @@ export type PrivateChoiceAccess = {
   currentAccess: boolean;
   preserveDirty?: boolean;
   expectedReceiptId?: () => string | null;
+  expectedReceiptVersion?: () => number | null;
   onAccessDenied: () => void;
   onConfirmed: (receipt: ChoiceReceipt) => void;
 };
@@ -86,7 +87,9 @@ export function usePrivateChoiceAction(
           typeof data.id !== "string" ||
           !Number.isInteger(data.version) ||
           typeof data.message !== "string" ||
-          (access && (!expectedId || data.id !== expectedId))
+          (access && (!expectedId || data.id !== expectedId)) ||
+          (access?.expectedReceiptVersion &&
+            data.version !== access.expectedReceiptVersion())
         )
           throw new SocialClientError(
             503,

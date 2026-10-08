@@ -1,7 +1,11 @@
 "use client";
 import Link from "next/link";
-import { usePrivateChoiceAction } from "./use-private-choice-action";
-import { useCallback, useId, useRef, useState } from "react";
+import {
+  usePrivateChoiceAction,
+  type PrivateChoiceAccess
+} from "./use-private-choice-action";
+import { useReadVisibility } from "./read-visibility";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   EXCHANGE_SAVED_SCHEMA,
   exchangeDisplayPrice,
@@ -182,14 +186,81 @@ export function ExchangeSavedItems({
   owner,
   result,
   view,
-  returnHref
+  returnHref,
+  privacy,
+  acceptedReceipt,
+  onRequest
 }: {
   owner: string;
   result: SavedPage;
   view: "favorites" | "searches";
   returnHref: string;
+  privacy: PrivateChoiceAccess;
+  acceptedReceipt?: Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null;
+  onRequest?: () => void;
 }) {
-  const command = useExchangeAction(owner);
+  const visible = useReadVisibility();
+  const target = useRef<string | null>(null),
+    targetVersion = useRef<number | null>(null),
+    dispatching = useRef(false);
+  const confirmed = useRef<
+    Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null
+  >(null);
+  const action = usePrivateChoiceAction(
+    endpoint,
+    owner,
+    false,
+    undefined,
+    true,
+    {
+      ...privacy,
+      expectedReceiptId: () => target.current,
+      expectedReceiptVersion: () => targetVersion.current,
+      onConfirmed(receipt) {
+        confirmed.current = receipt;
+        privacy.onConfirmed(receipt);
+      }
+    }
+  );
+  const rearm = action.rearm;
+  useEffect(() => {
+    // Versions are local to each row. Reuse is allowed only for this exact
+    // consumed receipt after the parent has read the current canonical page.
+    if (
+      acceptedReceipt &&
+      acceptedReceipt === confirmed.current &&
+      rearm(acceptedReceipt.version)
+    ) {
+      confirmed.current = null;
+      target.current = null;
+      targetVersion.current = null;
+    }
+  }, [acceptedReceipt, rearm]);
+  const command = {
+    ...action,
+    async command(value: Record<string, unknown>) {
+      if (action.blocked || dispatching.current) return false;
+      const id = value.favoriteId ?? value.searchId;
+      if (
+        typeof id !== "string" ||
+        !id ||
+        typeof value.expectedVersion !== "number" ||
+        !Number.isInteger(value.expectedVersion) ||
+        value.expectedVersion < 0
+      )
+        return false;
+      dispatching.current = true;
+      target.current = id;
+      targetVersion.current = value.expectedVersion + 1;
+      onRequest?.();
+      try {
+        return await action.command(value);
+      } finally {
+        dispatching.current = false;
+      }
+    }
+  };
+  if (!visible) return action.status;
   return (
     <div className="space-y-4">
       <nav aria-label="Saved Exchange choices" className="flex flex-wrap gap-3">
