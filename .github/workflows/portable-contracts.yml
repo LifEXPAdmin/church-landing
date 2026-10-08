@@ -16,8 +16,6 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    env:
-      GC_SHARED_CORE_TMP: ${{ runner.temp }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -29,6 +27,8 @@ jobs:
       - name: Install the existing locked website graph without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Check portable imports, named exports and frozen v1 compatibility
+        env:
+          GC_SHARED_CORE_TMP: ${{ runner.temp }}
         run: npm run check:portable
       - name: Check the portability tooling itself
         run: npx --no-install eslint scripts/check-portability.mjs tests/portability.test.mjs tests/fixtures/api-v1-initial-native-compatibility.ts
