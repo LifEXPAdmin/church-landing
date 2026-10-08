@@ -1,5 +1,28 @@
 # Church Need form privacy and recipient context
 
+## Needs form privacy verified live, 2026.10.08.15
+
+Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.15, source 78962a8b79163216cf38bb74f983b6e4c8db738b, [PR68](https://github.com/LifEXPAdmin/church-landing/pull/68).
+
+Private Need form leaves conceal through the existing read-visibility owner while keeping mounted unsent state. Each form receives its relevant concurrency, eligibility and action context; unrelated contribution notes, quotes, disputes and contact details are excluded from sibling contexts. Current contribution, incoming, volunteer and progress owners, canonical permissions, original request versions and transport remain in place.
+
+Fresh exact-source hosted verification passed 616 source/security checks, 18 service cases, four HTTPS cases and 35 full-application browser groups. The 37 controlled scenarios are separate: nine form, 17 progress and 11 volunteer scenarios. Isolated verification build: Se8k0ACWhanYEB_Ap4T39; this is not a production build identifier. Browser application checks use MFA off; four separate HTTPS cases enforce MFA on the same isolated build. Audit reported zero advisories, 496 signatures and 86 attestations; lint reported zero errors and 42 warnings. Per-suite measured and null counters retain their original scope.
+
+Before repair, 15 specific mocked component/page invariants failed, and a separate real React/Chrome controlled comparison reproduced nine concealed-DOM failures. All 25 focused Node cases passed afresh on 78962a8. The earlier nine controlled passes on cee9553 apply through unchanged product bytes and are explicitly reused; they are not added to the fresh hosted totals.
+
+The earlier cee9553 hosted attempt stopped at a collapsed-details fixture locator. The retained correction uses a relative locator and the actual summary click, preserving both editing paths, all assertions and awaited slot creation. The successful 78962a8 run follows that fixture-only correction, unused-import removal and documentation whitespace cleanup; no product repair was needed for that hosted failure.
+
+Actual acceptance passed 102 staged GET checks, 291 read-only live guest checks and 5 canonical/health checks. One production deployment was submitted and that same build was promoted once for this retained run. Canonical source/version were confirmed at 2026-10-08T22:24:53.796Z; final live acceptance closed at 2026-10-08T22:28:31.218Z. Production test writes, recipient sends and queue publications were zero in this scope.
+
+All 165 table fingerprints and 123 migration checksums were unchanged at 2026-10-08T22:27:24.779Z; no new migration ran. The ordinary restore completed at 2026-10-08T04:51:44.297Z was reused with its original applicability evidence. No new restore or protected replay was performed.
+
+All 23 current live guest screenshots were reviewed without a new scoped blocker. Narrow full-page login captures retain fixed navigation overlap, and the enlarged 320-pixel Topic view retains heading wrapping. These guest views do not establish authenticated form, physical-device or comprehensive accessibility acceptance.
+
+This is minimal form context, not routing-only HTML/RSC or memory erasure. Authorized own contribution cards can remain in initial HTML/RSC. Temporary same-owner concealment is distinct from draft survival after an accepted legacy refresh. Later inline, role, post, offer and organizer owner/rearm work, permanent cross-account draft behavior, physical-device and real-provider acceptance remain separate. Broad SEC-01 stays open.
+
+The historical preparation checkpoint below is preserved verbatim; this accepted release record supersedes its pending status for this exact scope.
+
+
 ## Behavior
 
 Private setup, slot, claim, organizer, post-link and legacy contribution or

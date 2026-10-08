@@ -1,3 +1,15 @@
+## Needs form privacy verified live, 2026.10.08.15
+
+Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.15, source 78962a8b79163216cf38bb74f983b6e4c8db738b, [PR68](https://github.com/LifEXPAdmin/church-landing/pull/68).
+
+Private Need form leaves conceal through the existing read-visibility owner while keeping mounted unsent state. Each form receives its relevant concurrency, eligibility and action context; unrelated contribution notes, quotes, disputes and contact details are excluded from sibling contexts. Current contribution, incoming, volunteer and progress owners, canonical permissions, original request versions and transport remain in place.
+
+Exact-source acceptance: 616 source/security checks, 18 service cases, four HTTPS cases and 35 full-application browser groups; 37 controlled scenarios remain separate.
+
+Actual acceptance passed 102 staged GET checks, 291 read-only live guest checks and 5 canonical/health checks. One production deployment was submitted and that same build was promoted once for this retained run. Canonical source/version were confirmed at 2026-10-08T22:24:53.796Z; final live acceptance closed at 2026-10-08T22:28:31.218Z. Production test writes, recipient sends and queue publications were zero in this scope.
+
+Broad SEC-01 remains open. See [Need form context](NEED_FORM_CONTEXT.md) for the precise scope and limitations.
+
 ## Needs form privacy prepared, 8 October 2026 UTC
 
 Candidate **2026.10.08.15**, `needs-form-privacy`, conceals private Need form leaves through their existing visibility owner and supplies minimal recipient-specific contexts. The receiving code reproduced 15 specific concealment/projection failures; all 25 focused mocked Node cases now pass. Hosted, build, browser, deployment and live acceptance remain pending. Current canonical release is the separately verified 2026.10.08.14. See [Need form context](NEED_FORM_CONTEXT.md).

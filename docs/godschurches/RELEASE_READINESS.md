@@ -1,3 +1,17 @@
+## Needs form privacy verified live, 2026.10.08.15
+
+Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.15, source 78962a8b79163216cf38bb74f983b6e4c8db738b, [PR68](https://github.com/LifEXPAdmin/church-landing/pull/68).
+
+The narrow form-concealment and recipient-context scope passed exact-source and operational acceptance. This is minimal form context, not routing-only HTML/RSC or memory erasure. Authorized own contribution cards can remain in initial HTML/RSC. Temporary same-owner concealment is distinct from draft survival after an accepted legacy refresh. Later inline, role, post, offer and organizer owner/rearm work, permanent cross-account draft behavior, physical-device and real-provider acceptance remain separate. Broad SEC-01 stays open.
+
+Exact-source acceptance: 616 source/security checks, 18 service cases, four HTTPS cases and 35 full-application browser groups; 37 controlled scenarios remain separate.
+
+Actual acceptance passed 102 staged GET checks, 291 read-only live guest checks and 5 canonical/health checks. One production deployment was submitted and that same build was promoted once for this retained run. Canonical source/version were confirmed at 2026-10-08T22:24:53.796Z; final live acceptance closed at 2026-10-08T22:28:31.218Z. Production test writes, recipient sends and queue publications were zero in this scope.
+
+All 165 table fingerprints and 123 migration checksums were unchanged at 2026-10-08T22:27:24.779Z; no new migration ran. The ordinary restore completed at 2026-10-08T04:51:44.297Z was reused with its original applicability evidence. No new restore or protected replay was performed.
+
+This report-only closeout does not request another production deployment or complete broader security work.
+
 ## Needs form privacy acceptance pending
 
 Version **2026.10.08.15** is not release-accepted. Baseline reproduction and 25 fixed focused Node cases are complete; exact-source source/security, hosted service, HTTPS, build, full browser, controlled browser, screenshot review and guarded operational acceptance remain required. Full browser MFA-off and separate HTTPS-enforce phases must stay explicitly scoped. Broad SEC-01 and later owner/rearm layers remain open. See [Need form context](NEED_FORM_CONTEXT.md).

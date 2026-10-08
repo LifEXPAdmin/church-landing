@@ -1,3 +1,19 @@
+## Needs form privacy verified live, 2026.10.08.15
+
+Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.15, source 78962a8b79163216cf38bb74f983b6e4c8db738b, [PR68](https://github.com/LifEXPAdmin/church-landing/pull/68).
+
+Fresh exact-source hosted verification passed 616 source/security checks, 18 service cases, four HTTPS cases and 35 full-application browser groups. The 37 controlled scenarios are separate: nine form, 17 progress and 11 volunteer scenarios. Isolated verification build: Se8k0ACWhanYEB_Ap4T39; this is not a production build identifier. Browser application checks use MFA off; four separate HTTPS cases enforce MFA on the same isolated build. Audit reported zero advisories, 496 signatures and 86 attestations; lint reported zero errors and 42 warnings. Per-suite measured and null counters retain their original scope.
+
+Before repair, 15 specific mocked component/page invariants failed, and a separate real React/Chrome controlled comparison reproduced nine concealed-DOM failures. All 25 focused Node cases passed afresh on 78962a8. The earlier nine controlled passes on cee9553 apply through unchanged product bytes and are explicitly reused; they are not added to the fresh hosted totals.
+
+The earlier cee9553 hosted attempt stopped at a collapsed-details fixture locator. The retained correction uses a relative locator and the actual summary click, preserving both editing paths, all assertions and awaited slot creation. The successful 78962a8 run follows that fixture-only correction, unused-import removal and documentation whitespace cleanup; no product repair was needed for that hosted failure.
+
+All 165 table fingerprints and 123 migration checksums were unchanged at 2026-10-08T22:27:24.779Z; no new migration ran. The ordinary restore completed at 2026-10-08T04:51:44.297Z was reused with its original applicability evidence. No new restore or protected replay was performed.
+
+The observed runtime window 2026-10-08T22:24:53.796Z to 2026-10-08T22:26:57.476Z contained zero error, fatal or CSP diagnostic rows. Queue-consumer execution and real provider delivery were not exercised.
+
+This is minimal form context, not routing-only HTML/RSC or memory erasure. Authorized own contribution cards can remain in initial HTML/RSC. Temporary same-owner concealment is distinct from draft survival after an accepted legacy refresh. Later inline, role, post, offer and organizer owner/rearm work, permanent cross-account draft behavior, physical-device and real-provider acceptance remain separate. Broad SEC-01 stays open.
+
 ## Needs form recipient-context source preparation, 8 October 2026
 
 The receiving application reproduced ten concealed-leaf and five private-note projection assertion failures, excluding ten new-helper cases from the baseline rather than counting missing imports. All 25 fixed focused Node cases pass with actual component/page bodies and deterministic mocks. These are separate from fresh hosted source and runtime acceptance, which remain pending. Explicit server-to-client projections preserve current versions, permissions and progress owners without duplicating unrelated private row details. No schema, dependency or security-gate change is included. See [Need form context](NEED_FORM_CONTEXT.md) for scope and remaining requirements.
