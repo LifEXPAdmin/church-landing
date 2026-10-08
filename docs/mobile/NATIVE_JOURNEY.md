@@ -125,7 +125,63 @@ source and race tests do not prove Kotlin compilation or device behavior. Verify
 cold start after the last focus event, resume, notification shade, permission
 dialogs and activity recreation on the actual build. Older binaries without the
 snapshot module remain concealed and need a rebuild.
-JavaScript lifecycle handling is not proof of an OS app-switcher privacy cover.
+## Native iOS privacy cover
+
+The local `GCNativePrivacy` module covers registered journey windows synchronously
+when Expo forwards the iOS resignation callback. Background entry also covers
+them. Foreground callbacks advance the native epoch but cannot remove a cover.
+An opaque native view contains only the app title. This follows Apple's
+[snapshot preparation guidance](https://developer.apple.com/documentation/uikit/preparing-your-ui-to-run-in-the-background).
+Expo retains ownership of app and scene delegates.
+
+iOS visibility now uses that module's lifecycle epochs exclusively. Native
+events immediately conceal the canonical runtime and prompt a fresh snapshot.
+Only the newest valid active snapshot can restore the existing session owner.
+Its synchronous invalidation establishes the minimum session generation before
+React receives a presentation token. A render from an older generation stays
+neutral. Later canonical sign-in and sign-out generations remain usable.
+Missing modules, malformed replies, failed reads and obsolete callbacks cannot
+fall back to an active AppState value. Android keeps its existing focus path.
+
+A nonvisual native marker is mounted beside the screen, including while the
+screen is concealed. It binds to its actual window and scene. Its props carry
+the native epoch, current canonical generation and presentation identity.
+A queued main-thread check follows the synchronous Fabric mounting batch and
+rechecks the current attachment, scene activity, epoch and props before releasing
+that window's cover. Attachment changes invalidate earlier checks. JavaScript
+effects, layout events and a foreground notification are not release proofs.
+No timeout, polling, credential copy or second session authority is added.
+
+The binary must be rebuilt to include this module. Source and pure policy tests
+do not establish UIKit snapshot behavior, minimum-version support or physical
+device acceptance. Actual inactive-only, background, rapid-resume and stalled
+JavaScript runs remain distinct evidence. JavaScript concealment alone is not
+proof of an OS app-switcher privacy cover.
+
+The 8 October privacy checkpoint passes 241 mobile tests, the Swift 6 policy
+checks, type checking, lint and native Release compilation. The ordinary build
+on iPhone SE with iOS 18.3.1 showed the neutral native title in the app switcher
+and recovered the fictional feed after direct card return and a separate Home
+transition. Notification Center concealed the app; the Home control dismissed
+the panel directly back to the feed, without an observed Home-screen visit.
+The exact inactive-only callback sequence was not traced.
+
+A separate private fixture build deliberately stalled JavaScript for 45 seconds.
+It used the same native executable as the initial ordinary build. On both
+iOS 18.3.1 and iOS 27, timestamped app-switcher and foreground-resume captures fell between the
+recorded stall start and end and showed only the native title. The fictional
+feed recovered afterward. The temporary control was removed byte-for-byte from
+source and is not part of the committed app. Captured states do not prove every
+intermediate frame, every interruption, physical-device behavior or protection
+against user screenshots and screen recording.
+
+The final ordinary build was installed on both Simulators and passed fictional
+sign-in, native app-switcher cover, direct feed recovery and sign-out. Its
+JavaScript bundle matches the initial ordinary build and has no diagnostic
+control. The final native executable was rebuilt and checked separately. The
+1,740,642-byte Hermes bundle adds 4,880 JavaScript bytes to the password-entry
+checkpoint; this is not a download-size or performance result.
+
 Native transport and storage, iOS/Android
 builds, device lifecycle/network behavior, keyboard and assistive-technology
 checks remain separate from source, type and unit-test evidence.
