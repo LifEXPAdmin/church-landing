@@ -1,3 +1,7 @@
+## Needs form recipient-context source preparation, 8 October 2026
+
+The receiving application reproduced ten concealed-leaf and five private-note projection assertion failures, excluding ten new-helper cases from the baseline rather than counting missing imports. All 25 fixed focused Node cases pass with actual component/page bodies and deterministic mocks. These are separate from fresh hosted source and runtime acceptance, which remain pending. Explicit server-to-client projections preserve current versions, permissions and progress owners without duplicating unrelated private row details. No schema, dependency or security-gate change is included. See [Need form context](NEED_FORM_CONTEXT.md) for scope and remaining requirements.
+
 ## Deactivation owner and delayed-cookie boundary, 8 October 2026
 
 Source 9473d87906b3951290eaee3b6b97cbdf50995370 passed 591 current source/security checks with zero advisories, 496 verified signatures, 86 attestations and zero lint errors with 42 warnings. The selected repair retains the current dependency graph and migration history.

@@ -91,6 +91,9 @@ async function volunteerServer(extra = {}) {
               };
         }
       },
+      "@/lib/platform/exchange-need-form-context": h.load(
+        "lib/platform/exchange-need-form-context.ts"
+      ),
       "@/lib/platform/exchange-need-options": h.load(
         "lib/platform/exchange-need-options.ts"
       ),

@@ -6,11 +6,11 @@ import {
   type PrivateChoiceAccess
 } from "./use-private-choice-action";
 import { useReadVisibility } from "./read-visibility";
+import type { NeedContributionView } from "@/lib/platform/exchange-need-reads";
 import type {
-  NeedContributionView,
-  NeedSlotView,
-  NeedView
-} from "@/lib/platform/exchange-need-reads";
+  NeedOrganizerContext,
+  NeedPostContext
+} from "@/lib/platform/exchange-need-form-context";
 import { needContributionLabels } from "@/lib/platform/exchange-need-options";
 import { reportEntryHref } from "@/lib/platform/community-report-types";
 import { useExchangeAction } from "./exchange-saved-controls";
@@ -115,7 +115,7 @@ export function NeedContributionCard({
         dispatching.current = false;
       });
   };
-  if (privacy && !visible) return action.status;
+  if (!visible) return privacy ? action.status : null;
   return (
     <article
       className="space-y-3 rounded-xl border border-gc-divider p-4"
@@ -349,11 +349,8 @@ export function NeedOrganizerActions({
   owner,
   need,
   slot
-}: {
-  owner: string;
-  need: NeedView;
-  slot?: NeedSlotView;
-}) {
+}: { owner: string } & NeedOrganizerContext) {
+  const visible = useReadVisibility();
   const id = useId(),
     [reason, setReason] = useState(""),
     [text, setText] = useState("");
@@ -384,6 +381,7 @@ export function NeedOrganizerActions({
             }
       );
   };
+  if (!visible) return null;
   return (
     <section
       className="space-y-3"
@@ -478,10 +476,11 @@ export function NeedPostLinks({
   posts
 }: {
   owner: string;
-  need: NeedView;
   posts: { id: string; version: number; excerpt: string; linked: boolean }[];
-}) {
+} & NeedPostContext) {
+  const visible = useReadVisibility();
   const action = useExchangeAction(owner, false, undefined, true);
+  if (!visible) return null;
   return (
     <section className="space-y-3" aria-label="Church Need post links">
       <h2 className="text-2xl">Church Need posts</h2>
@@ -622,7 +621,7 @@ export function NeedVolunteerReceipt({
         dispatching.current = false;
       });
   };
-  if (privacy && !visible) return action.status;
+  if (!visible) return privacy ? action.status : null;
   return (
     <section className="space-y-3 rounded-xl border border-gc-divider p-3">
       <h3 className="text-lg">{signup.name}</h3>

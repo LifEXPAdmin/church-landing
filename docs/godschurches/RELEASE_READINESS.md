@@ -1,3 +1,7 @@
+## Needs form privacy acceptance pending
+
+Version **2026.10.08.15** is not release-accepted. Baseline reproduction and 25 fixed focused Node cases are complete; exact-source source/security, hosted service, HTTPS, build, full browser, controlled browser, screenshot review and guarded operational acceptance remain required. Full browser MFA-off and separate HTTPS-enforce phases must stay explicitly scoped. Broad SEC-01 and later owner/rearm layers remain open. See [Need form context](NEED_FORM_CONTEXT.md).
+
 ## Deactivation owner safety release boundary
 
 Current disposition: Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.14, source 9473d87906b3951290eaee3b6b97cbdf50995370.

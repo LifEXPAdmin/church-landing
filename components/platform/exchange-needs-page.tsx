@@ -1,4 +1,11 @@
 import Link from "next/link";
+import {
+  needSetupContext,
+  needSlotContext,
+  needClaimContext,
+  needOrganizerContext,
+  needPostContext
+} from "@/lib/platform/exchange-need-form-context";
 import { PlatformShell } from "./platform-shell";
 import { ExchangeNeedContributions } from "./exchange-need-contributions";
 import { ExchangeNeedVolunteers } from "./exchange-need-volunteers";
@@ -245,8 +252,7 @@ export async function ExchangeNeedsPage({
                       <NeedClaimForm
                         key={`${slot.id}:${slot.version}:${need.version}`}
                         owner={user.id}
-                        need={need}
-                        slot={slot}
+                        {...needClaimContext(need, slot)}
                       />
                     ) : (
                       <ExchangeAccountLinks next={path} />
@@ -256,8 +262,7 @@ export async function ExchangeNeedsPage({
                         <NeedOrganizerActions
                           key={`close:${slot.id}:${slot.version}:${need.version}`}
                           owner={user.id}
-                          need={need}
-                          slot={slot}
+                          {...needOrganizerContext(need, slot)}
                         />
                         {slot.volunteer && (
                           <Link
@@ -317,16 +322,15 @@ export async function ExchangeNeedsPage({
                           <NeedSlotForm
                             key={`edit:${slot.id}:${slot.version}:${need.version}`}
                             owner={user.id}
-                            need={need}
-                            slot={slot}
                             roles={roles}
+                            {...needSlotContext(need, slot)}
                           />
                         ))}
                         <NeedSlotForm
                           key={`new:${need.version}`}
                           owner={user.id}
-                          need={need}
                           roles={roles}
+                          {...needSlotContext(need)}
                         />
                         {rolesNext && (
                           <Link
@@ -350,7 +354,7 @@ export async function ExchangeNeedsPage({
                   <NeedOrganizerActions
                     key={`organizer:${need.version}`}
                     owner={user.id}
-                    need={need}
+                    {...needOrganizerContext(need)}
                   />
                   {!need.closed && postsAccess && (
                     <PrivateSnapshotGuard
@@ -361,7 +365,7 @@ export async function ExchangeNeedsPage({
                       <NeedPostLinks
                         key={`posts:${need.version}`}
                         owner={user.id}
-                        need={need}
+                        {...needPostContext(need)}
                         posts={posts}
                       />
                       {postsNext && (
@@ -412,7 +416,7 @@ export async function ExchangeNeedsPage({
             <NeedSetupForm
               key={`setup:${need?.version ?? 0}:${result.listingVersion}`}
               owner={user.id}
-              detail={result}
+              {...needSetupContext(result)}
             />
           )}
           {user && result.canManage && (

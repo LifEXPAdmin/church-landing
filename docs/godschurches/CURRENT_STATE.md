@@ -1,3 +1,7 @@
+## Needs form privacy prepared, 8 October 2026 UTC
+
+Candidate **2026.10.08.15**, `needs-form-privacy`, conceals private Need form leaves through their existing visibility owner and supplies minimal recipient-specific contexts. The receiving code reproduced 15 specific concealment/projection failures; all 25 focused mocked Node cases now pass. Hosted, build, browser, deployment and live acceptance remain pending. Current canonical release is the separately verified 2026.10.08.14. See [Need form context](NEED_FORM_CONTEXT.md).
+
 ## Account deactivation owner safety, 8 October 2026 UTC
 
 Release status: Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.14, source 9473d87906b3951290eaee3b6b97cbdf50995370, [PR62](https://github.com/LifEXPAdmin/church-landing/pull/62).

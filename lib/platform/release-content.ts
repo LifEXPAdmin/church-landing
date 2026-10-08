@@ -1048,6 +1048,22 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "needs-form-privacy",
+    version: "2026.10.08.15",
+    date: "2026-10-08",
+    summary: "Keep private Church Need forms hidden while current access is checked.",
+    added: [],
+    improved: [
+      "Need setup, action slots, offers and organizer controls use only the information each form requires.",
+      "Unsent entries stay in the open page while its private controls are concealed during an access check."
+    ],
+    fixed: [
+      "Private Need form fields and their saved values are removed from the displayed page while access is uncertain.",
+      "Unrelated contribution notes, quotes and dispute details are no longer copied into every Need form."
+    ],
+    featureIds: ["church-needs", "account"]
+  },
+  {
     id: "account-deactivation-owner-safety",
     version: "2026.10.08.14",
     date: "2026-10-08",

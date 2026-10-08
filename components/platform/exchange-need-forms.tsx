@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
+import { useReadVisibility } from "./read-visibility";
 import { useCallback, useId, useRef, useState } from "react";
 import type {
-  NeedDetailView,
-  NeedSlotView,
-  NeedView
-} from "@/lib/platform/exchange-need-reads";
+  NeedSetupContext,
+  NeedSlotContext,
+  NeedClaimContext
+} from "@/lib/platform/exchange-need-form-context";
 import {
   NEED_SCHEMA,
   needActionLabels,
@@ -27,10 +28,8 @@ export type NeedRoleChoice = {
 export function NeedSetupForm({
   owner,
   detail
-}: {
-  owner: string;
-  detail: NeedDetailView;
-}) {
+}: { owner: string } & NeedSetupContext) {
+  const visible = useReadVisibility();
   const id = useId();
   const initial = {
     deadline: detail.need?.deadlineLocal ?? "",
@@ -45,6 +44,7 @@ export function NeedSetupForm({
     true
   );
   const ended = detail.need?.closed || detail.need?.canceled;
+  if (!visible) return null;
   if (ended)
     return (
       <p>
@@ -151,12 +151,8 @@ export function NeedSlotForm({
   need,
   slot,
   roles
-}: {
-  owner: string;
-  need: NeedView;
-  slot?: NeedSlotView;
-  roles: NeedRoleChoice[];
-}) {
+}: { owner: string; roles: NeedRoleChoice[] } & NeedSlotContext) {
+  const visible = useReadVisibility();
   const id = useId(),
     reference = useRef<string | null>(slot?.id ?? null);
   const initial = {
@@ -178,6 +174,7 @@ export function NeedSlotForm({
     true
   );
   const locked = !!slot && ((slot.committed ?? 0) > 0 || !!slot.volunteer);
+  if (!visible) return null;
   return (
     <details className="space-y-3 rounded-xl border border-gc-divider p-4">
       <summary className="min-h-11 cursor-pointer py-2 font-semibold">
@@ -270,7 +267,8 @@ export function NeedSlotForm({
                   <option value="">Choose a role</option>
                   {roles.map((role) => (
                     <option key={role.id} value={role.id}>
-                      {role.eventTitle}: {role.role} ({role.capacity} places){role.approvalRequired ? ", application required" : ""}
+                      {role.eventTitle}: {role.role} ({role.capacity} places)
+                      {role.approvalRequired ? ", application required" : ""}
                     </option>
                   ))}
                 </select>
@@ -411,11 +409,8 @@ export function NeedClaimForm({
   owner,
   need,
   slot
-}: {
-  owner: string;
-  need: NeedView;
-  slot: NeedSlotView;
-}) {
+}: { owner: string } & NeedClaimContext) {
+  const visible = useReadVisibility();
   const id = useId(),
     reference = useRef<string | null>(null);
   const [quantity, setQuantity] = useState("1"),
@@ -443,6 +438,7 @@ export function NeedClaimForm({
       c.slotId === slot.id &&
       ["COMMITTED", "WAITLISTED", "QUOTED"].includes(c.state)
   );
+  if (!visible) return null;
   if (own)
     return (
       <p>
@@ -471,9 +467,15 @@ export function NeedClaimForm({
           <Link
             prefetch={false}
             className="gc-button gc-button-quiet"
-            href={slot.volunteer.opportunityId ? `/platform/serve/${slot.volunteer.opportunityId}` : `/platform/posts/${slot.volunteer.postId}`}
+            href={
+              slot.volunteer.opportunityId
+                ? `/platform/serve/${slot.volunteer.opportunityId}`
+                : `/platform/posts/${slot.volunteer.postId}`
+            }
           >
-            {slot.volunteer.approvalRequired ? "View opportunity and application" : "Open the event role and your signup"}
+            {slot.volunteer.approvalRequired
+              ? "View opportunity and application"
+              : "Open the event role and your signup"}
           </Link>
         )}
         {slot.volunteer?.open &&

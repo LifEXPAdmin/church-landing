@@ -1,3 +1,7 @@
+## Needs form privacy candidate, 8 October 2026 UTC
+
+Candidate **2026.10.08.15** has not been deployed. Four product files reconcile retained Need form concealment and minimal recipient contexts with current progress, incoming, contribution and volunteer owners. No schema or dependency change is included. Baseline15 failures and fixed25 passing Node cases are local mocked evidence only. Fresh hosted plan: 18 service, four HTTPS and 35 full application browser groups, plus 37 separately controlled scenarios. Expected operational checks remain unexecuted. Canonical 2026.10.08.14 acceptance below stays current.
+
 ## Account deactivation owner safety, 2026.10.08.14
 
 Verified live at https://godschurches.com; independent post-live review accepted. 100 staged GET checks, 288 read-only live guest checks and 5 canonical/health checks passed. The same READY deployment dpl_8DMGCiyuNCVzwbKeP1yWZ9Cs8Q3k was promoted once at 2026-10-08T21:26:27.838Z; canonical source/version were confirmed at 2026-10-08T21:26:53.290Z. Final live acceptance closed at 2026-10-08T21:29:09.267Z. One production submission was used for this batch, within the 12-per-rolling-hour ceiling. No production test writes, recipient sends or queue publications occurred.
