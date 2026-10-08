@@ -1,3 +1,24 @@
+## Artist draft privacy and security maintenance verified live, 8 October 2026 UTC
+
+Version **2026.10.08.1**, application
+`c0e121a8ec532fbff93919f5639ebd8d6ead37a1`, is merged and verified live on
+`godschurches.com` in READY deployment `dpl_9EvtycrpNrRmHyZyrvuqDRZnCYD5`.
+Canonical identity was verified at **04:30:49 UTC**. Artist editors preserve
+original-owner drafts and deliberate recovery while concealing private controls
+through account and permission changes. Compatible dependency repairs include
+Next 15.5.27 and the reviewed installed and embedded braces depth repair.
+
+Exact-source verification passed 129 guards, 25 service/recovery tests, five
+HTTPS/MFA tests and 26 browser groups. The advisory audit reports zero findings;
+registry verification accepted 496 signatures and 86 attestations. All 180 live
+page/API/browser checks and five health/release checks passed, with no browser,
+CSP or scoped runtime errors. All 165 production table fingerprints remained
+unchanged at **04:32:19 UTC**; all 123 migrations match and none was applied.
+There were no production test writes or recipient sends. Broader security,
+unfinished export/native features and real owner/provider/device acceptance
+remain open. See [deployment evidence](DEPLOYMENT_REPORT.md) and the
+[dependency repair](DEPENDENCY_REMEDIATION.md).
+
 ## Artist draft recovery verified in isolation, 2 October 2026 UTC
 
 Candidate `80f5d9ff1b786500849e63518bbf53de0c6355dd` is tested and ready

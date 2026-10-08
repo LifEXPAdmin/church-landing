@@ -1,3 +1,52 @@
+## Artist draft privacy and security maintenance verified live, 8 October 2026 UTC
+
+Version **2026.10.08.1**, application
+`c0e121a8ec532fbff93919f5639ebd8d6ead37a1`, is merged and verified live on
+`godschurches.com` in READY deployment `dpl_9EvtycrpNrRmHyZyrvuqDRZnCYD5`.
+Canonical identity was verified at **04:30:49 UTC**. Artist editors preserve
+original-owner drafts and deliberate recovery while concealing private controls
+through account and permission changes. Compatible dependency repairs include
+Next 15.5.27 and the reviewed installed and embedded braces depth repair.
+
+Exact-source verification passed 129 guards, 25 service/recovery tests, five
+HTTPS/MFA tests and 26 browser groups. The advisory audit reports zero findings;
+registry verification accepted 496 signatures and 86 attestations. All 180 live
+page/API/browser checks and five health/release checks passed, with no browser,
+CSP or scoped runtime errors. All 165 production table fingerprints remained
+unchanged at **04:32:19 UTC**; all 123 migrations match and none was applied.
+There were no production test writes or recipient sends. Broader security,
+unfinished export/native features and real owner/provider/device acceptance
+remain open. See [deployment evidence](DEPLOYMENT_REPORT.md) and the
+[dependency repair](DEPENDENCY_REMEDIATION.md).
+
+The tested production build is `8ES-vRCMqkBUqhLEw-tFG`. Its 256 runtime traces
+contain 88,942 entries; the bounded 1,626-JavaScript-file inspection found no
+listed affected-tool path or marker. This is static scope evidence, not a claim
+of exhaustive dynamic reachability. [Source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37726488913),
+[application verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37726489035)
+and [main CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37727422707)
+all passed on the exact application source. Lint retained 39 existing warnings
+and no errors. Independent final source and runtime-evidence review found no
+blocking defect. [PR 37](https://github.com/LifEXPAdmin/church-landing/pull/37)
+was integrated by a non-forced fast-forward.
+
+One production deployment was created from the exact GitHub commit with automatic
+domain assignment disabled. Thirteen read-only staged checks passed while the
+canonical site retained its prior deployment. The same built deployment was then
+promoted; no second build or intermediate public release was needed. Live checks
+used guest/read-only paths. Account-changing artist journeys were exercised only
+in isolated fictional fixtures. No new queue delivery probe was sent.
+
+Schema and recovery owners are unchanged. The installed encrypted ordinary restore
+of 165 tables completed at **2026-10-07 09:07:01 UTC**; its archive hash and all
+123 installed migration checksums were verified. The nightly receipt records 129
+sets, zero removals and no issues. This applicable evidence retains its original
+timestamp under the current daily-operation policy; no new restore or historical
+protected replay is claimed. All live browser processes closed and the shared machine slot
+was released. The prior .42 deployment remains retained and schema-compatible,
+but would undo this batch's privacy and security fixes; prefer a reviewed forward
+fix. Report-only updates do not require another product deployment.
+
 ## Profile privacy and Topic recovery verified live, 28 September 2026 UTC
 
 Version **2026.09.28.40** is implemented, tested, merged and verified live.
