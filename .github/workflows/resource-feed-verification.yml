@@ -47,8 +47,6 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
-    env:
-      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/resource-feed-chromium
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,6 +66,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/resource-feed-chromium"
+          echo "PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH" >> "$GITHUB_ENV"
           pg_bin="$(pg_config --bindir)"
           test -x "$pg_bin/initdb"
           echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
