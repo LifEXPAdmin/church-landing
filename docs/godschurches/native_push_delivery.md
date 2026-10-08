@@ -124,6 +124,17 @@ Delivery admission refreshes the clock after database waits. Immediately before
 calling a provider, the worker bounds the remaining TTL by the captured delivery,
 source and session deadlines. Expiry during lock acquisition or claim commit
 cancels that delivery without revoking a still-valid device association.
+Native request initiation also runs inside a short permission transaction after
+the attempt is durable. It rechecks the exact lease, association, current session,
+configuration, recovery epoch, source, consent and quiet hours. It locks the
+subscription to order initiation with session-deletion cleanup that does not use
+the permission lock. Lock contention fails closed without initiating a request.
+The transport must initiate its request synchronously when called. Its promise
+is awaited only after releasing the database locks; revocation never waits for
+the provider response. A lost commit acknowledgement retains the already
+initiated response and does not resubmit it. An already initiated generic request
+cannot be recalled. Receipt admission includes the ticket's 24-hour lifetime;
+late or superseded workers cannot initiate work from their captured claim.
 Volunteer requests expose the earlier of their effective shift and event end as
 their source deadline. Later shortening of that source also bounds an already
 queued delivery.
@@ -133,6 +144,42 @@ Expo documents the distinction and timing in
 and the [push FAQ](https://docs.expo.dev/push-notifications/faq/).
 
 ## Verification and release
+
+### Dispatch revocation repair, 8 October 2026
+
+A continuation based on `e9c9a06047c26fcb7ac90eef2dad077b2f17e858` reproduced
+six races in the actual database: device removal, logout and installation account
+replacement could finish after claim commit but before a captured send or receipt
+request began. Each original case incorrectly invoked the injected transport.
+Independent interim review also found a ticket-lifetime boundary; its separate
+regression reproduced one receipt request after the ticket expired.
+
+The repair passes 40 native service cases and nine existing outbox cases,
+including 11 new committed-claim regressions. They cover those six races,
+revocation while the provider response is held, lost commit acknowledgement,
+successor lease preservation, receipt expiry and signing out other sessions.
+The 11 focused cases also pass against the final production-build input hashes.
+The broader run initially passed 77 of 79 cases: two account-session fixtures
+failed before their assertions because reporting reviewer coverage was absent.
+After existing canonical setup supplied that coverage, the unchanged four-case
+session file passed. All 81 distinct selected service cases have passing evidence
+across these runs; overlapping reruns are not additional cases. Original failures
+remain in private evidence.
+
+Production build `ZQ9j-Oa90WEu4cA7G2i8O`, Node 24.20.0, binds 1,722 source
+inputs. Seven actual HTTPS checks pass across configured and default-off modes.
+Full types, authored copy, source security, hydration and runtime traces pass;
+lint retains 39 existing warnings with no errors. All 106 portable checks pass
+after supplying the required task-owned temporary directory; the initial missing
+environment failure is retained. The fresh fictional database applied all 126
+existing migrations. This continuation changes no schema, package, provider
+adapter, browser component or native application. Earlier browser, migration and
+restore receipts below remain historical evidence for those unchanged surfaces.
+No real provider request, device acceptance, merge or deployment is claimed.
+Independent final review and the integration handoff are recorded separately.
+Keep dependency-security, combined release and provider activation gates open.
+
+### Earlier foundation verification
 
 Application `01e9955bcc859ce82d190dc19c10d3a3a57cd809`, production build
 `8HYVfnIbzgllRFJaE9Sng`, passed types, lint, authored-copy checks, source security,
