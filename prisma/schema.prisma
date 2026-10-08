@@ -3608,6 +3608,8 @@ model MediaCatalogItem {
   sequence Int?
   topics String[] @default([])
   scriptureRanges Json @default("[]")
+  transcriptText String @default("")
+  chapters Json @default("[]")
   recordedOn String?
   details Json @default("null")
   sourceUrl String?

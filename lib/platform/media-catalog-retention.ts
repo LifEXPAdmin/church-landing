@@ -19,7 +19,9 @@ export const mediaEmpty = {
   languageIds: [],
   details: Prisma.JsonNull,
   recordedOn: null,
-  durationSeconds: null
+  durationSeconds: null,
+  transcriptText: "",
+  chapters: []
 };
 export async function exportMedia(tx: PostTx, userId: string, limit: number) {
   // Church work and permission evidence about third parties are not personal account exports.
@@ -44,6 +46,8 @@ export async function exportMedia(tx: PostTx, userId: string, limit: number) {
       presentation: true,
       audience: true,
       durationSeconds: true,
+      transcriptText: true,
+      chapters: true,
       languageIds: true,
       speakers: true,
       churchCredit: true,

@@ -4,6 +4,7 @@ import { readBody, requestSessionToken } from "./account-boundary";
 import { readAccountSession } from "./accounts";
 import { PortalError } from "./portal-policy";
 import { allowWorkspaceAttempt } from "./account-limits";
+import { MEDIA_COMMAND_MAX_BYTES } from "./media-transcript";
 export { workspaceError as socialError } from "./post-workspace-boundary";
 import { workspaceHeaders } from "./post-workspace-boundary";
 export const socialHeaders = {
@@ -51,7 +52,13 @@ export async function socialWriteInput(
       900
     );
   try {
-    return { input: await readBody(request, 32768), token };
+    return {
+      input: await readBody(
+        request,
+        domain === "media-catalog" ? MEDIA_COMMAND_MAX_BYTES : 32768
+      ),
+      token
+    };
   } catch {
     throw new PortalError(
       400,

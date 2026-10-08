@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { socialRequest } from "@/lib/platform/social-client";
-import type { MediaPublic } from "@/lib/platform/media-catalog-reads";
+import type { MediaDetail } from "@/lib/platform/media-catalog-reads";
+import { MediaTranscriptReader } from "./media-transcript-reader";
 import { MediaTopicLinks } from "./media-topic-links";
 import { PublicShareControls } from "./public-share-controls";
 import { SavePostControl } from "./save-post-control";
@@ -26,7 +27,7 @@ export function MediaReader({
   owner: string | null;
 }) {
   const url = `/api/platform/media-catalog?view=detail&id=${encodeURIComponent(id)}`;
-  const { data, error, reload } = useMediaRead<{ item: MediaPublic }>(
+  const { data, error, reload } = useMediaRead<{ item: MediaDetail }>(
       url,
       owner
     ),
@@ -158,6 +159,12 @@ export function MediaReader({
               <MediaTopicLinks topics={item.topics} />
             </section>
           )}
+          <MediaTranscriptReader
+            key={`${owner ?? "guest"}:${item.id}:${item.version}`}
+            transcriptText={item.transcriptText}
+            chapters={item.chapters}
+            durationSeconds={item.durationSeconds}
+          />
           <div className="rounded-xl border p-[16px]">
             <h2 className="text-lg font-semibold">
               Open on {item.sourceProvider}
@@ -176,7 +183,7 @@ export function MediaReader({
                 setNotice("");
                 const generation = ++launchGeneration.current;
                 try {
-                  const current = await socialRequest<{ item: MediaPublic }>(
+                  const current = await socialRequest<{ item: MediaDetail }>(
                     url,
                     undefined,
                     owner

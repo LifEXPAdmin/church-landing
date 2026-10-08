@@ -19,6 +19,13 @@ import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 import type { MediaFields } from "@/lib/platform/media-catalog-input";
 import {
+  mediaTranscript,
+  MEDIA_TRANSCRIPT_MAX_CHARS,
+  MEDIA_CHAPTER_MAX_COUNT,
+  MEDIA_COMMAND_MAX_BYTES,
+  type MediaChapter
+} from "@/lib/platform/media-transcript";
+import {
   normalizeScripture,
   scriptureLabel
 } from "@/lib/platform/media-scripture";
@@ -33,6 +40,14 @@ type ScriptureDraft = {
   originals?: string[];
   referenceVersion?: string;
 };
+type ChapterDraft = { key: string; start: string; title: string };
+type FocusTarget =
+  | "source"
+  | "status"
+  | "transcript"
+  | "add-chapter"
+  | `chapter-start:${string}`
+  | `chapter-title:${string}`;
 const empty: MediaFields = {
   title: "",
   description: "",
@@ -47,6 +62,8 @@ const empty: MediaFields = {
   sequence: null,
   topics: [],
   scriptureRanges: [],
+  transcriptText: "",
+  chapters: [],
   recordedOn: null,
   details: null,
   sourceUrl: null,
@@ -79,6 +96,7 @@ export function MediaEditor({
   const [activeId, setActiveId] = useState(id),
     [f, setFields] = useState<MediaFields>(empty),
     [scriptureDrafts, setScriptureDrafts] = useState<ScriptureDraft[]>([]),
+    [chapterDrafts, setChapterDrafts] = useState<ChapterDraft[]>([]),
     [church, setChurch] = useState<string | null>(null),
     [version, setVersion] = useState(0),
     [state, setState] = useState("DRAFT"),
@@ -98,10 +116,11 @@ export function MediaEditor({
   const feedbackId = useId(),
     resultRef = useRef<HTMLParagraphElement>(null),
     sourceRef = useRef<HTMLInputElement>(null),
+    transcriptRef = useRef<HTMLTextAreaElement>(null),
+    addChapterRef = useRef<HTMLButtonElement>(null),
+    chapterRefs = useRef(new Map<FocusTarget, HTMLInputElement>()),
     focusEpoch = useRef(0),
-    resultFocus = useRef<{ target: "source" | "status"; epoch: number } | null>(
-      null
-    );
+    resultFocus = useRef<{ target: FocusTarget; epoch: number } | null>(null);
   const [focusRequest, setFocusRequest] = useState(0);
   const originalOwner = useRef(owner);
   const locked = useRef(false),
@@ -131,7 +150,7 @@ export function MediaEditor({
       document.removeEventListener("visibilitychange", visibility);
     };
   }, [owner]);
-  function requestResultFocus(target: "source" | "status", epoch: number) {
+  function requestResultFocus(target: FocusTarget, epoch: number) {
     if (epoch !== focusEpoch.current) return;
     resultFocus.current = { target, epoch };
     setFocusRequest((value) => value + 1);
@@ -152,12 +171,27 @@ export function MediaEditor({
     // An own save conceals and remounts the editor until its fresh read settles.
     if (busy || (concealed && !removed) || data?.actorId !== owner) return;
     const target =
-      request.target === "source" ? sourceRef.current : resultRef.current;
+      request.target === "source"
+        ? sourceRef.current
+        : request.target === "transcript"
+          ? transcriptRef.current
+          : request.target === "status"
+            ? resultRef.current
+            : request.target === "add-chapter"
+              ? addChapterRef.current
+              : chapterRefs.current.get(request.target);
     if (!target) return;
     resultFocus.current = null;
     target.focus();
   }, [focusRequest, busy, concealed, removed, data, owner]);
   function load(item?: Item) {
+    setChapterDrafts(
+      (item?.chapters ?? []).map((chapter) => ({
+        key: crypto.randomUUID(),
+        start: String(chapter.startSeconds),
+        title: chapter.title
+      }))
+    );
     setScriptureDrafts(
       (item?.scriptureRanges ?? []).map((r) => ({
         systemId: r.referenceSystemId,
@@ -209,6 +243,41 @@ export function MediaEditor({
     setScriptureDrafts(next);
     change({});
   };
+  const changeChapters = (next: ChapterDraft[]) => {
+    setChapterDrafts(next);
+    change({});
+  };
+  let transcriptText = "",
+    transcriptProblem = "";
+  try {
+    transcriptText = mediaTranscript(f.transcriptText, [], null).transcriptText;
+  } catch (e) {
+    transcriptProblem =
+      e instanceof Error ? e.message : "Check the transcript text.";
+  }
+  let chapters: MediaChapter[] = [],
+    chapterProblem = "",
+    chapterProblemIndex = -1,
+    chapterProblemField: "start" | "title" = "start",
+    chapterProblemTarget: FocusTarget = "status";
+  try {
+    chapters = mediaTranscript(
+      "",
+      chapterDrafts.map((draft) => ({
+        startSeconds: /^\d+$/.test(draft.start) ? Number(draft.start) : NaN,
+        title: draft.title
+      })),
+      f.durationSeconds
+    ).chapters;
+  } catch (e) {
+    chapterProblem = e instanceof Error ? e.message : "Check the chapters.";
+    const match = /chapter (\d+)/i.exec(chapterProblem);
+    if (match && chapterDrafts[Number(match[1]) - 1]) {
+      chapterProblemIndex = Number(match[1]) - 1;
+      chapterProblemField = /title/i.test(chapterProblem) ? "title" : "start";
+      chapterProblemTarget = `chapter-${chapterProblemField}:${chapterDrafts[chapterProblemIndex].key}`;
+    }
+  }
   let scriptureRanges: MediaFields["scriptureRanges"] = [],
     scriptureProblem = "";
   try {
@@ -256,6 +325,16 @@ export function MediaEditor({
         requestResultFocus("status", actionFocusEpoch);
         return;
       }
+      if (["save", "publish"].includes(operation) && transcriptProblem) {
+        setMessage(transcriptProblem);
+        requestResultFocus("transcript", actionFocusEpoch);
+        return;
+      }
+      if (["save", "publish"].includes(operation) && chapterProblem) {
+        setMessage(chapterProblem);
+        requestResultFocus(chapterProblemTarget, actionFocusEpoch);
+        return;
+      }
       if (["save", "publish"].includes(operation) && source && !ack) {
         setMessage(
           "Acknowledge the displayed source and audience before saving."
@@ -275,6 +354,8 @@ export function MediaEditor({
           fields: {
             ...f,
             scriptureRanges,
+            transcriptText,
+            chapters,
             languageIds: f.languageIds.filter((x) => x.trim()),
             speakers: f.speakers.filter((x) => x.trim()),
             topics: f.topics.filter((x) => x.trim()),
@@ -306,6 +387,13 @@ export function MediaEditor({
             : {})
         });
       body = JSON.stringify(payload);
+      if (new TextEncoder().encode(body).byteLength > MEDIA_COMMAND_MAX_BYTES) {
+        setMessage(
+          "This draft is too large to send. Shorten the transcript or other details, then save again. Your unsent changes are still here."
+        );
+        requestResultFocus("status", actionFocusEpoch);
+        return;
+      }
     }
     locked.current = true;
     setBusy(true);
@@ -346,7 +434,7 @@ export function MediaEditor({
         reload();
       if (
         e instanceof SocialClientError &&
-        [400, 409, 429].includes(e.status)
+        [400, 409, 413, 429].includes(e.status)
       ) {
         setRetry(null);
         if (e.status === 409) reload();
@@ -391,7 +479,7 @@ export function MediaEditor({
           ref={resultRef}
           role="status"
           tabIndex={-1}
-          className="whitespace-pre-wrap focus:outline-none focus:ring-2 focus:ring-gc-focus"
+          className="focus:ring-gc-focus whitespace-pre-wrap focus:outline-none focus:ring-2"
         >
           {message}
         </p>
@@ -478,6 +566,165 @@ export function MediaEditor({
                   onChange={(e) => change({ description: e.target.value })}
                 />
               </label>
+              <section
+                aria-label="Transcript and chapters"
+                className="space-y-4 rounded-xl border p-4"
+              >
+                <h2 className="text-lg font-semibold">
+                  Transcript and chapters
+                </h2>
+                <p id={`${feedbackId}-transcript-help`}>
+                  Supply plain transcript text you are authorized to publish.
+                  The transcript and chapter markers follow this item&apos;s catalog
+                  audience. They are optional and are reviewed with the
+                  recording&apos;s other text.
+                </p>
+                <label className="block">
+                  Transcript text
+                  <textarea
+                    className={fieldClass}
+                    ref={transcriptRef}
+                    rows={8}
+                    maxLength={MEDIA_TRANSCRIPT_MAX_CHARS}
+                    value={f.transcriptText}
+                    aria-invalid={!!transcriptProblem || undefined}
+                    aria-describedby={`${feedbackId}-transcript-help ${feedbackId}-transcript-count${transcriptProblem ? ` ${feedbackId}-transcript-error` : ""}`}
+                    onChange={(e) => change({ transcriptText: e.target.value })}
+                  />
+                </label>
+                <p id={`${feedbackId}-transcript-count`} className="text-sm">
+                  {f.transcriptText.length} of {MEDIA_TRANSCRIPT_MAX_CHARS}{" "}
+                  characters.
+                </p>
+                {transcriptProblem && (
+                  <p id={`${feedbackId}-transcript-error`} role="alert">
+                    {transcriptProblem}
+                  </p>
+                )}
+                <h3 className="font-semibold">Manual chapter markers</h3>
+                <p id={`${feedbackId}-chapters-help`}>
+                  Enter up to {MEDIA_CHAPTER_MAX_COUNT} markers in increasing
+                  order, with unique start times in whole seconds. Zero is the
+                  beginning. These are publisher-supplied reference times, not
+                  playback controls.
+                  {f.durationSeconds === null
+                    ? " Duration is unknown, so marker times cannot be checked against the recording's length."
+                    : ` Known duration: ${f.durationSeconds} seconds. Every marker must start before it.`}
+                </p>
+                {chapterDrafts.map((draft, index) => (
+                  <div
+                    key={draft.key}
+                    className="space-y-3 rounded-lg border p-3"
+                  >
+                    <label className="block">
+                      Chapter {index + 1} start in seconds
+                      <input
+                        className={fieldClass}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={draft.start}
+                        ref={(element) => {
+                          const key: FocusTarget = `chapter-start:${draft.key}`;
+                          if (element) chapterRefs.current.set(key, element);
+                          else chapterRefs.current.delete(key);
+                        }}
+                        aria-invalid={
+                          (chapterProblemIndex === index &&
+                            chapterProblemField === "start") ||
+                          undefined
+                        }
+                        aria-describedby={`${feedbackId}-chapters-help${chapterProblemIndex === index && chapterProblemField === "start" ? ` ${feedbackId}-chapters-error` : ""}`}
+                        onChange={(e) =>
+                          changeChapters(
+                            chapterDrafts.map((chapter) =>
+                              chapter.key === draft.key
+                                ? { ...chapter, start: e.target.value }
+                                : chapter
+                            )
+                          )
+                        }
+                      />
+                    </label>
+                    <label className="block">
+                      Chapter {index + 1} title
+                      <input
+                        className={fieldClass}
+                        value={draft.title}
+                        maxLength={120}
+                        ref={(element) => {
+                          const key: FocusTarget = `chapter-title:${draft.key}`;
+                          if (element) chapterRefs.current.set(key, element);
+                          else chapterRefs.current.delete(key);
+                        }}
+                        aria-invalid={
+                          (chapterProblemIndex === index &&
+                            chapterProblemField === "title") ||
+                          undefined
+                        }
+                        aria-describedby={
+                          chapterProblemIndex === index &&
+                          chapterProblemField === "title"
+                            ? `${feedbackId}-chapters-error`
+                            : undefined
+                        }
+                        onChange={(e) =>
+                          changeChapters(
+                            chapterDrafts.map((chapter) =>
+                              chapter.key === draft.key
+                                ? { ...chapter, title: e.target.value }
+                                : chapter
+                            )
+                          )
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="gc-button gc-button-quiet"
+                      onClick={() => {
+                        const next = chapterDrafts.filter(
+                          (chapter) => chapter.key !== draft.key
+                        );
+                        const neighbor = next[Math.min(index, next.length - 1)];
+                        changeChapters(next);
+                        requestResultFocus(
+                          neighbor
+                            ? `chapter-start:${neighbor.key}`
+                            : "add-chapter",
+                          focusEpoch.current
+                        );
+                      }}
+                    >
+                      Remove chapter {index + 1}
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="gc-button gc-button-quiet"
+                  ref={addChapterRef}
+                  disabled={chapterDrafts.length >= MEDIA_CHAPTER_MAX_COUNT}
+                  onClick={() => {
+                    const key = crypto.randomUUID();
+                    changeChapters([
+                      ...chapterDrafts,
+                      { key, start: "", title: "" }
+                    ]);
+                    requestResultFocus(
+                      `chapter-start:${key}`,
+                      focusEpoch.current
+                    );
+                  }}
+                >
+                  Add chapter
+                </button>
+                {chapterProblem && (
+                  <p id={`${feedbackId}-chapters-error`} role="alert">
+                    {chapterProblem}
+                  </p>
+                )}
+              </section>
               <section
                 aria-label="Scripture tags"
                 aria-describedby={
@@ -1018,10 +1265,10 @@ export function MediaEditor({
                     }}
                   />
                   <span>
-                    I reviewed this exact source, text, attribution and
-                    audience. The recording has ended, is publicly accessible on
-                    its provider, and I have current rights and any required
-                    testimony consent.
+                    I reviewed this exact source, text, transcript, chapter
+                    markers, attribution and audience. The recording has ended,
+                    is publicly accessible on its provider, and I have current
+                    rights and any required testimony consent.
                   </span>
                 </label>
               </section>
