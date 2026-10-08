@@ -15,6 +15,11 @@ export async function seedNeedRolePrivacy(db: PrismaClient) {
   process.env.PRIVILEGED_MFA_MODE = "off";
   try {
     const f = await seedParticipation(db);
+    // A PUBLIC church Need requires a listed fictional receiver church.
+    await db.church.update({
+      where: { id: f.churchA.id },
+      data: { communityListed: true }
+    });
     for (const capability of [
       "MANAGE_EXCHANGE_LISTINGS",
       "MODERATE_EXCHANGE_LISTINGS"

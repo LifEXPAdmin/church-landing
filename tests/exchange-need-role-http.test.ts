@@ -95,6 +95,7 @@ async function proveCoordinator(f: Fixture) {
 
 test("manager role choices stay out of initial HTML/RSC while current pinned API paginates21 roles", async () => {
   const f = await seedNeedRolePrivacy(db);
+  await proveCoordinator(f);
   const firstResponse = await request(f.endpoint, f.ada.token, f.ada.id);
   assert.equal(firstResponse.status, 200);
   privateResponse(firstResponse);
