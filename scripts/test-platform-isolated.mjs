@@ -584,6 +584,8 @@ async function verifyAccountOwnerBoundary() {
     assert.deepEqual(readFileSync(join(baselineRoot, path)), readFileSync(join(root, path)), "Baseline dependency/schema mismatch");
   symlinkSync(join(root, "node_modules"), join(baselineRoot, "node_modules"), "dir");
   mkdirSync(env.ACCOUNT_TEST_SINK_DIR, { recursive: true, mode: 0o700 });
+  const probeSink = join(fixture, "owner-boundary-sink");
+  mkdirSync(probeSink, { mode: 0o700 });
   const helper = join(root, "scripts/probe-account-owner-boundary.mjs");
   const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
   const bindingPaths = [
@@ -599,14 +601,14 @@ async function verifyAccountOwnerBoundary() {
     const baseline = mode === "baseline";
     const sourceRoot = baseline ? baselineRoot : root;
     const sourceSha = baseline ? baselineSha : source;
-    const output = join(env.ACCOUNT_TEST_SINK_DIR, "owner-boundary-" + mode);
+    const output = join(probeSink, "owner-boundary-" + mode);
     const child = spawnSync(process.execPath, [
       "--import", join(sourceRoot, "tests/register.mjs"), helper,
       "--source-root", sourceRoot, "--source-sha", sourceSha,
       "--output", output, "--mode", mode
     ], {
       cwd: sourceRoot,
-      env: { ...env, PRIVILEGED_MFA_MODE: "enforce", ACCOUNT_GOOGLE_ENABLED: "false", NODE_DISABLE_COMPILE_CACHE: "1" },
+      env: { ...env, ACCOUNT_TEST_SINK_DIR: probeSink, PRIVILEGED_MFA_MODE: "enforce", ACCOUNT_GOOGLE_ENABLED: "false", NODE_DISABLE_COMPILE_CACHE: "1" },
       encoding: "utf8", timeout: 120000, maxBuffer: 1024 * 1024
     });
     // These diagnostic logs and raw results are never uploaded by the workflow.
