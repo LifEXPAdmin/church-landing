@@ -13,6 +13,20 @@ const production = process.env.POST_RENDER_PHASE === "production";
 assert.match(origin, /^https?:\/\/127\.0\.0\.1:\d+$/);
 before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
+// Only the isolated seed process temporarily disables MFA for its fictional
+// operator and church setup. The running application remains in enforce mode,
+// and every reader request and personal action below uses the restored mode.
+async function fixture() {
+  await assertPortalTestDatabase(db);
+  const prior = process.env.PRIVILEGED_MFA_MODE;
+  try {
+    process.env.PRIVILEGED_MFA_MODE = "off";
+    return await seedParticipation(db);
+  } finally {
+    if (prior === undefined) delete process.env.PRIVILEGED_MFA_MODE;
+    else process.env.PRIVILEGED_MFA_MODE = prior;
+  }
+}
 const get = (path: string, token = "", rsc = false) =>
   fetch(origin + path, {
     redirect: "manual",
@@ -22,7 +36,7 @@ const get = (path: string, token = "", rsc = false) =>
     }
   });
 test("actual reader HTML and Flight keep a selected bounded set while new posts arrive and permissions change", async () => {
-  const f = await seedParticipation(db);
+  const f = await fixture();
   const create = (content: string) =>
     postCommand(db, f.lee.token, {
       operation: "create",
@@ -78,7 +92,7 @@ test("actual reader HTML and Flight keep a selected bounded set while new posts 
 });
 test("canonical comment API writes only to the selected reader post without altering its feed anchor", async () => {
   if (!production) return; // Private form rendering is intentionally production-only.
-  const f = await seedParticipation(db);
+  const f = await fixture();
   const a = await postCommand(db, f.lee.token, {
     operation: "create",
     requestKey: randomUUID(),
@@ -132,7 +146,7 @@ test("canonical comment API writes only to the selected reader post without alte
 });
 
 test("Friends HTML and Flight include only current accepted personal friends with independent church access", async () => {
-  const f = await seedParticipation(db);
+  const f = await fixture();
   await db.friendAcceptance.create({
     data: {
       inviterId: f.ada.id,
