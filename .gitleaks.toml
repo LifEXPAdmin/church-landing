@@ -14,3 +14,22 @@ condition = "AND"
 regexTarget = "secret"
 paths = ['''^scripts/qa-mission-browser\.mjs$''']
 regexes = ['''^Fictional-Mission-Signup-1$''']
+
+# This fixed UUID is a fictional idempotency key in a pure schema test.
+# It authorizes no account or provider operation. Both conditions must match.
+[[rules.allowlists]]
+description = "Exact fictional native authenticator request UUID"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^tests/native-auth-contracts\.test\.ts$''']
+regexes = ['''^76ff5d31-9439-4d9d-8174-aec5c5dbb657$''']
+
+# This is the SHA-256 of the immutable, tracked preactivation request fixture.
+# It is file-integrity evidence, not an authentication value. Require both the
+# exact verifier path and the independently recomputed digest.
+[[rules.allowlists]]
+description = "Exact archived native request fixture checksum"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^scripts/check-portability\.mjs$''']
+regexes = ['''^cb002ec613317550115d49d4b05f27041089b6981d08ed1d0b73cc83c1c1e06f$''']

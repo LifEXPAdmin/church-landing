@@ -244,3 +244,36 @@ bounded states, not every intermediate frame. VoiceOver speech, actual autofill,
 physical-device, minimum-version and real-account acceptance remain open.
 These build results apply to the recorded dependency graph; later dependency
 repairs require their own source and native validation.
+
+Dependency-integration checkpoint, 8 October 2026: the reviewed locked root and
+mobile graphs passed fresh guarded installation and the existing root patch
+checks. All 248 mobile tests, 54 focused root regressions, 92 portable checks and
+seven shared-core tests pass, alongside types, mobile lint, boundary and Expo
+compatibility checks. Root lint reports no errors and 39 warnings in unchanged
+QA scripts. The root audit reports zero vulnerabilities; the mobile audit still
+fails with four high findings through node-forge. That gate remains open.
+
+A fresh unsigned Xcode 27 Release build installed on the retained iPhone SE
+Simulator with iOS 18.3.1. Its installed JavaScript, native executable and
+Info.plist match the completed build receipt. The 1,741,115-byte Hermes bundle is
+unchanged from the password-visibility checkpoint. The development-only diagnostic
+module and its source metadata are absent from this Release bundle; equal
+JavaScript hashes do not indicate stale embedded provenance. Build receipts and
+exact source hashes retain the dependency and native artifact identities.
+
+The bounded native smoke check observed password reveal/hide, fictional sign-in,
+feed and post detail, Back to feed, an opaque app-switcher cover and a resumed
+feed. UI automation timed out during this session. A later screenshot confirms
+the resumed feed; these
+tool timeouts do not establish an app hang. No sign-out or fresh-form sequence
+was attempted in that session. Software-keyboard, iOS 27, stalled-JavaScript and real
+backend behavior were not reverified in this run. The earlier password and
+privacy observations remain separate historical evidence, with their original
+scope and limitations.
+
+A separate follow-up on the same verified build recovered UI automation,
+signed in with the demo account, signed out, and reopened empty email and password
+fields with Show password available. The sign-out confirmation describes the
+fixture's in-memory response. The software keyboard was not opened. This adds
+only the sign-out and fresh-form observation; both managed sessions shut down
+successfully.
