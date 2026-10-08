@@ -108,7 +108,7 @@ export function createNativeFixture({ latencyMs = 180 }: { latencyMs?: number } 
   };
   const runtime = createNativeRuntime({ configuration: { environment: "development", origin }, wire, vault,
     availability: { screens: ["home"], resources: ["post"] } });
-  return Object.freeze({ runtime,
+  return Object.freeze({ runtime, credentials: input,
     signIn: () => runtime.signIn(input),
     failNextRead() { nextReadFails = true; },
     emptyNextFeed() { nextFeedEmpty = true; }

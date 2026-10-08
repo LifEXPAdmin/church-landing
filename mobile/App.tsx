@@ -86,7 +86,7 @@ function Preview({ fixture }: { fixture: Fixture }) {
   function readCase(prepare: () => void) {
     prepare(); void runtime.recordForegroundActivity(); void runtime.refresh();
   }
-  return <NativeJourney runtime={runtime} signInMode={{ kind: "fixture", signIn: fixture.signIn }} previewTools={<>
+  return <NativeJourney runtime={runtime} signInMode={{ kind: "fixture", signIn: fixture.signIn, credentials: fixture.credentials }} previewTools={<>
     <Card>
       <Text variant="heading">Preview checks</Text>
       <Text variant="small" tone="muted">Fictional responses stay in memory. These checks do not connect to a real account.</Text>
