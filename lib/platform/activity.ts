@@ -154,7 +154,7 @@ async function activityRows(tx: Tx, ownerId: string, through: bigint) {
     FROM "SocialEvent" e
     LEFT JOIN "AdultMessage" m ON e.kind = 'ADULT_MESSAGE_CREATED' AND m.id = e."messageId" AND m."conversationId" = e."conversationId" AND m."senderId" = e."actorId"
     LEFT JOIN "AdultConversationState" s ON s."conversationId" = e."conversationId" AND s."ownerId" = ${ownerId}
-    LEFT JOIN "PlatformPostComment" c ON e.kind = 'COMMENT_ACTIVITY' AND c.id = e."commentId" AND c."postId" = e."postId" AND c."authorId" = e."actorId"
+    LEFT JOIN "PlatformPostComment" c ON e.kind = 'COMMENT_ACTIVITY' AND c.id = e."commentId" AND c."postId" = e."postId" AND (c."authorId" = e."actorId" OR (c."authorChurchId" IS NOT NULL AND e."notificationCategory" = 'mentions'))
     LEFT JOIN "PlatformPost" p ON p.id = e."postId"
     LEFT JOIN "ConversationPreference" cp ON e.kind = 'COMMENT_ACTIVITY' AND cp."postId" = e."postId" AND cp."ownerId" = ${ownerId}
     WHERE e."recipientId" = ${ownerId} AND e.kind IN (${Prisma.join(kinds)}) AND e."activitySequence" <= ${through}

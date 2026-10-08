@@ -286,6 +286,84 @@ test("trusted HTTPS editing rejects borrowed browser authority, foreign owners a
   );
 });
 
+test("trusted HTTPS church edits create one editor-bound mention visible as the church in website Activity", async () => {
+  const f = await fixture(),
+    recipient = await createPortalActor(db, "edithttpmention");
+  const church = await db.church.create({
+    data: {
+      slug: "edit-http-church-" + randomUUID(),
+      name: "Fictional HTTP church",
+      summary: "Isolated church edit"
+    }
+  });
+  await db.churchConnection.create({
+    data: { churchId: church.id, userId: f.owner.id, state: "APPROVED" }
+  });
+  await db.churchCapabilityGrant.create({
+    data: {
+      churchId: church.id,
+      userId: f.owner.id,
+      capability: "PUBLISH_CHURCH_POSTS"
+    }
+  });
+  await db.platformPostComment.update({
+    where: { id: f.comment.id },
+    data: { authorChurchId: church.id }
+  });
+  await db.socialPreferences.create({
+    data: { ownerId: recipient.id, mentions: "FOLLOWED" }
+  });
+  await db.platformFollow.create({
+    data: { followerId: recipient.id, followingId: f.owner.id }
+  });
+  const input = change({ mentionIds: [recipient.id] });
+  const receipt = ok(
+    await send(path(f.post.id, f.comment.id), f.owner, input),
+    f.owner.id
+  );
+  const retry = await send(
+    "/api/platform/comments",
+    null,
+    {
+      operation: "edit",
+      ...input,
+      postId: f.post.id,
+      commentId: f.comment.id
+    },
+    webHeaders(f.owner)
+  );
+  assert.equal(retry.status, 200, retry.bytes.toString());
+  assert.deepEqual(JSON.parse(retry.bytes.toString()), receipt);
+  const events = await db.socialEvent.findMany({
+    where: {
+      commentId: f.comment.id,
+      recipientId: recipient.id,
+      kind: "COMMENT_ACTIVITY"
+    }
+  });
+  assert.equal(events.length, 1);
+  assert.equal(events[0].actorId, f.owner.id);
+  assert.equal(events[0].notificationCategory, "mentions");
+  const activity = await send(
+    "/api/platform/activity",
+    null,
+    undefined,
+    webHeaders(recipient)
+  );
+  assert.equal(activity.status, 200, activity.bytes.toString());
+  const view = JSON.parse(activity.bytes.toString());
+  assert.equal(view.ownerId, recipient.id);
+  assert.equal(view.items.length, 1);
+  assert.equal(view.items[0].available, true);
+  assert.equal(view.items[0].summary, "Latest from " + church.name);
+  assert.equal(
+    view.items[0].href,
+    `/platform/posts/${f.post.id}?comment=${f.comment.id}`
+  );
+  assert.ok(!activity.bytes.includes(f.owner.id));
+  assert.ok(!activity.bytes.includes(f.reader.id));
+});
+
 test("trusted HTTPS corrected comment retains the canonical fixture for actual website edit acceptance", async () => {
   const f = await fixture(),
     nativeInput = change({

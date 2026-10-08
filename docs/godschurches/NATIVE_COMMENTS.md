@@ -129,6 +129,14 @@ the native route schedules `dispatchNotifications` with the comment ID after
 success, including exact retries. Post-commit handoff or receipt projection
 failure remains unconfirmed; retry the same immutable request.
 
+A different current church publisher may correct a church comment and select a
+new mention. The canonical mention intent retains that editor as its actor;
+the comment and Activity display retain the speaking church. Source resolution
+admits this actor difference only for an active mention with the exact immutable
+mention intent. Recipient blocks and followed-person consent apply to the editor,
+and current source access and church mutes still apply. It does not grant reply,
+prayer or follower notification authority or backfill old missing alerts.
+
 ## Verification
 
 `tests/comment-visibility-projection.test.ts` reproduces a restricted Topic root

@@ -18,6 +18,8 @@ import { topicCommand, readTopic } from "../lib/platform/topic-communities";
 import { groupCommand } from "../lib/platform/group-commands";
 import { readGroup } from "../lib/platform/group-reads";
 import { postCommand } from "../lib/platform/post-commands";
+import { commentNotificationSource } from "../lib/platform/comment-notification-source";
+import { readActivity } from "../lib/platform/activity";
 
 const db = new PrismaClient();
 before(() => assertPortalTestDatabase(db));
@@ -329,7 +331,8 @@ test("fresh corrections require the current author and readable, reply-enabled s
 
 test("church corrections preserve the speaking church and require a current publisher", async () => {
   const f = await fixture(),
-    publisher = await createPortalActor(db, "editpublisher");
+    publisher = await createPortalActor(db, "editpublisher"),
+    mentioned = await createPortalActor(db, "editchurchmention");
   const church = await db.church.create({
     data: {
       slug: "edit-church-" + randomUUID(),
@@ -358,8 +361,18 @@ test("church corrections preserve the speaking church and require a current publ
       authorChurchId: church.id
     })
   );
+  // Consent follows the publisher who selects the mention, including when the
+  // original author is explicitly mentioned by a different church publisher.
+  for (const recipient of [mentioned, f.author]) {
+    await db.socialPreferences.create({
+      data: { ownerId: recipient.id, mentions: "FOLLOWED" }
+    });
+    await db.platformFollow.create({
+      data: { followerId: recipient.id, followingId: publisher.id }
+    });
+  }
   const target = { postId: f.post.id, commentId: comment.id },
-    input = change();
+    input = change({ mentionIds: [mentioned.id, f.author.id] });
   ok(await call(target, publisher, input), publisher.id);
   const saved = await row(comment.id);
   assert.equal(saved.authorId, f.author.id);
@@ -373,11 +386,134 @@ test("church corrections preserve the speaking church and require a current publ
     id: church.id,
     name: church.name
   });
-  assert.ok(!JSON.stringify(projected).includes(f.author.id));
+  const { mentions: projectedMentions, ...sourceProjection } = projected;
+  assert.deepEqual(
+    projectedMentions.map((person) => person.id).sort(),
+    [mentioned.id, f.author.id].sort()
+  );
+  assert.ok(!JSON.stringify(sourceProjection).includes(f.author.id));
   assert.ok(!JSON.stringify(projected).includes(publisher.id));
+  assert.equal(
+    await db.socialEvent.count({
+      where: {
+        commentId: comment.id,
+        recipientId: mentioned.id,
+        kind: "COMMENT_ACTIVITY"
+      }
+    }),
+    1,
+    "A current church publisher's new mention must reach canonical Activity."
+  );
+  const events = await db.socialEvent.findMany({
+    where: {
+      commentId: comment.id,
+      kind: "COMMENT_ACTIVITY",
+      recipientId: { in: [mentioned.id, f.author.id] }
+    }
+  });
+  assert.equal(events.length, 2);
+  for (const event of events) {
+    assert.equal(event.actorId, publisher.id);
+    assert.equal(event.notificationCategory, "mentions");
+    assert.equal(
+      (await commentNotificationSource(db, event, true))?.category,
+      "mentions"
+    );
+    for (const notificationCategory of [
+      null,
+      "",
+      "replies",
+      "conversations",
+      "prayer"
+    ])
+      assert.equal(
+        await commentNotificationSource(
+          db,
+          { ...event, notificationCategory },
+          false
+        ),
+        null
+      );
+    assert.equal(
+      await commentNotificationSource(
+        db,
+        { ...event, actorId: f.owner.id },
+        false
+      ),
+      null
+    );
+  }
+  const activity = await readActivity(db, mentioned.token);
+  assert.equal(activity.items[0].available, true);
+  assert.equal(activity.items[0].summary, "Latest from " + church.name);
+  assert.equal(activity.unread, 1);
+  const mentionedEvent = events.find(
+    (event) => event.recipientId === mentioned.id
+  )!;
+  await db.socialRelationship.create({
+    data: { ownerId: mentioned.id, churchId: church.id, muted: true }
+  });
+  assert.equal((await readActivity(db, mentioned.token)).items.length, 0);
+  assert.equal((await readActivity(db, mentioned.token)).unread, 0);
+  assert.equal(await commentNotificationSource(db, mentionedEvent, true), null);
+  await db.socialRelationship.deleteMany({
+    where: { ownerId: mentioned.id, churchId: church.id }
+  });
+  for (const ownerId of [mentioned.id, publisher.id]) {
+    const targetUserId = ownerId === mentioned.id ? publisher.id : mentioned.id;
+    await db.socialRelationship.create({
+      data: { ownerId, targetUserId, blocked: true }
+    });
+    assert.equal(
+      await commentNotificationSource(db, mentionedEvent, false),
+      null
+    );
+    assert.equal(
+      await commentNotificationSource(db, mentionedEvent, true),
+      null
+    );
+    await db.socialRelationship.deleteMany({
+      where: { ownerId, targetUserId }
+    });
+  }
+  await db.platformFollow.deleteMany({
+    where: { followerId: mentioned.id, followingId: publisher.id }
+  });
+  assert.equal(await commentNotificationSource(db, mentionedEvent, true), null);
+  await db.socialPreferences.update({
+    where: { ownerId: mentioned.id },
+    data: { mentions: "NOBODY" }
+  });
+  assert.equal(
+    await commentNotificationSource(db, mentionedEvent, false),
+    null
+  );
+  await db.socialPreferences.update({
+    where: { ownerId: mentioned.id },
+    data: { mentions: "EVERYONE" }
+  });
+  assert.equal(
+    (await commentNotificationSource(db, mentionedEvent, true))?.category,
+    "mentions"
+  );
+  ok(await call(target, publisher, input), publisher.id);
+  assert.equal(
+    await db.socialEvent.count({
+      where: {
+        commentId: comment.id,
+        recipientId: mentioned.id,
+        kind: "COMMENT_ACTIVITY"
+      }
+    }),
+    1
+  );
   await db.churchCapabilityGrant.deleteMany({
     where: { churchId: church.id, userId: publisher.id }
   });
+  assert.equal(
+    (await commentNotificationSource(db, mentionedEvent, true))?.category,
+    "mentions"
+  );
   denied(
     await call(target, publisher, change({ expectedVersion: 2 })),
     403,
@@ -421,6 +557,17 @@ test("mention corrections add each intent once, retire removed mentions and neve
         change({ expectedVersion: current.version, mentionIds })
       ),
       f.author.id
+    );
+    assert.deepEqual(
+      (
+        await db.commentMention.findMany({
+          where: { commentId: f.comment.id, active: true },
+          select: { recipientId: true }
+        })
+      )
+        .map((mention) => mention.recipientId)
+        .sort(),
+      [...mentionIds].sort()
     );
   }
   assert.equal(

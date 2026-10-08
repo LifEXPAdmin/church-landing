@@ -41,7 +41,7 @@ export async function commentNotificationSources(
           OR: valid.map((e) => ({
             id: e.commentId!,
             postId: e.postId!,
-            authorId: e.actorId
+            OR: [{ authorId: e.actorId }, { authorChurchId: { not: null } }]
           }))
         },
         commentVisibleWhere(context),
@@ -67,6 +67,33 @@ export async function commentNotificationSources(
     take: 50
   });
   if (!comments.length) return result;
+  // A later church publisher may introduce a mention without becoming the
+  // comment's original author. The immutable canonical mention intent proves
+  // that exact editor/recipient pair; it grants no reply or follower authority.
+  const churchMentions = valid.filter((event) =>
+    comments.some(
+      (comment) =>
+        comment.id === event.commentId &&
+        comment.authorChurchId &&
+        comment.authorId !== event.actorId &&
+        comment.mentions.length > 0
+    )
+  );
+  const mentionIntents = churchMentions.length
+    ? await tx.socialEvent.findMany({
+        where: {
+          kind: "COMMENT_MENTIONED",
+          recipientId: ownerId,
+          key: {
+            in: churchMentions.map(
+              (event) => `mention:${event.commentId}:${ownerId}`
+            )
+          }
+        },
+        select: { key: true, actorId: true, postId: true, commentId: true },
+        take: 50
+      })
+    : [];
   const preference = await tx.socialPreferences.findUnique({
     where: { ownerId },
     select: {
@@ -82,7 +109,7 @@ export async function commentNotificationSources(
           await tx.platformFollow.findMany({
             where: {
               followerId: ownerId,
-              followingId: { in: comments.map((c) => c.authorId) }
+              followingId: { in: valid.map((event) => event.actorId) }
             },
             select: { followingId: true },
             take: 50
@@ -137,11 +164,6 @@ export async function commentNotificationSources(
           : context.mutedIds?.includes(post.authorId)))
     )
       continue;
-    const mentioned =
-      comment.mentions.length > 0 &&
-      !context.blockedIds?.includes(comment.authorId) &&
-      (choice === "EVERYONE" ||
-        (choice === "FOLLOWED" && followed.has(comment.authorId)));
     // Church publishers are not personal recipients of church-owned activity.
     const replied =
       (!post.authorChurchId && post.authorId === ownerId) ||
@@ -166,41 +188,54 @@ export async function commentNotificationSources(
       (!delivery ||
         (preference?.prayerPushSince &&
           preference.prayerPushSince < comment.createdAt));
-    if (mentioned || replied || prayer || following)
-      for (const event of valid) {
-        if (
-          event.commentId !== comment.id ||
-          event.postId !== post.id ||
-          event.actorId !== comment.authorId
-        )
-          continue;
-        const eligible = {
-          mentions: mentioned,
-          replies: replied,
-          prayer: !!prayer,
-          conversations: !!following
-        };
-        const category = event.notificationCategory;
-        if (
-          category &&
-          (!(category in eligible) ||
-            !eligible[category as keyof typeof eligible])
-        )
-          continue;
-        result.set(event, {
-          category:
-            (category as keyof typeof eligible) ??
-            (mentioned
-              ? "mentions"
-              : replied
-                ? "replies"
-                : prayer
-                  ? "prayer"
-                  : "conversations"),
-          href: `/platform/posts/${post.id}?comment=${comment.id}`,
-          group: post.id
-        });
-      }
+    for (const event of valid) {
+      if (event.commentId !== comment.id || event.postId !== post.id) continue;
+      const originalActor = event.actorId === comment.authorId;
+      const churchMention =
+        !!comment.authorChurchId &&
+        (event.notificationCategory === undefined ||
+          event.notificationCategory === "mentions") &&
+        mentionIntents.some(
+          (intent) =>
+            intent.key === `mention:${comment.id}:${ownerId}` &&
+            intent.postId === post.id &&
+            intent.commentId === comment.id &&
+            intent.actorId === event.actorId
+        );
+      if (!originalActor && !churchMention) continue;
+      const mentioned =
+        comment.mentions.length > 0 &&
+        !context.blockedIds?.includes(event.actorId) &&
+        (choice === "EVERYONE" ||
+          (choice === "FOLLOWED" && followed.has(event.actorId)));
+      const eligible = {
+        mentions: mentioned,
+        replies: originalActor && replied,
+        prayer: originalActor && !!prayer,
+        conversations: originalActor && !!following
+      };
+      if (!Object.values(eligible).some(Boolean)) continue;
+      const category = event.notificationCategory;
+      if (
+        category &&
+        (!(category in eligible) ||
+          !eligible[category as keyof typeof eligible])
+      )
+        continue;
+      result.set(event, {
+        category:
+          (category as keyof typeof eligible) ??
+          (mentioned
+            ? "mentions"
+            : eligible.replies
+              ? "replies"
+              : eligible.prayer
+                ? "prayer"
+                : "conversations"),
+        href: `/platform/posts/${post.id}?comment=${comment.id}`,
+        group: post.id
+      });
+    }
   }
   return result;
 }
