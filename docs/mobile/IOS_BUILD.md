@@ -161,6 +161,32 @@ feed. This single observation does not establish every interruption timing or
 physical-device snapshot behavior. Software-keyboard coverage, complete
 VoiceOver behavior and inactive-only transitions remain explicit acceptance work.
 
+Additional small-screen checkpoint, 8 October 2026: the same reviewed executable
+also installed and launched on an iPhone SE (3rd generation) Simulator running
+iOS 18.3.1. Its native Keychain write, read and removal probe passed. Fictional
+sign-in, post detail, explicit reveal and the finite final feed page worked.
+Landscape feed, post navigation and sign-out remained usable, followed by a
+return to standard portrait. The fixture's sign-out confirmation represents its
+in-memory response, not a real server session. Only the newly created task device
+was shut down after the run; existing Simulator devices were preserved.
+
+At maximum system text size, the final feed page and enlarged reading controls
+were inspected. One live font-change capture showed clipping, but a
+controlled normal-to-maximum-to-normal check on the same mounted guest screen
+reflowed without taps, scrolling or restarting. The maximum-size capture was
+taken 12.7 seconds after the command; this is an observation time, not a measured
+settling duration. No persistent source defect was established and no UI patch
+was made. The sample input accepted a software-keyboard key with the keyboard
+visible; password entry, complete keyboard clearance and VoiceOver remain open.
+Notification Center concealed the revealed fixture content, and a subsequent
+return restored its preview. Because that return also passed through Home, it
+does not establish recovery from an inactive-only interruption.
+
+This older-runtime fixture check does not validate the provisional iOS 16.4
+minimum, physical devices or complete accessibility. Its private receipt keeps
+the tested executable identity, screenshots, observations and remaining gates
+separate from the earlier build and iOS 27 acceptance evidence.
+
 Separately verify the real journey against an accepted nonproduction
 HTTPS endpoint with fictional accounts. Source checks, Hermes exports, native
 compilation, Simulator behavior and physical-device acceptance are distinct.
