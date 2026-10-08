@@ -17,7 +17,10 @@ import {
   listNativePushDevices,
   nativeInstallationHash
 } from "../lib/platform/native-push";
-import { revokeCurrentAccountSession } from "../lib/platform/account-sessions";
+import {
+  revokeCurrentAccountSession,
+  revokeOtherAccountSessions
+} from "../lib/platform/account-sessions";
 import { loginAccount } from "../lib/platform/accounts";
 import {
   notificationWrite,
@@ -140,6 +143,525 @@ function delayedClaim(milliseconds: number) {
     }
   });
 }
+// Run a canonical mutation only after the real claim transaction has committed,
+// then return its captured result to the worker. This is a dispatch boundary,
+// not a transport callback: revocation finishes before the first provider call.
+function afterCommittedNativeClaim(action: () => Promise<void>) {
+  let ran = false;
+  return new Proxy(db, {
+    get(target, key, receiver) {
+      if (key === "$transaction")
+        return async (...args: Parameters<typeof db.$transaction>) => {
+          const result = await Reflect.apply(target.$transaction, target, args);
+          if (
+            !ran &&
+            result &&
+            typeof result === "object" &&
+            "nativeIntent" in result &&
+            result.nativeIntent
+          ) {
+            ran = true;
+            await action();
+          }
+          return result;
+        };
+      return Reflect.get(target, key, receiver);
+    }
+  });
+}
+
+async function assertNativeDeliveryRetired(
+  subscriptionId: string,
+  deliveryId: string
+) {
+  const sub = await db.pushSubscription.findUniqueOrThrow({
+    where: { id: subscriptionId }
+  });
+  assert.ok(sub.revokedAt);
+  for (const key of [
+    "nativeToken",
+    "nativePlatform",
+    "nativeProjectId",
+    "nativeRecoveryEpoch",
+    "bindingHash",
+    "endpointHash",
+    "installationHash",
+    "installationVersion"
+  ] as const)
+    assert.equal(sub[key], null, `${key} must be scrubbed`);
+  const row = await db.notificationDelivery.findUniqueOrThrow({
+    where: { id: deliveryId }
+  });
+  assert.equal(row.state, "FINISHED");
+  assert.equal(row.outcome, "CANCELLED");
+  assert.equal(row.leaseToken, null);
+  assert.equal(row.leaseUntil, null);
+  assert.equal(row.nativeTicketId, null);
+  assert.equal(row.nativeTicketCreatedAt, null);
+  assert.equal(row.nativeReceiptChecks, 0);
+}
+
+for (const action of [
+  "device removal",
+  "logout",
+  "account replacement"
+] as const)
+  for (const phase of ["send", "receipt"] as const)
+    test(`native committed-claim ${action} prevents provider ${phase}`, async () => {
+      const a = await actor(),
+        { input } = await device(a),
+        row = await queue(a, input.id);
+      const replacement =
+        action === "account replacement"
+          ? await (async () => {
+              const b = await actor();
+              const next = {
+                ...(await draft(b, input.installationSecret)),
+                token: input.token
+              };
+              return { owner: b, input: next };
+            })()
+          : null;
+      let now = new Date();
+      if (phase === "receipt") {
+        await deliver(row.id, accepted());
+        const pending = await db.notificationDelivery.findUniqueOrThrow({
+          where: { id: row.id }
+        });
+        assert.ok(pending.nativeTicketId);
+        now = pending.availableAt;
+      }
+      let revocationCompleted = false;
+      const captured = afterCommittedNativeClaim(async () => {
+        const claimed = await db.notificationDelivery.findUniqueOrThrow({
+          where: { id: row.id }
+        });
+        assert.equal(claimed.state, "IN_FLIGHT");
+        assert.ok(claimed.leaseToken);
+        if (action === "device removal")
+          await revokeNativePush(db, a.token, a.id, {
+            id: input.id,
+            expectedVersion: 1,
+            mutationId: randomUUID()
+          });
+        else if (action === "logout")
+          await revokeCurrentAccountSession(db, a.token, a.id);
+        else {
+          assert.ok(replacement);
+          await registerNativePush(
+            db,
+            replacement.owner.token,
+            replacement.owner.id,
+            replacement.input
+          );
+        }
+        await assertNativeDeliveryRetired(input.id, row.id);
+        revocationCompleted = true;
+      });
+      let sends = 0,
+        receipts = 0;
+      const provider: NativePushTransport = {
+        send: async () => {
+          assert.ok(revocationCompleted);
+          sends++;
+          return { kind: "ticket", ticketId: randomUUID(), statusCode: 200 };
+        },
+        receipt: async () => {
+          assert.ok(revocationCompleted);
+          receipts++;
+          return { kind: "accepted", statusCode: 200 };
+        }
+      };
+      const result = await deliverNotification(
+        captured,
+        row.id,
+        noWeb,
+        now,
+        undefined,
+        undefined,
+        provider
+      );
+      assert.ok(revocationCompleted, "the canonical mutation must finish");
+      assert.equal(result.done, true);
+      assert.equal(
+        sends,
+        0,
+        "completed revocation must prevent a provider send"
+      );
+      assert.equal(
+        receipts,
+        0,
+        "completed revocation must prevent a provider receipt poll"
+      );
+      await assertNativeDeliveryRetired(input.id, row.id);
+      if (replacement) {
+        const current = await db.pushSubscription.findUniqueOrThrow({
+          where: { id: replacement.input.id }
+        });
+        assert.equal(current.ownerId, replacement.owner.id);
+        assert.equal(current.revokedAt, null);
+        assert.equal(current.nativeToken, replacement.input.token);
+        assert.equal(current.installationVersion, 2);
+      }
+    });
+
+test("native committed-claim releases the permission lock while an initiated provider request is held", async () => {
+  const a = await actor(),
+    { input } = await device(a),
+    row = await queue(a, input.id);
+  let releaseProvider!: () => void, started!: () => void;
+  const providerHeld = new Promise<void>((resolve) => {
+    releaseProvider = resolve;
+  });
+  const invoked = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  let sends = 0,
+    receipts = 0,
+    revoke: Promise<unknown> | undefined;
+  const work = deliver(row.id, {
+    send: () => {
+      sends++;
+      // This starts while dispatch owns its final permission lock. The actual
+      // mutation must finish even though the provider result remains pending.
+      revoke = revokeNativePush(db, a.token, a.id, {
+        id: input.id,
+        expectedVersion: 1,
+        mutationId: randomUUID()
+      });
+      void revoke.catch(() => {});
+      started();
+      return providerHeld.then(() => ({
+        kind: "ticket" as const,
+        ticketId: randomUUID(),
+        statusCode: 200
+      }));
+    },
+    receipt: async () => {
+      receipts++;
+      return { kind: "accepted", statusCode: 200 };
+    }
+  });
+  // Keep a failed dispatch from becoming an unhandled rejection while the
+  // ordering assertion is pending. The original promise is still awaited.
+  void work.catch(() => {});
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      (async () => {
+        await invoked;
+        assert.ok(revoke);
+        await revoke;
+        await assertNativeDeliveryRetired(input.id, row.id);
+      })(),
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(
+          () =>
+            reject(new Error("Revocation waited for the held provider result")),
+          10000
+        );
+      })
+    ]);
+  } finally {
+    clearTimeout(timeout);
+    releaseProvider();
+    await work;
+    await revoke;
+  }
+  assert.deepEqual(await work, { done: true, outcome: "cancelled" });
+  assert.equal(
+    sends,
+    1,
+    "the already initiated generic request is not recalled"
+  );
+  assert.equal(receipts, 0);
+  await assertNativeDeliveryRetired(input.id, row.id);
+});
+
+test("native committed-claim commit acknowledgement loss settles one captured provider request", async () => {
+  const a = await actor(),
+    { input } = await device(a),
+    row = await queue(a, input.id),
+    ticketId = randomUUID();
+  let releaseProvider!: () => void;
+  const providerHeld = new Promise<void>((resolve) => {
+    releaseProvider = resolve;
+  });
+  let lostAcknowledgement = false,
+    dispatchCommits = 0,
+    sends = 0,
+    receipts = 0;
+  const uncertainCommit = new Proxy(db, {
+    get(target, key, receiver) {
+      if (key === "$transaction")
+        return async (...args: Parameters<typeof db.$transaction>) => {
+          const result = await Reflect.apply(target.$transaction, target, args);
+          if (
+            result &&
+            typeof result === "object" &&
+            "nativeDispatchStarted" in result &&
+            result.nativeDispatchStarted === true
+          ) {
+            dispatchCommits++;
+            if (!lostAcknowledgement) {
+              lostAcknowledgement = true;
+              releaseProvider();
+              // The transaction really committed. A retry-shaped failure must
+              // not cause the captured provider request to be invoked again.
+              throw Object.assign(
+                new Error("Fictional commit acknowledgement lost"),
+                {
+                  code: "P2034"
+                }
+              );
+            }
+          }
+          return result;
+        };
+      return Reflect.get(target, key, receiver);
+    }
+  });
+  const provider: NativePushTransport = {
+    send: () => {
+      sends++;
+      return providerHeld.then(() => ({
+        kind: "ticket" as const,
+        ticketId,
+        statusCode: 200
+      }));
+    },
+    receipt: async (ticket) => {
+      assert.equal(ticket, ticketId);
+      receipts++;
+      return { kind: "accepted", statusCode: 200 };
+    }
+  };
+  // This watchdog is only a failure bound: release comes from the real commit
+  // seam above, so a passing test does not depend on elapsed time.
+  const watchdog = setTimeout(releaseProvider, 10000);
+  let result: Awaited<ReturnType<typeof deliverNotification>>;
+  try {
+    result = await deliverNotification(
+      uncertainCommit,
+      row.id,
+      noWeb,
+      new Date(),
+      undefined,
+      undefined,
+      provider
+    );
+  } finally {
+    clearTimeout(watchdog);
+    releaseProvider();
+  }
+  assert.ok(
+    lostAcknowledgement,
+    "the completed dispatch commit must be intercepted"
+  );
+  assert.equal(dispatchCommits, 1);
+  assert.equal(sends, 1);
+  assert.equal(receipts, 0);
+  assert.equal(result.done, false);
+  const pending = await db.notificationDelivery.findUniqueOrThrow({
+    where: { id: row.id }
+  });
+  assert.equal(pending.state, "QUEUED");
+  assert.equal(pending.nativeTicketId, ticketId);
+  assert.equal(pending.attempts, 1);
+  assert.deepEqual(await deliver(row.id, provider, pending.availableAt), {
+    done: true,
+    outcome: "accepted"
+  });
+  assert.equal(sends, 1);
+  assert.equal(receipts, 1);
+});
+
+test("native committed-claim stale worker preserves a successor lease without provider dispatch", async () => {
+  const a = await actor(),
+    { input } = await device(a),
+    row = await queue(a, input.id);
+  const successorToken = randomUUID();
+  let successor: typeof row | undefined;
+  const staleWorker = afterCommittedNativeClaim(async () => {
+    const original = await db.notificationDelivery.findUniqueOrThrow({
+      where: { id: row.id }
+    });
+    assert.equal(original.state, "IN_FLIGHT");
+    assert.ok(original.leaseToken);
+    successor = await db.notificationDelivery.update({
+      where: { id: row.id },
+      data: {
+        leaseToken: successorToken,
+        leaseUntil: new Date(Date.now() + 60000)
+      }
+    });
+  });
+  let sends = 0,
+    receipts = 0;
+  await deliverNotification(
+    staleWorker,
+    row.id,
+    noWeb,
+    new Date(),
+    undefined,
+    undefined,
+    {
+      send: async () => {
+        sends++;
+        return { kind: "ticket", ticketId: randomUUID(), statusCode: 200 };
+      },
+      receipt: async () => {
+        receipts++;
+        return { kind: "accepted", statusCode: 200 };
+      }
+    }
+  );
+  assert.ok(successor);
+  assert.equal(sends, 0);
+  assert.equal(receipts, 0);
+  assert.deepEqual(
+    await db.notificationDelivery.findUniqueOrThrow({ where: { id: row.id } }),
+    successor,
+    "the stale worker must neither settle nor cancel the successor's lease"
+  );
+  assert.equal(
+    (await db.pushSubscription.findUniqueOrThrow({ where: { id: input.id } }))
+      .revokedAt,
+    null
+  );
+});
+
+test("native committed-claim ticket expires before receipt admission", async (t) => {
+  const a = await actor(),
+    { input } = await device(a),
+    row = await queue(a, input.id);
+  await deliver(row.id, accepted());
+  const pending = await db.notificationDelivery.findUniqueOrThrow({
+    where: { id: row.id }
+  });
+  assert.ok(pending.nativeTicketId);
+  const claimedAt = Math.max(Date.now(), pending.availableAt.getTime());
+  const ticketExpiresAt = claimedAt + 30000;
+  await db.notificationDelivery.update({
+    where: { id: row.id },
+    data: { nativeTicketCreatedAt: new Date(ticketExpiresAt - 86400000) }
+  });
+  let claimCompleted = false;
+  const captured = afterCommittedNativeClaim(async () => {
+    const claimed = await db.notificationDelivery.findUniqueOrThrow({
+      where: { id: row.id }
+    });
+    assert.equal(claimed.state, "IN_FLIGHT");
+    assert.equal(claimed.nativeReceiptChecks, 1);
+    assert.equal(claimed.nativeTicketId, pending.nativeTicketId);
+    // Advance only this process's clock after the actual claim commits. The
+    // session, source and lease remain valid; only the 24-hour ticket expires.
+    t.mock.method(Date, "now", () => ticketExpiresAt + 1);
+    claimCompleted = true;
+  });
+  let sends = 0,
+    receipts = 0;
+  let result: Awaited<ReturnType<typeof deliverNotification>>;
+  try {
+    result = await deliverNotification(
+      captured,
+      row.id,
+      noWeb,
+      new Date(claimedAt),
+      undefined,
+      undefined,
+      {
+        send: async () => {
+          sends++;
+          return { kind: "ticket", ticketId: randomUUID(), statusCode: 200 };
+        },
+        receipt: async () => {
+          receipts++;
+          return { kind: "accepted", statusCode: 200 };
+        }
+      }
+    );
+  } finally {
+    t.mock.restoreAll();
+  }
+  assert.ok(claimCompleted);
+  assert.equal(sends, 0);
+  assert.equal(
+    receipts,
+    0,
+    "an expired persisted ticket must not reach the provider"
+  );
+  assert.deepEqual(result, { done: true, outcome: "cancelled" });
+  const retired = await db.notificationDelivery.findUniqueOrThrow({
+    where: { id: row.id }
+  });
+  assert.equal(retired.state, "FINISHED");
+  assert.equal(retired.outcome, "CANCELLED");
+  assert.equal(retired.nativeTicketId, null);
+  assert.equal(retired.nativeTicketCreatedAt, null);
+  assert.equal(retired.nativeReceiptChecks, 0);
+  assert.equal(
+    (await db.pushSubscription.findUniqueOrThrow({ where: { id: input.id } }))
+      .revokedAt,
+    null,
+    "ticket expiry must not revoke the current device"
+  );
+});
+
+test("native committed-claim other-session removal cancels dispatch and preserves the retained session", async () => {
+  const a = await actor(),
+    { input } = await device(a),
+    row = await queue(a, input.id);
+  const retainedToken = await loginAccount(
+    db,
+    a.email,
+    a.password,
+    "Fictional retained browser"
+  );
+  let removalCompleted = false;
+  const captured = afterCommittedNativeClaim(async () => {
+    // This canonical writer does not take the notification permission gate.
+    // Session deletion still must retire the native association and its claim.
+    await revokeOtherAccountSessions(db, retainedToken, a.password, a.id);
+    await assertNativeDeliveryRetired(input.id, row.id);
+    removalCompleted = true;
+  });
+  const calls: string[] = [];
+  await deliverNotification(
+    captured,
+    row.id,
+    noWeb,
+    new Date(),
+    undefined,
+    undefined,
+    {
+      send: async () => {
+        calls.push("send");
+        return { kind: "ticket", ticketId: randomUUID(), statusCode: 200 };
+      },
+      receipt: async () => {
+        calls.push("receipt");
+        return { kind: "accepted", statusCode: 200 };
+      }
+    }
+  );
+  assert.ok(removalCompleted);
+  assert.deepEqual(calls, []);
+  await assertNativeDeliveryRetired(input.id, row.id);
+  assert.equal(
+    await db.platformSession.count({
+      where: { userId: a.id, tokenHash: hashSessionToken(a.token) }
+    }),
+    0
+  );
+  assert.equal(
+    await db.platformSession.count({
+      where: { userId: a.id, tokenHash: hashSessionToken(retainedToken) }
+    }),
+    1
+  );
+});
+
 for (const phase of ["permission lock", "committed claim"]) {
   test(`native delivery expiry during a ${phase} wait never reaches the provider`, async () => {
     const a = await actor(),

@@ -402,6 +402,9 @@ export async function deliverNotification(
             }
           : null,
       subscriptionId: sub?.id ?? null,
+      subscriptionVersion: row.subscriptionVersion,
+      ownerId: row.ownerId,
+      sessionId: sub?.sessionId ?? null,
       deliveryDeadline,
       sessionDeadline:
         !email && sub?.session
@@ -452,15 +455,169 @@ export async function deliverNotification(
   let status = 0;
   let nativeResult: NativePushSendResult | NativePushReceiptResult | null =
     null;
+  let effectiveDeliveryDeadline = claim.deliveryDeadline;
   try {
     if (claim.nativeIntent && !skipProvider) {
-      nativeResult = claim.nativeIntent.ticketId
-        ? await nativeTransport.receipt(claim.nativeIntent.ticketId)
-        : await nativeTransport.send(
-            claim.nativeIntent.token,
-            claim.payload,
-            ttl
+      const intent = claim.nativeIntent;
+      let initiated = false;
+      let response = Promise.resolve<
+        NativePushSendResult | NativePushReceiptResult | null
+      >(null);
+      try {
+        // The attempt is already durable. Order request initiation with the same
+        // permission gate as device removal/logout/replacement. This transaction
+        // is not retried and never awaits the provider response. Returning another
+        // authorization snapshot would recreate the claim-to-dispatch race.
+        const admission = await notificationWrite(db, async (tx) => {
+          if (initiated) return { nativeDispatchStarted: true } as const;
+          const row = await tx.notificationDelivery.findFirst({
+            where: { id, state: "IN_FLIGHT", leaseToken: claim.leaseToken },
+            include: { event: true }
+          });
+          if (!row) return { done: true, outcome: "cancelled" } as const;
+          const finish = async () => {
+            await tx.notificationDelivery.update({
+              where: { id },
+              data: terminal(new Date(), "CANCELLED")
+            });
+            return { done: true, outcome: "cancelled" } as const;
+          };
+          const at = () => new Date(Math.max(Date.now(), now.getTime()));
+          // Session deletion can retire a subscription without the global gate.
+          // Its trigger must serialize with request initiation too. NOWAIT avoids
+          // an inverse wait on a session deletion already holding another lock.
+          if (row.subscriptionId)
+            await tx.$queryRaw`SELECT id FROM "PushSubscription" WHERE id=${row.subscriptionId} FOR UPDATE NOWAIT`;
+          const sub = row.subscriptionId
+            ? await tx.pushSubscription.findUnique({
+                where: { id: row.subscriptionId },
+                include: {
+                  session: true,
+                  owner: { select: { credentialVersion: true } }
+                }
+              })
+            : null;
+          const config = nativePushConfig();
+          const recovery = await tx.nativePushRecovery.findUnique({
+            where: { id: "current" }
+          });
+          if (
+            row.ownerId !== claim.ownerId ||
+            row.subscriptionId !== claim.subscriptionId ||
+            row.subscriptionVersion !== claim.subscriptionVersion ||
+            row.nativeTicketId !== intent.ticketId ||
+            !config ||
+            !recovery ||
+            !sub ||
+            sub.ownerId !== row.ownerId ||
+            sub.provider !== "EXPO" ||
+            sub.version !== claim.subscriptionVersion ||
+            sub.sessionId !== claim.sessionId ||
+            sub.nativeToken !== intent.token ||
+            sub.nativeProjectId !== config.projectId ||
+            sub.nativeRecoveryEpoch !== recovery.epoch ||
+            sub.revokedAt ||
+            sub.expiresAt <= at() ||
+            !sub.session ||
+            !accountSessionIsActive(sub.session, at()) ||
+            sub.session.credentialVersion !== sub.owner.credentialVersion
+          )
+            return finish();
+          const source = await notificationSource(tx, row.event, true, at());
+          if (!source) return finish();
+          const settings = await tx.socialPreferences.findUnique({
+            where: { ownerId: row.ownerId }
+          });
+          const preferences = projectNotificationPreferences(settings);
+          if (
+            source.category !== "test" &&
+            ((source.category === "founder" && !preferences.inApp.founder) ||
+              !notificationPushAllowed(
+                settings,
+                source.category,
+                row.event.createdAt
+              ))
+          )
+            return finish();
+          const current = at();
+          effectiveDeliveryDeadline = Math.min(
+            claim.deliveryDeadline,
+            row.expiresAt.getTime(),
+            source.expiresAt?.getTime() ?? Infinity,
+            intent.ticketId
+              ? row.nativeTicketCreatedAt
+                ? row.nativeTicketCreatedAt.getTime() + DAY
+                : 0
+              : Infinity
           );
+          const freshTtl = Math.min(
+            300,
+            Math.floor((effectiveDeliveryDeadline - current.getTime()) / 1000),
+            Math.floor(
+              (Math.min(
+                sub.expiresAt.getTime(),
+                accountSessionDeadline(sub.session).getTime()
+              ) -
+                current.getTime()) /
+                1000
+            )
+          );
+          if (freshTtl <= 0) return finish();
+          const availableAt =
+            quietHoursEnd(preferences.quietHours, current) ?? row.availableAt;
+          // A delayed old worker may not overlap the next lease while awaiting
+          // the bounded ten-second transport. Requeue without another attempt.
+          if (
+            availableAt > current ||
+            !row.leaseUntil ||
+            row.leaseUntil.getTime() - current.getTime() <= 10000
+          ) {
+            await tx.notificationDelivery.update({
+              where: { id },
+              data: {
+                state: "QUEUED",
+                availableAt: availableAt > current ? availableAt : current,
+                leaseToken: null,
+                leaseUntil: null
+              }
+            });
+            return {
+              done: false,
+              afterSeconds: Math.max(
+                1,
+                Math.ceil((availableAt.getTime() - current.getTime()) / 1000)
+              )
+            } as const;
+          }
+          // Native transport invokes fetch synchronously before its first await.
+          // Do not defer this invocation or await/return its promise from the
+          // transaction callback. No database writes follow initiation.
+          initiated = true;
+          try {
+            response = (
+              intent.ticketId
+                ? nativeTransport.receipt(intent.ticketId)
+                : nativeTransport.send(
+                    intent.token,
+                    {
+                      deliveryId: id,
+                      tag: notificationGroupTag(row.ownerId, source.group)
+                    },
+                    freshTtl
+                  )
+            ).catch(() => null);
+          } catch {
+            response = Promise.resolve(null);
+          }
+          return { nativeDispatchStarted: true } as const;
+        });
+        if (admission.done !== undefined) return admission;
+      } catch (error) {
+        // A lost commit acknowledgement after initiation must not resubmit.
+        // The existing durable lease still owns settlement of this result.
+        if (!initiated) throw error;
+      }
+      nativeResult = await response;
     } else
       status = skipProvider
         ? 0
@@ -492,7 +649,7 @@ export async function deliverNotification(
         statusCode: null
       };
       const inactive =
-        skipProvider || claim.deliveryDeadline <= finished.getTime();
+        skipProvider || effectiveDeliveryDeadline <= finished.getTime();
       const invalid = result.kind === "invalid";
       const accepted = result.kind === "accepted" && !inactive;
       const polling = claim.nativeIntent.ticketId !== null;
