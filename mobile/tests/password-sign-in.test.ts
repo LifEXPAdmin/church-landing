@@ -82,7 +82,8 @@ function form(runtime: Runtime, platform = "ios") {
   return { announcements, render,
     unmount() { for (const cleanup of cleanups.values()) cleanup(); cleanups.clear(); pending.length = 0; },
     input: (label: string) => find("Input", label).props as unknown as Input,
-    press: () => (find("Button", "Sign in").props.onPress as () => void)(),
+    button: (label: string) => find("Button", label).props as { onPress(): void; selected?: boolean },
+    press: (label = "Sign in") => (find("Button", label).props.onPress as () => void)(),
     change(label: string, value: string) {
       (find("Input", label).props.onChangeText as (value: string) => void)(value); render();
     },
@@ -206,4 +207,51 @@ test("unmounted form callbacks stay inert when a fresh form opens in the same ge
   fresh.input("Email").onSubmitEditing(); assert.equal(freshFocuses, 1);
   fresh.change("Email", "demo@example.invalid"); fresh.change("Password", "fictional-preview-password"); fresh.press();
   assert.equal(s.dispatched.length, 1);
+});
+
+test("password visibility defaults masked and explicit toggles preserve the entered value without submitting", async t => {
+  const s = await subject(t);
+  s.form.change("Password", "  fictional password  ");
+  assert.equal(s.form.input("Password").secureTextEntry, true);
+  assert.equal(s.form.button("Show password").selected, false);
+  s.form.press("Show password"); s.form.render();
+  assert.equal(s.form.input("Password").secureTextEntry, false);
+  assert.equal(s.form.button("Hide password").selected, true);
+  assert.equal(s.form.input("Password").value, "  fictional password  ");
+  s.form.press("Hide password"); s.form.render();
+  assert.equal(s.form.input("Password").secureTextEntry, true);
+  assert.equal(s.form.input("Password").value, "  fictional password  ");
+  assert.equal(s.dispatched.length, 0); assert.equal(s.form.announcements.length, 0);
+});
+
+test("invalid and valid submissions restore masking before returning or dispatching", async t => {
+  const s = await subject(t);
+  s.form.change("Email", "demo@example.invalid"); s.form.change("Password", "short");
+  s.form.press("Show password"); s.form.render(); s.form.press(); s.form.render();
+  assert.equal(s.form.input("Password").secureTextEntry, true);
+  assert.equal(s.form.input("Password").value, ""); assert.equal(s.dispatched.length, 0);
+  s.form.change("Password", "fictional-preview-password");
+  s.form.press("Show password"); s.form.render();
+  s.beforeDispatch(() => { s.form.render(); assert.equal(s.form.input("Password").secureTextEntry, true); });
+  s.form.input("Password").onSubmitEditing();
+  assert.equal(s.dispatched.length, 1);
+});
+
+test("retained visibility callbacks cannot reveal after concealment, a new generation or unmount", async t => {
+  const s = await subject(t);
+  s.form.change("Password", "fictional-preview-password");
+  const toggle = s.form.button("Show password").onPress;
+  await s.runtime.setForeground(false); toggle(); s.form.render();
+  assert.equal(s.form.input("Password").secureTextEntry, true);
+  await s.runtime.setForeground(true); toggle(); s.form.render();
+  assert.equal(s.form.input("Password").secureTextEntry, true);
+  const fresh = form(s.runtime); t.after(fresh.unmount);
+  fresh.change("Password", "fictional-preview-password");
+  const freshToggle = fresh.button("Show password").onPress;
+  fresh.unmount(); freshToggle(); fresh.render();
+  assert.equal(fresh.input("Password").secureTextEntry, true);
+  const reopened = form(s.runtime); t.after(reopened.unmount);
+  assert.equal(reopened.input("Password").secureTextEntry, true);
+  assert.equal(reopened.input("Password").value, "");
+  assert.equal(s.dispatched.length, 0); assert.equal(s.form.announcements.length, 0);
 });

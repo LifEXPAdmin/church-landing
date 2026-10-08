@@ -99,6 +99,15 @@ failures in private evidence. Do not repeat unchanged exports as a progress loop
 
 ## Current acceptance limits
 
+Password-entry handler checks execute the actual component handlers with the
+canonical input contract and memory-only fixture. The explicit Show/Hide password
+control starts masked, preserves the entered value without submitting, and resets
+masking on invalid or valid submission. Retained toggle callbacks obey the same
+foreground, generation and unmount guard as submission. Fresh forms discard the
+old draft and visibility choice. These checks do not prove native text selection,
+autofill, keyboard persistence, screen-reader delivery or app-switcher protection;
+those require the rebuilt native application and separate device observations.
+
 The 7 October 2026 mobile lock audit reported 22 affected-package flags derived
 from three advisories: braces, node-forge and uuid. The high-severity
 [braces advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and
