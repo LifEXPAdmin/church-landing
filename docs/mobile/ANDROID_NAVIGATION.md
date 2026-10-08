@@ -30,8 +30,37 @@ subscription is removed on unmount; iOS does not register it.
 
 The existing screen uses safe-area insets and scrollable content. The generated
 Android project has edge-to-edge enabled and `adjustResize` for the Activity.
-These settings are preparation, not proof that focused input, three-button
-navigation, landscape or large text is correctly positioned on every device.
+`ScrollView.automaticallyAdjustKeyboardInsets` applies only to iOS. Android also
+wraps the screen content in the built-in `KeyboardAvoidingView` with `padding`
+behavior, so a focused input and scrollable controls can stay above the keyboard.
+The iOS screen tree and shared password-form behavior are unchanged. No new
+dependency or separate form implementation is introduced.
+
+## Keyboard and navigation checkpoint
+
+On 8 October 2026, the shared password form reproduced a real keyboard overlap
+on the API 36 emulator: the focused Email and Password fields were below the
+keyboard's top edge despite the generated `adjustResize` setting. The Android
+screen wrapper fixed that overlap. The retained before/after APKs differ only in
+their packaged JavaScript bundle, apart from APK signing metadata.
+
+The repaired development APK passed bounded fictional checks for Email to
+Password focus, masked and visible password preservation, failure handling,
+software Go submission, keyboard-first Back and scrollable controls. At font
+scale 2.0, fields remained above the keyboard and all form buttons were reachable
+by scrolling. Home and resume removed the entered form and returned to welcome.
+Landscape used the system's full-screen IME editor; Next advanced to Password,
+Back returned to the preserved form and the Sign in button opened the feed.
+
+A warm custom-scheme link opened a concealed post. A short edge swipe left the
+post unchanged, and a committed Back gesture returned to feed. This does not
+establish predictive animation or canceled-gesture acceptance. Three-button
+Back also returned from post to feed. Root Back opened the launcher; relaunch
+opened a fresh guest fixture, not a persisted account session. Three-button IME
+Back preserved the entered email and form. See the
+[build receipt](ANDROID_BUILD.md#password-form-native-checkpoint) for the binary
+identity and remaining gates. These observations cover one emulator and fictional
+accounts; they do not complete the device matrix below.
 
 ## Real navigation integration
 
@@ -50,8 +79,8 @@ flows.
 
 ## Required device acceptance
 
-After the actual Android toolchain is available, generate and compile the
-development variant using the guarded workspace. Test the first real journey on
+Generate and compile the development variant using the guarded workspace.
+Test the first real journey on
 the selected supported devices, with both gesture and three-button navigation:
 
 - From a post, open the sample keyboard, press Back once and verify the post and
@@ -63,6 +92,10 @@ the selected supported devices, with both gesture and three-button navigation:
   separately from committed JavaScript Back events.
 - Check status/navigation bars, keyboard and scroll position in portrait and
   landscape, large text and display scaling, including an older supported device.
+  Exercise navigation-mode changes through system Settings and resume. Directly
+  switching the emulator overlay while the app stayed foreground left light
+  button icons on a light bar; a fresh Activity displayed the correct dark icons.
+  The actual Settings transition and other themes remain unverified.
 - Once real modal/draft flows exist, verify overlay dismissal, keep-editing,
   explicit discard, rapid Back presses and account change while a choice is open.
 
