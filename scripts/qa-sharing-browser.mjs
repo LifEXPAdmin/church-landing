@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { parse } from "parse5";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 const fixtureDir = process.argv[2];
 assert.ok(fixtureDir, "Pass the existing isolated preview artifact directory");
@@ -583,13 +584,17 @@ try {
       });
       assert.match(r.headers()["cache-control"] ?? "", /no-store|private/);
       const html = await r.text();
-      const tags = Object.fromEntries(
-        [
-          ...html.matchAll(
-            /<meta[^>]+(?:property|name)="([^"]+)"[^>]*content="([^"]*)"/g
-          )
-        ].map((m) => [m[1], m[2]])
-      );
+      const tags = {};
+      const walk = (node) => {
+        if (node.tagName === "meta") {
+          const attributes = Object.fromEntries(
+            node.attrs.map(({ name, value }) => [name, value])
+          );
+          tags[attributes.name ?? attributes.property] = attributes.content;
+        }
+        if ("childNodes" in node) node.childNodes.forEach(walk);
+      };
+      walk(parse(html));
       return { tags, html };
     };
     await db.platformPost.update({
@@ -598,7 +603,19 @@ try {
     });
     const pub = await metadata("/platform/posts/" + post.id);
     assert.ok(pub.tags["og:description"].includes(marker));
-    assert.equal(pub.tags["og:image"], config.origin + "/brand/share-card.png");
+    const publicImage = new URL("/api/platform/share-preview", config.origin);
+    publicImage.searchParams.set("format", "png");
+    publicImage.searchParams.set("kind", "post");
+    publicImage.searchParams.set("id", post.id);
+    assert.equal(pub.tags["og:image"], publicImage.href);
+    assert.equal(pub.tags["twitter:image"], publicImage.href);
+    const publicPng = await context.request.get(publicImage.href);
+    assert.equal(publicPng.status(), 200);
+    assert.equal(publicPng.headers()["content-type"], "image/png");
+    assert.match(publicPng.headers()["cache-control"] ?? "", /no-store/);
+    const publicBytes = await publicPng.body();
+    assert.equal(publicBytes.readUInt32BE(16), 1200);
+    assert.equal(publicBytes.readUInt32BE(20), 630);
     assert.equal(pub.tags["og:image:width"], "1200");
     assert.equal(pub.tags["og:image:height"], "630");
     assert.equal(pub.tags["twitter:card"], "summary_large_image");
@@ -644,6 +661,10 @@ try {
     const bytes = await png.body();
     assert.equal(bytes.readUInt32BE(16), 1200);
     assert.equal(bytes.readUInt32BE(20), 630);
+    const withdrawnPng = await context.request.get(publicImage.href);
+    assert.equal(withdrawnPng.status(), 200);
+    assert.match(withdrawnPng.headers()["cache-control"] ?? "", /no-store/);
+    assert.deepEqual(await withdrawnPng.body(), bytes);
     ok(
       "Actual crawler HTML has public-safe metadata and generic private/missing/withdrawn/profile branding; absolute PNG is 1200x630"
     );
