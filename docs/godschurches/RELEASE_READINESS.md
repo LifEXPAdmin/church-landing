@@ -1,18 +1,12 @@
-## Defaults and inquiry batch awaits combined acceptance, 8 October 2026 UTC
+## Defaults and inquiry batch — verified live, 8 October 2026 UTC
 
-PRs 8 to 10 are combined locally on the verified Exchange search/editor release.
-Candidate **2026.10.08.4** is not yet merged or live. The current security and
-bootstrap safeguards are retained; the combined browser profile includes the
-inquiry-list suite omitted by the older composer profile, plus current Topic,
-Support and scheduled-post consumers of the shared private reader.
+Version **2026.10.08.4**, source `5524ee9fcbf32350289279b5bc55c8f71ca27761`, passed independent final review, exact main CI, **55 staged checks**, **228 live guest checks** and **five canonical health/release checks**. The same staged deployment was promoted at 06:57:23 UTC; canonical identity passed at 06:57:34 UTC. All **165 production tables and 123 migration checksums were unchanged** at 07:00:49 UTC; no migration or production test write was introduced.
 
-Fresh source/security, isolated service, HTTPS, build and browser evidence must
-match the final candidate before independent final review. Preserve current
-permissions, same-account draft/retry ownership and exact inquiry receipt
-matching. Confirmed account replacement clears the old entries. No migration,
-dependency or recovery-owner change is included. Production remains the verified
-**2026.10.08.3** release below; historical handoff checks are not current combined
-acceptance.
+Fresh acceptance is **304 source/security checks, 22 service tests, four HTTPS cases and 77 browser groups**, with zero audit vulnerabilities, 496 verified signatures, 86 attestations and 39 existing lint warnings. Applicable artist/discovery/query-plan/resource evidence remains explicitly reused from `bbc5589`, not fresh candidate execution. Full counts and hosted links are in [Deployment report](DEPLOYMENT_REPORT.md).
+
+The 04:51:44 UTC ordinary encrypted-copy/restore evidence remains applicable to this unchanged schema and recovery boundary. No new protected replay is claimed. The installed daily-copy receipt remained older than its 20-hour refresh predicate; read-only scheduler inspection did not refresh it, and the separate ordinary restore is not treated as a scheduled run.
+
+This acceptance covers two scopes: personal defaults and private inquiry lists/composition. Same-account recovery is preserved; confirmed owner replacement clears prior entries. Broader SEC-01/SEC-02, remaining handoff/saved-choice work, rapid repeated Back, production/100-client headroom and operator/provider/device acceptance remain separate. Guest checks do not replace isolated authenticated-flow evidence or establish queue-consumer delivery.
 
 ## Exchange batch — verified live, 8 October 2026 UTC
 

@@ -1,5 +1,13 @@
 # Resource budgets for enabled modules
 
+## Reused measurements for the live privacy release, 8 October 2026 UTC
+
+Release **2026.10.08.4**, source `5524ee9fcbf32350289279b5bc55c8f71ca27761`, introduces no new resource measurement. Applicable evidence remains [the original run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001) on `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, build `htYDOyxWxYnqSM6MpLwIJ`: **220 measured service reads after 11 warmups, 920 HTTPS calls including 20 warmups and 900 measured calls, and 124,168,694 delivered response-body bytes**. Reviewed source equality supports reuse only for the unchanged measured contracts.
+
+Retain the original same-run p95 values, concurrency mix and limits below. In particular, fictional 25-client Exchange newest **1100.89 ms** and price **1033.13 ms p95** exceed the provisional one-second target. These reused observations are not production samples, physical transport-byte measurements, a performance gain or proof of 100-client/provider/production capacity.
+
+Fresh affected acceptance passed 304 source checks and 22 service / four HTTPS / 77 browser groups. Canonical identity passed at 06:57:34 UTC and 228 live guest checks followed. All 165 production tables and 123 migrations remained unchanged at 07:00:49 UTC. Live checks avoided successful ranked reads that can allocate snapshot-cache rows. Immutable measurement/failure-evidence contracts are unchanged; rapid repeated Back and broader performance acceptance remain unresolved. See [Deployment report](DEPLOYMENT_REPORT.md) for source and live verification scope.
+
 ## Fresh Exchange-candidate measurements, 8 October 2026 UTC
 
 [Dense resource run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001) tested exact source `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, product **2026.10.08.3**, build

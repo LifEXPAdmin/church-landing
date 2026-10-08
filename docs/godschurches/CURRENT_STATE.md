@@ -1,23 +1,12 @@
-## Exchange defaults and private inquiries prepared, 8 October 2026 UTC
+## Exchange defaults and inquiries — live, 8 October 2026 UTC
 
-The next two-scope batch combines personal Exchange defaults from PR 8 with
-private inquiry summaries and composition from PRs 9 and 10. Initial pages omit
-saved private snapshots. Current account-pinned reads confirm access before
-showing them; changed information requires deliberate review. Same-account
-interruptions retain original drafts and exact uncertain requests. Confirmed
-account replacement clears prior private entries.
+**2026.10.08.4** is verified live at [God’s Churches](https://godschurches.com), from `5524ee9fcbf32350289279b5bc55c8f71ca27761`. The two completed scopes are personal Exchange defaults and private inquiry lists/composition. Saved private values are omitted from initial HTML/RSC and shown after current account checks. Same-account interruptions retain drafts and exact uncertain requests; confirmed account replacement clears prior entries.
 
-Candidate metadata is **2026.10.08.4**. Fresh combined acceptance remains pending:
-source/security gates, 22 service checks, four HTTPS cases and all seven selected
-browser suites, including inquiry-list coverage and the shared reader's Topic,
-Support and scheduled-post consumers. These are planned counts, not results.
-The current dependency repairs, navigation checks and immutable measurement
-contracts remain preserved. No schema or dependency change is included.
+Fresh verification passed **304 source/security checks, 22 service tests, four HTTPS cases and 77 browser groups**. The audit reported zero vulnerabilities; types, copy, lint and history scanning passed with 39 existing lint warnings. Artist, discovery, query-plan and resource evidence is explicitly reused from reviewed unchanged contracts at `bbc5589`, not rerun on this release.
 
-Production remains the verified **2026.10.08.3** release below. Independent final
-review, integration and one staged publication with canonical live acceptance
-are still required. Broader privacy, rapid Back, capacity and actual operator,
-provider and physical-device acceptance remain separate.
+After **55 staged checks**, the same build was promoted at 06:57:23 UTC. Canonical identity and five health checks passed at 06:57:34 UTC; **228 live guest checks** passed with zero browser/CSP errors or test writes. Scoped runtime errors, fatal/CSP rows, recipient sends and queue publications were zero. At 07:00:49 UTC, all **165 production tables and 123 migrations were unchanged**.
+
+See [Deployment report](DEPLOYMENT_REPORT.md) for exact evidence, recovery provenance and limits. The retained 04:51 ordinary restore is separate from the older scheduled-copy receipt. Broad SEC-01, handoff details/actions, saved choices, rapid repeated Back, production capacity and operator/provider/device acceptance remain open. No cross-account draft restoration or authenticated production-flow acceptance is claimed.
 
 ## Exchange search and private editing — verified live, 8 October 2026 UTC
 

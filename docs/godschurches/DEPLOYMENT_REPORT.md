@@ -1,3 +1,40 @@
+## Exchange defaults and private inquiries — verified live, 8 October 2026 UTC
+
+Product **2026.10.08.4**, application `5524ee9fcbf32350289279b5bc55c8f71ca27761`, is live at [God’s Churches](https://godschurches.com). This release completes two coherent scopes: personal Exchange defaults from PR 8, and private inquiry lists/composition from PRs 9 and 10.
+
+Saved private snapshots are omitted from initial HTML/RSC. Current account-pinned reads confirm access before showing them, and changed information requires deliberate review. Same-account interruptions retain unsent work and exact uncertain requests; the composer accepts only the original inquiry receipt. Confirmed account replacement clears prior private entries. Cross-account draft restoration is not claimed.
+
+### Source and isolated verification
+
+Independent final review accepted the exact candidate at 06:50:39 UTC. Main advanced without force at 06:51:48 UTC, and [main Source security](https://github.com/LifEXPAdmin/church-landing/actions/runs/37739987368) passed before promotion. The candidate [push](https://github.com/LifEXPAdmin/church-landing/actions/runs/37737631771) and [PR](https://github.com/LifEXPAdmin/church-landing/actions/runs/37737654733) checks passed **304/304** source/security tests, types, authored copy, lint and reachable-history scanning. The advisory audit found **zero vulnerabilities**; registry verification accepted **496 signatures and 86 attestations**. Lint retained **39 existing warnings and no errors**.
+
+Fresh [Exchange verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37737631768) passed **22 service tests, four HTTPS cases and 77 browser groups** on that exact source. Its hosted production-mode fixture build was `8G4yuKd4_aTfX3sZWQRLB`; the runtime step ran 06:27:19–06:30:24 UTC. Groups comprised inquiry lists 10, composition 11, defaults 11, handoffs nine, Topics nine, Support 13, and notification/scheduled-post integration 14. The combined profile restores the inquiry-list suite omitted by the older composer profile and checks affected shared-reader consumers. Browser fixtures used MFA off; HTTPS used enforcement configuration, which does not establish a new operator authenticator ceremony.
+
+Supplementary evidence is explicitly **reused from `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`** after source-equality and retained-artifact review:
+
+- [Artist](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733431156): 25 service, five HTTPS and 26 browser groups.
+- [Discovery](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733432965): 34 service, two HTTPS and 33 browser groups.
+- [Query plans](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079): 97 service checks, 72 paired comparisons and 168 prepared executions.
+- [Resources](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001): 220 measured service reads and 920 total workload HTTPS calls.
+
+These were not fresh executions on this release. The notification fixture establishes successful guarded-runner execution; Support establishes its checked fixture-only activity scope. Neither is presented as an independently measured zero external-send counter.
+
+### Stage, promotion and live acceptance
+
+The production-target deployment became READY with automatic custom-domain assignment disabled. **55 staged read-only checks passed** by 06:56:42 UTC while the prior canonical release stayed unchanged. The same staged deployment was promoted without a rebuild at **06:57:23 UTC**. Canonical source/version identity and **five health/release checks passed at 06:57:34 UTC**.
+
+**228 live guest checks passed** by **06:59:18 UTC**, with zero browser errors or CSP violations and zero test writes or recipient sends. The scoped 06:57:34–07:00:14 UTC runtime window contained zero error, fatal or CSP diagnostic rows; no queue publication was made and queue-consumer execution was not verified. At **07:00:49 UTC**, before/after fingerprints matched across **165 production tables**, with **123 unchanged migrations and no new migration**. This retained run created one production deployment and performed one promotion; it is not an account-wide deployment inventory.
+
+The owned live browser closed in its `finally` cleanup and the machine-build reservation was released at 07:02:20 UTC. This does not claim cleanup of unrelated processes.
+
+### Recovery and remaining scope
+
+No schema, dependency or recovery-owner change is included. The verified ordinary encrypted copy and isolated restore completed at **04:51:44 UTC** remained applicable; no new restore or protected replay was performed for this batch. The separate daily job was loaded with last exit zero, but its installed verified-copy receipt remained **7 October, 09:07:01 UTC**, older than its 20-hour refresh predicate. Read-only inspection did not run that job or refresh its inventory, and the separate ordinary restore is not relabelled as a scheduled refresh.
+
+Current dependency repairs and fatal security checks remain intact; old advisory-blocker descriptions are superseded by the completed repair and current zero-advisory audit. Broad SEC-01/SEC-02 acceptance, handoff-detail/actions and saved-choice work, unfinished export/native work, and real operator/provider/adult-pilot/physical-device acceptance remain separate.
+
+Rapid repeated Back remains unresolved. Reused 25-client fictional loopback measurements include Exchange newest **1100.89 ms p95** and price **1033.13 ms p95**, above the provisional one-second target. They do not certify production headroom, PostgreSQL 17 workload behavior or 100-client capacity. Guest live checks do not certify authenticated private flows, successful ranked snapshot paging, dense production load or provider delivery.
+
 ## Exchange search and private editing — verified live, 8 October 2026 UTC
 
 Application `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, product **2026.10.08.3**.

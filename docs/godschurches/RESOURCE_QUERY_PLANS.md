@@ -1,5 +1,13 @@
 # Measured resource query plans and bounded traversal
 
+## Applicability to the live defaults and inquiry release, 8 October 2026 UTC
+
+Release **2026.10.08.4**, source `5524ee9fcbf32350289279b5bc55c8f71ca27761`, reuses query-plan evidence from `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`. The measured query, authorization, ordering, paging, schema, fixture and measurement contracts are unchanged; source and retained artifact hashes were reviewed. No new query-plan or performance execution is claimed.
+
+The original [plan run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079) passed **97 service checks, 72 full-response/cursor comparisons across eight shapes and 168 prepared executions**. Preserve its source, host, original measurements and caveats below. Fresh affected release acceptance passed 304 source checks and 22 service / four HTTPS / 77 browser groups; [Deployment report](DEPLOYMENT_REPORT.md) records the exact evidence.
+
+Canonical release identity passed at 06:57:34 UTC, followed by 228 live guest checks. At 07:00:49 UTC, 165 production tables and 123 migrations remained unchanged. These read-only checks are not load/capacity measurements. Broader query/performance work, rapid repeated Back and 100-client/production headroom remain open.
+
 ## Exact-source Exchange verification, 8 October 2026 UTC
 
 Source `bbc5589ad566abc4d3140fa7fdb92a128c665d4d` passed fresh [query-plan verification](https://github.com/lifexpadmin/church-landing/actions/runs/37733416079). All 72 paired calls across eight
