@@ -53,6 +53,15 @@ export function verifyAndroidToolchain(storage, { sdk, java }) {
 // Expo template and the shared iOS launcher untouched. Metro gets one worker.
 export const boundedGradleInit = `
 gradle.beforeProject { project ->
+  ['com.android.application', 'com.android.library'].each { plugin ->
+    project.pluginManager.withPlugin(plugin) {
+      project.extensions.getByName('android').defaultConfig.externalNativeBuild.cmake.arguments.addAll([
+        '-DCMAKE_JOB_POOLS=gc_native=1',
+        '-DCMAKE_JOB_POOL_COMPILE=gc_native',
+        '-DCMAKE_JOB_POOL_LINK=gc_native'
+      ])
+    }
+  }
   project.pluginManager.withPlugin('com.facebook.react') {
     project.extensions.getByName('react').extraPackagerArgs.set(['--max-workers', '1'])
   }
