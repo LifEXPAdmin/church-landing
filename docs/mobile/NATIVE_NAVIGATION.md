@@ -5,8 +5,9 @@ The native navigation adapter consumes `AppDestination`, `ScreenId`,
 It introduces no router, transport, session implementation or dependency. The
 current App connects `NativeJourney` screens to the shared session, navigation
 and reading runtime through `createNativeFixture`. Its responses and credential
-vault remain fictional and in memory; this is prepared source, not real-network
-or native-device acceptance.
+vault remain fictional and in memory. The Android fixture checkpoint below
+records local emulator evidence; real-network and physical-device acceptance
+remain open.
 
 ## Presentation and availability
 
@@ -103,8 +104,33 @@ runtime proves a fresh post read wins over restoration's feed continuation.
 Cancellation, logout, owner replacement, failure, repeated concealment and late
 initial delivery retain their invalidation checks.
 Type and import checks cover the actual native package. These establish source
-contracts, not native navigation, authenticated return, system Back, modal/dirty
-entry dismissal, process death, screen-reader focus or device link acceptance.
+contracts separately from the native fixture checks below. Real authenticated
+return, modal/dirty entry dismissal, process death, screen-reader focus and
+physical-device link acceptance remain open.
+
+### Android fixture checkpoint, 8 October 2026
+
+Clean source `288e6e366865504490ef26681cef8e632c21f3cb` built and ran on an
+Android API 36 ARM64 emulator using the local debug signing key. The identified
+APK includes the link lifecycle repair and the shared iOS build configuration.
+After the locked dependency install and Android prebuild, all 36 generated
+Android source files matched the previous build inputs. The merged manifest
+still excludes the six blocked broad storage/media permissions.
+
+Actual native checks opened the fresh fictional post from an external link
+while already open, from an external link after Home/background, and from the
+in-app link button. A cold launch held the destination at the welcome screen,
+then opened the post after explicit demo sign-in. System Back returned to the
+feed. Sign-out cleared the post; a new demo session opened the feed without
+replaying the old destination. Earlier failure evidence and the distinct older
+APK remain retained with the private task receipt.
+
+These checks use fictional in-memory responses. They do not accept a real
+account, verified HTTPS App Links, a physical device or an app-store release.
+The iPhone first Open-app confirmation sequence, active then URL then inactive
+then active, remains separate: an address delivered before concealment is still
+discarded. Its owner must reproduce and verify any repair while preserving the
+Android cases and all session/owner invalidation checks.
 
 The shared runtime and native controls are already composed in the fictional
 journey. Next, use a verified nonproduction HTTPS endpoint and fictional account
