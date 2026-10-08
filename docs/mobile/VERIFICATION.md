@@ -99,20 +99,42 @@ failures in private evidence. Do not repeat unchanged exports as a progress loop
 
 ## Current acceptance limits
 
-The 7 October 2026 mobile lock audit reports 22 affected-package flags derived
+The 7 October 2026 mobile lock audit reported 22 affected-package flags derived
 from three advisories: braces, node-forge and uuid. The high-severity
 [braces advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and
-[node-forge advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv) currently
-have no patched release. The registry's proposed Expo/React Native major
+[node-forge advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv) had no
+patched upstream release at that checkpoint. The registry's proposed Expo/React Native major
 downgrades are not an accepted compatibility fix. No exception or suppression is
 added; package security and dependent hosted exports remain blocked until an
 inspected remedy passes. Recheck when upstream packages or the supported graph
 change, rather than repeating the same failed audit.
 
 Clean locked installation and local source checks are recorded separately from
-a hosted Actions run. The workflow must first be integrated and run on the
-combined source before claiming hosted CI acceptance. Preserve the shared
-session/transport integration gate and the existing website security hold.
+a hosted Actions run. Run the workflows on the combined source before claiming
+hosted CI acceptance. Preserve the shared session/transport integration gate and
+report each dependency graph's current evidence separately.
+
+### Root toolchain receipt consumption, 8 October 2026
+
+The mobile integration branch consumes the canonical website repair from
+`c0e121a8ec532fbff93919f5639ebd8d6ead37a1`: the exact root lock, Next/lint
+15.5.27, Sharp 0.35.5, scoped selector-parser updates, reviewed braces alias and
+hash-guarded embedded toolchain patches. It also consumes the canonical source
+security workflow's independent fatal checks and suppression-path rejection.
+The existing portable command and mobile checks retain their scope and gates.
+Fresh hosted runs exposed invalid `runner.temp` references in both workflows'
+job-level environment. Portable storage now uses step environment; mobile setup
+exports runner-owned paths through `GITHUB_ENV` before installation. Missing
+runner storage fails closed. The source-security unit step explicitly selects
+its tooling tests, including execution of the actual temporary-storage steps;
+the portable workflow retains tests that require its compiled shared package.
+
+Canonical verification establishes the origin of the consumed repair. Fresh
+locked CI must verify this combined branch separately. Installation with
+`--ignore-scripts` does not apply the embedded patches; the depth regression
+tests exercise patched temporary consumers, while an installed hydration check
+requires running its reviewed patch helper first. No mobile lock change or
+mobile package-security acceptance follows from repairing the root graph.
 
 Native build automation remains gated on the actual Android/iOS toolchain and
 owner-controlled signing setup. Use the inspected
