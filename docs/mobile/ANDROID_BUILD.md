@@ -75,6 +75,35 @@ read and removal. These are bounded fictional native observations, not real
 HTTPS account, physical-device, gesture-animation or accessibility acceptance.
 The owned emulator and ADB server were stopped after verification.
 
+## Password form native checkpoint
+
+On 8 October 2026, canonical shared source `2400d720` supplied the password form,
+application owner and current dependency graph. Its development APK reproduced
+focused inputs hidden by the Android keyboard. The Android-only screen wrapper
+repair produced an APK of 26,461,186 bytes, SHA256
+`a28d0148cd1b3147b580bca6be1a48c7f529b13891b9b97568d6527f708813d0`.
+The installed APK matched. Its 1,409,976-byte bundle matched the packaged copy,
+and all 33 authored mobile source-map entries matched the checkout. The changed
+screen source has SHA256
+`70aa016da1f00055af0405ee7d39b7ec6879a1689e21aa85a07a6a7c16151c6e`.
+Manifest, native code and permissions were identical to the baseline APK; no
+broad media or storage permission was added. Generated local module build
+directories are ignored again.
+
+The baseline passed 39 focused password, fixture, session-visibility and Android
+Back checks. After the layout repair, typecheck, focused lint, the 42-module
+boundary check and native compilation passed. The rebuild took 17 seconds with
+10 tasks executed and 606 up to date. This timing describes one incremental
+build, not a general performance measurement.
+
+Actual API 36 emulator observations and their limits are recorded in
+[Android navigation](ANDROID_NAVIGATION.md#keyboard-and-navigation-checkpoint).
+All inputs were fictional. Real nonproduction HTTPS acceptance, older supported
+Android versions, physical devices, accessibility services, predictive animation,
+signing and distribution remain open. The canonical dependency checkpoint reduced
+the mobile audit to four high findings, which remain a failing gate; this layout
+change does not repair or waive that gate.
+
 ## Source verification and dependency installation
 
 The Android checkout consumes the canonical root security and mobile CI tooling.
