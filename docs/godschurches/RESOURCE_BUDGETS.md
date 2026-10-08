@@ -1,5 +1,45 @@
 # Resource budgets for enabled modules
 
+## Fresh Exchange-candidate measurements, 8 October 2026 UTC
+
+[Dense resource run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001) tested exact source `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, product **2026.10.08.3**, build
+`htYDOyxWxYnqSM6MpLwIJ`. This is a fresh execution on the combined candidate,
+not reuse of the earlier discovery measurement. It validated 220 measured service
+reads after 11 warmups, then all 920 workload HTTPS requests: 20 warmups plus
+900 measured calls across concurrency 1, 5 and 25.
+
+Both retained and delivered response-body bytes totaled **124,168,694**, within
+the unchanged 256 MiB total and 8 MiB per-response limits. Serving-identity probes
+are separate from workload counts. Immutable completion receipts bind source,
+build and fixture; uploaded artifacts omit private actors, credentials, cursors
+and raw query events. Delivered body chunks are not transport-level wire bytes.
+
+At concurrency 25, each selected path below has 30 validated observations.
+
+| Path | 25-client p95 ms |
+| --- | ---: |
+| feed-latest | 1167.8 |
+| feed-following | 1163.2 |
+| exchange-newest | 1100.9 |
+| exchange-price | 1033.1 |
+
+The 25-client stage completed 300 requests at 30.21 requests/second across the
+full ten-path mix. Selected p95 values remain above one second. Warm loopback
+HTTPS without think time or network shaping, isolated filesystem image storage
+and a fictional fixture do not establish production/provider headroom or
+100-client capacity. Cross-run HTTP comparisons are not a controlled causal
+speedup. The same-run service comparisons are recorded separately in
+[query plans](RESOURCE_QUERY_PLANS.md).
+
+Live status: **verified live**; canonical identity:
+**source and version matched godschurches.com at 06:08:34.727 UTC**. Guest live checks:
+**214 passed at 06:13:21.186 UTC**, health/release:
+**5 passed**, and production fingerprints:
+**all 165 tables unchanged at 06:14:28.124 UTC**. Production observations are read-only
+acceptance, not a load experiment. Successful ranked GETs can create snapshot-cache
+rows, so preserve the live harness's no-write route selection. Rapid repeated
+Back and broader discovery/performance acceptance remain unresolved.
+
 ## Integrated measurement and live scope, 8 October 2026 UTC
 
 The ordering and saved-page optimizations, dense fixture runner and immutable

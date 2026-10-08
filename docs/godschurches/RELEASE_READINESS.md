@@ -1,15 +1,45 @@
-## Exchange batch awaits combined acceptance, 8 October 2026 UTC
+## Exchange batch — verified live, 8 October 2026 UTC
 
-PR 5 query optimization and the combined PR 6/7 private editor/bootstrap work
-are integrated locally on the accepted discovery release. Candidate version
-**2026.10.08.3** is not yet merged or live. Fresh exact-source security, full
-Exchange bootstrap service/browser/HTTPS, paired-query comparisons and affected
-artist/discovery/measurement regressions remain required, followed by a matching
-release receipt, independent final review and one staged canonical publication.
-No schema or dependency delta is included. Preserve exact permissions, complete
-fallback, original-owner drafts and retries, pantry privacy and contact consent.
-Production remains **2026.10.08.2**. Historical checks below retain their actual
-source and scope; they do not establish acceptance of this combined candidate.
+Version **2026.10.08.3**, source `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, combines PR5's Exchange search
+optimization with PR6/7's private editor and initial-page loading repair.
+Integration, deployment and canonical acceptance:
+**fast-forwarded to main at 06:03:28.832 UTC**; **one exact-source production deployment reached READY and is canonical**;
+**source and version matched godschurches.com at 06:08:34.727 UTC**. Final review:
+**accepted with no blockers at 06:02:20.736 UTC**.
+
+[Source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416094) passed 243 guards, types, authored copy, lint and reachable-history
+scanning. The advisory audit reported zero findings; registry verification accepted
+496 signatures and 86 attestations. Lint retained 39 existing warnings and no errors.
+
+[Exchange verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416066) passed 141 service tests, one HTTPS case and 50 browser groups
+on production-mode build `u0OdNPer11KrFSG9n4QNt`. Fresh [artist regressions](https://github.com/lifexpadmin/church-landing/actions/runs/37733431156) passed
+25 services, five HTTPS cases and 26 browser groups; fresh [discovery regressions](https://github.com/lifexpadmin/church-landing/actions/runs/37733432965)
+passed 34 services, two HTTPS cases and 33 browser groups. These all ran on
+`bbc5589ad566abc4d3140fa7fdb92a128c665d4d`; prior-source reuse is not claimed for this batch.
+
+All paired response/cursor comparisons matched; the separate 97-check Exchange
+service run and 168 prepared executions passed. The fresh dense run validated
+220 measured service reads and 920 HTTPS responses. No schema/dependency delta.
+
+Staged result: **44 passed at 06:07:57.320 UTC**. Live result:
+**214 passed at 06:13:21.186 UTC** and **5 passed**. Current production data comparison:
+**all 165 tables unchanged at 06:14:28.124 UTC**; migration comparison:
+**123 migration checksums matched; no new or pending migrations**. Runtime/CSP/send observation:
+**zero browser/CSP/runtime error or fatal rows, recipient sends and queue publications**. Recovery applicability:
+**the retained 04:51:44.297 UTC ordinary restore was revalidated at 06:03:13.191 UTC; no new restore or protected replay was performed**.
+
+Post-release scheduled-backup inspection at 06:09:02.282 UTC found
+a loaded job, last exit zero and no operational problems. Its installed daily copy
+was 21.04 hours old, above the 20-hour refresh predicate; this inspection did
+not refresh it. That inventory is separate from the retained ordinary restore.
+
+Same-account access loss retains original drafts and retries; confirmed account
+replacement clears old private entries. These gates cover this bounded release,
+not broad SEC-01 or performance-task closure. Personal defaults and inquiry
+privacy are later accepted handoffs awaiting their own integration. Rapid repeated
+Back, 100-client/production capacity, operator and real-provider/device acceptance
+remain open. See [deployment evidence](DEPLOYMENT_REPORT.md),
+[query plans](RESOURCE_QUERY_PLANS.md) and [resource budgets](RESOURCE_BUDGETS.md).
 
 ## Discovery optimization release accepted, 8 October 2026 UTC
 

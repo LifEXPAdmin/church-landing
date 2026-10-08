@@ -1,5 +1,49 @@
 # Measured resource query plans and bounded traversal
 
+## Exact-source Exchange verification, 8 October 2026 UTC
+
+Source `bbc5589ad566abc4d3140fa7fdb92a128c665d4d` passed fresh [query-plan verification](https://github.com/lifexpadmin/church-landing/actions/runs/37733416079). All 72 paired calls across eight
+query shapes matched complete responses and signed cursors. Each shape has one
+warmup and eight measured pairs, alternating baseline/candidate order. The
+separate service profile passed 97 checks, and the SQL probe completed 168
+prepared executions. The baseline remains `6d81eb56f088062de5726cfaef8f45464ffdd6b9`.
+Its module hash was checked before execution; private actor/query parameters were
+excluded from uploaded evidence.
+
+The following medians use all eight measured pairs per shape in this run. They
+are service-call observations, not HTTP tail latency or production capacity.
+
+| Query | Baseline median ms | Candidate median ms |
+| --- | ---: | ---: |
+| Newest | 176.03 | 51.26 |
+| Price low | 178.68 | 41.29 |
+| Price high | 173.70 | 41.39 |
+| Selective text | 55.14 | 55.28 |
+| No match | 53.74 | 46.23 |
+| Guest newest | 104.16 | 23.10 |
+| Owned listings | 26.71 | 26.37 |
+| Second page | 181.58 | 51.60 |
+
+The fixture used 12,000 listings, 10,000 accounts and 23,000 relationship-policy
+rows on a four-logical-CPU Intel Xeon Platinum 8573C runner, Node 24.21.0 and
+PostgreSQL 16.15. Selective and owned reads show little change. Different hosts
+and sampling windows prevent equating these results with the older late-call
+medians below; no universal or production speedup is claimed.
+
+The ordered 120-ID window still applies full current authorization and complete
+canonical fallback. Returned cursors use actual returned listings, incoming anchors
+retain current permission checks, and owned queries retain their original path.
+No migration, index, global planner override or permission relaxation was added.
+Full application acceptance comes separately from [exchange verification](https://github.com/lifexpadmin/church-landing/actions/runs/37733416066):
+141 services, one HTTPS case, 50 browser groups and build `u0OdNPer11KrFSG9n4QNt`.
+
+Release **2026.10.08.3** status: **verified live**; canonical identity
+**source and version matched godschurches.com at 06:08:34.727 UTC**. Production data comparison:
+**all 165 tables unchanged at 06:14:28.124 UTC**. Deployment does not turn this isolated
+measurement into live capacity evidence. Broader latency/headroom and 100-client
+acceptance remain open; [resource budgets](RESOURCE_BUDGETS.md) records the fresh
+concurrent fixture. Dated prior results below retain their own tested sources.
+
 ## Current Exchange repair, 3 October 2026 UTC
 
 The current fictional workload reproduces the slow generic authorization join

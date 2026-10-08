@@ -1,3 +1,76 @@
+## Exchange search and private editing — verified live, 8 October 2026 UTC
+
+Application `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, product **2026.10.08.3**.
+Integration outcome: **fast-forwarded to main at 06:03:28.832 UTC**. Exact-source deployment
+and readiness: **one exact-source production deployment reached READY and is canonical**. Promotion:
+**the staged deployment was promoted without rebuilding at 06:08:20.592 UTC**. Canonical identity:
+**source and version matched godschurches.com at 06:08:34.727 UTC**. Main CI:
+**passed ([run 37735551032](https://github.com/LifEXPAdmin/church-landing/actions/runs/37735551032))**. Independent final review:
+**accepted with no blockers at 06:02:20.736 UTC**.
+
+Exchange search narrows authorization work with an ordered candidate window and
+complete canonical fallback, preserving current permissions, ordering and page
+boundaries. Private editor, contact-choice and pantry-preparation snapshots load
+through current account-pinned reads instead of initial HTML/RSC. Same-account
+concealment and access recovery retain drafts, selected photos and exact uncertain
+requests. A confirmed account change clears the old editor's private work; this
+release does not promise A-to-B-to-A draft restoration.
+
+[Source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416094) passed 243 guards, types, authored copy, lint and reachable-history
+scanning. The advisory audit reported zero findings; registry verification accepted
+496 signatures and 86 attestations. Lint retained 39 existing warnings and no errors.
+
+[Exchange verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416066) passed 141 service tests, one HTTPS case and 50 browser groups
+on production-mode build `u0OdNPer11KrFSG9n4QNt`. Fresh [artist regressions](https://github.com/lifexpadmin/church-landing/actions/runs/37733431156) passed
+25 services, five HTTPS cases and 26 browser groups; fresh [discovery regressions](https://github.com/lifexpadmin/church-landing/actions/runs/37733432965)
+passed 34 services, two HTTPS cases and 33 browser groups. These all ran on
+`bbc5589ad566abc4d3140fa7fdb92a128c665d4d`; prior-source reuse is not claimed for this batch.
+
+The Exchange groups comprise 20 listing, eight search, nine handoff and 13 pantry
+groups. Artist regressions comprise eight privacy and 18 existing groups;
+discovery includes 11 discovery, 11 four-feed and 11 sequential-navigation groups.
+Browser MFA was off; the Exchange HTTPS case used enforcement configuration,
+without claiming a new actual authenticator ceremony.
+
+[Query-plan verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079) separately passed 97 service checks, all 72 complete-response/cursor
+comparisons over eight shapes, and 168 prepared executions. That plan job does not
+supply build or browser acceptance. [Dense resource run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001) passed 220 measured service reads
+and all 920 workload HTTPS requests, collecting 124,168,694 response-body bytes.
+Those are isolated fixture measurements, not production traffic or wire-byte usage.
+
+Staging: **44 passed at 06:07:57.320 UTC** read-only checks; prior
+canonical preservation: **the prior canonical release remained unchanged throughout staging**. Deployment count
+and build reuse: **one deployment and one promotion, without a rebuild**. Live acceptance:
+**214 passed at 06:13:21.186 UTC** guest checks plus
+**5 passed** health/release checks. Browser,
+CSP, error/fatal logs and recipient sends: **zero browser/CSP/runtime error or fatal rows, recipient sends and queue publications**.
+Production fingerprints: **all 165 tables unchanged at 06:14:28.124 UTC**. Migrations:
+**123 migration checksums matched; no new or pending migrations**. Production application/test writes:
+**zero**.
+
+Read-only acceptance closed at **06:14:39.176 UTC**.
+
+The first live browser attempt stopped on an ambiguous Topic empty-state selector.
+The separate rerun waited for the exact search destination and required its unique
+visible result within main; all 214 checks remained. No product code or deployment
+changed. The original duplicate's ancestry was not captured, so its cause remains
+unproven. The failed attempt and diagnostic evidence are retained.
+
+Applicable recovery evidence and freshness: **the retained 04:51:44.297 UTC ordinary restore was revalidated at 06:03:13.191 UTC; no new restore or protected replay was performed**.
+No migration or recovery-code change is part of this source delta; ordinary restore
+and protected-replay evidence retain their distinct scope and original timestamps.
+
+Post-release scheduled-backup inspection at 06:09:02.282 UTC found
+a loaded job, last exit zero and no operational problems. Its installed daily copy
+was 21.04 hours old, above the 20-hour refresh predicate; this inspection did
+not refresh it. That inventory is separate from the retained ordinary restore.
+
+Broader account/privacy acceptance, personal-defaults and inquiry privacy
+handoffs, unfinished export/native work and actual operator, provider, adult-pilot
+and physical-device gates remain separate. Rapid repeated Back remains unresolved.
+Fictional loopback measurements do not establish production latency, provider
+headroom, PostgreSQL 17 workload behavior or 100-client capacity.
+
 ## Discovery ordering and saved-feed loading verified live, 8 October 2026 UTC
 
 Version **2026.10.08.2**, source `77cd81a5ea7ceef9dd56f448e7b84107ba416d24`,

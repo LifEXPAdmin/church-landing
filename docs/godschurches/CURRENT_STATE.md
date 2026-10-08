@@ -1,19 +1,39 @@
-## Exchange search and private editing prepared, 8 October 2026 UTC
+## Exchange search and private editing — verified live, 8 October 2026 UTC
 
-The next bounded candidate combines the preserved Exchange query optimization
-from PR 5 with editor recovery and private initial-page loading from PRs 6 and 7.
-Ordered candidate windows retain complete canonical fallback, current permissions
-and exact page boundaries. Editor fields, photos and saved-response continuations
-respect the original account and current access while preserving local work.
-Saved listing, pantry preparation and contact-choice snapshots are omitted from
-initial editor payloads and loaded through current account-pinned reads.
+Version **2026.10.08.3**, application `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`.
+Integration: **fast-forwarded to main at 06:03:28.832 UTC**. Canonical serving identity:
+**source and version matched godschurches.com at 06:08:34.727 UTC**. Deployment: **one exact-source production deployment reached READY and is canonical**.
 
-Version **2026.10.08.3** is candidate metadata. This combined candidate still
-requires fresh source, service, paired-query, HTTPS, browser and build acceptance,
-independent final review, integration and canonical live checks. No schema or
-dependency changes are included; the current security repairs are preserved.
-Production remains the verified **2026.10.08.2** release below. Broader capacity,
-rapid Back, operator, provider and physical-device acceptance remains open.
+Exchange search narrows authorization work with an ordered candidate window and
+complete canonical fallback, preserving current permissions, ordering and page
+boundaries. Private editor, contact-choice and pantry-preparation snapshots load
+through current account-pinned reads instead of initial HTML/RSC. Same-account
+concealment and access recovery retain drafts, selected photos and exact uncertain
+requests. A confirmed account change clears the old editor's private work; this
+release does not promise A-to-B-to-A draft restoration.
+
+[Source CI](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416094) passed 243 guards, types, authored copy, lint and reachable-history
+scanning. The advisory audit reported zero findings; registry verification accepted
+496 signatures and 86 attestations. Lint retained 39 existing warnings and no errors.
+
+[Exchange verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416066) passed 141 service tests, one HTTPS case and 50 browser groups
+on production-mode build `u0OdNPer11KrFSG9n4QNt`. Fresh [artist regressions](https://github.com/lifexpadmin/church-landing/actions/runs/37733431156) passed
+25 services, five HTTPS cases and 26 browser groups; fresh [discovery regressions](https://github.com/lifexpadmin/church-landing/actions/runs/37733432965)
+passed 34 services, two HTTPS cases and 33 browser groups. These all ran on
+`bbc5589ad566abc4d3140fa7fdb92a128c665d4d`; prior-source reuse is not claimed for this batch.
+
+Staged read-only checks: **44 passed at 06:07:57.320 UTC**. Live guest
+checks: **214 passed at 06:13:21.186 UTC**; health/release checks:
+**5 passed**. Scoped browser/CSP/runtime errors
+and sends: **zero browser/CSP/runtime error or fatal rows, recipient sends and queue publications**. Production table comparison:
+**all 165 tables unchanged at 06:14:28.124 UTC**; migration comparison:
+**123 migration checksums matched; no new or pending migrations**. No schema or dependency changes are included.
+
+Broader account/privacy acceptance, personal-defaults and inquiry privacy
+handoffs, unfinished export/native work and actual operator, provider, adult-pilot
+and physical-device gates remain separate. Rapid repeated Back remains unresolved.
+Fictional loopback measurements do not establish production latency, provider
+headroom, PostgreSQL 17 workload behavior or 100-client capacity.
 
 ## Discovery ordering and saved-feed loading verified live, 8 October 2026 UTC
 
