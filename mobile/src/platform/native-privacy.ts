@@ -10,7 +10,7 @@ export type NativePrivacyPresentation = Readonly<{
 type Update = (foreground: boolean) => { generation: number; completion?: Promise<unknown> };
 let ownerSequence = 0;
 
-/** Native state is the sole iOS visibility input. Events are prompts to read,
+/** Native state is the sole protected visibility input. Events are prompts to read,
  * never permission to reveal. The existing session owner still verifies access. */
 export function observeNativePrivacy(source: NativePrivacySource | null, update: Update,
   publish: (presentation: NativePrivacyPresentation | null) => void) {
