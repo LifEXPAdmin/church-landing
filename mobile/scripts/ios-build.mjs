@@ -40,7 +40,7 @@ function run() {
   const action = process.argv[2];
   assert(["pods", "build"].includes(action), "Select pods or build.");
   assert.equal(process.env.GC_MOBILE_GUARDED_ACTION, action === "pods" ? "pods-ios" : "build-ios",
-    "Run this action through scripts/workspace.mjs so SSD and heavy-job ownership are verified.");
+    "Run this action through scripts/workspace.mjs so storage and heavy-job ownership are verified.");
   const developer = process.env.DEVELOPER_DIR;
   assert(developer && existsSync(join(developer, "usr/bin/xcodebuild")), "Set DEVELOPER_DIR to the inspected full Xcode Contents/Developer directory.");
   const plan = iosBuildPlan(mobile, config().extra.variant);
@@ -50,7 +50,7 @@ function run() {
     join(generated, "cocoapods"), join(generated, "cocoapods-cache"), join(generated, "react-native-cache")]) {
     mkdirSync(path, { recursive: true });
     assert(realpathSync(path).startsWith(realpathSync(mobile) + "/") && statSync(path).dev === statSync(mobile).dev,
-      "iOS generated output must stay inside this SSD workspace.");
+      "iOS generated output must stay inside this verified workspace.");
   }
   const env = { ...process.env, CP_HOME_DIR: join(generated, "cocoapods"), CP_CACHE_DIR: join(generated, "cocoapods-cache"),
     GC_IOS_REACT_NATIVE_CACHE: join(generated, "react-native-cache"), RCT_SKIP_CACHES: "0",
