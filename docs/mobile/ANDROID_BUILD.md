@@ -39,3 +39,20 @@ secure-storage probe, links and lifecycle on that binary. Compilation alone
 does not establish those results, real staging authorization, physical-device
 acceptance, accessibility or Play distribution. Release identifiers, signing
 ownership and the production configuration remain separate owner gates.
+
+## Source verification and dependency installation
+
+The Android checkout consumes the canonical root security and mobile CI tooling.
+On source `f907cb2`, hosted source-security and portable-contract checks passed.
+Mobile lint, types, import boundaries and 210 tests passed; three macOS-only tests
+were skipped on Linux. The mobile package audit remains a failing gate with 22
+dependency findings (15 high and seven moderate). Registry signatures and provenance checks
+ran despite that audit failure. This is source verification, not a new native
+build or a release approval.
+
+An existing root `node_modules` directory does not prove the current root lockfile
+has been installed. Recreate task-owned root dependencies from the current lock
+under the machine-build reservation before running the embedded toolchain patches
+or root build. Preserve any older dependency graph still needed by another retained
+source checkpoint. The mobile lockfile is separate and was unchanged by this CI
+consumption. Do not rerun an unchanged Android binary solely for a CI-only update.
