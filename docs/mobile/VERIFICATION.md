@@ -108,20 +108,44 @@ old draft and visibility choice. These checks do not prove native text selection
 autofill, keyboard persistence, screen-reader delivery or app-switcher protection;
 those require the rebuilt native application and separate device observations.
 
-The 7 October 2026 mobile lock audit reported 22 affected-package flags derived
-from three advisories: braces, node-forge and uuid. The high-severity
-[braces advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and
-[node-forge advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv) had no
-patched upstream release at that checkpoint. The registry's proposed Expo/React Native major
-downgrades are not an accepted compatibility fix. No exception or suppression is
-added; package security and dependent hosted exports remain blocked until an
-inspected remedy passes. Recheck when upstream packages or the supported graph
+The 8 October 2026 mobile dependency checkpoint scopes two overrides to their
+existing consumers. `micromatch@4.0.8` uses the already reviewed canonical
+`@dieub/braces-depth-guard@3.0.3-pn.3` derivative. `xcode@3.0.1` uses the
+CommonJS-compatible `uuid@11.1.1` security backport. Expo, React Native and React
+versions remain unchanged. The lockfile changes only the brace parser's package
+placement and the UUID package. This does not claim that upstream `braces` has
+published a fix or that a renamed package alone establishes remediation.
+
+The consumer tests exercise Metro's actual file filter, ordinary brace expansion
+and excessive-depth rejection through its resolved `micromatch`, and xcode's
+project-group creation/write/parse path through its resolved UUID library. They
+also check UUID's output-buffer bounds. The installed derivative payload and
+consumer files were matched to the canonical source-review records before use.
+
+Clean locked installation with lifecycle scripts disabled, 230 local mobile
+tests, TypeScript, lint, the import boundary and Expo's compatibility check pass.
+Registry verification reports 481 signed packages and 123 attestations. Fresh
+iOS project generation and both platform Hermes exports pass under the exclusive
+local build reservation. These exports identify a modified source snapshot with
+the exact manifest and lockfile hashes retained in private evidence. Project
+generation does not install Pods or compile an iOS binary. No Android binary was
+rebuilt with this dependency checkpoint; the earlier native receipt retains its
+own source and dependency identity.
+
+The audit now reports four high-severity affected-package flags, all derived from
+the remaining [node-forge advisory](https://github.com/advisories/GHSA-86w9-cpqp-85rv)
+through Expo's CLI and code-signing tooling. As checked on 8 October, no patched
+node-forge release is listed. The audit still exits with failure. The registry's
+proposed Expo major downgrade is not an accepted compatibility fix. No exception,
+suppression or gate change is added; package security and dependent hosted
+exports remain blocked. Recheck when upstream packages or the supported graph
 change, rather than repeating the same failed audit.
 
-Clean locked installation and local source checks are recorded separately from
-a hosted Actions run. Run the workflows on the combined source before claiming
-hosted CI acceptance. Preserve the shared session/transport integration gate and
-report each dependency graph's current evidence separately.
+Local checks and hosted Actions receipts remain separate and identify the exact
+source they verify. Integration must verify the combined source; this partial
+dependency remedy does not establish overall CI or security acceptance. Preserve
+the shared session/transport integration gate and the existing website security
+hold.
 
 ### Root toolchain receipt consumption, 8 October 2026
 
