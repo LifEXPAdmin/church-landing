@@ -1,3 +1,19 @@
+## Defaults and inquiry batch awaits combined acceptance, 8 October 2026 UTC
+
+PRs 8 to 10 are combined locally on the verified Exchange search/editor release.
+Candidate **2026.10.08.4** is not yet merged or live. The current security and
+bootstrap safeguards are retained; the combined browser profile includes the
+inquiry-list suite omitted by the older composer profile, plus current Topic,
+Support and scheduled-post consumers of the shared private reader.
+
+Fresh source/security, isolated service, HTTPS, build and browser evidence must
+match the final candidate before independent final review. Preserve current
+permissions, same-account draft/retry ownership and exact inquiry receipt
+matching. Confirmed account replacement clears the old entries. No migration,
+dependency or recovery-owner change is included. Production remains the verified
+**2026.10.08.3** release below; historical handoff checks are not current combined
+acceptance.
+
 ## Exchange batch — verified live, 8 October 2026 UTC
 
 Version **2026.10.08.3**, source `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, combines PR5's Exchange search

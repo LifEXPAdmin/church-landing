@@ -1,3 +1,24 @@
+## Exchange defaults and private inquiries prepared, 8 October 2026 UTC
+
+The next two-scope batch combines personal Exchange defaults from PR 8 with
+private inquiry summaries and composition from PRs 9 and 10. Initial pages omit
+saved private snapshots. Current account-pinned reads confirm access before
+showing them; changed information requires deliberate review. Same-account
+interruptions retain original drafts and exact uncertain requests. Confirmed
+account replacement clears prior private entries.
+
+Candidate metadata is **2026.10.08.4**. Fresh combined acceptance remains pending:
+source/security gates, 22 service checks, four HTTPS cases and all seven selected
+browser suites, including inquiry-list coverage and the shared reader's Topic,
+Support and scheduled-post consumers. These are planned counts, not results.
+The current dependency repairs, navigation checks and immutable measurement
+contracts remain preserved. No schema or dependency change is included.
+
+Production remains the verified **2026.10.08.3** release below. Independent final
+review, integration and one staged publication with canonical live acceptance
+are still required. Broader privacy, rapid Back, capacity and actual operator,
+provider and physical-device acceptance remain separate.
+
 ## Exchange search and private editing — verified live, 8 October 2026 UTC
 
 Version **2026.10.08.3**, application `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`.

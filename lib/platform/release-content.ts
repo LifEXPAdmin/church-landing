@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-exchange-defaults-and-inquiries", version: "2026.10.08.4", date: "2026-10-08",
+    summary: "Keep Exchange preferences and private inquiries protected while reviewing or recovering changes.",
+    added: [],
+    improved: ["Personal Exchange preferences and inquiry details appear only after checking your current account access. Changed saved information requires a deliberate review.", "Interrupted preference saves and new inquiries retain their original request for deliberate recovery while the same account remains in use."],
+    fixed: ["Private inquiry summaries, recipients and unsent messages leave the page while access is unconfirmed. A delayed response cannot substitute a different inquiry or open it before current access is confirmed."],
+    featureIds: ["exchange-private-handoffs", "account"]
+  },
+  {
     id: "exchange-search-and-private-editing", version: "2026.10.08.3", date: "2026-10-08",
     summary: "Browse Exchange with less repeated work and keep private editing details protected during access changes.",
     added: [],

@@ -8,7 +8,11 @@ on:
         codex/exchange-query-plans-20261003,
         codex/exchange-editor-privacy-20261003,
         codex/exchange-editor-bootstrap-20261003,
-        codex/release-exchange-20261008
+        codex/release-exchange-20261008,
+        codex/exchange-defaults-privacy-20261003,
+        codex/exchange-inquiry-list-privacy-20261003,
+        codex/exchange-inquiry-composer-privacy-20261003,
+        codex/release-exchange-privacy-20261008
       ]
     paths:
       - .github/workflows/exchange-verification.yml
@@ -41,6 +45,28 @@ on:
       - lib/platform/exchange-listings.ts
       - tests/exchange-listings.test.ts
       - tests/fixtures/client-hook-harness.mjs
+      - app/platform/exchange/**/page.tsx
+      - scripts/qa-exchange-inquiry-composer-privacy-browser.mjs
+      - components/platform/exchange-inquiry-composer.tsx
+      - components/platform/use-private-choice-action.tsx
+      - tests/exchange-inquiry-composer-privacy.test.mjs
+      - tests/exchange-inquiry-composer-http.test.ts
+      - scripts/qa-exchange-inquiry-list-privacy-browser.mjs
+      - components/platform/exchange-inquiry-list.tsx
+      - components/platform/private-read-snapshot.tsx
+      - tests/private-read-snapshot.test.mjs
+      - tests/exchange-inquiry-list-http.test.ts
+      - scripts/qa-exchange-defaults-privacy-browser.mjs
+      - components/platform/exchange-defaults-form.tsx
+      - components/platform/exchange-defaults-entry.tsx
+      - tests/exchange-defaults-privacy.test.mjs
+      - tests/exchange-defaults-http.test.ts
+      - scripts/qa-topic-catalogue-privacy-browser.mjs
+      - scripts/qa-support-index-browser.mjs
+      - scripts/qa-notification-integration-browser.mjs
+      - components/platform/topic-private-catalogue.tsx
+      - components/platform/support-index.tsx
+      - components/platform/scheduled-post-list.tsx
 
 permissions:
   contents: read
@@ -54,7 +80,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      EXCHANGE_PROFILE: ${{ (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
+      EXCHANGE_PROFILE: ${{ github.ref_name == 'codex/release-exchange-privacy-20261008' && 'exchange-privacy' || github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -106,32 +132,64 @@ jobs:
           mkdirSync(output, { recursive: true });
           const logPath = join(process.env.RUNNER_TEMP, "exchange-verification.log");
           const lines = existsSync(logPath) ? readFileSync(logPath, "utf8").split(/\r?\n/) : [];
-          // No raw exceptions, DOM, environment, signed cursors or actor values.
+          // No raw exceptions, DOM, environment, signed cursors, queries or actor values.
           const safeLines = lines.filter((line) => /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line) || /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) || /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
           const log = safeLines.join("\n") + "\n";
           const totals = (metric) => [...log.matchAll(new RegExp("^(?:#|ℹ) " + metric + " (\\d+)$", "gm"))].map((match) => Number(match[1]));
           const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
           const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((match) => ({ sourceSha: match[1], mode: match[2] }));
+          const expectations = {
+            exchange: { tests: [97, 1], browsers: { "exchange-browser": [8, 20] } },
+            "exchange-bootstrap": { tests: [141, 1], browsers: { "exchange-browser": [8, 20], "exchange-handoff-browser": [9], "pantry-browser": [13] } },
+            "exchange-defaults": { tests: [22, 2], browsers: { "exchange-defaults-browser": [11], "exchange-handoff-browser": [9] } },
+            "exchange-inquiry-list": { tests: [22, 3], browsers: { "exchange-inquiry-list-browser": [10], "exchange-handoff-browser": [9] } },
+            "exchange-inquiry-composer": { tests: [22, 4], browsers: { "exchange-inquiry-composer-browser": [11], "exchange-defaults-browser": [11], "exchange-handoff-browser": [9] } },
+            "exchange-privacy": { tests: [22, 4], browsers: { "exchange-inquiry-list-browser": [10], "exchange-inquiry-composer-browser": [11], "exchange-defaults-browser": [11], "exchange-handoff-browser": [9], "topic-catalogue-privacy-browser": [9], "support-index-browser": [13], "notification-integration-browser": [14] } }
+          };
           const profile = process.env.EXCHANGE_PROFILE;
-          assert.ok(["exchange", "exchange-bootstrap"].includes(profile));
+          assert.ok(Object.hasOwn(expectations, profile));
+          const expected = expectations[profile];
+          const knownSuites = new Set(Object.values(expectations).flatMap((entry) => Object.keys(entry.browsers)));
           const fixtures = (existsSync(".account-test") ? readdirSync(".account-test") : []).filter((name) => name.startsWith(profile + "-hosted-"));
+          const count = (value) => Array.isArray(value) ? value.length : null;
+          const empty = (value) => Array.isArray(value) && value.length === 0;
           const browsers = [];
           for (const name of fixtures) {
             const fixture = join(".account-test", name);
-            for (const suite of readdirSync(fixture)) {
-              if (!/^(?:exchange-browser|exchange-handoff-browser|pantry-browser)-\d+$/.test(suite)) continue;
-              const pantry = suite.startsWith("pantry-browser-");
-              const passPath = join(fixture, suite, "pass.json");
-              const resultPath = join(fixture, suite, pantry ? existsSync(passPath) ? "pass.json" : "result.json" : "results.json");
+            for (const directory of readdirSync(fixture)) {
+              const match = /^(.*)-\d+$/.exec(directory);
+              if (!match || !knownSuites.has(match[1])) continue;
+              const suite = match[1];
+              const pantry = suite === "pantry-browser";
+              const topic = suite === "topic-catalogue-privacy-browser";
+              const support = suite === "support-index-browser";
+              const notifications = suite === "notification-integration-browser";
+              const passPath = join(fixture, directory, "pass.json");
+              const receiptName = topic ? "receipt.json" : support ? "result.json" : pantry ? existsSync(passPath) ? "pass.json" : "result.json" : "results.json";
               let result = null;
-              try { result = JSON.parse(readFileSync(resultPath, "utf8")); } catch {}
-              // These result files can be written in finally after a failure.
-              // Their existence alone never establishes completed acceptance.
-              browsers.push({ suite: suite.replace(/-\d+$/, ""), reportedGroups: Array.isArray(result?.results) ? result.results.length : null, errorCount: Array.isArray(result?.errors) ? result.errors.length : null, productionWrites: result?.productionWrites ?? null, externalSends: result?.externalSends ?? null, explicitPantryPass: pantry ? existsSync(passPath) : null });
+              try { result = JSON.parse(readFileSync(join(fixture, directory, receiptName), "utf8")); } catch {}
+              // Only bounded counts/booleans are exported. Never copy private receipts.
+              const standardScope = !support && !notifications;
+              let detailsValid = empty(result?.errors);
+              if (standardScope) detailsValid &&= result?.productionWrites === 0 && result?.externalSends === 0;
+              if (pantry) detailsValid &&= existsSync(passPath);
+              if (suite === "exchange-inquiry-composer-browser") detailsValid &&= empty(result?.layoutFailures);
+              if (topic) detailsValid &&= result?.source === sourceSha && result?.buildId === buildId && empty(result?.routeErrors) && empty(result?.external) && empty(result?.writes);
+              if (support) detailsValid &&= result?.fixtureOnly === true && empty(result?.externalRequests) && empty(result?.caseRequests) && Array.isArray(result?.browserWrites) && result.browserWrites.every((request) => request.foregroundActivity === true && request.method === "POST" && request.path === "/api/platform/session");
+              browsers.push({
+                suite,
+                reportedGroups: count(result?.results),
+                errorCount: count(result?.errors),
+                detailsValid,
+                productionWrites: standardScope ? result?.productionWrites ?? null : null,
+                externalSends: standardScope ? result?.externalSends ?? null : null,
+                scopeEvidence: standardScope ? "explicit-fixture-receipt" : support ? "fixture-only-and-validated-browser-activity" : "guarded-runner-and-successful-suite",
+                explicitPantryPass: pantry ? existsSync(passPath) : null
+              });
             }
           }
           const runtimeOutcome = process.env.EXCHANGE_RUNTIME_OUTCOME;
-          const report = { sourceSha, profile, buildId, servingIdentities, runtimeOutcome, complete: false, environment: "isolated-fictional", omittedLogLines: lines.filter(Boolean).length - safeLines.length, tests: totals("tests"), pass: totals("pass"), fail: totals("fail"), cancelled: totals("cancelled"), skipped: totals("skipped"), todo: totals("todo"), browsers };
+          const report = { sourceSha, profile, buildId, servingIdentities, runtimeOutcome, complete: false, environment: "isolated-fictional", omittedLogLines: lines.filter(Boolean).length - safeLines.length, tests: totals("tests"), pass: totals("pass"), fail: totals("fail"), cancelled: totals("cancelled"), skipped: totals("skipped"), todo: totals("todo"), expectedBrowserGroups: Object.values(expected.browsers).flat().reduce((sum, value) => sum + value, 0), browsers };
           const save = () => writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
           save();
           writeFileSync(join(output, "verification.log"), log);
@@ -140,16 +198,18 @@ jobs:
             assert.match(buildId ?? "", /^[A-Za-z0-9_-]+$/);
             assert.deepEqual([...log.matchAll(/^Platform production build ID: ([A-Za-z0-9_-]+)$/gm)].map((match) => match[1]), [buildId]);
             assert.deepEqual(servingIdentities, [{ sourceSha, mode: "off" }, { sourceSha, mode: "enforce" }]);
-            const expected = [profile === "exchange-bootstrap" ? 141 : 97, 1];
-            assert.deepEqual(report.tests, expected);
-            assert.deepEqual(report.pass, expected);
+            assert.deepEqual(report.tests, expected.tests);
+            assert.deepEqual(report.pass, expected.tests);
             for (const metric of ["fail", "cancelled", "skipped", "todo"]) assert.deepEqual(report[metric], [0, 0]);
-            const counts = (suite) => browsers.filter((result) => result.suite === suite).map((result) => result.reportedGroups).sort((a, b) => a - b);
-            assert.deepEqual(counts("exchange-browser"), [8, 20]);
-            assert.deepEqual(counts("exchange-handoff-browser"), profile === "exchange-bootstrap" ? [9] : []);
-            assert.deepEqual(counts("pantry-browser"), profile === "exchange-bootstrap" ? [13] : []);
-            assert.equal(browsers.length, profile === "exchange-bootstrap" ? 4 : 2);
-            assert.ok(browsers.every((result) => result.errorCount === 0 && result.productionWrites === 0 && result.externalSends === 0 && result.explicitPantryPass !== false));
+            for (const suite of knownSuites) {
+              const actual = browsers.filter((entry) => entry.suite === suite).map((entry) => entry.reportedGroups).sort((a, b) => a - b);
+              assert.deepEqual(actual, expected.browsers[suite] ?? [], "Complete expected browser groups: " + suite);
+            }
+            assert.equal(browsers.length, Object.values(expected.browsers).reduce((sum, groups) => sum + groups.length, 0));
+            assert.ok(browsers.every((entry) => entry.detailsValid));
+            assert.equal(browsers.reduce((sum, entry) => sum + entry.reportedGroups, 0), report.expectedBrowserGroups);
+            // Several scripts write results in finally: successful child exit plus all
+            // exact receipt assertions above are required before this can become true.
             report.complete = true;
             save();
           }
@@ -166,6 +226,27 @@ jobs:
             .account-test/exchange-bootstrap-hosted-*/exchange-browser-*/*.png
             .account-test/exchange-bootstrap-hosted-*/exchange-handoff-browser-*/*.png
             .account-test/exchange-bootstrap-hosted-*/pantry-browser-*/*.png
+            .account-test/exchange-defaults-hosted-*/exchange-defaults-browser-*/defaults-390.png
+            .account-test/exchange-defaults-hosted-*/exchange-defaults-browser-*/defaults-320-200.png
+            .account-test/exchange-inquiry-list-hosted-*/exchange-inquiry-list-browser-*/inquiries-390.png
+            .account-test/exchange-inquiry-list-hosted-*/exchange-inquiry-list-browser-*/inquiries-320-enlarged.png
+            .account-test/exchange-inquiry-composer-hosted-*/exchange-inquiry-composer-browser-*/composer-390.png
+            .account-test/exchange-inquiry-composer-hosted-*/exchange-inquiry-composer-browser-*/composer-320-200.png
+            .account-test/exchange-inquiry-composer-hosted-*/exchange-defaults-browser-*/defaults-390.png
+            .account-test/exchange-inquiry-composer-hosted-*/exchange-defaults-browser-*/defaults-320-200.png
+            .account-test/exchange-privacy-hosted-*/exchange-inquiry-list-browser-*/inquiries-390.png
+            .account-test/exchange-privacy-hosted-*/exchange-inquiry-list-browser-*/inquiries-320-enlarged.png
+            .account-test/exchange-privacy-hosted-*/exchange-inquiry-composer-browser-*/composer-390.png
+            .account-test/exchange-privacy-hosted-*/exchange-inquiry-composer-browser-*/composer-320-200.png
+            .account-test/exchange-privacy-hosted-*/exchange-defaults-browser-*/defaults-390.png
+            .account-test/exchange-privacy-hosted-*/exchange-defaults-browser-*/defaults-320-200.png
+            .account-test/exchange-privacy-hosted-*/topic-catalogue-privacy-browser-*/catalogue-390-100.png
+            .account-test/exchange-privacy-hosted-*/topic-catalogue-privacy-browser-*/catalogue-320-100.png
+            .account-test/exchange-privacy-hosted-*/topic-catalogue-privacy-browser-*/catalogue-320-200.png
+            .account-test/exchange-privacy-hosted-*/support-index-browser-*/requests-320-enlarged.png
+            .account-test/exchange-privacy-hosted-*/support-index-browser-*/inbox-320-enlarged.png
+            .account-test/exchange-privacy-hosted-*/notification-integration-browser-*/scheduled-composer-320.png
+            .account-test/exchange-privacy-hosted-*/notification-integration-browser-*/scheduled-library-320.png
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
