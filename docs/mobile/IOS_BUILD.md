@@ -33,6 +33,23 @@ not used. Expo modules compile from source because the installed precompiled
 module hook otherwise clears a global CocoaPods cache. Reinspect these helpers
 when updating React Native or Expo. No system home directory is reassigned.
 
+ExpoModulesJSI 57.1.1 starts a nested Swift package build with a cleared
+environment, which otherwise loses the unsigned Simulator setting. After target
+validation, the launcher adapts that installed helper using its exact inspected
+source hash and package version. The nested build also disables signing, uses
+two jobs, forwards the task temporary directory and keeps its caches beside its
+own task-local DerivedData. Its existing source hashing and artifact checks stay
+in place. The adapted helper rejects other build modes before writing anything;
+reinstall locked dependencies before using that checkout for another build route.
+Unexpected or partially changed helper source fails closed for reinspection.
+
+The app opts into Expo 57's scene lifecycle through the pinned
+`expo-build-properties` plugin. This is required to launch an app built with
+the iOS 27 SDK. Prebuild declares `EXExpoAppSceneDelegate`, disables multiple
+scenes and makes the app delegate provide its React Native factory. Expo owns
+window creation and forwards lifecycle and link events; the app does not add
+a second native event bridge. See [Expo's SDK 57 migration guidance](https://github.com/expo/fyi/blob/main/ios-scene-lifecycle.md#staying-on-sdk-57-with-xcode-27).
+
 From `mobile/`, with `APP_VARIANT=development` or `staging`:
 
 ```sh
@@ -56,10 +73,31 @@ These are reusable generated working files, separate from retained source and
 private verification receipts. Do not infer download or installed size from
 JavaScript bundle size.
 
+The unsigned Simulator app also needs a simulated application identity for
+Keychain. The launcher writes an app-scoped property list and uses Apple's
+`derq` encoder to produce its matching DER form. Xcode's
+`LD_ENTITLEMENTS_SECTION` and `LD_ENTITLEMENTS_SECTION_DER` link these into the
+Simulator executable. Target-name indirection gives only the selected app its
+identity; dependency targets resolve empty sections. Both the application
+identifier and sole Keychain group match the development or staging bundle.
+Target validation rejects missing or mismatched section paths before compilation.
+Fresh temporary files and atomic replacement preserve any outside file referenced
+by a stale generated output link.
+See [Swift Build's Simulator linker specification](https://github.com/swiftlang/swift-build/blob/main/Sources/SWBApplePlatform/Specs/Embedded-Simulator.xcspec).
+
+These simulated entitlements are separate from a device provisioning profile.
+Do not place restricted Keychain entitlements into an ad-hoc macOS code signature:
+that experiment was rejected before app launch. The guarded build keeps signing
+disabled and uses the Simulator's linker representation without changing
+Keychain accessibility or application storage policy.
+
 A matching Simulator runtime is additionally required to launch the binary.
 Check runtime availability and the selected volume's headroom before downloading or
 importing it. Use an explicit verified task download destination and a task-owned device
-set. A runtime import may still require Apple's managed system storage; an SSD
+set where supported. Xcode 27's Device Hub uses Apple's default set for its GUI.
+For that route, inspect the managed set's actual volume and headroom, create one
+distinct task-owned device and address it by its recorded identifier. Preserve
+all existing devices. A runtime import may still require Apple's managed system storage; an SSD
 download alone does not prove where the installed runtime is stored.
 Never move existing simulator state or use an unselected disk to bypass a
 storage failure. Record the actual runtime and device for the acceptance run.
@@ -94,17 +132,36 @@ Ruby's OpenSSL, YAML and compression extensions, the locked gem bundle and its
 isolated `pod` wrapper. Downloaded source archives were checked before extraction.
 Their exact versions, checksum provenance, commands, logs and lockfile remain in
 the private toolchain receipt. Existing system Ruby and developer selection were
-preserved. This installs the build tool, not the app's native Pods.
+preserved.
 
-The receiving host has Command Line Tools and existing simulator bundle files,
-but a full Xcode app has not yet been located. These preparation results do not
-establish a working iPhone SDK, Pods installation or native app build. Exact host,
-volume, source hashes and local logs are retained in the private task receipt.
+The owner subsequently installed Xcode 27.0, build 27A266a. Its first-launch
+check and iPhone Simulator SDK lookup passed, and the iOS 27.0 runtime became
+available. Task-local CocoaPods installed 99 pods successfully. The first native
+build exposed the nested ExpoModulesJSI signing issue described above. Its repair
+passed a complete unsigned Release build for arm64 and x86_64. Actual iOS 27
+launch then reproduced UIKit's missing scene lifecycle assertion, leading to the
+supported scene opt-in above. The updated app launched and its fictional
+sign-in, feed, detail, explicit reveal, pagination, retry, empty feed, sign-out
+and foreground recovery were observed on iOS 27. Cold plain restart cleared the
+in-memory session. Cold and repeat warm app links reached the intended post
+after sign-in. The first OS link-confirmation interruption required reopening
+the link; this remains a recorded limitation, with session invalidation preserved.
+Native secure-store verification exposed missing Simulator entitlements and
+prompted the app-only linker identity above. The rebuilt app launched and its
+real native Keychain write, read and removal probe passed. All 110 inspected
+Pods target-settings records resolved empty identity sections; both app architectures contained
+the XML and DER sections, with no restricted host-signature entitlements.
+Exact host, volume, source hashes and local
+logs are retained in the private task receipt.
 
-Compile the native JSON module and secure-store dependencies, launch the
-fictional sign-in/feed/detail/retry/sign-out journey, and verify safe areas,
-text scaling, lifecycle concealment, secure-store cleanup and app-link return.
-Then separately verify the real journey against an accepted nonproduction
+Dark appearance, enlarged text and accessible control labels were inspected.
+The observed app-switcher snapshot concealed the revealed fictional prayer and
+showed only the app title; returning checked the session before restoring the
+feed. This single observation does not establish every interruption timing or
+physical-device snapshot behavior. Software-keyboard coverage, complete
+VoiceOver behavior and inactive-only transitions remain explicit acceptance work.
+
+Separately verify the real journey against an accepted nonproduction
 HTTPS endpoint with fictional accounts. Source checks, Hermes exports, native
 compilation, Simulator behavior and physical-device acceptance are distinct.
 Existing dependency-security and release gates remain in force.
