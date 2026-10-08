@@ -251,6 +251,23 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
   const current = await pinned(f.owner.token, f.owner.id);
   assert.equal(current.status, 200);
   privateResponse(current);
+  const incomingPath = `/api/platform/exchange?view=need-contributors&id=${f.need.id}`;
+  const incomingDefault = await req(incomingPath, f.manager.token, {
+    "x-expected-account": f.manager.id
+  });
+  assert.equal(incomingDefault.status, 404);
+  privateResponse(incomingDefault);
+  const unprovenIncoming = await incomingDefault.text();
+  assert.ok(!unprovenIncoming.includes(f.quote.id));
+  assert.ok(!unprovenIncoming.includes(f.note));
+  const otherCoordinatorRead = await req(incomingPath, f.other.token, {
+    "x-expected-account": f.other.id
+  });
+  assert.equal(otherCoordinatorRead.status, 404);
+  privateResponse(otherCoordinatorRead);
+  const deniedIncoming = await otherCoordinatorRead.text();
+  assert.ok(!deniedIncoming.includes(f.quote.id));
+  assert.ok(!deniedIncoming.includes(f.note));
   const canonical = await read(db, f.owner.token, { view: "mine" });
   const data = await current.json();
   assert.deepEqual(data, canonical);
@@ -347,9 +364,8 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
   );
   assert.equal(ineligible.status, 403);
   privateResponse(ineligible);
-
-  // My Needs remains a personal surface, while coordinator mutations still
-  // demand session-bound privileged proof in the enforce-mode server.
+  // My Needs remains a personal surface. Both private coordinator reads and
+  // mutations demand session-bound privileged proof in the enforce-mode server.
   const receiveBody = JSON.stringify(
     input("need-receive", {
       id: f.loan.id,
@@ -413,6 +429,27 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
     },
     undefined
   );
+  const namedIncoming = await req(incomingPath, f.manager.token, {
+    "x-expected-account": f.manager.id
+  });
+  assert.equal(namedIncoming.status, 200);
+  privateResponse(namedIncoming);
+  const incomingData = await namedIncoming.json();
+  assert.equal(incomingData.ownerId, f.manager.id);
+  const namedRow = incomingData.contributions.find(
+    (row: { id: string }) => row.id === f.quote.id
+  );
+  assert.ok(namedRow);
+  assert.equal(namedRow.current, true);
+  assert.equal(namedRow.own, false);
+  assert.equal(namedRow.note, f.note);
+  assert.equal(namedRow.contributor?.name, f.owner.name);
+  const anonymousRow = incomingData.contributions.find(
+    (row: { id: string }) => row.id === f.foreign.id
+  );
+  assert.ok(anonymousRow);
+  assert.equal(anonymousRow.note, f.otherNote);
+  assert.equal(anonymousRow.contributor, null);
   const received = await post(f.manager.token, f.manager.id, receiveBody);
   assert.equal(received.status, 200);
   privateResponse(received);
@@ -424,6 +461,14 @@ test("My Needs bootstrap omits private rows while pinned reads, exact replay, re
     f.manager.password,
     "Fictional second Needs coordinator browser"
   );
+  const unprovenRead = await req(incomingPath, secondToken, {
+    "x-expected-account": f.manager.id
+  });
+  assert.equal(unprovenRead.status, 404);
+  privateResponse(unprovenRead);
+  const unprovenBody = await unprovenRead.text();
+  assert.ok(!unprovenBody.includes(f.quote.id));
+  assert.ok(!unprovenBody.includes(f.note));
   const unprovenReplay = await post(secondToken, f.manager.id, receiveBody);
   assert.equal(unprovenReplay.status, 404);
   privateResponse(unprovenReplay);

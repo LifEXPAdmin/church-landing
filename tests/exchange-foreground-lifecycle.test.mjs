@@ -47,7 +47,7 @@ function environment(kind) {
   let timerId = 0;
   const timers = new Map();
   const data =
-    kind === "contributions"
+    kind === "contributions" || kind === "incoming"
       ? {
           ownerId: owner,
           contributions: [
@@ -61,10 +61,10 @@ function environment(kind) {
               createdAt: "2026-10-01T10:00:00.000Z",
               endedAt: null,
               current: true,
-              own: true,
+              own: kind !== "incoming",
               needId: "need-a",
               slotId: "slot-a",
-              listingId: "listing-a",
+              listingId: kind === "incoming" ? "need-a" : "listing-a",
               title: "Private contribution title",
               note: "Private retained contribution note",
               quoteMinor: 18765,
@@ -158,6 +158,14 @@ function environment(kind) {
         new URL(path, "https://fixture.invalid").pathname,
         "/api/platform/exchange"
       );
+      if (kind === "contributions" || kind === "incoming") {
+        const params = new URL(path, "https://fixture.invalid").searchParams;
+        assert.equal(
+          params.get("view"),
+          kind === "incoming" ? "need-contributors" : "need-mine"
+        );
+        assert.equal(params.get("id"), kind === "incoming" ? "need-a" : null);
+      }
       return response(data);
     }
   });
@@ -174,6 +182,7 @@ function environment(kind) {
     "@/lib/platform/social-client": social,
     "./read-visibility": readVisibility
   };
+  const router = { refresh() {} };
   let Component, props;
   if (kind === "search") {
     ({ ExchangeSearchSaveEntry: Component } = load(
@@ -198,15 +207,27 @@ function environment(kind) {
       view: "searches",
       returnHref: "/platform/exchange/saved?view=searches"
     };
-  } else if (kind === "contributions") {
+  } else if (kind === "contributions" || kind === "incoming") {
     ({ ExchangeNeedContributions: Component } = load(
       "components/platform/exchange-need-contributions.tsx",
       {
         ...common,
+        "next/navigation": { useRouter: () => router },
+        "./exchange-need-progress": { useNeedProgressRefresh: () => null },
         "./exchange-need-actions": { NeedContributionCard: "private-leaf" }
       }
     ));
-    props = { owner };
+    props = {
+      owner,
+      query:
+        kind === "incoming"
+          ? {
+              view: "incoming",
+              needId: "need-a",
+              path: "/platform/exchange/need-a/needs"
+            }
+          : { view: "mine" }
+    };
   } else if (kind === "defaults") {
     ({ ExchangeDefaultsEntry: Component } = load(
       "components/platform/exchange-defaults-entry.tsx",
@@ -302,6 +323,7 @@ for (const kind of [
   "list",
   "composer",
   "contributions",
+  "incoming",
   "defaults",
   "reader"
 ])

@@ -319,6 +319,10 @@ async function serverPage(after, account = owner) {
         NeedVolunteerReceipt: "volunteer"
       },
       "./exchange-need-contributions": { ExchangeNeedContributions },
+      "./exchange-need-progress": {
+        ExchangeNeedProgressProvider: ({ children }) => children,
+        NeedSlotProgress: "progress"
+      },
       "./regional-presentation": { RegionalTime: "time" },
       "@/lib/platform/session": {
         getCurrentPlatformUser: async () => ({ id: account })
@@ -357,9 +361,10 @@ test("standalone My Needs bootstrap omits private contribution rows, notes and q
   assert.equal(entries[0].props.owner, owner);
   assert.ok(
     Object.keys(entries[0].props).every((key) =>
-      ["owner", "after"].includes(key)
+      ["owner", "query"].includes(key)
     )
   );
+  assert.equal(entries[0].props.query.view, "mine");
 });
 
 test("concealment physically removes saved notes and unsent dispute/return values", (t) => {
@@ -567,22 +572,24 @@ test("legacy contribution callers retain their existing command and refresh beha
 function ownerHarness(t, setup, after) {
   const s = environment();
   setup?.(s);
-  const NeedContributionCard = () => null;
+  const NeedContributionCard = () => null,
+    router = { refresh() {} };
   const { ExchangeNeedContributions } = s.h.load(
     "components/platform/exchange-need-contributions.tsx",
     {
       "next/link": { default: "a" },
+      "next/navigation": { useRouter: () => router },
       "@/lib/platform/social-client": s.social,
       "./exchange-need-actions": { NeedContributionCard },
+      "./exchange-need-progress": { useNeedProgressRefresh: () => null },
       "./read-visibility": {
         ReadVisibility: { Provider: "visibility" },
         useReadVisibility: () => s.state.visible
       }
     }
   );
-  s.h.mount(() =>
-    ExchangeNeedContributions({ owner, ...(after ? { after } : {}) })
-  );
+  const query = { view: "mine", ...(after ? { after } : {}) };
+  s.h.mount(() => ExchangeNeedContributions({ owner, query }));
   t.after(() => s.h.unmount());
   return {
     ...s,
@@ -924,14 +931,14 @@ test("server bootstrap keys retained owners by both account and canonical cursor
   const other = await serverPage(undefined, "other-owner");
   const entry = (value) =>
     nodes(value.output, (n) => n.type === value.Entry)[0];
-  assert.equal(entry(next).props.after, "cursor-b");
+  assert.equal(entry(next).props.query.after, "cursor-b");
   assert.notEqual(entry(first).key, entry(next).key);
   assert.notEqual(entry(first).key, entry(other).key);
   for (const result of [first, next, other]) {
     assert.ok(!JSON.stringify(result.output).includes("contribution-a"));
     assert.ok(
       Object.keys(entry(result).props).every((key) =>
-        ["owner", "after"].includes(key)
+        ["owner", "query"].includes(key)
       )
     );
   }

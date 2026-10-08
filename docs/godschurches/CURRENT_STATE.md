@@ -1,5 +1,24 @@
 ## Standalone My Needs contribution privacy, 8 October 2026 UTC
 
+## Incoming Needs privacy and progress reconciliation prepared, 8 October 2026 UTC
+
+The next bounded website candidate keeps coordinator incoming contribution rows
+out of initial HTML and RSC, reads them through the current account and appointment,
+and displays contributor names only when the contributor has chosen to share them.
+Confirmed per-card receipts refresh page-owned progress while preserving sibling
+correction and equipment-return drafts. Progress reconciles the current Need
+revision, rejects stale responses, conceals disputed projections and permits a
+bounded retry after a read interruption.
+
+The preserved incoming candidate and later standalone progress correction are
+reconciled onto the verified seventh release. The existing HTTP fixture now
+requires the current session's MFA proof before coordinator details are visible.
+275 focused source checks pass with no failures or skips. This is local source
+preparation, not current application, database, deployment or live acceptance.
+The isolated hosted profile must still verify the exact merged source, full
+Needs journey, incoming and My Needs privacy, and controlled progress scenarios.
+Later form, offer and volunteer changes remain separate.
+
 Version **2026.10.08.7**, source `89a84fe4a65cf94a827ceac584d763eee56b60e2`: **verified live**. [PR44](https://github.com/LifEXPAdmin/church-landing/pull/44) integrates the preserved PR15 scope and a reproduced foreground repair. Private contribution cards load after current account-pinned reads. Each card keeps its original request and requires its own exact receipt and current canonical version. Same-account recovery preserves sibling dispute and equipment-return drafts; confirmed account replacement clears prior entries.
 
 Local focused verification passed **256/256** checks after both unfocused resume cases failed on the original owner. Fresh hosted verification: **512 source/security checks and 18 services / 2 HTTPS cases / 20 browser groups passed on the exact candidate**. Reused evidence: reviewed unchanged sixth-source contracts reuse Exchange 65 services / 8 HTTPS / 118 browser groups and Discovery 34 / 2 / 33 from `dca251e`; inherited artist 25 / 5 / 26, query-plan 97 checks / 72 comparisons / 168 prepared executions and resource 220 measured service reads / 920 HTTPS calls retain `bbc5589` provenance. These are not fresh seventh runs; affected My Needs and legacy card consumers ran in the fresh profile. Staging and live acceptance: 76 read-only checks passed at 2026-10-08T09:52:55.961Z; source 89a84fe4a65cf94a827ceac584d763eee56b60e2 and version 2026.10.08.7 matched the READY canonical deployment at 2026-10-08T09:53:27.152Z; 5 health/release checks passed; 256 guest checks passed at 2026-10-08T09:54:45.564Z with zero browser/CSP errors or attempted test mutations. Data comparison: 165 original table fingerprints and 123 migration records remained unchanged at 2026-10-08T09:55:23.614Z; no migration was applied. [Deployment report](DEPLOYMENT_REPORT.md) retains exact evidence and limits.

@@ -1,5 +1,29 @@
 ## Standalone contribution privacy safeguards, 8 October 2026 UTC
 
+## Incoming Needs candidate source preparation, 8 October 2026 UTC
+
+The candidate reconciles the retained incoming contribution boundary with its
+required page-progress freshness correction. Initial coordinator page payloads
+omit contribution rows, and canonical reads require current account, appointment
+and session proof. Contributor names also require their saved sharing choice.
+The existing foreground predicate, original command requests, exact receipts,
+per-card ownership and sibling draft preservation remain in place.
+
+275 focused source checks passed without failures or skips. Fresh source coverage
+includes incoming foreground concealment, revised page totals, stale responses,
+redacted projections and retry recovery. The preserved older HTTP fixture failure
+expected a coordinator read before MFA proof; its narrow correction now requires
+concealed access before proof and rejects another unproven session of the same
+account. No production authorization rule was loosened.
+
+The isolated incoming profile retains 18 service checks and two HTTPS tests, with
+incoming, My Needs and legacy Needs browser journeys. Its 17 controlled React
+progress scenarios use stubbed transport and blocked network; they are separate
+from full-application browser evidence. All hosted counts remain expectations
+until their actual exact-source run passes. Historical failures and later combined
+acceptance do not certify this new composition. The dependency graph, migration
+history, shared action hooks and shared access guards remain unchanged.
+
 Version **2026.10.08.7**, source `89a84fe4a65cf94a827ceac584d763eee56b60e2`: **verified live**. My Needs contribution cards require current account-pinned reads and keep private fields out of initial HTML/RSC. Each changed card needs its own exact receipt and canonical row revision; unrelated sibling drafts are retained. Same-account access recovery is supported; confirmed owner replacement clears old entries.
 
 The original owner failed both modeled unfocused resume cases. The narrow focus predicate repairs them; **256/256 focused checks passed**, with no skipped checks. Controlled browser assertions are part of the fresh hosted journey and do not claim physical focus or device acceptance.

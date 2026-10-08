@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { PlatformShell } from "./platform-shell";
 import { ExchangeNeedContributions } from "./exchange-need-contributions";
+import {
+  ExchangeNeedProgressProvider,
+  NeedSlotProgress
+} from "./exchange-need-progress";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
 import {
@@ -68,7 +72,10 @@ export async function ExchangeNeedsPage({
           <ExchangeNeedContributions
             key={`${user.id}:${query.after ?? ""}`}
             owner={user.id}
-            after={query.after ? postId(query.after) : undefined}
+            query={{
+              view: "mine",
+              after: query.after ? postId(query.after) : undefined
+            }}
           />
         );
       }
@@ -183,33 +190,25 @@ export async function ExchangeNeedsPage({
                       </p>
                       <h2 className="text-2xl">{slot.label}</h2>
                     </header>
-                    <p>
-                      {slot.status}. Target: {slot.target} {slot.unit}.{" "}
-                      {slot.committed !== null && (
-                        <>
-                          Committed: {slot.committed}. Received: {slot.received}
-                          .
-                        </>
-                      )}
-                    </p>
-                    {slot.received !== null && (
-                      <p>
-                        Unreceived target:{" "}
-                        {Math.max(0, slot.target - slot.received)} {slot.unit}.
-                        Uncommitted:{" "}
-                        {Math.max(0, slot.target - (slot.committed ?? 0))}{" "}
-                        {slot.unit}.
-                      </p>
-                    )}
+                    <NeedSlotProgress
+                      slot={{
+                        id: slot.id,
+                        status: slot.status,
+                        target: slot.target,
+                        unit: slot.unit,
+                        committed: slot.committed,
+                        received: slot.received,
+                        returned: slot.returned,
+                        loan: slot.loan
+                      }}
+                      owner={user?.id ?? null}
+                      listingId={listingId}
+                    />
                     {slot.closeReason && (
                       <p>Slot closing reason: {slot.closeReason}</p>
                     )}
                     {slot.loan && (
                       <div className="space-y-2">
-                        <p>
-                          Equipment loan. Returned: {slot.returned} of{" "}
-                          {slot.received ?? 0} received.
-                        </p>
                         {slot.returnAt && (
                           <p>
                             Return by <RegionalTime value={slot.returnAt} /> (
@@ -442,43 +441,71 @@ export async function ExchangeNeedsPage({
           : {})
       });
       content = (
-        <>
-          {user ? (
-            <PrivateSnapshotGuard
-              owner={user.id}
-              url={`/api/platform/exchange?${readQuery}`}
-              checksum={exchangeChecksum(result)}
-              label="need actions and progress"
-            >
-              {article}
-            </PrivateSnapshotGuard>
-          ) : (
-            <TopicReadBoundary
-              owner={null}
-              url={`/api/platform/exchange?${readQuery}`}
-              checksum={exchangeChecksum(result)}
-              label="need progress"
-            >
-              {article}
-            </TopicReadBoundary>
+        <ExchangeNeedProgressProvider
+          key={`${user?.id ?? "guest"}:${need?.id ?? "none"}`}
+          owner={user?.id ?? null}
+          listingId={listingId}
+          needVersion={need?.version ?? 0}
+          slots={(need?.slots ?? []).map(
+            ({
+              id,
+              status,
+              target,
+              unit,
+              committed,
+              received,
+              returned,
+              loan
+            }) => ({
+              id,
+              status,
+              target,
+              unit,
+              committed,
+              received,
+              returned,
+              loan
+            })
           )}
-          {user && query.view === "contributors" && (
-            <IncomingNeeds
-              owner={user.id}
-              needId={listingId}
-              after={query.after}
-              path={path}
-            />
-          )}
-          {user && query.volunteers && (
-            <VolunteerNeeds
-              owner={user.id}
-              slotId={postId(query.volunteers)}
-              after={query.after}
-              path={path}
-            />
-          )}
-        </>
+        >
+          <>
+            {user ? (
+              <PrivateSnapshotGuard
+                owner={user.id}
+                url={`/api/platform/exchange?${readQuery}`}
+                checksum={exchangeChecksum(result)}
+                label="need actions and progress"
+              >
+                {article}
+              </PrivateSnapshotGuard>
+            ) : (
+              <TopicReadBoundary
+                owner={null}
+                url={`/api/platform/exchange?${readQuery}`}
+                checksum={exchangeChecksum(result)}
+                label="need progress"
+              >
+                {article}
+              </TopicReadBoundary>
+            )}
+            {user && query.view === "contributors" && (
+              <IncomingNeeds
+                owner={user.id}
+                needId={listingId}
+                after={query.after}
+                path={path}
+              />
+            )}
+            {user && query.volunteers && (
+              <VolunteerNeeds
+                owner={user.id}
+                slotId={postId(query.volunteers)}
+                after={query.after}
+                path={path}
+              />
+            )}
+          </>
+        </ExchangeNeedProgressProvider>
       );
     }
   } catch (error) {
@@ -515,51 +542,17 @@ async function IncomingNeeds({
     });
     if (!("contributions" in result))
       throw new Error("Contribution projection unavailable");
-    const params = new URLSearchParams({
-      view: "need-contributors",
-      id: needId,
-      ...(after ? { after: postId(after) } : {})
-    });
     return (
-      <PrivateSnapshotGuard
+      <ExchangeNeedContributions
+        key={`${owner}:${needId}:${after ? postId(after) : ""}`}
         owner={owner}
-        url={`/api/platform/exchange?${params}`}
-        checksum={exchangeChecksum(result)}
-        label="incoming private contributions"
-      >
-        <section
-          className="space-y-4"
-          aria-label="Incoming private Needs contributions"
-        >
-          <h2 className="text-2xl">Incoming private contributions</h2>
-          <p>
-            Only contributions addressed to you within your current coordinator
-            appointment appear here.
-          </p>
-          {!result.contributions?.length && (
-            <p>No current private contributions on this page.</p>
-          )}
-          {result.contributions?.map(
-            (row) =>
-              row && (
-                <NeedContributionCard
-                  key={`${row.id}:${row.version}`}
-                  owner={owner}
-                  row={row}
-                />
-              )
-          )}
-          {result.next && (
-            <Link
-              prefetch={false}
-              className="gc-button gc-button-quiet"
-              href={`${path}?view=contributors&after=${encodeURIComponent(result.next)}`}
-            >
-              More incoming contributions
-            </Link>
-          )}
-        </section>
-      </PrivateSnapshotGuard>
+        query={{
+          view: "incoming",
+          needId,
+          path,
+          after: after ? postId(after) : undefined
+        }}
+      />
     );
   } catch (error) {
     return <ExchangeUnavailable error={error} href={path} />;

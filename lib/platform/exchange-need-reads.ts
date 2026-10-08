@@ -64,7 +64,7 @@ function contributionView(
     loanReturnAt: row.loanReturnAt?.toISOString() ?? null,
     loanResponsibility: current ? row.loanResponsibility : "",
     contributor:
-      !own && current && row.contributorId
+      !own && current && row.shareName && row.contributorId
         ? { name: source!.contributorName }
         : null
   };

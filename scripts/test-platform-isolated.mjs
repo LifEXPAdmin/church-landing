@@ -35,13 +35,19 @@ assert.ok(
     "exchange-saved-search",
     "exchange-favorite",
     "exchange-search-favorite",
-    "need-contribution"
+    "need-contribution",
+    "need-incoming"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "need-incoming": {
+    services: ["exchange-needs"],
+    browsers: ["qa-exchange-need-incoming-privacy-browser", "qa-exchange-need-contribution-privacy-browser", "qa-exchange-needs-browser"],
+    https: ["exchange-need-contribution-http", "exchange-http"]
+  },
   "need-contribution": {
     services: ["exchange-needs"],
     browsers: ["qa-exchange-need-contribution-privacy-browser", "qa-exchange-needs-browser"],
@@ -614,6 +620,13 @@ async function verifyBuiltApplication() {
   }
 }
 try {
+  if (suite === "need-incoming") {
+    const progressFixture = mkdtempSync(join(fixture, "need-progress-browser-"));
+    await run(process.execPath, [
+      "scripts/qa-exchange-need-progress-client.mjs",
+      join(progressFixture, "results.json")
+    ]);
+  }
   const config = join(fixture, "localhost-cert.cnf");
   writeFileSync(
     config,

@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { NeedContributionView } from "@/lib/platform/exchange-need-reads";
 import {
   currentSocialOwner,
@@ -8,6 +9,7 @@ import {
   SocialClientError
 } from "@/lib/platform/social-client";
 import type { PrivateChoiceAccess } from "./use-private-choice-action";
+import { useNeedProgressRefresh } from "./exchange-need-progress";
 import { NeedContributionCard } from "./exchange-need-actions";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
@@ -16,10 +18,31 @@ type Snapshot = {
   contributions: NeedContributionView[];
   next: string | null;
 };
+type ContributionsQuery =
+  | { view: "mine"; after?: string }
+  | { view: "incoming"; needId: string; path: string; after?: string };
 type Receipt = Parameters<PrivateChoiceAccess["onConfirmed"]>[0];
 type Target = { id: string; expectedVersion: number };
 const checking = "Checking your current contribution access…";
-function validPage(data: Snapshot, owner: string) {
+function inScope(row: NeedContributionView, query: ContributionsQuery) {
+  if (query.view === "mine") return row.own === true;
+  if (!row.own) return row.current === true && row.needId === query.needId;
+  return (
+    row.current === false &&
+    row.needId === null &&
+    row.slotId === null &&
+    row.listingId === null &&
+    row.title === "Unavailable need" &&
+    row.note === "" &&
+    row.quoteMinor === null &&
+    row.quoteCurrency === null &&
+    row.shareName === false &&
+    row.disputeNote === "" &&
+    row.loanResponsibility === "" &&
+    row.contributor === null
+  );
+}
+function validPage(data: Snapshot, owner: string, query: ContributionsQuery) {
   return (
     data?.ownerId === owner &&
     Array.isArray(data.contributions) &&
@@ -32,7 +55,7 @@ function validPage(data: Snapshot, owner: string) {
         row &&
         typeof row.id === "string" &&
         !!row.id &&
-        row.own === true &&
+        inScope(row, query) &&
         Number.isInteger(row.version) &&
         row.version >= 1 &&
         [
@@ -68,7 +91,11 @@ function validPage(data: Snapshot, owner: string) {
         ].every((s) => s === null || typeof s === "string") &&
         (row.quoteMinor === null ||
           (Number.isSafeInteger(row.quoteMinor) && row.quoteMinor >= 0)) &&
-        row.contributor === null
+        (row.contributor === null ||
+          (row.own === false &&
+            row.shareName === true &&
+            typeof row.contributor === "object" &&
+            typeof row.contributor.name === "string"))
     )
   );
 }
@@ -77,11 +104,17 @@ function validPage(data: Snapshot, owner: string) {
 // command and unsent fields. Concealment never unmounts those command owners.
 export function ExchangeNeedContributions({
   owner,
-  after
+  query
 }: {
   owner: string;
-  after?: string;
+  query: ContributionsQuery;
 }) {
+  const incoming = query.view === "incoming";
+  const refreshNeedProgress = useNeedProgressRefresh(
+    owner,
+    incoming ? query.needId : null
+  );
+  const router = useRouter();
   const parentVisible = useReadVisibility();
   const snapshot = useRef<Snapshot | null>(null);
   const originals = useRef(new Map<string, Target>());
@@ -145,8 +178,11 @@ export function ExchangeNeedContributions({
     controller.current = request;
     const deadline = setTimeout(() => request.abort(), 15000);
     try {
-      const params = new URLSearchParams({ view: "need-mine" });
-      if (after) params.set("after", after);
+      const params = new URLSearchParams({
+        view: incoming ? "need-contributors" : "need-mine",
+        ...(incoming ? { id: query.needId } : {})
+      });
+      if (query.after) params.set("after", query.after);
       const { data } = await socialRequest<Snapshot>(
         `/api/platform/exchange?${params}`,
         undefined,
@@ -155,7 +191,7 @@ export function ExchangeNeedContributions({
         undefined,
         request.signal
       );
-      if (!validPage(data, owner))
+      if (!validPage(data, owner, query))
         throw Error("Current contributions could not be confirmed. Try again.");
       if (seq !== generation.current || !active.current) return;
       setCurrentAccess(true);
@@ -186,7 +222,8 @@ export function ExchangeNeedContributions({
       }
       snapshot.current = data;
       setPage(data);
-      if (receipts.current.size) {
+      const confirmedCommand = receipts.current.size > 0;
+      if (confirmedCommand) {
         const confirmed = new Map(receipts.current);
         setAccepted((previous) => new Map([...previous, ...confirmed]));
         for (const id of confirmed.keys()) originals.current.delete(id);
@@ -194,6 +231,10 @@ export function ExchangeNeedContributions({
       }
       setVisible(true);
       setNotice("");
+      if (incoming && confirmedCommand) {
+        void refreshNeedProgress?.().catch(() => {});
+        router.refresh();
+      }
     } catch (error) {
       if (seq === generation.current && active.current)
         setNotice(
@@ -225,7 +266,7 @@ export function ExchangeNeedContributions({
         void latest.current();
       }
     }
-  }, [owner, after, clearAccount]);
+  }, [owner, query, incoming, clearAccount, router, refreshNeedProgress]);
   latest.current = load;
   const recheck = useCallback(() => {
     if (
@@ -307,12 +348,19 @@ export function ExchangeNeedContributions({
   return (
     <section
       className="space-y-5 [overflow-wrap:anywhere]"
-      aria-label="My contributions"
+      aria-label={
+        incoming ? "Incoming private contributions" : "My contributions"
+      }
     >
-      <h1 className="text-4xl">My Needs contributions</h1>
+      {incoming ? (
+        <h2 className="text-2xl">Incoming private contributions</h2>
+      ) : (
+        <h1 className="text-4xl">My Needs contributions</h1>
+      )}
       <p>
-        Your promises, private quotes, receipts and outstanding equipment
-        returns. Current source details remain subject to access checks.
+        {incoming
+          ? "Private contributions addressed to your current coordinator appointment. Current source details remain subject to access checks."
+          : "Your promises, private quotes, receipts and outstanding equipment returns. Current source details remain subject to access checks."}
       </p>
       {!presented && (
         <div className="space-y-3 rounded-xl border p-4">
@@ -367,9 +415,13 @@ export function ExchangeNeedContributions({
         <Link
           prefetch={false}
           className="gc-button gc-button-quiet"
-          href={`/platform/exchange/needs?after=${encodeURIComponent(page.next)}`}
+          href={
+            incoming
+              ? `${query.path}?view=contributors&after=${encodeURIComponent(page.next)}`
+              : `/platform/exchange/needs?after=${encodeURIComponent(page.next)}`
+          }
         >
-          More contributions
+          {incoming ? "More incoming contributions" : "More contributions"}
         </Link>
       )}
     </section>

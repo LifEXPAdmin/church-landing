@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "incoming-needs-progress", version: "2026.10.08.8", date: "2026-10-08",
+    summary: "Protect incoming Needs contributions and keep progress current after confirmed receipts.",
+    added: [],
+    improved: ["Coordinators see incoming contribution details after checking their current account and appointment. Unfinished correction and equipment-return entries remain available when the same account regains access.", "Received and returned totals follow the current Need and its slots while preserving unfinished entries."],
+    fixed: ["Initial page responses omit private incoming contribution details and names that contributors have not chosen to share.", "Delayed progress responses cannot replace newer totals or restore details that are no longer available."],
+    featureIds: ["church-needs", "account"]
+  },
+  {
     id: "private-my-needs-contributions", version: "2026.10.08.7", date: "2026-10-08",
     summary: "Keep My Needs contributions private while preserving unfinished changes through interrupted access.",
     added: [],
