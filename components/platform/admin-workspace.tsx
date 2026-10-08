@@ -51,6 +51,9 @@ type Payload =
   | FeedbackIdeaAdministration
   | FeedbackIdeaModeration
   | FeedbackWeeklySnapshot;
+function foreground() {
+  return document.visibilityState !== "hidden" && document.hasFocus();
+}
 export function AdminWorkspace({
   navigation,
   section,
@@ -74,12 +77,7 @@ export function AdminWorkspace({
     queued = useRef(false);
   const weeklyQuery = useRef<{ input: string; resolved: string } | null>(null);
   const load = useCallback(async () => {
-    if (
-      !active.current ||
-      document.visibilityState === "hidden" ||
-      !document.hasFocus()
-    )
-      return;
+    if (!active.current || !foreground()) return;
     if (reading.current) {
       queued.current = true;
       return;
@@ -98,8 +96,7 @@ export function AdminWorkspace({
       if (
         seq !== generation.current ||
         !active.current ||
-        document.visibilityState === "hidden" ||
-        !document.hasFocus()
+        !foreground()
       )
         return;
       const nav = "navigation" in next ? next.navigation : next;
@@ -147,7 +144,7 @@ export function AdminWorkspace({
       setBusy(false);
     };
     const resume = () => {
-      if (document.visibilityState !== "hidden" && document.hasFocus()) {
+      if (foreground()) {
         active.current = true;
         void load();
       }
