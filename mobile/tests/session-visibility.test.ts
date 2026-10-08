@@ -87,7 +87,7 @@ test("missing, invalid, throwing and rejected native snapshots remain concealed"
   }
 });
 
-test("iOS does not query the Android module and both subscriptions precede the initial snapshot", async () => {
+test("a non-focus source skips the Android module; Android subscriptions precede its snapshot", async () => {
   const ios = fixture(); ios.source.currentFocus = () => { assert.fail("iOS must use its own active state"); };
   const done = ios.start(); assert.deepEqual(ios.values, [false, true]); done();
   const f = fixture(true), order: string[] = [];
@@ -99,7 +99,7 @@ test("iOS does not query the Android module and both subscriptions precede the i
   assert.deepEqual(order, ["focus", "state", "snapshot"]); stop();
 });
 
-test("unknown or non-active state stays concealed; iOS active resumes and inactive immediately conceals", () => {
+test("generic non-focus observation conceals unknown or inactive state and resumes active state", () => {
   for (const initial of [null, "unknown", "background", "inactive", "extension"]) {
     const f = fixture(false, initial); const stop = f.start(); assert.deepEqual(f.values, [false]); stop();
   }
@@ -162,4 +162,39 @@ test("current callback rejection conceals, contains errors and requires fresh ac
 test("effect teardown and remount can reuse the session without disposing its owner", () => {
   const f = fixture(); const first = f.start(); first(); const second = f.start();
   assert.deepEqual(f.values, [false, true, false, false, true]); second();
+});
+
+test("iOS native epochs are the sole visibility source and capture generation after synchronous invalidation", async () => {
+  let generation = 0;
+  const changes: boolean[] = [], proof: { epoch: number; sessionGeneration: number }[] = [];
+  let changed: () => void = () => {};
+  let epoch = 1;
+  const unused = () => { assert.fail("iOS must not observe a competing AppState or Android focus source"); };
+  const stop = observeSessionVisibility({ requiresFocus: true, currentState: unused, onState: unused,
+    currentFocus: unused, onFocus: unused, nativePrivacy: {
+      source: { readState: async () => ({ epoch, active: true }),
+        onStateChange(listener) { changed = listener; return () => {}; } },
+      generation: () => generation, publish(value) { if (value) proof.push(value); }
+    }
+  }, value => { changes.push(value); generation++; });
+  await settle();
+  assert.equal(changes.at(-1), true);
+  assert.equal(proof.at(-1)?.sessionGeneration, generation);
+  const firstGeneration = generation;
+  epoch++; changed();
+  assert.equal(changes.at(-1), false, "a native epoch conceals immediately before the read");
+  await settle();
+  assert.equal(proof.at(-1)?.epoch, 2);
+  assert.ok(proof.at(-1)!.sessionGeneration > firstGeneration);
+  stop(); assert.equal(changes.at(-1), false);
+});
+
+test("an iOS binary without the privacy bridge cannot fall back to an active AppState", () => {
+  const changes: boolean[] = [];
+  const stop = observeSessionVisibility({ requiresFocus: false, currentState: () => "active",
+    onState() { assert.fail("missing native cover is not a fallback permission"); },
+    nativePrivacy: { source: null, generation: () => 0, publish() {} }
+  }, value => { changes.push(value); });
+  assert.ok(changes.length && changes.every(value => value === false));
+  stop();
 });

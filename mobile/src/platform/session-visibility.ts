@@ -1,4 +1,12 @@
+import { observeNativePrivacy, type NativePrivacyPresentation, type NativePrivacySource } from "./native-privacy.ts";
+
 export type SessionVisibilitySource = {
+  /** iOS uses the native cover's epochs exclusively, never competing AppState events. */
+  nativePrivacy?: {
+    source: NativePrivacySource | null;
+    generation(): number;
+    publish(presentation: NativePrivacyPresentation | null): void;
+  };
   currentState(): string | null;
   onState(listener: (state: string | null) => void): () => void;
   /** Android requires a window focus source; absence is not proof of focus. */
@@ -12,6 +20,13 @@ export type SessionVisibilitySource = {
  * concealment. No asynchronous activation can delay a later concealment. */
 export function observeSessionVisibility(source: SessionVisibilitySource,
   update: (foreground: boolean) => void | Promise<unknown>) {
+  if (source.nativePrivacy) {
+    const privacy = source.nativePrivacy;
+    return observeNativePrivacy(privacy.source, value => {
+      const completion = Promise.resolve(update(value));
+      return { generation: privacy.generation(), completion };
+    }, privacy.publish);
+  }
   let disposed = false, revision = 0, focusRevision = 0, active = false, focused = !source.requiresFocus;
   let last: boolean | undefined;
   const stops: (() => void)[] = [];
