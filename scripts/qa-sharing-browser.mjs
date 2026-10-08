@@ -564,7 +564,15 @@ try {
     await page
       .getByRole("heading", { name: "Upcoming events", exact: true })
       .waitFor();
-    await page.getByText("PUBLIC EVENT " + marker, { exact: true }).waitFor();
+    const upcomingEvent = page
+      .getByRole("region", { name: "Upcoming events", exact: true })
+      .getByRole("link", { name: "PUBLIC EVENT " + marker, exact: true });
+    await upcomingEvent.waitFor();
+    assert.equal(await upcomingEvent.count(), 1);
+    assert.equal(
+      await upcomingEvent.getAttribute("href"),
+      "/platform/events/" + event.occurrences[0].id + "?timeZone=UTC"
+    );
     await bounded();
     ok(
       "Guest church overview includes actual authorized upcoming fixture event at phone width"
