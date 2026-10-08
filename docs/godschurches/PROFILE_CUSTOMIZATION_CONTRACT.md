@@ -1,5 +1,16 @@
 # Profile customization and Settings integration
 
+## Typed photo continuation, 8 October 2026
+
+The photo-section extension is implemented in the same editor and
+module storage, reusing the accepted testimony/skills/link text controls and
+canonical photo library. See [typed profile photos](PROFILE_PHOTO_SECTIONS.md)
+for the bounded reference, ordering, current-audience and compatibility contract.
+No new upload, disclosure, export or recovery owner is introduced. All 43 local
+test groups passed; integration and release acceptance remain open. The earlier
+inventories below are dated baselines.
+
+
 The 22 September Settings candidate now implements the focused entries, scoped
 draft reset and explicit saved/draft presentation described below. See the
 [implementation receipt](PROFILE_APPEARANCE_SETTINGS_REPORT.md) for actual checks

@@ -11,6 +11,10 @@ import {
   getProfileFeaturedChoices,
   getProfileFeaturedResources
 } from "@/lib/platform/profile-featured";
+import {
+  getProfilePhotoChoices,
+  getProfilePhotoSection
+} from "@/lib/platform/profile-photo-sections";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
@@ -36,6 +40,64 @@ export async function GET(request: Request) {
         }
       );
     const query = new URL(request.url).searchParams;
+    if (
+      query.get("view") === "photo-choices" ||
+      query.get("view") === "photo-section"
+    ) {
+      const choosing = query.get("view") === "photo-choices";
+      const allowed = choosing
+        ? ["view", "after", "ids"]
+        : ["view", "username", "preview"];
+      if (
+        [...query.keys()].some(
+          (key) => !allowed.includes(key) || query.getAll(key).length !== 1
+        )
+      )
+        throw new PortalError(400, "Choose supported profile photo fields.");
+      if (choosing) {
+        let ids: unknown;
+        if (query.has("ids")) {
+          try {
+            const raw = query.get("ids")!;
+            if (raw.length > 1024) throw Error();
+            ids = JSON.parse(raw);
+          } catch {
+            throw new PortalError(
+              400,
+              "Choose valid saved profile photo references."
+            );
+          }
+        }
+        return Response.json(
+          await getProfilePhotoChoices(
+            prisma,
+            requestSessionToken(request),
+            {
+              ...(query.has("after") ? { after: query.get("after") } : {}),
+              ...(query.has("ids") ? { ids } : {})
+            },
+            expectedOwner
+          ),
+          { headers }
+        );
+      }
+      const username = query.get("username") ?? "";
+      if (
+        !/^[A-Za-z0-9_]{3,24}$/.test(username) ||
+        (query.has("preview") && query.get("preview") !== "member")
+      )
+        throw new PortalError(400, "Choose an available member profile.");
+      return Response.json(
+        await getProfilePhotoSection(
+          prisma,
+          requestSessionToken(request),
+          username,
+          query.get("preview") === "member",
+          expectedOwner
+        ),
+        { headers }
+      );
+    }
     if (
       query.get("view") === "featured-choice" ||
       query.get("view") === "featured-resources"

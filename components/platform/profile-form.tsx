@@ -15,9 +15,10 @@ import { ParticipationChoice } from "./participation-choice";
 import { ProfileFeaturedPicker } from "./profile-featured";
 import type { ProfileFeaturedReference } from "@/lib/platform/profile-featured-input";
 import { ProfileEventPicker } from "./profile-events";
+import { ProfilePhotoPicker } from "./profile-photo-picker";
 import { roleLabels } from "@/lib/platform/format";
 import {
-  PROFILE_MODULE_ORDER,
+  profileModuleOrder,
   profileModuleLabels,
   type ProfileModuleKind
 } from "@/lib/platform/profile-modules";
@@ -98,9 +99,13 @@ export function ProfileForm({
   >(profile.presentation.modules.featuredResources ?? []);
   const [featuredPending, setFeaturedPending] = useState(false);
   const [eventPending, setEventPending] = useState(false);
-  const [moduleOrder, setModuleOrder] = useState<ProfileModuleKind[]>(() => [
-    ...(profile.presentation.modules.order ?? PROFILE_MODULE_ORDER)
-  ]);
+  const [photoIds, setPhotoIds] = useState<string[]>(
+    profile.presentation.modules.photoIds ?? []
+  );
+  const [photosPending, setPhotosPending] = useState(false);
+  const [moduleOrder, setModuleOrder] = useState<ProfileModuleKind[]>(() =>
+    profileModuleOrder(profile.presentation.modules)
+  );
   const [orderMessage, setOrderMessage] = useState("");
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -254,6 +259,7 @@ export function ProfileForm({
       !visibleNow.current ||
       imagesPending ||
       eventPending ||
+      photosPending ||
       featuredPending
     )
       return;
@@ -420,6 +426,7 @@ export function ProfileForm({
           conflict ||
           imagesPending ||
           eventPending ||
+          photosPending ||
           featuredPending
         )
           return;
@@ -431,6 +438,7 @@ export function ProfileForm({
         };
         const profileModules = {
           featuredResources,
+          photoIds,
           ...(calendarOccurrenceId !== undefined
             ? { calendarOccurrenceId }
             : {}),
@@ -670,6 +678,7 @@ export function ProfileForm({
             !!pendingBody ||
             imagesPending ||
             eventPending ||
+            photosPending ||
             !visible
           }
           onSelect={(references) => {
@@ -679,7 +688,7 @@ export function ProfileForm({
           }}
           onBusy={(value) => {
             setFeaturedPending(value);
-            onBusy(value || busy.current || eventPending);
+            onBusy(value || busy.current || eventPending || photosPending);
           }}
         />
         <ProfileEventPicker
@@ -690,6 +699,7 @@ export function ProfileForm({
             !!pendingBody ||
             imagesPending ||
             featuredPending ||
+            photosPending ||
             !visible
           }
           onSelect={(id) => {
@@ -699,9 +709,34 @@ export function ProfileForm({
           }}
           onBusy={(value) => {
             setEventPending(value);
-            onBusy(value || busy.current || featuredPending);
+            onBusy(value || busy.current || featuredPending || photosPending);
           }}
         />
+        {profile.photoLibraryEnabled && (
+          <ProfilePhotoPicker
+            owner={owner}
+            username={profile.username}
+            selected={photoIds}
+            visible={visible}
+            disabled={
+              pending ||
+              !!pendingBody ||
+              imagesPending ||
+              eventPending ||
+              featuredPending ||
+              !visible
+            }
+            onSelect={(ids) => {
+              if (!visibleNow.current || pendingBody) return;
+              setPhotoIds(ids);
+              onDirty(true);
+            }}
+            onBusy={(value) => {
+              setPhotosPending(value);
+              onBusy(value || busy.current || eventPending || featuredPending);
+            }}
+          />
+        )}
         {visible && (
           <>
             <fieldset disabled={!!pendingBody} className="min-w-0 space-y-5">
@@ -984,6 +1019,7 @@ export function ProfileForm({
                       pending ||
                       imagesPending ||
                       eventPending ||
+                      photosPending ||
                       featuredPending
                     }
                     onClick={() => void sendOriginal(pendingBody)}
@@ -1076,12 +1112,27 @@ export function ProfileForm({
                   <div>
                     <dt>Optional section order</dt>
                     <dd>
-                      {(
-                        latest.presentation.modules.order ??
-                        PROFILE_MODULE_ORDER
-                      )
+                      {profileModuleOrder(latest.presentation.modules)
                         .map((kind) => profileModuleLabels[kind])
                         .join(", ")}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Selected profile photos</dt>
+                    <dd>
+                      {latest.presentation.modules.photoIds?.length ? (
+                        <ol>
+                          {latest.presentation.modules.photoIds.map(
+                            (id, index) => (
+                              <li key={id} className="break-all">
+                                {index + 1}. {id}
+                              </li>
+                            )
+                          )}
+                        </ol>
+                      ) : (
+                        "None"
+                      )}
                     </dd>
                   </div>
                   <div>
@@ -1163,6 +1214,7 @@ export function ProfileForm({
                 conflict ||
                 imagesPending ||
                 eventPending ||
+                photosPending ||
                 featuredPending
               }
               className="min-h-12 w-full rounded-full sm:w-auto"
