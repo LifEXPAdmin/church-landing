@@ -3,12 +3,27 @@ name: Discovery isolated verification
 on:
   workflow_dispatch:
   push:
-    branches: [codex/discovery-performance-20261002]
+    branches:
+      - codex/discovery-performance-20261002
+      - codex/release-discovery-20261008
     paths:
       - .github/workflows/discovery-verification.yml
+      - package.json
+      - package-lock.json
+      - scripts/patch-next-hydration.mjs
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - scripts/verify-hydration-output.mjs
+      - scripts/verify-runtime-traces.mjs
+      - tests/next-hydration-backport.test.ts
+      - tests/toolchain-depth-backport.test.mjs
+      - lib/platform/release-*.ts
+      - app/api/platform/release/route.ts
+      - prisma/**
       - scripts/test-platform-isolated.mjs
       - scripts/qa-discovery-browser.mjs
       - scripts/qa-four-feeds-browser.mjs
+      - scripts/qa-navigation-journey-browser.mjs
       - scripts/resource-budget-identity.mjs
       - scripts/qa-resource-budgets.mjs
       - lib/platform/discovery*.ts
@@ -42,6 +57,8 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
       - name: Prepare runner-only browser and PostgreSQL tooling
         shell: bash
         run: |
@@ -55,18 +72,79 @@ jobs:
           chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/discovery-browser/node_modules/playwright")"
           echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
       - name: Build and verify fictional discovery over local HTTPS
-        run: node scripts/test-platform-isolated.mjs discovery
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs discovery 2>&1 | tee "$RUNNER_TEMP/discovery-verification.log"
+      - name: Record exact source, build and observed test totals
+        if: always()
+        env:
+          DISCOVERY_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const output = join(process.env.RUNNER_TEMP, "discovery-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, "discovery-verification.log");
+          let log = existsSync(logPath) ? readFileSync(logPath, "utf8") : "Runtime did not start.\n";
+          const browsers = [];
+          for (const name of existsSync(".account-test") ? readdirSync(".account-test") : []) {
+            if (!name.startsWith("discovery-hosted-")) continue;
+            const fixture = join(".account-test", name);
+            const environmentPath = join(fixture, "environment.json");
+            if (existsSync(environmentPath)) {
+              for (const [key, value] of Object.entries(JSON.parse(readFileSync(environmentPath, "utf8")))) {
+                if (/SECRET|TOKEN|PASSWORD|DATABASE_URL|DIRECT_URL/.test(key) && typeof value === "string" && value) log = log.replaceAll(value, "[REDACTED]");
+              }
+            }
+            for (const suite of readdirSync(fixture)) {
+              const file = /^discovery-browser-\d+$/.test(suite) ? "results.json" : suite === "four-feeds-browser" ? "RESULT.json" : /^navigation-journey-\d+$/.test(suite) ? "result.json" : null;
+              if (!file) continue;
+              const resultPath = join(fixture, suite, file), failurePath = join(fixture, suite, "failure.json");
+              const successful = existsSync(resultPath);
+              const result = successful ? JSON.parse(readFileSync(resultPath, "utf8")) : existsSync(failurePath) ? JSON.parse(readFileSync(failurePath, "utf8")) : null;
+              browsers.push({ suite: suite.replace(/-\d+$/, ""), outcome: successful ? "passed" : "incomplete", passed: result?.results?.length ?? 0, errorCount: result?.errors?.length ?? null });
+            }
+          }
+          // Raw exceptions and navigation history can contain signed cursors.
+          // Publish known aggregate diagnostics only, never arbitrary log bodies.
+          const lines = log.split(/\r?\n/);
+          const safeLines = lines.filter((line) => /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line) || /^(?:#|ℹ) SNAPSHOT_MEASUREMENT \{/.test(line) || /^PASS(?: |:)/.test(line) || /^NAVIGATION_JOURNEY_BROWSER_PASS \d+$/.test(line) || /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) || /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
+          const omittedLogLines = lines.filter(Boolean).length - safeLines.length;
+          log = safeLines.join("\n") + "\nOmitted unstructured runtime lines: " + omittedLogLines + "\n";
+          const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
+          const tapTotals = [...log.matchAll(/^(?:#|ℹ) (tests|suites|pass|fail|cancelled|skipped|todo) (\d+)$/gm)].map((match) => ({ metric: match[1], count: Number(match[2]) }));
+          const runtimeOutcome = process.env.DISCOVERY_RUNTIME_OUTCOME;
+          writeFileSync(join(output, "report.json"), JSON.stringify({ sourceSha, buildId, runtimeOutcome, environment: "isolated-fictional", omittedLogLines, tapTotals, browsers }, null, 2) + "\n");
+          writeFileSync(join(output, "verification.log"), log);
+          if (runtimeOutcome === "success") {
+            assert.ok(buildId);
+            assert.equal(browsers.length, 3);
+            assert.ok(browsers.every((result) => result.outcome === "passed" && result.errorCount === 0));
+          }
+          NODE
       - name: Preserve fictional browser results and screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: discovery-browser-${{ github.sha }}
           path: |
+            ${{ runner.temp }}/discovery-evidence/report.json
+            ${{ runner.temp }}/discovery-evidence/verification.log
             .account-test/discovery-hosted-*/discovery-browser-*/*.png
             .account-test/discovery-hosted-*/four-feeds-browser/*.png
             .account-test/discovery-hosted-*/discovery-browser-*/results.json
-            .account-test/discovery-hosted-*/discovery-browser-*/failure.json
             .account-test/discovery-hosted-*/four-feeds-browser/RESULT.json
+            .account-test/discovery-hosted-*/navigation-journey-*/*.png
+            .account-test/discovery-hosted-*/navigation-journey-*/result.json
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7

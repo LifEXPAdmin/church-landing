@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "discovery-ordering-and-saved-feed-loading", version: "2026.10.08.2", date: "2026-10-08",
+    summary: "Load saved feed pages more efficiently while keeping their order and current access checks.",
+    added: [],
+    improved: ["Discovery uses more efficient ordering while preserving the same mix of authors and churches. Saved feed pages check smaller groups of references while retaining the original order."],
+    fixed: [],
+    featureIds: ["discovery-feeds"]
+  },
+  {
     id: "artist-draft-privacy-and-security-maintenance", version: "2026.10.08.1", date: "2026-10-08",
     summary: "Keep artist drafts private during access changes and improve security maintenance.",
     added: [],

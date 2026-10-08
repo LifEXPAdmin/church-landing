@@ -1,3 +1,17 @@
+## Discovery ordering and saved-feed loading prepared, 8 October 2026 UTC
+
+The next candidate combines the accepted discovery ordering and bounded saved-page
+reads from PR 3 with the dense measurement profile from PR 4 and its immutable
+failure-evidence correction. Saved order, current reader permissions, restored
+references and account-bound cursors remain authoritative. A navigation browser
+check scrolls its target into view before testing the existing return-position
+contract. Version **2026.10.08.2** is candidate metadata, not a live-release claim.
+
+Fresh source/security, service, HTTPS, browser and build checks on the combined
+candidate remain required. The fictional dense measurement does not establish
+production latency, provider headroom or 100-client capacity. No schema or
+dependency change is included. The verified live version remains recorded below.
+
 ## Artist draft privacy and security maintenance verified live, 8 October 2026 UTC
 
 Version **2026.10.08.1**, application

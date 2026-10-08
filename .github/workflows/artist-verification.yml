@@ -6,6 +6,7 @@ on:
     branches:
       - codex/daytime-artist-privacy-20261002
       - codex/release-artist-security-20261008
+      - codex/release-discovery-20261008
     paths:
       - .github/workflows/artist-verification.yml
       - package.json

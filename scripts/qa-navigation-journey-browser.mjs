@@ -6,7 +6,7 @@ import { createHash, createHmac, randomUUID } from "node:crypto";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
 
 const fixtureDir = process.argv[2];
-assert.match(fixtureDir ?? "", /^\.account-test\/[a-z0-9-]+$/);
+assert.match(fixtureDir ?? "", /^\.account-test\/[A-Za-z0-9-]+$/);
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
@@ -242,6 +242,11 @@ try {
   await signIn(viewer);
   await go("/platform?feed=latest&mode=list");
   const chosenPost = posts[4];
+  // Reserved offscreen cards validate their source only when visible. Start
+  // at the reading position that the reader restores after browser Back.
+  await page
+    .locator(`[data-post="${chosenPost.id}"]`)
+    .evaluate((node) => node.scrollIntoView({ block: "start", behavior: "instant" }));
   await page.getByText(chosenPost.content, { exact: true }).waitFor();
   await page
     .getByText(chosenPost.content, { exact: true })

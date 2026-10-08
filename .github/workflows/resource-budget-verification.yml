@@ -3,9 +3,23 @@ name: Resource budget isolated measurement
 on:
   workflow_dispatch:
   push:
-    branches: [codex/resource-budget-hosted-20261003]
+    branches:
+      - codex/resource-budget-hosted-20261003
+      - codex/release-discovery-20261008
     paths:
       - .github/workflows/resource-budget-verification.yml
+      - package.json
+      - package-lock.json
+      - scripts/patch-next-hydration.mjs
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - scripts/verify-hydration-output.mjs
+      - scripts/verify-runtime-traces.mjs
+      - tests/next-hydration-backport.test.ts
+      - tests/toolchain-depth-backport.test.mjs
+      - lib/platform/release-*.ts
+      - app/api/platform/release/route.ts
+      - prisma/**
       - scripts/test-platform-isolated.mjs
       - scripts/qa-resource-budgets.mjs
       - scripts/resource-budget-identity.mjs
@@ -39,6 +53,8 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
       - name: Locate runner-only PostgreSQL tooling
         shell: bash
         run: |
@@ -47,13 +63,74 @@ jobs:
           test -x "$pg_bin/initdb"
           echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
       - name: Measure the current fictional dense workload
-        run: node scripts/test-platform-isolated.mjs resources
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs resources 2>&1 | tee "$RUNNER_TEMP/resource-verification.log"
+      - name: Record exact source, build and observed measurement totals
+        if: always()
+        env:
+          RESOURCE_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const output = join(process.env.RUNNER_TEMP, "resource-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, "resource-verification.log");
+          let log = existsSync(logPath) ? readFileSync(logPath, "utf8") : "Runtime did not start.\n";
+          const measurements = [];
+          for (const name of existsSync(".account-test") ? readdirSync(".account-test") : []) {
+            if (!name.startsWith("resources-hosted-")) continue;
+            const fixture = join(".account-test", name);
+            const environmentPath = join(fixture, "environment.json");
+            if (existsSync(environmentPath)) {
+              for (const [key, value] of Object.entries(JSON.parse(readFileSync(environmentPath, "utf8")))) {
+                if (/SECRET|TOKEN|PASSWORD|DATABASE_URL|DIRECT_URL/.test(key) && typeof value === "string" && value) log = log.replaceAll(value, "[REDACTED]");
+              }
+            }
+            const receipts = join(fixture, "resource-receipts");
+            if (!existsSync(receipts)) continue;
+            for (const attempt of readdirSync(receipts)) {
+              const complete = join(receipts, attempt, "complete.json"), failed = join(receipts, attempt, "failed.json");
+              const terminal = existsSync(complete) ? complete : existsSync(failed) ? failed : join(receipts, attempt, "started.json");
+              if (!existsSync(terminal)) continue;
+              const result = JSON.parse(readFileSync(terminal, "utf8"));
+              assert.equal(result.source, sourceSha);
+              measurements.push({ attempt, phase: result.phase, outcome: result.outcome ?? "incomplete", candidate: result.candidate, counts: result.counts ?? null, measuredCalls: result.measuredCalls ?? null, totalCalls: result.totalCalls ?? null, warmupRequests: result.warmupRequests ?? null, measuredRequests: result.measuredRequests ?? null, totalBytes: result.totalBytes ?? null, totalReceivedBytes: result.totalReceivedBytes ?? null });
+            }
+          }
+          // Detailed measurements are in the immutable aggregate receipts.
+          // Raw command failures can contain query text or credential inputs.
+          const lines = log.split(/\r?\n/);
+          const safeLines = lines.filter((line) => /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line) || /^PASS(?: |:)/.test(line) || /^RESOURCE_[A-Z_]+(?::[a-z-]+)?$/.test(line) || /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) || /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
+          const omittedLogLines = lines.filter(Boolean).length - safeLines.length;
+          log = safeLines.join("\n") + "\nOmitted unstructured runtime lines: " + omittedLogLines + "\n";
+          const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
+          const runtimeOutcome = process.env.RESOURCE_RUNTIME_OUTCOME;
+          writeFileSync(join(output, "report.json"), JSON.stringify({ sourceSha, buildId, runtimeOutcome, environment: "isolated-fictional", omittedLogLines, measurements }, null, 2) + "\n");
+          writeFileSync(join(output, "verification.log"), log);
+          if (runtimeOutcome === "success") {
+            assert.ok(buildId);
+            assert.deepEqual(measurements.map((result) => result.phase).sort(), ["http", "service"]);
+            assert.ok(measurements.every((result) => result.outcome === "complete" && result.candidate?.sourceSha === sourceSha && result.candidate?.buildId === buildId));
+          }
+          NODE
       - name: Preserve aggregate measurements only
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: resource-budgets-${{ github.sha }}
           path: |
+            ${{ runner.temp }}/resource-evidence/report.json
+            ${{ runner.temp }}/resource-evidence/verification.log
             .account-test/resources-hosted-*/measurement-candidate.json
             .account-test/resources-hosted-*/service-budget.json
             .account-test/resources-hosted-*/resource-receipts/*/started.json

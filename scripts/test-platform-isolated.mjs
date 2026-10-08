@@ -13,7 +13,7 @@ import {
 import { createServer } from "node:net";
 import { createServer as createHttpsServer, get as httpsGet } from "node:https";
 import { request as httpRequest } from "node:http";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 
 const suite = process.argv[2] ?? "artists";
 assert.ok(
@@ -35,7 +35,11 @@ const profile =
             "discovery-device",
             "four-feeds"
           ],
-          browsers: ["qa-discovery-browser", "qa-four-feeds-browser"],
+          browsers: [
+            "qa-discovery-browser",
+            "qa-four-feeds-browser",
+            "qa-navigation-journey-browser"
+          ],
           https: ["discovery-http", "four-feeds-http"]
         }
       : { services: [], browsers: [], https: [] };
@@ -457,7 +461,9 @@ try {
         "--import",
         "./tests/register.mjs",
         `scripts/${name}.mjs`,
-        fixture
+        name === "qa-navigation-journey-browser"
+          ? relative(root, fixture)
+          : fixture
       ]);
     }
     await stop(server);

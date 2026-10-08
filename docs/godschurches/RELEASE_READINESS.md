@@ -1,3 +1,12 @@
+## Discovery batch awaiting combined acceptance, 8 October 2026 UTC
+
+Version **2026.10.08.2** prepares exact-order discovery optimization and bounded
+saved-feed reads together with their measurement evidence. It preserves the
+deployed security repairs and introduces no schema change. Independent source
+preflight found no blocker; exact combined-candidate hosted checks, final runtime
+review, integration, staged verification and canonical acceptance remain open.
+The historical measurements below are not fresh production-capacity evidence.
+
 ## Artist draft privacy and security maintenance verified live, 8 October 2026 UTC
 
 Version **2026.10.08.1**, application
