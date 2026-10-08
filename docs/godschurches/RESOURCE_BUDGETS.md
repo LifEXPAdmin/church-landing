@@ -1,3 +1,9 @@
+## Incoming Needs measurement scope, 8 October 2026 UTC
+
+Version **2026.10.08.8**, source `c2d6399a542dd2a47b78cb983138c2a40767d6f7`: **verified live**. [PR45](https://github.com/LifEXPAdmin/church-landing/pull/45) integrates coordinator incoming Needs privacy and the preserved progress freshness correction. This release adds no resource workload or capacity measurement. Reused measurements keep their original source, build, fixture and timings, subject to the recorded applicability review. Fresh privacy/progress acceptance establishes only its stated behavior.
+
+The 17 controlled component scenarios use blocked network and stub transport; write/send counters are unmeasured/null. They do not establish server load or end-to-end application performance. Production speed, physical transport bytes, provider headroom, 100-client capacity and rapid repeated Back remain unproved. [Deployment report](DEPLOYMENT_REPORT.md) records current acceptance; all earlier measurements remain intact below.
+
 ## My Needs release measurement scope, 8 October 2026 UTC
 
 Version **2026.10.08.7**, source `89a84fe4a65cf94a827ceac584d763eee56b60e2`: **verified live**. No new resource workload or capacity measurement belongs to this batch. Applicable prior evidence: unchanged measurement contracts reuse [run 37733434001](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001), source `bbc5589`, build `htYDOyxWxYnqSM6MpLwIJ`, with 220 measured service reads and 920 workload HTTPS calls. Its original source, build, fixture, timings and limitations remain preserved; it is not a fresh seventh measurement.

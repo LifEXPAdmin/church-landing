@@ -1,3 +1,9 @@
+## Incoming Needs query-plan evidence scope, 8 October 2026 UTC
+
+Version **2026.10.08.8**, source `c2d6399a542dd2a47b78cb983138c2a40767d6f7`: **verified live**. [PR45](https://github.com/LifEXPAdmin/church-landing/pull/45) integrates coordinator incoming Needs privacy and the preserved progress freshness correction. The scoped Need read projection now respects contributor sharing consent. No new query-plan measurement was run for this release. Previously measured resource-query contracts are reusable only under the recorded source-applicability review; existing counts, source identity and limitations below are unchanged.
+
+Fresh affected behavior: 18 service tests, 2 HTTPS cases and 25 full application browser groups passed (5 incoming, 10 My Needs and 10 complete Needs groups), plus separate controlled progress scenarios. [Deployment report](DEPLOYMENT_REPORT.md) records current release acceptance and reuse. Read-only release checks do not measure production load or capacity.
+
 ## My Needs release query-plan applicability, 8 October 2026 UTC
 
 Version **2026.10.08.7**, source `89a84fe4a65cf94a827ceac584d763eee56b60e2`: **verified live**. This contribution presentation change leaves backend queries, order/cursors, schema and query-plan tooling unchanged. Applicable prior plan evidence: the unchanged plan contracts reuse [run 37733416079](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079), source `bbc5589`, with 97 service checks, 72 full-response/cursor comparisons and 168 prepared executions. It retains its original source and fixture attribution; no new query-plan or performance execution is claimed.

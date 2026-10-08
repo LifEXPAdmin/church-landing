@@ -1,3 +1,11 @@
+## Incoming Needs privacy and current progress, 8 October 2026 UTC
+
+Version **2026.10.08.8**, source `c2d6399a542dd2a47b78cb983138c2a40767d6f7`: **verified live**. [PR45](https://github.com/LifEXPAdmin/church-landing/pull/45) integrates coordinator incoming Needs privacy and the preserved progress freshness correction. Incoming contribution rows load through current account and appointment checks, and contributor names require the contributor's sharing choice. Confirmed card receipts refresh page-owned progress while preserving sibling drafts. Newer Need revisions replace older progress; conflicting projections conceal and require a current read.
+
+Local focused verification passed **275/275**. Fresh hosted results: 531 source/security checks, 18 services, 2 HTTPS cases and 25 full application browser groups passed on the exact candidate, plus 17 separately scoped controlled progress scenarios. The full application browser groups and controlled component scenarios are separate evidence. Staged/live acceptance: 80 read-only checks passed at 2026-10-08T11:41:48.394Z; source c2d6399a542dd2a47b78cb983138c2a40767d6f7 and version 2026.10.08.8 matched the READY canonical deployment at 2026-10-08T11:42:20.168Z; 5 health/release checks passed; 261 guest checks passed at 2026-10-08T11:43:24.689Z with zero browser/CSP errors or attempted test mutations. Data: 165 table fingerprints and 123 migration records remained unchanged at 2026-10-08T11:44:37.052Z; no migration was applied. [Deployment report](DEPLOYMENT_REPORT.md) retains exact source, reused evidence and limits.
+
+Broad SEC-01 remains open. Later Needs forms, offers and volunteer work remain separate. Guest release checks do not certify authenticated production actions, provider delivery, physical-device behavior or queue-consumer execution. Rapid repeated Back and production/100-client headroom remain open. Same-account recovery retains its original scope; confirmed account replacement clears old private entries.
+
 ## Standalone My Needs contribution privacy, 8 October 2026 UTC
 
 ## Incoming Needs privacy and progress reconciliation prepared, 8 October 2026 UTC
