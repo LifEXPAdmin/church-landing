@@ -32,13 +32,58 @@ export function useExchangeAction(
 export function ExchangeFavoriteButton({
   owner,
   listingId,
-  favorite
+  favorite,
+  favoriteId,
+  privacy,
+  acceptedReceipt,
+  onRequest
 }: {
   owner: string;
   listingId: string;
   favorite: Favorite;
+  favoriteId: string;
+  privacy: PrivateChoiceAccess;
+  acceptedReceipt?: Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null;
+  onRequest?: (target: { id: string; expectedVersion: number }) => void;
 }) {
-  const command = useExchangeAction(owner);
+  const visible = useReadVisibility();
+  const target = useRef<{ id: string; version: number } | null>(null);
+  const dispatching = useRef(false);
+  const confirmed = useRef<
+    Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null
+  >(null);
+  const command = usePrivateChoiceAction(
+    endpoint,
+    owner,
+    false,
+    undefined,
+    true,
+    {
+      ...privacy,
+      expectedReceiptId: () => target.current?.id ?? null,
+      expectedReceiptVersion: () => target.current?.version ?? null,
+      onConfirmed(receipt) {
+        confirmed.current = receipt;
+        privacy.onConfirmed(receipt);
+      }
+    }
+  );
+  const rearm = command.rearm;
+  useEffect(() => {
+    if (
+      !visible ||
+      !acceptedReceipt ||
+      acceptedReceipt !== confirmed.current ||
+      !favorite ||
+      favorite.id !== acceptedReceipt.id ||
+      favorite.version < acceptedReceipt.version ||
+      !rearm(acceptedReceipt.version)
+    )
+      return;
+    confirmed.current = null;
+    target.current = null;
+  }, [visible, acceptedReceipt, favorite, rearm]);
+  if (!visible) return command.status;
   return (
     <div className="space-y-2">
       <button
@@ -46,21 +91,31 @@ export function ExchangeFavoriteButton({
         type="button"
         disabled={command.blocked}
         aria-pressed={favorite?.saved ?? false}
-        onClick={() =>
-          void command.command(
-            favorite?.saved
-              ? {
-                  operation: "favorite-remove",
-                  favoriteId: favorite.id,
-                  expectedVersion: favorite.version
-                }
-              : {
-                  operation: "favorite-add",
-                  listingId,
-                  expectedVersion: favorite?.version ?? 0
-                }
-          )
-        }
+        onClick={() => {
+          if (command.blocked || dispatching.current) return;
+          dispatching.current = true;
+          const version = favorite?.version ?? 0;
+          target.current = { id: favoriteId, version: version + 1 };
+          confirmed.current = null;
+          onRequest?.({ id: favoriteId, expectedVersion: version });
+          void command
+            .command(
+              favorite?.saved
+                ? {
+                    operation: "favorite-remove",
+                    favoriteId,
+                    expectedVersion: version
+                  }
+                : {
+                    operation: "favorite-add",
+                    listingId,
+                    expectedVersion: version
+                  }
+            )
+            .finally(() => {
+              dispatching.current = false;
+            });
+        }}
       >
         {favorite?.saved ? "Remove favorite" : "Save favorite"}
       </button>

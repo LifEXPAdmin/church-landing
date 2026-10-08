@@ -13,6 +13,92 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Individual Exchange listing favorite, 3 October 2026 UTC
+
+The unchanged application at `402be4f75614df61a26f70cc8271d7d8689f8566` reproduces
+favorite identifiers in listing HTML/RSC and saved state retained in concealed
+DOM. Baseline runtime 37117251827 passes 43 service tests and builds
+`XjYraG1a_DFYo6BruL-EM`. Four observed browser groups cover bootstrap/current-read
+denial, blur, pagehide and offline; pagehide leaves the control visible. The next
+malformed-receipt probe times out awaiting transient text across a server-tree
+refresh, so neither that group nor later browser/HTTPS groups is claimed.
+Four hashed baseline artifacts total 308,511 bytes. Four source-executing
+baseline failures separately reproduce bootstrap serialization, concealed raw
+state, wrong-target receipt consumption and stale-version receipt consumption.
+Early assertion limits are preserved with the source and test hashes.
+
+The canonical listing read still authorizes the server page, but only account
+and listing identifiers initialize the client favorite owner. A current pinned
+favorite read supplies its private association. The browser derives the same
+stable favorite identifier as the server without a new API or dependency.
+Coalesced reads, separate presentation/identity generations, owned 15-second
+abort deadlines and active-only polling preserve the prior owner during
+uncertainty. Blur, pagehide and offline physically remove the saved-state button;
+passive events cannot reopen it. Confirmed account replacement clears the owner.
+
+Commands synchronously pin target and expected receipt version. A wrong receipt
+or lost reply retains the original body and mutation identifier. A changed row
+alone never confirms a command. After the exact receipt, the same favorite at
+that version or a newer canonical version may be adopted, including an independent
+remove/re-add. The leaf consumes the exact receipt object only while visible and
+authorized, then uses the adopted version for the next action. A hidden or held
+readback cannot re-arm a new command, and pending navigation remains guarded.
+
+A shared optional listing projection replaces only the favorite field with null;
+all listing content and permissions still invalidate the outer snapshot.
+Default shared-guard behavior is unchanged. A separate opt-in permits an
+original-request recovery button when the retained command owner reports current
+actor authority even if the listing read is unavailable. It neither presents the
+listing nor permits a new favorite action. Actual-hook and actual-guard tests
+reproduce the missing authority registration and unavailable-listing recovery
+before this extension, and verify revocation, busy state and unchanged defaults.
+No schema, dependencies or server authorization changed.
+
+Application `c39329331691d7e24cec5fd0db848f119d8098d1` passes 234 focused checks,
+including 33 favorite cases, plus scoped application/HTTP lint, formatting,
+source-boundary and whitespace checks. The source-only checkout borrows existing
+test tooling; no local dependency install or production build is performed.
+[Runtime 37118193013](https://github.com/LifEXPAdmin/church-landing/actions/runs/37118193013)
+passes 43 services, 33 browser groups (eight favorite, eight search, nine
+saved-search editor and eight saved-list) and four HTTPS tests. Production build
+`pYpsO8jbRq1xlTBbQK5CG` serves the exact candidate under browser MFA-off and HTTPS
+MFA-enforced modes. Browser coverage confirms private bootstrap/DOM omission,
+identical malformed/lost-response retries, newer canonical favorite adoption,
+held acknowledgment, withdrawn-listing replay, account replacement and layout.
+HTTPS verifies account pins, no-store headers, current eligibility, owner-only
+associations, immutable historical replay after withdrawal and continued refusal
+of new saves against an unavailable listing.
+
+Thirteen hashed runtime artifacts total 2,360,052 bytes. The captured 390px and
+320px/200% layouts were inspected and measured within viewport width. The 390px
+capture retains global sign-in/offline recovery banners after synthetic events;
+this is scoped favorite-layout evidence, not clean whole-page or physical-device
+acceptance. No browser errors are reported.
+
+[Source run 37118192963](https://github.com/LifEXPAdmin/church-landing/actions/runs/37118192963)
+and PR run 37118231226 pass 335 source tests, copy checks and project types, then
+fail the existing seven-high dependency audit. Registry signature/provenance,
+full hosted lint and secret-scan steps skip after that failure and are not
+claimed as passing. [Draft PR14](https://github.com/LifEXPAdmin/church-landing/pull/14)
+stacks on PR13. Final review found a QA completion race in the withdrawn-listing
+scenario: the outer retry label disappeared when it became busy, before the
+browser had necessarily consumed the replay receipt. Earlier runtime success is
+preserved with this limit. Test-only candidate
+`7aadb81af4bebdf604759bc7b0812394c5dfeafa` holds the second response, proves the
+visible outer and hidden leaf pending controls still exist, then waits for every
+pending/busy label to disappear after release. Application source is unchanged.
+
+[Final runtime 37118986385](https://github.com/LifEXPAdmin/church-landing/actions/runs/37118986385)
+passes the full 43-service, 33-browser-group and four-HTTPS profile, including
+that strengthened assertion. Build `uSsZ76VpFW_qc2DBrci2O` serves exact candidate
+7aadb81 in both MFA modes. Thirteen final artifacts total 2,353,236 bytes; both
+final mobile captures were inspected with the same scoped-layout limitation.
+Final source runs 37118986454 and 37118989412 pass 335 tests, copy and types, then
+fail the unchanged audit with subsequent security steps skipped. Final review
+closure is recorded separately in the existing private task handoff. No integration, production migration, deployment, production writes,
+external sends or release acceptance is claimed. Designated release ownership
+and the separate church-binding candidate remain preserved.
+
 ## Saved Exchange search editor, 3 October 2026 UTC
 
 Unchanged application `fd8736a929d49db96f687aae9321cdc1bfe58e5c` passes baseline
