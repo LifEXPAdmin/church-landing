@@ -110,7 +110,7 @@ function denied(r: Result, status: number, code: string) {
     code
   );
 }
-async function fixture() {
+async function fixture(authorChurchId?: string) {
   const owner = await createPortalActor(db, "edithttpowner"),
     reader = await createPortalActor(db, "edithttpreader");
   const post = await db.platformPost.create({
@@ -124,6 +124,7 @@ async function fixture() {
     data: {
       postId: post.id,
       authorId: reader.id,
+      authorChurchId,
       content: "Original fictional HTTP comment"
     }
   });
@@ -287,8 +288,6 @@ test("trusted HTTPS editing rejects borrowed browser authority, foreign owners a
 });
 
 test("trusted HTTPS church edits create one editor-bound mention visible as the church in website Activity", async () => {
-  const f = await fixture(),
-    recipient = await createPortalActor(db, "edithttpmention");
   const church = await db.church.create({
     data: {
       slug: "edit-http-church-" + randomUUID(),
@@ -296,6 +295,8 @@ test("trusted HTTPS church edits create one editor-bound mention visible as the 
       summary: "Isolated church edit"
     }
   });
+  const f = await fixture(church.id),
+    recipient = await createPortalActor(db, "edithttpmention");
   await db.churchConnection.create({
     data: { churchId: church.id, userId: f.owner.id, state: "APPROVED" }
   });
@@ -305,10 +306,6 @@ test("trusted HTTPS church edits create one editor-bound mention visible as the 
       userId: f.owner.id,
       capability: "PUBLISH_CHURCH_POSTS"
     }
-  });
-  await db.platformPostComment.update({
-    where: { id: f.comment.id },
-    data: { authorChurchId: church.id }
   });
   await db.socialPreferences.create({
     data: { ownerId: recipient.id, mentions: "FOLLOWED" }
