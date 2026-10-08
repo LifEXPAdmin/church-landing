@@ -57,15 +57,34 @@ acceptance requires the canonical nonproduction HTTPS receipt, reviewed launcher
 admission and newly generated or inspected manifests without fixture networking
 exceptions, followed by the full Android sign-in and sign-out journey.
 
+## Guarded startup native checkpoint
+
+On 8 October 2026, clean source `5f0915d` produced a development arm64 APK
+of 26,455,386 bytes, SHA256
+`9fb3c52ccc657571578aa4a1f90ac0e2e33adc52267e952db91905b648e23d0b`.
+The installed APK matched that hash. The regenerated bundle matched its packaged
+copy, and 28 mobile source-map entries matched the checkout. Release bundling
+removes the development diagnostic controls, including their commit display.
+
+On the owned API 36 emulator, guest startup, fictional sign-in, feed, post,
+system Back, warm and cold custom-scheme links, sign-out and subsequent sign-in
+passed. Home concealment cleared the previous destination; foreground recovery
+rechecked access and opened the default feed. A fresh process started a new
+memory-only fixture. The deferred native secure-storage probe passed write,
+read and removal. These are bounded fictional native observations, not real
+HTTPS account, physical-device, gesture-animation or accessibility acceptance.
+The owned emulator and ADB server were stopped after verification.
+
 ## Source verification and dependency installation
 
 The Android checkout consumes the canonical root security and mobile CI tooling.
-On source `f907cb2`, hosted source-security and portable-contract checks passed.
-Mobile lint, types, import boundaries and 210 tests passed; three macOS-only tests
+On source `5f0915d`, hosted source-security and portable-contract checks passed.
+Mobile lint, types, import boundaries and 223 tests passed; three macOS-only tests
 were skipped on Linux. The mobile package audit remains a failing gate with 22
 dependency findings (15 high and seven moderate). Registry signatures and provenance checks
 ran despite that audit failure. This is source verification, not a new native
-build or a release approval.
+build or a release approval. The separate native checkpoint above records the
+actual local build and emulator observations.
 
 An existing root `node_modules` directory does not prove the current root lockfile
 has been installed. Recreate task-owned root dependencies from the current lock
@@ -73,3 +92,6 @@ under the machine-build reservation before running the embedded toolchain patche
 or root build. Preserve any older dependency graph still needed by another retained
 source checkpoint. The mobile lockfile is separate and was unchanged by this CI
 consumption. Do not rerun an unchanged Android binary solely for a CI-only update.
+For the guarded startup checkpoint, a fresh root install used the matching lock
+with lifecycle scripts disabled, followed by the canonical hash-guarded patches.
+The older dependency graph was retained for its original source checkpoint.
