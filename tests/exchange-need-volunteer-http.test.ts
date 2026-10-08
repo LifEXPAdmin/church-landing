@@ -259,22 +259,60 @@ async function bootstrapPrivate(
   token: string,
   extraSecrets: string[] = []
 ) {
+  const session =
+    token === f.ada.token
+      ? "organizer"
+      : token === f.val.token
+        ? "signed-in volunteer"
+        : token === ""
+          ? "guest"
+          : assert.fail("Unexpected volunteer bootstrap fixture session");
+  let ownSignupId: string | null = null;
+  if (token === f.val.token) {
+    // The ordinary NeedClaimForm keeps this account's current signup props.
+    // This does not authorize any organizer roster or another person's signup.
+    const current = await readExchangeNeeds(db, token, {
+      view: "need",
+      listingId: f.listing.id
+    });
+    assert.ok("need" in current && current.need);
+    assert.equal(current.ownerId, f.val.id);
+    const own = current.need.slots.find((slot) => slot.id === f.needSlot.id)
+      ?.volunteer?.signup;
+    assert.equal(own?.id, f.signups[0].id);
+    assert.equal(own?.version, f.signups[0].version);
+    ownSignupId = own!.id;
+  }
+  const markers = [
+    ...f.signups
+      .map((row, index) => ({
+        label: `signup-${index + 1}-id`,
+        value: row.id
+      }))
+      .filter((marker) => marker.value !== ownSignupId),
+    { label: "volunteer-1-name", value: f.val.name },
+    { label: "volunteer-2-name", value: f.morgan.name },
+    ...extraSecrets.map((value, index) => ({
+      label: `extra-private-marker-${index + 1}`,
+      value
+    }))
+  ];
   for (const headers of [{}, { RSC: "1" }] as Record<string, string>[]) {
+    const format = headers.RSC ? "RSC" : "HTML";
     const response = await request(f.page, token, headers);
     assert.equal(response.status, 200);
     assert.match(response.headers.get("cache-control")!, /no-store/);
     const source = await response.text();
-    for (const secret of [
-      ...f.signups.map((row) => row.id),
-      f.val.name,
-      f.morgan.name,
-      ...extraSecrets
-    ])
+    for (const marker of markers)
       assert.ok(
-        !source.includes(secret),
-        "Initial HTML/RSC disclosed a private volunteer value"
+        !source.includes(marker.value),
+        `${session} ${format} disclosed forbidden ${marker.label}`
       );
-    assert.doesNotMatch(source.replaceAll("\\", ""), /"volunteerRole"\s*:/);
+    for (const field of ["volunteerRole", "volunteerNeedId", "volunteerSlotId"])
+      assert.ok(
+        !new RegExp(`"${field}"\\s*:`).test(source.replaceAll("\\", "")),
+        `${session} ${format} serialized organizer roster field ${field}`
+      );
     // Need/slot routing IDs and public event-role context can legitimately occur
     // elsewhere on the Need page. They are not private signup snapshot values.
   }
