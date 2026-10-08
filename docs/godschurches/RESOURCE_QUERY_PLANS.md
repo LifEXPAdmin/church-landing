@@ -1,3 +1,9 @@
+## My Needs release query-plan applicability, 8 October 2026 UTC
+
+Version **2026.10.08.7**, source `89a84fe4a65cf94a827ceac584d763eee56b60e2`: **verified live**. This contribution presentation change leaves backend queries, order/cursors, schema and query-plan tooling unchanged. Applicable prior plan evidence: the unchanged plan contracts reuse [run 37733416079](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079), source `bbc5589`, with 97 service checks, 72 full-response/cursor comparisons and 168 prepared executions. It retains its original source and fixture attribution; no new query-plan or performance execution is claimed.
+
+Fresh seventh behavior checks: 18 service tests, 2 HTTPS cases and 20 browser groups passed, comprising ten contribution-privacy and ten complete Needs groups. Canonical/live and data evidence are recorded in [Deployment report](DEPLOYMENT_REPORT.md). Read-only release checks do not measure production load or capacity. All prior measurements and limits below remain intact.
+
 ## Saved-search and favorite release applicability, 8 October 2026 UTC
 
 Version **2026.10.08.6**, source `dca251e58aedf04ce20aa016981242dc22ce11fe`: **verified live**. Its client privacy changes preserve the measured query, current authorization, order, cursor, schema and plan-tooling contracts. The reviewed [original plan run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079) remains source `bbc5589`: **97 service checks, 72 full-response/cursor comparisons across eight shapes and 168 prepared executions**. No new query-plan or performance execution is claimed; retain all original timings and host/fixture limits below.

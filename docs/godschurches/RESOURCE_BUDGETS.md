@@ -1,3 +1,9 @@
+## My Needs release measurement scope, 8 October 2026 UTC
+
+Version **2026.10.08.7**, source `89a84fe4a65cf94a827ceac584d763eee56b60e2`: **verified live**. No new resource workload or capacity measurement belongs to this batch. Applicable prior evidence: unchanged measurement contracts reuse [run 37733434001](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001), source `bbc5589`, build `htYDOyxWxYnqSM6MpLwIJ`, with 220 measured service reads and 920 workload HTTPS calls. Its original source, build, fixture, timings and limitations remain preserved; it is not a fresh seventh measurement.
+
+The fresh contribution/privacy checks establish their stated behavior only. Reused loopback measurements do not prove production speed, physical transport bytes, provider headroom or 100-client capacity. Rapid repeated Back and broad performance acceptance remain open. See [Deployment report](DEPLOYMENT_REPORT.md) for current release acceptance.
+
 ## Saved-search and favorite release measurement scope, 8 October 2026 UTC
 
 Version **2026.10.08.6**, source `dca251e58aedf04ce20aa016981242dc22ce11fe`: **verified live**. No new dense resource measurement is claimed. Applicable evidence remains [run 37733434001](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001), source `bbc5589`, build `htYDOyxWxYnqSM6MpLwIJ`: **220 measured service reads after 11 warmups, 920 HTTPS calls including 20 warmups and 900 measured calls, and 124,168,694 delivered response-body bytes**. Source and artifact equality was checked for those unchanged measured contracts, not the entire current frontend.
