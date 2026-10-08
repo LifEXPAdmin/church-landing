@@ -5,8 +5,8 @@ The native navigation adapter consumes `AppDestination`, `ScreenId`,
 It introduces no router, transport, session implementation or dependency. The
 current App connects `NativeJourney` screens to the shared session, navigation
 and reading runtime through `createNativeFixture`. Its responses and credential
-vault remain fictional and in memory. The Android fixture checkpoint below
-records local emulator evidence; real-network and physical-device acceptance
+vault remain fictional and in memory. The native fixture checkpoints below
+record local emulator evidence; real-network and physical-device acceptance
 remain open.
 
 ## Presentation and availability
@@ -127,10 +127,40 @@ APK remain retained with the private task receipt.
 
 These checks use fictional in-memory responses. They do not accept a real
 account, verified HTTPS App Links, a physical device or an app-store release.
-The iPhone first Open-app confirmation sequence, active then URL then inactive
-then active, remains separate: an address delivered before concealment is still
-discarded. Its owner must reproduce and verify any repair while preserving the
-Android cases and all session/owner invalidation checks.
+
+### iPhone first-confirmation diagnosis, 8 October 2026
+
+Earlier iOS 27 acceptance observed the first external Open-app confirmation
+losing its continuation; reopening worked. That run did not record callback
+ordering. Its proposed active, URL, inactive sequence was an inference.
+
+After consuming the shared next-resume admission change, temporary diagnostic
+builds on iOS 18.3.1 and a fresh iOS 27 Simulator recorded concealment before URL
+receipt, then foreground verification. The signed-in iOS 18.3.1 session opened
+the intended post after verifying the same owner. The iOS 27 guest received a
+contextual return and opened the intended fictional prayer post after explicit
+demo sign-in. Traces contained only normalized fixture destinations, session
+phase/generation and open completion, without credentials or content.
+
+The existing admission change handles this observed sequence. No additional
+lifecycle policy change was needed; a completed foreground delivery still cannot
+return after later concealment. A focused regression uses the actual runtime to
+check the previously active guest, concealed receipt, deferred return, explicit
+sign-in and unrevealed prayer post. Temporary tracing is absent from the ordinary
+Release bundle.
+
+The ordinary unsigned Release build then passed on a separate fresh iOS 27
+Simulator: first confirmation cancellation followed by demo sign-in opened the
+feed without an old destination; accepting the next confirmation retained the
+guest destination and opened the requested prayer post after sign-in. External
+warm and background links, the in-app link round trip, Back to feed, cold-link
+launch, and sign-out followed by a new session passed. These checks use the
+unchanged shared intake implementation with the new guest regression. All 210
+mobile tests, type/lint checks and the native import boundary passed.
+
+This is fictional custom-scheme Simulator evidence. Real accounts, HTTPS
+Universal Links, physical iPhones, full accessibility and distribution acceptance
+remain open. Existing security and release gates are unchanged.
 
 The shared runtime and native controls are already composed in the fictional
 journey. Next, use a verified nonproduction HTTPS endpoint and fictional account
