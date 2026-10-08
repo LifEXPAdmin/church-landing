@@ -13,6 +13,109 @@ release gates; it applies only to branches containing that configuration.
 
 # Source and deployment security acceptance
 
+## Private Exchange inquiry list, 3 October 2026 UTC
+
+The unchanged application baseline `12ed5ca80ca050a598606f73d864279cb5d90bfd`
+reproduces incoming and outgoing participant associations in initial HTML/RSC
+and concealed DOM. [Baseline runtime 37101728877](https://github.com/LifEXPAdmin/church-landing/actions/runs/37101728877)
+passes with build `khRbNRC-ZR8XRyV2BCddo`: 22 services, 11 browser groups and two
+HTTPS cases. Two groups deliberately assert exposure, so the pass is reproduction
+evidence. Initial baseline `40bfe50fa1c7b31a4d6c62821e14a54355cecd82` confirmed
+HTML/RSC but failed its DOM assertion because the locator excluded hidden links;
+the corrected locator includes them. The baseline manifest retains nine hashed
+artifacts totaling 720,937 bytes, including the focused failing-reader log.
+
+Application source `0d1b216716e0a47e6ddcb2ecefd66543c806821c` keeps server query
+validation, authorization and existing recovery affordances, discards the list
+result before rendering, and sends only owner, canonical URL, direction and
+optional listing filter to a new client presenter. The existing read-only
+snapshot owner supplies participant rows after current account-pinned no-store
+reads. Grouping, canonical order within groups, returned seek cursor, redaction,
+empty state and deliberate direction navigation are preserved. Detail pages,
+inquiry entry and mutation owners are unchanged. No database policy, schema,
+dependency or additional persistence store changes.
+
+The shared reader now advances its generation before coalescing a new request,
+so an older held response cannot establish the accepted checksum. Each owned
+read has a 15-second cancellation deadline through the existing transport;
+cleanup cancels it and a late digest cannot accept an expired read. Initial
+unfocused or offline mounts wait for a usable explicit return. Blur, pagehide
+and offline physically omit rows, while passive connectivity and relationship
+events cannot reopen a concealed reader. Changed checksum behavior remains:
+rechecks stay concealed until explicit reload adopts the current snapshot.
+Support lists, scheduled posts and private topic catalogues reuse this same
+read-only owner; their application files and business contracts are unchanged.
+
+Before application edits, 7 of 13 focused reader tests passed and six failed,
+covering background mount, queued baseline, deadline and cleanup behavior. All
+13 now pass through the real transport, together with 79 existing defaults,
+editor, contact and artist cases. Changed-file lint, source-boundary checks,
+syntax and diff checks pass. [Source run 37102341269](https://github.com/LifEXPAdmin/church-landing/actions/runs/37102341269)
+passes 193 tests and authored copy, then fails types on a nullable cursor in the
+new HTTPS test. An explicit cursor assertion fixes that test in
+`1a147548364b3dc0e4173592bd7cb91f2400728e`; the application is unchanged. Its
+[source run 37102483889](https://github.com/LifEXPAdmin/church-landing/actions/runs/37102483889)
+passes all 193 tests, copy and types, then fails the existing dependency audit.
+Later source gates remain skipped. Earlier runtime `37102341258` passed 22
+services before branch concurrency superseded it during build; no browser or
+HTTPS acceptance is claimed for that attempt.
+
+[Runtime 37102483805](https://github.com/LifEXPAdmin/church-landing/actions/runs/37102483805)
+on `1a14754` passes 22 services and build `WQj9aWOd9cpFT49EZABLs`. Five browser
+groups verify incoming/outgoing HTML/RSC omission and canonical first pages,
+denied-first-read recovery, physical concealment with passive events gated,
+and a delayed failed read after concealment. The next assertion matches two
+identity failure statuses, one in the existing session banner and one in this
+reader, and stops under strict locator mode. Later browser and HTTPS checks
+were not reached. Seven retained artifacts total 395,679 bytes. Test-only
+`a427f22656e601761d3dc5f52a6d99228b7bea95` scopes the assertion to the reader's
+recovery controls; the application remains unchanged from `0d1b216`.
+
+[Runtime 37102852097](https://github.com/LifEXPAdmin/church-landing/actions/runs/37102852097)
+passes on `a427f22`, with verified serving source and build `zHB2MFWetSmCeu9Yb_SLy`:
+22 services, 19 browser groups and three HTTPS cases. Ten inquiry-list groups
+cover both directions, initial omission, denied first read, blur/pagehide/offline,
+passive event gating, delayed data failure, failed identity, filtered 20-plus-two
+pagination, changed-checksum reload, mobile layouts, empty state and replacement
+accounts. Nine existing handoff groups retain their command and recovery checks.
+The new HTTPS case verifies participant-scoped no-store reads, HTML/RSC omission,
+exact pagination, stale cursor denial, mismatched accounts and current-block
+redaction; existing defaults and public listing/photo HTTPS checks also pass.
+
+390px and 320px enlarged-text screenshots were inspected and overflow checks
+pass. Result files contain no page errors, production writes or external sends.
+The runtime manifest retains 11 hashed artifacts totaling 1,536,206 bytes.
+[Source 37102852106](https://github.com/LifEXPAdmin/church-landing/actions/runs/37102852106)
+passes 193 tests, copy and types, then fails the existing dependency audit.
+Browser MFA is off; the existing handoff challenge case injects a response.
+HTTPS restarts with MFA enforcement, without claiming an actual authenticator
+ceremony or changing permissions.
+
+A bounded harness review identified two further evidence risks. An overlapping
+session check can confirm account replacement and broadcast blur before the
+reader displays its mismatch message. Also, the existing handoff summary test
+checked absence of private purpose before waiting for the list to initialize.
+Test-only `ec5183cac314cd62c4e5d8806808e8b92f77a30c` accepts either scoped
+replacement signal, verifies fresh replacement identity on explicit recheck,
+and waits for the known inquiry row before asserting summary privacy.
+[Final runtime 37103142069](https://github.com/LifEXPAdmin/church-landing/actions/runs/37103142069)
+passes that candidate with build `Yr6t0UgxEvD5lScntjWJ2`: all 22 service tests,
+19 browser groups and three HTTPS cases. Serving source is verified before both
+browser and HTTPS phases. Both [push source 37103142097](https://github.com/LifEXPAdmin/church-landing/actions/runs/37103142097)
+and [PR source 37103144035](https://github.com/LifEXPAdmin/church-landing/actions/runs/37103144035)
+pass 193 tests, copy and types, then fail the existing dependency audit. The
+final manifest retains 13 hashed artifacts totaling 1,636,442 bytes, with no
+browser errors, production writes or external sends. Application code remains
+unchanged from `0d1b216`.
+
+[Draft PR 9](https://github.com/LifEXPAdmin/church-landing/pull/9) stacks on PR8.
+Independent final review closed without findings, verified all 13 final hashes
+and sizes, and confirmed test counts, source identities and resolved harness
+findings. The other three shared-reader callers received static review here,
+without fresh browser acceptance for their separate flows. No complete release
+receipt, integration, deployment or live acceptance is claimed; designated
+release ownership and earlier handoffs remain.
+
 ## Personal Exchange defaults privacy, 3 October 2026 UTC
 
 [Draft PR 8](https://github.com/LifEXPAdmin/church-landing/pull/8) stacks on PR7.

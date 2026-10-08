@@ -68,6 +68,29 @@ headroom or 100-client capacity. Broader discovery/navigation acceptance and rea
 operator, provider and device gates remain open. See
 [deployment evidence](DEPLOYMENT_REPORT.md) and [resource budgets](RESOURCE_BUDGETS.md).
 
+## Private Exchange inquiry list runtime verified, 3 October 2026 UTC
+
+The inquiry list now retains server authorization while omitting participant
+summaries from initial HTML/RSC. Its client uses the existing read-only snapshot
+owner for current account-pinned reads and physically removes rows while access
+is unconfirmed. Canonical grouping, redaction, 20-row pagination and listing
+filters are preserved. Inquiry detail, inquiry entry and action forms retain
+their existing owners.
+
+Application source `0d1b216716e0a47e6ddcb2ecefd66543c806821c` also repairs the
+shared reader's stalled-read and queued-response lifecycle. All 92 focused local
+privacy/recovery cases pass. Final candidate
+`ec5183cac314cd62c4e5d8806808e8b92f77a30c` passes [runtime 37103142069](https://github.com/LifEXPAdmin/church-landing/actions/runs/37103142069),
+build `Yr6t0UgxEvD5lScntjWJ2`: 22 services, 19 browser groups and three HTTPS
+cases. Hosted source checks pass 193 cases, copy and types, then fail the
+existing dependency audit. [Draft PR 9](https://github.com/LifEXPAdmin/church-landing/pull/9)
+stacks on PR8. Independent final review closed without findings and verified
+all 13 final artifact hashes and sizes.
+[Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) records reproduction,
+harness repairs and 13 hashed final artifacts totaling 1,636,442 bytes.
+No integration, deployment or live acceptance is claimed; designated release
+ownership remains.
+
 ## Personal Exchange defaults privacy runtime verified, 3 October 2026 UTC
 
 [Draft PR 8](https://github.com/LifEXPAdmin/church-landing/pull/8) removes saved

@@ -31,18 +31,37 @@ export function PrivateReadSnapshot<T>({
     reading = useRef(false),
     queued = useRef(false);
   const latest = useRef<() => Promise<void>>(async () => {});
+  const controller = useRef<AbortController | null>(null);
   const load = useCallback(async () => {
-    if (!active.current || document.visibilityState === "hidden") return;
+    if (
+      !active.current ||
+      document.visibilityState === "hidden" ||
+      navigator.onLine === false
+    )
+      return;
+    // A queued request supersedes the current result immediately, including
+    // the first checksum. Only the newest check may establish a snapshot.
+    const seq = ++generation.current;
+    setData(null);
+    setNotice(`Checking current ${label} access…`);
     if (reading.current) {
       queued.current = true;
       return;
     }
     reading.current = true;
-    const seq = ++generation.current;
-    setData(null);
-    setNotice(`Checking current ${label} access…`);
+    queued.current = false;
+    const request = new AbortController();
+    controller.current = request;
+    const deadline = setTimeout(() => request.abort(), 15000);
     try {
-      const { data } = await socialRequest<T>(url, undefined, owner);
+      const { data } = await socialRequest<T>(
+        url,
+        undefined,
+        owner,
+        "POST",
+        undefined,
+        request.signal
+      );
       const digest = Array.from(
         new Uint8Array(
           await crypto.subtle.digest(
@@ -52,6 +71,7 @@ export function PrivateReadSnapshot<T>({
         ),
         (b) => b.toString(16).padStart(2, "0")
       ).join("");
+      request.signal.throwIfAborted();
       if (seq !== generation.current || !active.current) return;
       if (checksum.current !== null && checksum.current !== digest) {
         setNotice(changedNotice);
@@ -61,13 +81,18 @@ export function PrivateReadSnapshot<T>({
         setNotice("");
       }
     } catch (error) {
-      if (seq === generation.current)
+      if (seq === generation.current && active.current)
         setNotice(
-          error instanceof Error
-            ? error.message
-            : `Current ${label} access could not be confirmed.`
+          request.signal.aborted
+            ? `Your ${label} access check timed out. Try again.`
+            : error instanceof Error
+              ? error.message
+              : `Current ${label} access could not be confirmed.`
         );
     } finally {
+      clearTimeout(deadline);
+      request.abort();
+      if (controller.current === request) controller.current = null;
       reading.current = false;
       if (queued.current && active.current) {
         queued.current = false;
@@ -77,6 +102,7 @@ export function PrivateReadSnapshot<T>({
   }, [owner, url, label, changedNotice]);
   latest.current = load;
   useEffect(() => {
+    const currentRead = controller;
     const hide = () => {
       active.current = false;
       queued.current = false;
@@ -85,7 +111,7 @@ export function PrivateReadSnapshot<T>({
       setNotice(`Checking current ${label} access…`);
     };
     const resume = () => {
-      if (document.visibilityState !== "hidden") {
+      if (document.visibilityState !== "hidden" && navigator.onLine !== false) {
         active.current = true;
         void load();
       }
@@ -97,7 +123,8 @@ export function PrivateReadSnapshot<T>({
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : resume();
-    resume();
+    if (document.hasFocus()) resume();
+    else hide();
     window.addEventListener("blur", hide);
     window.addEventListener("pagehide", hide);
     window.addEventListener("offline", hide);
@@ -108,6 +135,7 @@ export function PrivateReadSnapshot<T>({
     document.addEventListener("visibilitychange", visibility);
     return () => {
       hide();
+      currentRead.current?.abort();
       window.removeEventListener("blur", hide);
       window.removeEventListener("pagehide", hide);
       window.removeEventListener("offline", hide);
@@ -126,7 +154,10 @@ export function PrivateReadSnapshot<T>({
           type="button"
           className="gc-button gc-button-quiet"
           onClick={() => {
-            if (document.visibilityState !== "hidden") {
+            if (
+              document.visibilityState !== "hidden" &&
+              navigator.onLine !== false
+            ) {
               active.current = true;
               void load();
             }
