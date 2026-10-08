@@ -83,12 +83,19 @@ reserving the heavy-job contract. This uses `--no-install --no-clean`, keeps the
 project on the SSD and leaves CocoaPods/native compilation for the inspected
 Xcode route. The first generated target is iPhone-only with an iOS 16.4 minimum.
 
+After preparing an inspected full Xcode and CocoaPods, use `pods-ios` and
+`build-ios` through the same workspace launcher. The build embeds the fictional
+journey in an unsigned Release Simulator app, with two compiler jobs and
+task-scoped caches and DerivedData. See [iPhone build paths](../docs/mobile/IOS_BUILD.md)
+for setup, variant checks and the separate physical-device route.
+
 Generated `ios/` and `android/` live under `mobile/` on the SSD. A later native
 build must use task-scoped DerivedData, Gradle caches and device storage after
 the platform environment check. Do not move existing Xcode, Android, home or
 credential directories as an incidental setup change. Full Xcode was absent at
-discovery. Android tooling is owned by the Android lane. No native binary,
-simulator/device launch or installed-size result is claimed by this checkpoint.
+discovery; Xcode 26.6 and iPhone SDK 26.5 are now verified. Android tooling is
+owned by the Android lane. Native compilation, simulator/device launch and
+installed-size results require their own receipts.
 
 ## Current fictional journey and acceptance
 

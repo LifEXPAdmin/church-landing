@@ -31,7 +31,7 @@ module.exports = () => {
         "android.permission.MANAGE_EXTERNAL_STORAGE"
       ]
     },
-    plugins: ["expo-system-ui", ["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: false }], "./plugins/with-fixture-network"],
+    plugins: ["expo-system-ui", ["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: false }], "./plugins/with-fixture-network", "./plugins/with-ios-build-storage"],
     extra: { variant, fixtureOnly: true },
     updates: { enabled: false }
   };

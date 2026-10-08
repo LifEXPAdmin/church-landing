@@ -15,6 +15,8 @@ const commands = {
   config: ["npx", ["--no-install", "expo", "config", "--type", "public"]],
   "prebuild-ios": ["npx", ["--no-install", "expo", "prebuild", "--platform", "ios", "--no-install", "--no-clean"]],
   "prebuild-android": ["npx", ["--no-install", "expo", "prebuild", "--platform", "android", "--no-install", "--no-clean"]],
+  "pods-ios": ["node", ["scripts/ios-build.mjs", "pods"]],
+  "build-ios": ["node", ["scripts/ios-build.mjs", "build"]],
   typecheck: ["npm", ["run", "typecheck"]],
   test: ["npm", ["test"]],
   fixture: ["node", ["--experimental-strip-types", "scripts/fixture-server.ts"]],
@@ -38,7 +40,7 @@ const nested = relative(storage, actual);
 if (!nested || nested.startsWith("..") || nested.startsWith("/")) throw new Error("Mobile workspace must be inside the verified SSD storage root.");
 const free = statfsSync(mount);
 if (free.bavail * free.bsize < 4 * 1024 ** 3) throw new Error("Less than 4 GiB remains on the SSD.");
-if (["install", "bootstrap", "dev", "export", "fixture", "prebuild-ios", "prebuild-android"].includes(action)) {
+if (["install", "bootstrap", "dev", "export", "fixture", "prebuild-ios", "prebuild-android", "pods-ios", "build-ios"].includes(action)) {
   const common = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: website, encoding: "utf8" }).trim();
   const registry = JSON.parse(readFileSync(join(common, "gc-coordination", "registry.json"), "utf8"));
   const worker = process.env.GC_MOBILE_WORKER;
@@ -68,17 +70,18 @@ if (action !== "inspect") {
   const [command, args] = commands[action];
   const lockPath = join(generated, "heavy-job.lock");
   let lock;
-  if (["install", "bootstrap", "dev", "export", "prebuild-ios", "prebuild-android"].includes(action)) {
+  if (["install", "bootstrap", "dev", "export", "prebuild-ios", "prebuild-android", "pods-ios", "build-ios"].includes(action)) {
     lock = openSync(lockPath, "wx");
     writeFileSync(lock, JSON.stringify({ pid: process.pid, action, started: new Date().toISOString() }));
   }
   try {
-    const buildEnv = ["dev", "export"].includes(action) ? mobileBuildEnv() : {};
+    const buildEnv = ["dev", "export", "build-ios"].includes(action) ? mobileBuildEnv() : {};
     // A live Metro session may serve later edits. Its startup commit is a base,
     // never a claim that the current running source remains clean or unchanged.
     if (action === "dev") buildEnv.EXPO_PUBLIC_SOURCE_STATE = "mutable";
     const result = spawnSync(command, args, { cwd: mobile, stdio: "inherit", env: {
-    ...process.env, ...buildEnv, npm_config_cache: join(generated, "npm-cache"), TMPDIR: join(generated, "tmp"),
+    ...process.env, ...buildEnv, GC_MOBILE_GUARDED_ACTION: action,
+    npm_config_cache: join(generated, "npm-cache"), TMPDIR: join(generated, "tmp"),
     // SDK 57 reads this shell-only setting before dotenv; EXPO_HOME is ignored.
     // Use a new task-local settings directory, preserving existing Expo accounts.
     __UNSAFE_EXPO_HOME_DIRECTORY: join(generated, "expo-home"), XDG_CACHE_HOME: join(generated, "cache"),
