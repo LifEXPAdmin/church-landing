@@ -1,5 +1,16 @@
 # Typed optional profile sections
 
+## Bounded photo extension, 8 October 2026
+
+The current implementation adds optional canonical photo references and a
+compatible photos position to the existing typed sections. Existing text and
+photo owners are reused. The [photo section contract](PROFILE_PHOTO_SECTIONS.md)
+defines bounds, older-writer preservation, current source projection and the
+43 passing local test groups. Integration and release acceptance remain open.
+The original accepted baseline and later dated continuations below retain their
+historical scope.
+
+
 September 18, 2026 UTC. Reuse the current profile owner, versioned editor,
 member projection, audience previews, private snapshot guard and photo controls.
 Name remains required. Optional sections grant no identity, skill certification,

@@ -142,6 +142,7 @@ export function getMemberProfile(
       profile.presentation?.modules
     );
     delete visibleModules.featuredResources;
+    delete visibleModules.photoIds;
     const selectedEvent = await profileEventIn(
       tx,
       reader,

@@ -13,7 +13,8 @@ export function PhotoViewer({
   initialId,
   onClose,
   pageLimit = 10,
-  removeWhenHidden = false
+  removeWhenHidden = false,
+  refreshKey = 0
 }: {
   source: string;
   accountId?: string | null;
@@ -21,6 +22,8 @@ export function PhotoViewer({
   onClose: () => void;
   pageLimit?: 10 | 24;
   removeWhenHidden?: boolean;
+  /** Recheck an open viewer when its source surface observes an access change. */
+  refreshKey?: number;
 }) {
   const sourceVisible = useReadVisibility();
   const { preferences } = useReadingPreferences();
@@ -114,7 +117,7 @@ export function PhotoViewer({
       window.removeEventListener("social-relationships-changed", refresh);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [load, sourceVisible]);
+  }, [load, sourceVisible, refreshKey]);
   function close() {
     if (window.history.state?.gcPhotoViewer === historyKey.current)
       window.history.back();

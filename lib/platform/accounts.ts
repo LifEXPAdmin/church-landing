@@ -24,6 +24,7 @@ import { activePublicAccount } from "./public-profile";
 import { defaultProfileStyle, validProfileStyle } from "./profile-style";
 import {
   readProfileModules,
+  mergeProfileModuleOrder,
   validateProfileModules,
   type ProfileModules
 } from "./profile-modules";
@@ -31,6 +32,8 @@ import { isEligible } from "./portal-policy";
 import { profileEventIn } from "./profile-events";
 import { featuredKey } from "./profile-featured-input";
 import { resolvePostResourcesIn } from "./post-resource-attachments";
+import { profilePhotoImagesIn } from "./profile-photo-sections";
+import { photoLibraryEnabled } from "./personal-photo-policy";
 import { postContext } from "./post-access";
 import { recordDiscoveryControl } from "./retention-controls";
 import {
@@ -449,6 +452,23 @@ export async function updateAccountProfile(
     // Clients predating section ordering can still edit content without silently
     // resetting the owner's arrangement. The same profile version guards both.
     const savedModules = readProfileModules(presentation?.modules);
+    if (modules && !Object.hasOwn(modules, "photoIds") && savedModules.photoIds)
+      modules = { ...modules, photoIds: savedModules.photoIds };
+    const photoAdditions =
+      modules?.photoIds?.filter((id) => !savedModules.photoIds?.includes(id)) ??
+      [];
+    if (photoAdditions.length) {
+      if (!photoLibraryEnabled() || !isEligible(locationState))
+        throw new AccountError("profile");
+      const photos = await profilePhotoImagesIn(
+        tx,
+        await postContext(tx, current.id),
+        current.id,
+        photoAdditions
+      );
+      if (photos.length !== photoAdditions.length)
+        throw new AccountError("profile");
+    }
     if (
       modules &&
       !Object.hasOwn(modules, "featuredResources") &&
@@ -478,9 +498,10 @@ export async function updateAccountProfile(
       if (additions.some((reference) => !readable.has(featuredKey(reference))))
         throw new AccountError("profile-featured");
     }
-    const savedOrder = savedModules.order;
-    if (modules && !modules.order && savedOrder)
-      modules = { ...modules, order: savedOrder };
+    if (modules) {
+      const order = mergeProfileModuleOrder(modules.order, savedModules.order);
+      if (order) modules = { ...modules, order };
+    }
     if (
       modules &&
       !Object.hasOwn(modules, "calendarOccurrenceId") &&

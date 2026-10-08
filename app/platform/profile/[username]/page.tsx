@@ -1,5 +1,6 @@
 import { ProfileFeaturedResources } from "@/components/platform/profile-featured";
 import { ProfilePhotos } from "@/components/platform/profile-photos";
+import { ProfilePhotoSection } from "@/components/platform/profile-photo-section";
 import { ProfileModuleContent } from "@/components/platform/profile-modules";
 import { LocalEventTime } from "@/components/platform/local-event-time";
 import { profileModuleSections } from "@/lib/platform/profile-modules";
@@ -219,7 +220,20 @@ export default async function MemberProfilePage({
           </ul>
         </div>
       )}
-      <ProfileModuleContent modules={profile.presentation.modules} />
+      <ProfileModuleContent
+        modules={profile.presentation.modules}
+        photos={
+          profile.photoLibraryEnabled && (
+            <ProfilePhotoSection
+              username={username}
+              profileId={profile.id}
+              owner={currentUser.id}
+              version={profile.presentation.version}
+              preview={!!preview}
+            />
+          )
+        }
+      />
       {profile.selectedEvent && (
         <section aria-labelledby="profile-event-heading" className="space-y-3">
           <h3 id="profile-event-heading" className="text-xl">
@@ -239,6 +253,17 @@ export default async function MemberProfilePage({
         </section>
       )}
     </section>
+  ) : profile.photoLibraryEnabled ? (
+    <div key="about" id="about" className="min-h-px">
+      <ProfilePhotoSection
+        username={username}
+        profileId={profile.id}
+        owner={currentUser.id}
+        version={profile.presentation.version}
+        preview={!!preview}
+        standalone
+      />
+    </div>
   ) : null;
   const postSection = (
     <section
@@ -402,7 +427,12 @@ export default async function MemberProfilePage({
                   ? ["posts", "about"]
                   : ["about", "posts"]
                 )
-                  .filter((section) => section !== "about" || hasAbout)
+                  .filter(
+                    (section) =>
+                      section !== "about" ||
+                      hasAbout ||
+                      profile.photoLibraryEnabled
+                  )
                   .map((section) => (
                     <a
                       key={section}

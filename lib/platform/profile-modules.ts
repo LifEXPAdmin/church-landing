@@ -3,12 +3,17 @@ import {
   type ProfileFeaturedReference
 } from "./profile-featured-input";
 export type ProfileLink = { label: string; url: string };
-export const PROFILE_MODULE_ORDER = ["testimony", "skills", "links"] as const;
+const LEGACY_PROFILE_MODULE_ORDER = ["testimony", "skills", "links"] as const;
+export const PROFILE_MODULE_ORDER = [
+  ...LEGACY_PROFILE_MODULE_ORDER,
+  "photos"
+] as const;
 export type ProfileModuleKind = (typeof PROFILE_MODULE_ORDER)[number];
 export const profileModuleLabels: Record<ProfileModuleKind, string> = {
   testimony: "My testimony",
   skills: "Skills",
-  links: "Links"
+  links: "Links",
+  photos: "Photos"
 };
 export type ProfileModules = {
   testimony: string;
@@ -19,6 +24,8 @@ export type ProfileModules = {
   // A reference only. Member readers must resolve it through calendar policy.
   calendarOccurrenceId?: string | null;
   featuredResources?: ProfileFeaturedReference[];
+  // Owned canonical photos only. Audience and metadata remain on their sources.
+  photoIds?: string[];
 };
 export type ProfileModuleSection =
   | { kind: "testimony"; text: string }
@@ -30,6 +37,7 @@ export const PROFILE_MODULE_SLOTS = [
   { kind: "testimony", available: true },
   { kind: "skills", available: true },
   { kind: "links", available: true },
+  { kind: "photos", available: true },
   { kind: "introduction", available: true },
   { kind: "pinned-post", available: true },
   { kind: "calendar", available: true },
@@ -53,6 +61,35 @@ function text(value: unknown, maximum: number) {
     throw Error("Invalid profile module");
   return value.trim();
 }
+export function profilePhotoIds(value: unknown): string[] {
+  if (
+    !Array.isArray(value) ||
+    value.length > 6 ||
+    value.some(
+      (id) => typeof id !== "string" || !/^[A-Za-z0-9_-]{1,100}$/.test(id)
+    ) ||
+    new Set(value).size !== value.length
+  )
+    throw Error("Choose up to six distinct saved profile photos.");
+  return [...value];
+}
+export function profileModuleOrder(value: ProfileModules): ProfileModuleKind[] {
+  const order = value.order ?? [...LEGACY_PROFILE_MODULE_ORDER];
+  return order.includes("photos") ? [...order] : [...order, "photos"];
+}
+/** Older writers may reorder text slots without moving the saved photos slot. */
+export function mergeProfileModuleOrder(
+  order: ProfileModuleKind[] | undefined,
+  savedOrder: ProfileModuleKind[] | undefined
+): ProfileModuleKind[] | undefined {
+  if (!order) return savedOrder ? [...savedOrder] : undefined;
+  if (order.includes("photos") || !savedOrder?.includes("photos"))
+    return [...order];
+  let textIndex = 0;
+  return savedOrder.map((kind) =>
+    kind === "photos" ? kind : order[textIndex++]
+  );
+}
 export function validateProfileModules(value: unknown): ProfileModules {
   if (
     !object(value) ||
@@ -67,13 +104,18 @@ export function validateProfileModules(value: unknown): ProfileModules {
           "links",
           "order",
           "calendarOccurrenceId",
-          "featuredResources"
+          "featuredResources",
+          "photoIds"
         ].includes(key)
     )
   )
     throw Error("Invalid profile modules");
   const hasOrder = Object.hasOwn(value, "order");
+  const suppliedOrder = value.order;
   const hasCalendar = Object.hasOwn(value, "calendarOccurrenceId");
+  const photoIds = Object.hasOwn(value, "photoIds")
+    ? profilePhotoIds(value.photoIds)
+    : undefined;
   const featuredResources = Object.hasOwn(value, "featuredResources")
     ? profileFeaturedReferences(value.featuredResources)
     : undefined;
@@ -86,10 +128,12 @@ export function validateProfileModules(value: unknown): ProfileModules {
     throw Error("Invalid profile event reference");
   if (
     hasOrder &&
-    (!Array.isArray(value.order) ||
-      value.order.length !== PROFILE_MODULE_ORDER.length ||
-      new Set(value.order).size !== PROFILE_MODULE_ORDER.length ||
-      value.order.some((kind) => !PROFILE_MODULE_ORDER.includes(kind)))
+    (!Array.isArray(suppliedOrder) ||
+      (suppliedOrder.length !== LEGACY_PROFILE_MODULE_ORDER.length &&
+        suppliedOrder.length !== PROFILE_MODULE_ORDER.length) ||
+      new Set(suppliedOrder).size !== suppliedOrder.length ||
+      suppliedOrder.some((kind) => !PROFILE_MODULE_ORDER.includes(kind)) ||
+      LEGACY_PROFILE_MODULE_ORDER.some((kind) => !suppliedOrder.includes(kind)))
   )
     throw Error("Invalid profile module order");
   const testimony = text(value.testimony, 2000);
@@ -128,6 +172,7 @@ export function validateProfileModules(value: unknown): ProfileModules {
     skills,
     links,
     ...(featuredResources ? { featuredResources } : {}),
+    ...(photoIds ? { photoIds } : {}),
     ...(hasOrder ? { order: [...(value.order as ProfileModuleKind[])] } : {}),
     ...(hasCalendar
       ? { calendarOccurrenceId: value.calendarOccurrenceId as string | null }
@@ -156,6 +201,6 @@ export function profileModuleSections(
       ? [{ kind: "links" as const, items: value.links }]
       : [])
   ];
-  const order = value.order ?? PROFILE_MODULE_ORDER;
+  const order = profileModuleOrder(value);
   return sections.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
 }
