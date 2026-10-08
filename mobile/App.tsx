@@ -3,9 +3,10 @@ import { AccessibilityInfo, BackHandler, Keyboard, Platform } from "react-native
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as Linking from "expo-linking";
 import { createNativeFixture } from "./src/spike/native-fixture";
+import { selectApplicationConfiguration } from "./application-configuration";
+import { createNativeApplication } from "./src/session/native-application";
 import { fixturePostFromLink } from "./src/spike/links";
 import { observeNativeLinks } from "./src/navigation/link-intake";
-import { probeSecureStorage } from "./src/platform/storage-probe";
 import { handleAndroidBack } from "./src/platform/android-back";
 import { ThemeProvider } from "./src/ui/theme";
 import { Button, Card, Screen, Text } from "./src/ui/primitives";
@@ -20,8 +21,23 @@ const DiagnosticControls = __DEV__
 
 type Fixture = ReturnType<typeof createNativeFixture>;
 
+function useAndroidBack(runtime: Fixture["runtime"]) {
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => handleAndroidBack({
+      isKeyboardVisible: () => Keyboard.isVisible(), dismissKeyboard: () => Keyboard.dismiss(),
+      goBack: () => {
+        if (runtime.session.getSnapshot().phase !== "ready" || runtime.navigation.getSnapshot().destination?.kind !== "post") return false;
+        void runtime.recordForegroundActivity(); void runtime.backToFeed(); return true;
+      }
+    }));
+    return () => subscription.remove();
+  }, [runtime]);
+}
+
 function Preview({ fixture }: { fixture: Fixture }) {
   const { runtime } = fixture;
+  useAndroidBack(runtime);
   const session = useSyncExternalStore(runtime.session.subscribe, runtime.session.getSnapshot);
   const [probe, setProbe] = useState("Not checked"), [linkStatus, setLinkStatus] = useState("");
   const storageRunning = useRef(false);
@@ -47,22 +63,15 @@ function Preview({ fixture }: { fixture: Fixture }) {
     "App link received. Continue with the demo account to open the post." : value === "unavailable" ?
       "Open the app link again after checking access." : "")), [runtime]);
 
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-    const subscription = BackHandler.addEventListener("hardwareBackPress", () => handleAndroidBack({
-      isKeyboardVisible: () => Keyboard.isVisible(), dismissKeyboard: () => Keyboard.dismiss(),
-      goBack: () => {
-        if (runtime.session.getSnapshot().phase !== "ready" || runtime.navigation.getSnapshot().destination?.kind !== "post") return false;
-        void runtime.recordForegroundActivity(); void runtime.backToFeed(); return true;
-      }
-    }));
-    return () => subscription.remove();
-  }, [runtime]);
-
   async function checkStorage() {
     if (storageRunning.current) return;
     storageRunning.current = true; setProbe("Checking");
-    try { setProbe(await probeSecureStorage() ? "Write, read and removal passed." : "Secure storage is unavailable."); }
+    try {
+      // The optional fixture check must not bind storage in an unavailable build.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { probeSecureStorage } = require("./src/platform/storage-probe") as typeof import("./src/platform/storage-probe");
+      setProbe(await probeSecureStorage() ? "Write, read and removal passed." : "Secure storage is unavailable.");
+    }
     catch { setProbe("Secure storage check failed. Retry on a native development build."); }
     finally { storageRunning.current = false; }
   }
@@ -93,17 +102,50 @@ function Preview({ fixture }: { fixture: Fixture }) {
   </>} />;
 }
 
-function FixtureOwner() {
-  const [fixture, setFixture] = useState<Fixture | null>(null);
+type Application = { kind: "fixture"; fixture: Fixture } | ReturnType<typeof createNativeApplication>;
+
+function ConnectedJourney({ runtime }: { runtime: Fixture["runtime"] }) {
+  useAndroidBack(runtime);
+  return <NativeJourney runtime={runtime} signInMode={{ kind: "password" }} />;
+}
+
+function ApplicationOwner() {
+  const [application, setApplication] = useState<Application | null>(null);
   useEffect(() => {
-    const created = createNativeFixture();
-    setFixture(created);
+    const selected = selectApplicationConfiguration(process.env.EXPO_PUBLIC_APPLICATION_MODE);
+    if (selected.kind === "unavailable") {
+      setApplication({ kind: "unavailable" });
+      return;
+    }
+    if (selected.kind === "fixture") {
+      const fixture = createNativeFixture();
+      setApplication({ kind: "fixture", fixture });
+      return () => fixture.runtime.dispose();
+    }
+    const created = createNativeApplication(selected.configuration, {
+      wire(configuration) {
+        // Bind native modules only after selection, inside construction's catch.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { nativeJsonWire } = require("./src/platform/native-json.native") as typeof import("./src/platform/native-json.native");
+        return nativeJsonWire(configuration);
+      },
+      vault(environment, origin) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { nativeCredentialVault } = require("./src/platform/secure-credentials") as typeof import("./src/platform/secure-credentials");
+        return nativeCredentialVault(environment, origin);
+      }
+    });
+    setApplication(created);
     // Each setup creates a fresh owner. StrictMode never reuses a disposed one.
-    return () => created.runtime.dispose();
+    return () => { if (created.kind === "ready") created.runtime.dispose(); };
   }, []);
-  return fixture ? <Preview fixture={fixture} /> : <Screen><Text variant="title">God's Churches</Text></Screen>;
+  if (application?.kind === "fixture") return <Preview fixture={application.fixture} />;
+  if (application?.kind === "ready") return <ConnectedJourney runtime={application.runtime} />;
+  return <Screen><Text variant="title">God's Churches</Text>
+    {application?.kind === "unavailable" ? <Text>Sign-in is unavailable in this build.</Text> : null}
+  </Screen>;
 }
 
 export default function App() {
-  return <SafeAreaProvider><ThemeProvider><FixtureOwner /></ThemeProvider></SafeAreaProvider>;
+  return <SafeAreaProvider><ThemeProvider><ApplicationOwner /></ThemeProvider></SafeAreaProvider>;
 }
