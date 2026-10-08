@@ -13,7 +13,7 @@ export type PrivacyViewProps = ViewProps & {
   ready: boolean;
 };
 
-/** Deferred binding. An older binary without the cover cannot admit iOS UI. */
+/** Deferred binding. An older binary without the cover cannot admit native UI. */
 export function createNativePrivacySource(): NativePrivacySource | null {
   try {
     const bridge = requireOptionalNativeModule<Bridge>("GCNativePrivacy");
