@@ -122,6 +122,9 @@ project-group creation/write/parse path through its resolved UUID library. They
 also check UUID's output-buffer bounds. The installed derivative payload and
 consumer files were matched to the canonical source-review records before use.
 
+The consumed dependency checkpoint is
+`886dbd8bd4d379996b44b83f6cf423d85a5bd34f`; the following local observations
+belong to that source, before the later iPhone form and privacy integration.
 Clean locked installation with lifecycle scripts disabled, 230 local mobile
 tests, TypeScript, lint, the import boundary and Expo's compatibility check pass.
 Registry verification reports 481 signed packages and 123 attestations. Fresh
