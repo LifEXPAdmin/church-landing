@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 // Temporary backport of React PR #35494, commit c18662405cc436646411647f8a8965c1c0594c3c.
 // https://github.com/react/react/pull/35494 (Meta Platforms, Inc.; MIT license).
-// Next 15.5.25 bundles its own renderer, so upgrading react-dom alone cannot fix
+// Next 15.5.27 bundles its own renderer, so upgrading react-dom alone cannot fix
 // its interrupted host hydration. Remove this backport when upgrading to a Next
 // renderer containing the upstream fix. Never adapt it silently to another build.
 export const rendererFiles = [
@@ -65,7 +65,7 @@ function replacement(mode) {
 export function patchNextHydration(nextRoot, { checkOnly = false } = {}) {
   assert.equal(
     JSON.parse(readFileSync(resolve(nextRoot, "package.json"), "utf8")).version,
-    "15.5.25",
+    "15.5.27",
     "Review/remove the hydration backport before changing Next versions"
   );
   // Validate every renderer before writing any file, including already patched

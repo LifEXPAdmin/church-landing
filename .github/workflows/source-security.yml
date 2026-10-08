@@ -17,7 +17,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -26,18 +27,37 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - name: Install the locked graph without dependency lifecycle scripts
+        id: install
         run: npm ci --ignore-scripts --no-audit --no-fund
+      # Each check remains a required failing step. Explicit status conditions
+      # collect independent evidence after failures without masking them.
       - name: Verify source boundaries and the migration guard
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           npm run check:security
-          node --test tests/source-security.test.mjs tests/prisma-deploy.test.mjs
+          node --test tests/source-security.test.mjs tests/prisma-deploy.test.mjs tests/source-security-workflow.test.mjs tests/toolchain-depth-backport.test.mjs
+      - name: Validate authored website copy
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run check:copy
+      - name: Generate the schema client without connecting to a database
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        id: generate
+        run: npm run prisma:generate
+      - name: Check project types without build artifacts
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
+        run: npm run check:types
       - name: Check known dependency advisories
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm audit --audit-level=high
       - name: Verify registry signatures and provenance
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm audit signatures
       - name: Run the existing static analysis
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run lint
       - name: Install the checksum-pinned secret scanner
+        id: scanner
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -50,8 +70,19 @@ jobs:
           tar -xzf "$scanner_dir/gitleaks.tar.gz" -C "$scanner_dir" gitleaks
           touch "$scanner_dir/empty.gitleaksignore"
       - name: Scan reachable history with fully redacted output
+        if: ${{ !cancelled() && steps.scanner.outcome == 'success' }}
         shell: bash
         run: |
+          # Gitleaks also loads this path from its target checkout even when
+          # --gitleaks-ignore-path points to a separate empty file.
+          if ! ignore_path="$(find . -maxdepth 1 -name .gitleaksignore -print -quit 2>/dev/null)"; then
+            echo "Cannot inspect repository fingerprint ignore path." >&2
+            exit 1
+          fi
+          if [ -n "$ignore_path" ]; then
+            echo "Repository fingerprint ignore path is not permitted." >&2
+            exit 1
+          fi
           "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" git . \
             --config .gitleaks.toml --log-opts="--all --full-history -m" \
             --gitleaks-ignore-path "$RUNNER_TEMP/gitleaks-8.30.1/empty.gitleaksignore" \
