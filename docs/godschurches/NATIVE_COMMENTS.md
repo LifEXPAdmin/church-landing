@@ -223,3 +223,16 @@ transport admission, website/native receipt parity and pending journal repair.
 cancel, immutable lost-acknowledgement retry and neutral-parent rendering. Test
 definitions alone are not acceptance; retain the exact checks actually run and
 their source/build evidence in the private handoff.
+
+The 8 October 2026 deletion checkpoint passed 50 isolated database service and
+regression checks, four trusted local HTTPS checks, and all four actual website
+browser scenarios above. It also passed semantic types, the production build,
+17 contract/admission checks and 99 portable/shared-package checks. Browser
+verification used the same production bundle; selector and acknowledgement-wait
+repairs affected only the test driver. The private handoff retains failed test
+attempts alongside the passing results and exact source/build identities.
+
+These results cover a fictional local database and website/native API parity.
+They do not accept native app confirmation or recovery UI, physical devices,
+provider delivery or a release. This adapter branch also needs integration with
+the current website dependency/security baseline before release acceptance.

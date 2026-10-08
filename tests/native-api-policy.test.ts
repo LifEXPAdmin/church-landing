@@ -307,10 +307,11 @@ test("comment deletion pauses independently before identity, body or database wo
     );
     assert.equal(probe.pulls(), 0);
   }
-  for (const extra of [
+  const browserHeaders: Record<string, string>[] = [
     { Origin: origin },
     { "Sec-Fetch-Site": "same-origin" }
-  ]) {
+  ];
+  for (const extra of browserHeaders) {
     const probe = request(path, "POST", { ...credentials, ...extra }, true);
     await denied(
       await handleNativeCommentDeleteRequest(db, probe.value, params),

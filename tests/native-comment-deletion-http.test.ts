@@ -217,7 +217,11 @@ test("trusted HTTPS deletion rejects borrowed authority, foreign targets, inject
     401,
     "unauthenticated"
   );
-  for (const extra of [{ Origin: origin }, { "Sec-Fetch-Site": "same-origin" }])
+  const browserHeaders: Record<string, string>[] = [
+    { Origin: origin },
+    { "Sec-Fetch-Site": "same-origin" }
+  ];
+  for (const extra of browserHeaders)
     denied(await send(target, f.reader, input, extra), 403, "forbidden");
   denied(
     await send(target, f.reader, input, { "X-Expected-Account": f.owner.id }),

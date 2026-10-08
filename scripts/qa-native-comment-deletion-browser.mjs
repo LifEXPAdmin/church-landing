@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -55,8 +55,7 @@ page.setDefaultTimeout(15000);
 const errors = [],
   results = [];
 page.on("pageerror", (error) => errors.push(error.message));
-const output = join(fixture, "comment-deletion-browser");
-mkdirSync(output, { mode: 0o700 });
+const output = mkdtempSync(join(fixture, "comment-deletion-browser-"));
 const thread = () =>
   page.getByRole("region", { name: "Full discussion", exact: true });
 const row = (id) => thread().locator('[data-comment-id="' + id + '"]');
@@ -146,7 +145,10 @@ async function neutralParent(parentId, childId, text) {
 }
 async function openDelete() {
   await row(data.webCommentId)
-    .getByRole("button", { name: /More comment options/ })
+    .getByRole("button", {
+      name: "More comment options for " + data.reader.name,
+      exact: true
+    })
     .click();
   return page
     .getByRole("dialog", { name: /More comment options/ })
@@ -251,7 +253,19 @@ try {
     path: join(output, "lost-delete-receipt-320.png"),
     fullPage: true
   });
-  await retry.click();
+  const repeatedResponse = page.waitForResponse((response) => {
+    const request = response.request();
+    return (
+      new URL(response.url()).pathname === "/api/platform/comments" &&
+      request.method() === "POST" &&
+      JSON.parse(request.postData() ?? "null")?.operation === "delete"
+    );
+  });
+  const [, repeated] = await Promise.all([retry.click(), repeatedResponse]);
+  assert.equal(repeated.status(), 200);
+  await thread()
+    .getByRole("button", { name: "Saving comment action…", exact: true })
+    .waitFor({ state: "hidden" });
   await retry.waitFor({ state: "hidden" });
   assert.equal(bodies.length, 2);
   assert.equal(bodies[0], bodies[1]);
