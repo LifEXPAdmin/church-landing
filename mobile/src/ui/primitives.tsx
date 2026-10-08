@@ -69,10 +69,10 @@ export function Card({ style, ...props }: ViewProps) {
     backgroundColor: theme.color.surface, minWidth: 0 }, style]} />;
 }
 
-export function Screen({ children, foreground = true, scrollKey, ...props }:
-  Omit<ScrollViewProps, "children"> & { children: ReactNode; foreground?: boolean; scrollKey?: string }) {
+export function Screen({ children, foreground = true, scrollKey, scrollRef, ...props }:
+  Omit<ScrollViewProps, "children"> & { children: ReactNode; foreground?: boolean; scrollKey?: string; scrollRef?: Ref<ScrollView> }) {
   const { theme } = useTheme();
-  const content = foreground ? <ScrollView {...props} key={scrollKey} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+  const content = foreground ? <ScrollView {...props} ref={scrollRef} key={scrollKey} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
     contentContainerStyle={[{ padding: theme.space.stack, gap: theme.space.stack,
       paddingBottom: theme.space.stack * 2 }, props.contentContainerStyle]}>{children}</ScrollView>
     : <View style={{ padding: theme.space.stack }}><Text variant="title">God's Churches</Text></View>;

@@ -1,5 +1,5 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { AccessibilityInfo, ActivityIndicator, AppState, Platform, View } from "react-native";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { AccessibilityInfo, ActivityIndicator, AppState, Platform, View, type ScrollView, type ScrollViewProps } from "react-native";
 import type { createNativeRuntime } from "../session/runtime";
 import type { SessionSnapshot } from "../session/session-controller";
 import type { ReadingSnapshot } from "../reading/read-controller";
@@ -9,6 +9,8 @@ import { createNativePrivacySource } from "../platform/native-privacy.native";
 import { presentationMatches, type NativePrivacyPresentation as Presentation } from "../platform/native-privacy.ts";
 import { Button, Card, Screen, Text } from "./primitives";
 import { NativePost } from "./NativePost";
+import { NativeFeedChoices } from "./NativeFeedChoices";
+import { captureFeedScrollPosition, restoreFeedScrollPosition, type FeedScrollIdentity, type FeedScrollPosition } from "./feed-scroll-position";
 import { PasswordSignIn } from "./PasswordSignIn";
 import { NativePrivacyPresentation } from "./NativePrivacyPresentation";
 import { useTheme } from "./theme";
@@ -16,6 +18,82 @@ import { useTheme } from "./theme";
 type Runtime = ReturnType<typeof createNativeRuntime>;
 type SignInMode = { kind: "password" } | { kind: "fixture"; signIn: () => Promise<void>;
   credentials: Readonly<{ email: string; password: string }> };
+
+type FeedScrollMemory = { runtime: Runtime; position: FeedScrollPosition | null; mount: object | null };
+
+/** A response owns stable handlers, but only an attached native view may use
+ * them. The bookmark contains an address and pixels, never retained feed data. */
+function feedScrollHandlers(runtime: Runtime, reading: Extract<ReadingSnapshot, { kind: "feed" }>,
+  identity: FeedScrollIdentity, memory: FeedScrollMemory) {
+  let view: ScrollView | null = null, attachment: object | null = null;
+  let viewportHeight: number | null = null, contentHeight: number | null = null;
+  let measured = false, pending: number | null = null;
+  let detach: (() => void) | undefined;
+  function current() {
+    const attached = attachment, nativeView = view;
+    if (!attached || !nativeView || memory.runtime !== runtime || memory.mount !== attached) return null;
+    const session = runtime.session.getSnapshot();
+    const currentReading = runtime.reading.getSnapshot();
+    // Reading/session getters can synchronously expire access and notify React.
+    // Recheck the session and attachment after those calls before any mutation.
+    return session.foreground && session.phase === "ready" && session.account?.id === identity.owner &&
+      session.generation === identity.generation && currentReading === reading &&
+      runtime.session.getSnapshot() === session && runtime.reading.getSnapshot() === reading &&
+      attachment === attached && memory.mount === attached && view === nativeView
+      ? nativeView : null;
+  }
+  function restore() {
+    if (measured || viewportHeight === null || contentHeight === null || !current()) return;
+    const target = restoreFeedScrollPosition(memory.position, identity, { viewportHeight, contentHeight });
+    const nativeView = current();
+    if (!nativeView) return;
+    measured = true;
+    pending = target;
+    if (target === null) memory.position = null;
+    else {
+      // A queued zero event must not replace the bookmark before native scroll
+      // acknowledgement. A direct drag can take over if no event is emitted.
+      nativeView.scrollTo({ x: 0, y: target, animated: false });
+    }
+  }
+  function capture(y: number, dragging: boolean) {
+    if (!current() || !Number.isFinite(y) || y < 0) return;
+    if (dragging) { measured = true; pending = null; }
+    if (!measured || (pending !== null && Math.abs(y - pending) > 1)) return;
+    pending = null;
+    memory.position = captureFeedScrollPosition(identity, y);
+  }
+  return {
+    scrollRef(nativeView: ScrollView | null) {
+      detach?.();
+      if (!nativeView) return;
+      const attached = {};
+      if (memory.runtime !== runtime) memory.position = null;
+      memory.runtime = runtime;
+      attachment = attached; view = nativeView; memory.mount = attached;
+      viewportHeight = null; contentHeight = null; measured = false; pending = null;
+      const cleanup = () => {
+        if (memory.mount === attached) memory.mount = null;
+        if (attachment === attached) { attachment = null; view = null; }
+      };
+      detach = cleanup;
+      return cleanup;
+    },
+    onLayout: ((event) => {
+      if (!current()) return;
+      const height = event.nativeEvent.layout.height;
+      if (!Number.isFinite(height) || height <= 0) return;
+      viewportHeight = height; restore();
+    }) satisfies NonNullable<ScrollViewProps["onLayout"]>,
+    onContentSizeChange: ((_width, height) => {
+      if (!current() || !Number.isFinite(height) || height < 0) return;
+      contentHeight = height; restore();
+    }) satisfies NonNullable<ScrollViewProps["onContentSizeChange"]>,
+    onScroll: ((event) => capture(event.nativeEvent.contentOffset.y, false)) satisfies NonNullable<ScrollViewProps["onScroll"]>,
+    onScrollBeginDrag: ((event) => capture(event.nativeEvent.contentOffset.y, true)) satisfies NonNullable<ScrollViewProps["onScrollBeginDrag"]>,
+    scrollEventThrottle: 16
+  };
+}
 
 function useIosStatus(runtime: Runtime, message: string | null) {
   useEffect(() => {
@@ -100,7 +178,8 @@ function ReadingError({ state, runtime, act }: { state: Extract<ReadingSnapshot,
   </Card>;
 }
 
-function Reading({ runtime, state, post }: { runtime: Runtime; state: ReadingSnapshot; post: boolean }) {
+function Reading({ runtime, state, post, clearScroll }:
+  { runtime: Runtime; state: ReadingSnapshot; post: boolean; clearScroll: () => void }) {
   const { theme } = useTheme();
   function act(command: () => Promise<unknown>) {
     // Only direct user interaction renews activity. Passive rendering, native
@@ -108,6 +187,7 @@ function Reading({ runtime, state, post }: { runtime: Runtime; state: ReadingSna
     void runtime.recordForegroundActivity();
     void command();
   }
+  function reset(command: () => Promise<unknown>) { clearScroll(); act(command); }
   const open = (id: string) => act(() => runtime.open({ kind: "post", postId: id }));
   return <>
     <Text variant="title">{post ? "Post" : "Your community"}</Text>
@@ -115,21 +195,20 @@ function Reading({ runtime, state, post }: { runtime: Runtime; state: ReadingSna
     {state.kind === "loading" ? <View accessibilityLiveRegion="polite" style={{ gap: theme.space.content }}>
       <ActivityIndicator color={theme.color.action} /><Text>Checking current access and loading {state.target === "post" ? "post" : "posts"}...</Text>
     </View> : null}
-    {state.kind === "error" ? <ReadingError state={state} runtime={runtime} act={act} /> : null}
+    {state.kind === "error" ? <ReadingError state={state} runtime={runtime} act={reset} /> : null}
     {state.kind === "feed" ? <>
       <View style={{ gap: theme.space.inline }}>
-        <Button label="Latest" secondary selected={state.feed.mode === "latest"} onPress={() => act(() => runtime.startFeed("latest"))} />
-        <Button label="Friends" secondary selected={state.feed.mode === "friends"} onPress={() => act(() => runtime.startFeed("friends"))} />
-        <Button label="Refresh feed" secondary onPress={() => act(runtime.refresh)} />
+        <NativeFeedChoices mode={state.feed.mode} onChoose={(mode) => reset(() => runtime.startFeed(mode))}
+          onRefresh={() => reset(runtime.refresh)} />
       </View>
       {state.feed.notice ? <Text accessibilityLiveRegion="polite">{state.feed.notice}</Text> : null}
       {state.feed.page.items.length === 0 ? <Text>No posts are available in this feed yet.</Text> : null}
       {state.feed.page.items.map((item, index) => <NativePost key={item.id + ":" + index} post={item} onOpen={open} />)}
-      {state.feed.page.nextCursor ? <Button label="Next page" onPress={() => act(runtime.nextPage)} /> : <Text variant="small" tone="muted">You're up to date on this page.</Text>}
+      {state.feed.page.nextCursor ? <Button label="Next page" onPress={() => reset(runtime.nextPage)} /> : <Text variant="small" tone="muted">You're up to date on this page.</Text>}
     </> : null}
     {state.kind === "post" ? <NativePost post={state.post} detail revealed={state.revealed} onOpen={open}
       onReveal={() => act(runtime.reveal)} /> : null}
-    {state.kind === "idle" ? <Button label="Load posts" onPress={() => act(() => runtime.startFeed("latest"))} /> : null}
+    {state.kind === "idle" ? <Button label="Load posts" onPress={() => reset(() => runtime.startFeed("latest"))} /> : null}
   </>;
 }
 
@@ -141,12 +220,16 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
   const navigation = useSyncExternalStore(runtime.navigation.subscribe, runtime.navigation.getSnapshot);
   const reading = useSyncExternalStore(runtime.reading.subscribe, runtime.reading.getSnapshot);
   const [presentation, setPresentation] = useState<Presentation | null>(null);
-  const [scroll, setScroll] = useState({ generation: state.generation, page: "" });
-  // Keep just one bounded page address through a loading/recheck state. A new
-  // page resets scrolling; rechecking the same page or revealing text does not.
-  const page = reading.kind === "feed" ? JSON.stringify([reading.feed.mode, reading.feed.scope, reading.feed.pageCursor]) :
-    scroll.generation === state.generation ? scroll.page : "";
-  if (scroll.generation !== state.generation || scroll.page !== page) setScroll({ generation: state.generation, page });
+  const memory = useRef<FeedScrollMemory>({ runtime, position: null, mount: null }).current;
+  const owner = state.account?.id ?? null;
+  const makeScroll = (revision: number) => ({ runtime, reading, owner, generation: state.generation, revision,
+    handlers: reading.kind === "feed" && owner ? feedScrollHandlers(runtime, reading,
+      { owner, generation: state.generation, mode: reading.feed.mode, scope: reading.feed.scope, pageCursor: reading.feed.pageCursor }, memory) : null });
+  const [scroll, setScroll] = useState(() => makeScroll(0));
+  // Keep only the current response. Even coalesced loading renders must produce
+  // a fresh native mount when a newly authorized response has the same address.
+  if (scroll.runtime !== runtime || scroll.reading !== reading || scroll.owner !== owner || scroll.generation !== state.generation)
+    setScroll(makeScroll(scroll.revision + 1));
   useEffect(() => observeSessionVisibility({
     nativePrivacy: Platform.OS === "ios" || Platform.OS === "android" ? { source: createNativePrivacySource(),
       generation: () => runtime.session.getSnapshot().generation, publish: setPresentation } : undefined,
@@ -167,9 +250,21 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
   }, runtime.setForeground), [runtime]);
   const visible = state.foreground && state.phase !== "concealed" &&
     ((Platform.OS !== "ios" && Platform.OS !== "android") || presentationMatches(presentation, state));
+  function clearScroll() { memory.position = null; memory.mount = null; }
+  useLayoutEffect(() => {
+    if (!visible || state.phase !== "ready" || !owner || reading.kind === "error") {
+      memory.position = null; memory.mount = null;
+    } else if (memory.position && (memory.position.identity.owner !== owner || memory.position.identity.generation !== state.generation))
+      memory.position = null;
+  }, [visible, state.phase, owner, state.generation, reading.kind, memory]);
+  useLayoutEffect(() => () => {
+    // An old runtime's layout cleanup may run after the new native ref attaches.
+    if (memory.runtime === runtime) { memory.position = null; memory.mount = null; }
+  }, [runtime, memory]);
   const post = navigation.destination?.kind === "post";
-  const routeKey = post ? "post:" + navigation.destination.postId : "feed:" + page;
-  return <><Screen foreground={visible} scrollKey={state.generation + ":" + routeKey}>
+  const feedVisible = visible && state.phase === "ready" && !!owner && reading.kind === "feed" && !post;
+  const routeKey = post ? "post:" + navigation.destination.postId : "feed:" + (feedVisible ? scroll.revision : "");
+  return <><Screen foreground={visible} scrollKey={state.generation + ":" + routeKey} {...(feedVisible ? scroll.handlers : null)}>
     <Text variant="small" tone="muted">GOD'S CHURCHES</Text>
     {signInMode.kind === "fixture" ? <Text variant="small" tone="muted">Development preview. Fictional accounts and posts only.</Text> : null}
     <SessionNotice state={state} runtime={runtime} />
@@ -179,7 +274,7 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
       <Button label="Cancel and sign out" secondary onPress={() => { void runtime.cancelSignIn(); }} />
     </> : null}
     {state.phase === "unavailable" ? <Button label="Check access again" onPress={() => { void runtime.retryVerification(); }} /> : null}
-    {state.phase === "ready" && state.account ? <Reading key={state.account.id + ":" + state.generation} runtime={runtime} state={reading} post={post} /> : null}
+    {state.phase === "ready" && state.account ? <Reading key={state.account.id + ":" + state.generation} runtime={runtime} state={reading} post={post} clearScroll={clearScroll} /> : null}
     {state.phase === "ready" || state.phase === "unavailable" || state.cleanup === "cleanup-pending" || state.cleanup === "unconfirmed" ?
       <Button label={state.phase === "ready" ? "Sign out" : "Retry sign-out"} secondary onPress={() => { void runtime.signOut(); }} /> : null}
     {signInMode.kind === "fixture" ? previewTools : null}
