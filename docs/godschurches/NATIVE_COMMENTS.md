@@ -1,10 +1,10 @@
-# Native comment reading, publication, editing and Likes
+# Native comment reading, publication, editing, deletion and Likes
 
 The versioned `GET /api/platform/v1/posts/:postId/comments` adapter calls the
 same `readComments` service as the website. It introduces no discussion store,
-schema or notification owner. `comments.read`, `comments.create`, `comments.edit` and
-`commentLikes.write` are separate optional capabilities. `comments.write`
-remains unavailable for drafts, deletion and other discussion controls.
+schema or notification owner. `comments.read`, `comments.create`, `comments.edit`,
+`comments.delete` and `commentLikes.write` are separate optional capabilities.
+`comments.write` remains unavailable for drafts and other discussion controls.
 
 The default view is `roots`, ordered `oldest`; roots also support `newest`.
 `replies` requires `rootId`, while `context` requires `commentId`. Replies and
@@ -62,7 +62,7 @@ restore a state that a later change replaced. A lost response keeps the original
 request reference and intended state; a different command needs a new reference.
 Post-commit handoff or projection failures remain unconfirmed. Requests are
 bounded to 16 KiB and receipts retain the response bound above. Private drafts,
-deletion, prayer, pins and conversation settings still use the website.
+prayer, pins and conversation settings still use the website.
 
 ## Direct comment publication
 
@@ -137,6 +137,40 @@ mention intent. Recipient blocks and followed-person consent apply to the editor
 and current source access and church mutes still apply. It does not grant reply,
 prayer or follower notification authority or backfill old missing alerts.
 
+## Comment deletion
+
+`POST /api/platform/v1/posts/:postId/comments/:commentId/delete` uses the independent
+`comments.delete` capability. Its strict body contains only `mutationId` and
+`expectedVersion`; both targets are fixed by the path. It accepts no text, speaker,
+draft, owner or operation override. Original-account admission, the shared
+comment rate bucket and the canonical session lock apply exactly as for other
+native comment writes. The adapter calls the existing `commentCommand` and
+creates no separate storage, receipt or deletion authority.
+
+A new deletion requires a currently readable source and comment, the personal
+author or current speaking-church publisher, and the current comment version.
+Closing a discussion does not by itself prevent its author from removing a
+comment. Canonical deletion retires mentions, Likes, a matching pin or selected
+answer, preserves replies beneath a neutral unavailable parent, and increments
+the existing versions once. Ordinary removed text is cleared; text retained for
+a report stays behind the canonical deletion and retention boundaries.
+
+Deletion starts no publication or notification jobs. After the command commits,
+the adapter awaits the website's existing `protectReportedWithdrawal` recovery
+step, including on an exact retry. A confirmed receipt returns HTTP 200 with
+`recoveryPending: false`. If removal is saved but recovery protection is still
+pending, it returns HTTP 202 with `recoveryPending: true` and the same warning as
+the website. A 202 receipt confirms the removal, not completion of the recovery
+step. Keep the immutable request reference and retry that exact request to check
+protection without deleting twice; do not generate a fresh delete command.
+
+Ordinary and Topic exact receipts remain historical even after later access
+changes. Group receipts retain the canonical current read-access gate. These
+receipts expose no removed text and grant no continuing read or write access.
+Read current authorized state separately, and preserve the original expected
+account through every retry. Native app confirmation, warning presentation and
+lifecycle recovery remain separate consumer acceptance work.
+
 ## Verification
 
 `tests/comment-visibility-projection.test.ts` reproduces a restricted Topic root
@@ -178,3 +212,27 @@ and canonical notification tests. `native-comment-editing-http.test.ts` and
 `qa-native-comment-editing-browser.mjs` exercise the production adapter and actual
 website editing, conflict and lost-acknowledgement controls. Keep their exact
 local evidence separate from native app, physical-device and release acceptance.
+
+`--native-comment-deletion` adds author and church authority, versions, once-only
+retirement of related rows, surviving replies, reported withdrawal recovery,
+original-owner races, shared quotas and the distinct Topic/group replay rules.
+It also runs existing withdrawal, read, edit, Like and notification regressions.
+`native-comment-deletion-http.test.ts` checks trusted local HTTPS, strict
+transport admission, website/native receipt parity and pending journal repair.
+`qa-native-comment-deletion-browser.mjs` checks the website's confirmation,
+cancel, immutable lost-acknowledgement retry and neutral-parent rendering. Test
+definitions alone are not acceptance; retain the exact checks actually run and
+their source/build evidence in the private handoff.
+
+The 8 October 2026 deletion checkpoint passed 50 isolated database service and
+regression checks, four trusted local HTTPS checks, and all four actual website
+browser scenarios above. It also passed semantic types, the production build,
+17 contract/admission checks and 99 portable/shared-package checks. Browser
+verification used the same production bundle; selector and acknowledgement-wait
+repairs affected only the test driver. The private handoff retains failed test
+attempts alongside the passing results and exact source/build identities.
+
+These results cover a fictional local database and website/native API parity.
+They do not accept native app confirmation or recovery UI, physical devices,
+provider delivery or a release. This adapter branch also needs integration with
+the current website dependency/security baseline before release acceptance.

@@ -69,6 +69,12 @@ export const apiResponseExamples = {
     version: 2,
     message: "Comment updated."
   }),
+  deleteComment: member({
+    id: "fictional-comment",
+    version: 3,
+    message: "Comment deleted.",
+    recoveryPending: false
+  }),
   setCommentLike: member({
     id: "fictional-comment",
     version: 1,
@@ -216,6 +222,10 @@ export const apiWriteExamples = {
     expectedVersion: 1,
     content: "Fictional corrected comment.",
     mentionIds: []
+  },
+  deleteComment: {
+    mutationId: "fictional-comment-delete-1",
+    expectedVersion: 2
   },
   setCommentLike: {
     mutationId: "fictional-comment-like-1",

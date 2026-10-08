@@ -16,6 +16,7 @@ import {
   handleNativeCommentReadRequest,
   handleNativeCommentLikeRequest,
   handleNativeCommentEditRequest,
+  handleNativeCommentDeleteRequest,
   handleNativeCommentCreateRequest
 } from "../lib/platform/native-comment-boundary";
 import { decodeApiResponse, apiFailure } from "../lib/platform/api-contracts";
@@ -269,6 +270,87 @@ test("comment editing pauses independently before body and database access", asy
   delete process.env.NATIVE_API_DISABLED_FEATURES;
   assert.equal(
     nativeCapabilityPolicy().features.find((f) => f.name === "comments.edit")
+      ?.available,
+    true
+  );
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.write")
+      ?.available,
+    false
+  );
+});
+
+test("comment deletion pauses independently before identity, body or database work", async () => {
+  const { db, calls } = unusedDatabase();
+  const params = { postId: "post", commentId: "comment" };
+  const path = "posts/post/comments/comment/delete";
+  for (const reason of ["version", "pause", "invalid"]) {
+    process.env.NATIVE_API_DISABLED_FEATURES =
+      reason === "version"
+        ? ""
+        : reason === "pause"
+          ? "comments.delete"
+          : "unknown.feature";
+    const probe = request(
+      path,
+      "POST",
+      {
+        ...credentials,
+        ...(reason === "version" ? { "X-API-Version": "2" } : {})
+      },
+      true
+    );
+    await denied(
+      await handleNativeCommentDeleteRequest(db, probe.value, params),
+      reason === "version" ? 426 : 503,
+      reason === "version" ? "unsupported_version" : "feature_unavailable"
+    );
+    assert.equal(probe.pulls(), 0);
+  }
+  const browserHeaders: Record<string, string>[] = [
+    { Origin: origin },
+    { "Sec-Fetch-Site": "same-origin" }
+  ];
+  for (const extra of browserHeaders) {
+    const probe = request(path, "POST", { ...credentials, ...extra }, true);
+    await denied(
+      await handleNativeCommentDeleteRequest(db, probe.value, params),
+      403,
+      "forbidden"
+    );
+    assert.equal(probe.pulls(), 0);
+  }
+  const unsigned = request(path, "POST", {}, true);
+  await denied(
+    await handleNativeCommentDeleteRequest(db, unsigned.value, params),
+    401,
+    "unauthenticated"
+  );
+  assert.equal(unsigned.pulls(), 0);
+  for (const method of ["GET", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]) {
+    const response = await handleNativeCommentDeleteRequest(
+      db,
+      request(path, method).value,
+      params
+    );
+    assert.equal(response.headers.get("allow"), "POST");
+    await denied(response, 405, "method_not_allowed");
+  }
+  assert.equal(calls(), 0);
+  process.env.NATIVE_API_DISABLED_FEATURES = "comments.delete";
+  for (const name of [
+    "comments.create",
+    "comments.edit",
+    "comments.read",
+    "commentLikes.write"
+  ])
+    assert.equal(
+      nativeCapabilityPolicy().features.find((f) => f.name === name)?.available,
+      true
+    );
+  delete process.env.NATIVE_API_DISABLED_FEATURES;
+  assert.equal(
+    nativeCapabilityPolicy().features.find((f) => f.name === "comments.delete")
       ?.available,
     true
   );
