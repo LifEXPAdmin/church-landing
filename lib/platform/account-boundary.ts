@@ -501,17 +501,17 @@ async function processAccountRequest(
         db,
         requestSessionToken(request),
         credential,
-        body.confirmed
+        body.confirmed,
+        request.headers.get("X-Expected-Account") ?? ""
       );
-      return withSessionCookie(
-        reply(
-          "Account deactivated. All devices are signed out.",
-          200,
-          {},
-          "/platform/account/reactivate?notice=deactivated"
-        ),
-        "",
-        config.secureCookie
+      // Server-side revocation is authoritative. A delayed reply must not
+      // clear a replacement login or its Google confirmation cookies.
+      credentialUse.sessionRevoked = true;
+      return reply(
+        "Account deactivated. All devices are signed out.",
+        200,
+        {},
+        "/platform/account/reactivate?notice=deactivated"
       );
     }
     if (operation === "reactivate-account") {

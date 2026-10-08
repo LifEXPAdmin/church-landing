@@ -1,3 +1,9 @@
+## Account deactivation owner source preparation, 8 October 2026 UTC
+
+Candidate **2026.10.08.14** has no current source or runtime acceptance yet. Existing fatal source, type, copy, lint, dependency audit, signature and history checks remain unchanged. The selected delta adds original-owner checks within existing session locks and suppresses cookie mutation by a delayed deactivation response; it does not import the native backend stack or change the dependency graph or schema.
+
+The dedicated hosted profile must use enforced MFA in both built-server phases and fictional identity/email fixtures. Its assignment race requires real authenticator enrollment, a fresh one-use `change-access` proof and the actual losing reason. Controlled Data Saver evidence remains separate from full application results. Earlier PR30 checks retain their historical source and do not establish acceptance of this candidate.
+
 ## Module-summary integration: 2026.10.08.13
 
 Application b5f892dbfc906f15e18ca3d17155cde2ee5fdc12: 591 exact-source source checks; 0 audit advisories, 496 verified signatures, 86 attestations, 0 lint errors and 42 existing lint warnings. Fresh isolated acceptance: 29 services, 5 HTTPS and 13 full-application browser groups, plus 8 separately scoped controlled parent scenarios. Build 0RUOf4YBLK0VMSc7iqXZJ and hosted identity/review: Source runs 37832103362 and 37832110701 and runtime 37832103369 completed successfully for the exact candidate; independent final source/evidence review accepted it. No previous failed or partial run is included.

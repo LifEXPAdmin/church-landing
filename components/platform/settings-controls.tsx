@@ -105,7 +105,7 @@ export function SettingsControls({
             </Link>{" "}
             if you want a copy. Deactivation does not delete your account.
           </p>
-          <AccountLifecycle />
+          <AccountLifecycle owner={data.ownerId} />
         </>
       );
     case "delete":

@@ -1,0 +1,336 @@
+name: Account deactivation owner isolated verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/release-account-deactivation-20261008
+    paths:
+      - .github/workflows/account-deactivation-owner-verification.yml
+      - package.json
+      - package-lock.json
+      - prisma/**
+      - scripts/test-platform-isolated.mjs
+      - scripts/probe-account-owner-boundary.mjs
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - scripts/patch-next-hydration.mjs
+      - scripts/verify-hydration-output.mjs
+      - scripts/verify-runtime-traces.mjs
+      - scripts/qa-account-deactivation-owner.mjs
+      - scripts/qa-account-credential-privacy-browser.mjs
+      - scripts/qa-account-credential-google-browser.mjs
+      - scripts/qa-display-settings-browser.mjs
+      - scripts/qa-data-saver-browser.mjs
+      - tests/account-*.test.ts
+      - tests/google-*.test.ts
+      - tests/reading-preferences.test.ts
+      - tests/fixture-account-email.mjs
+      - components/platform/account-*.tsx
+      - components/platform/google-account.tsx
+      - components/platform/retained-settings-frame.tsx
+      - components/platform/settings-*.tsx
+      - components/platform/workspace.tsx
+      - components/platform/page.tsx
+      - components/platform/reading-preferences.tsx
+      - components/platform/read-visibility.ts
+      - components/platform/photo-viewer.tsx
+      - lib/platform/account-*.ts
+      - lib/platform/accounts.ts
+      - lib/platform/auth.ts
+      - lib/platform/google-*.ts
+      - lib/platform/reading-preferences.ts
+      - lib/platform/privileged-*.ts
+      - lib/platform/release-*.ts
+      - app/platform/settings/**
+      - app/api/platform/account/**
+      - app/api/platform/google/**
+      - app/api/platform/session/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: account-deactivation-owner-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
+      - name: Prepare runner-only browser and PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v xvfb-run
+          command -v xauth
+          export PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/account-owner-chromium"
+          echo "PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH" >> "$GITHUB_ENV"
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+          npm install --prefix "$RUNNER_TEMP/account-owner-browser" --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/account-owner-browser/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/account-owner-browser/node_modules/playwright/package.json" >> "$GITHUB_ENV"
+          chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/account-owner-browser/node_modules/playwright")"
+          echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
+      - name: Build and verify fictional owner-bound account flows over local HTTPS
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "codex/release-account-deactivation-20261008"
+          xvfb-run --auto-servernum node scripts/test-platform-isolated.mjs account-deactivation-owner 2>&1 | tee "$RUNNER_TEMP/account-deactivation-owner-verification.log"
+      - name: Record exact source, build and observed account test totals
+        if: always()
+        env:
+          ACCOUNT_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { createHash } from "node:crypto";
+          import { createRequire } from "node:module";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { dirname, join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const profile = "account-deactivation-owner";
+          const output = join(process.env.RUNNER_TEMP, profile + "-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, profile + "-verification.log");
+          const lines = existsSync(logPath) ? readFileSync(logPath, "utf8").split(/\r?\n/) : [];
+          // Export only aggregate diagnostics, never raw exceptions, identity/cookie/form
+          // bodies, mail payloads, env files or fictional credential values.
+          const safeLines = lines.filter((line) =>
+            /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line) ||
+            /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) ||
+            /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
+          const log = safeLines.join("\n") + "\n";
+          const totals = (metric) => [...log.matchAll(new RegExp("^(?:#|ℹ) " + metric + " (\\d+)$", "gm"))].map((m) => Number(m[1]));
+          const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
+          const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((m) => ({ sourceSha: m[1], mode: m[2] }));
+          const fixtures = (existsSync(".account-test") ? readdirSync(".account-test") : []).filter((name) => name.startsWith(profile + "-hosted-"));
+          const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+          const read = (path) => { try { return JSON.parse(readFileSync(path, "utf8")); } catch { return null; } };
+          const count = (v) => Array.isArray(v) ? v.length : null;
+          const empty = (v) => Array.isArray(v) && v.length === 0;
+          const labels = (v, n) => Array.isArray(v) && v.length === n && v.every((e) => typeof e === "string" && e.length > 0);
+          const observedInteger = (v) => Number.isSafeInteger(v) && v >= 0 ? v : null;
+          const definitions = {
+            "deactivation-owner": { file: "deactivation-owner-browser.json", groups: 12, errors: "errors", external: "external" },
+            "credential-privacy": { file: "credential-privacy/credential-privacy-browser/result.json", groups: 16, errors: "pageErrors", external: "external" },
+            "credential-google": { file: "credential-google-browser-result.json", groups: 6, errors: "errors", external: null },
+            "display-settings": { file: "display-settings-browser/result.json", groups: 6, errors: "errors", external: "external" }
+          };
+          const browsers = [], controlled = [], boundaryProbes = [], providerSummaries = [], screenshots = [];
+          const boundarySources = [
+            "lib/platform/account-boundary.ts", "lib/platform/account-lifecycle.ts",
+            "lib/platform/account-sessions.ts", "lib/platform/account-cookies.ts",
+            "lib/platform/account-credential.ts", "lib/platform/accounts.ts",
+            "lib/platform/google-cookies.ts", "lib/platform/account-limits.ts",
+            "tests/seed-portal.ts", "tests/register.mjs", "scripts/session-cookie-fixture.mjs",
+            "lib/platform/account-config.ts", "package-lock.json", "prisma/schema.prisma"
+          ];
+          const baselineSha = "b5f892dbfc906f15e18ca3d17155cde2ee5fdc12";
+          const sha256 = (v) => typeof v === "string" && /^[a-f0-9]{64}$/.test(v) ? v : null;
+          const boolean = (v) => typeof v === "boolean" ? v : null;
+          const screenshotFiles = [
+            "deactivation-owner-small.png",
+            "credential-privacy/credential-privacy-browser/320-enlarged.png",
+            "display-settings-browser/display-preview-390.png",
+            "data-saver-client/data-saver-mobile.png"
+          ];
+          const dataSaverSources = [
+            "components/platform/photo-viewer.tsx", "components/platform/reading-preferences.tsx",
+            "components/platform/read-visibility.ts", "components/platform/display-preview.tsx",
+            "components/platform/use-unsaved-social-work.ts", "components/platform/private-post-workspace.tsx",
+            "components/platform/use-photo-back-guard.ts", "components/platform/draft-workspace-provider.tsx",
+            "lib/platform/reading-preferences.ts", "lib/platform/social-client.ts",
+            "lib/platform/privileged-auth-navigation.ts"
+          ];
+          const runtimeModules = [
+            ["react", "react", "react.development.js"],
+            ["react/jsx-runtime", "react", "react-jsx-runtime.development.js"],
+            ["react-dom", "react-dom", "react-dom.development.js"],
+            ["react-dom/client", "react-dom", "react-dom-client.development.js"],
+            ["scheduler", "scheduler", "scheduler.development.js"]
+          ];
+          const require = createRequire(join(process.cwd(), "package.json"));
+          const cssRoot = ".next/static/css";
+          const cssBindings = existsSync(cssRoot) ? readdirSync(cssRoot).filter((n) => n.endsWith(".css")).sort().map((name) => {
+            const path = join(cssRoot, name); return { path, sha256: hash(path), bytes: readFileSync(path).length };
+          }) : [];
+          for (const fixtureName of fixtures) {
+            const fixture = join(".account-test", fixtureName);
+            const probes = read(join(fixture, "boundary-probes.json"));
+            if (Array.isArray(probes)) for (const v of probes) {
+              const mode = ["baseline", "fixed"].includes(v?.mode) ? v.mode : null;
+              const baseline = mode === "baseline", expectedSource = baseline ? baselineSha : sourceSha;
+              const expectedOutcome = baseline ? "baseline-two-invariant-failures-reproduced" : "safe-invariants-passed";
+              const o = v?.observations ?? {};
+              const observations = Object.fromEntries([
+                "originalUnchanged", "replacementUnchanged", "replacementDeactivated",
+                "originalDeactivated", "originalSessionRevoked", "replacementActive", "sessionDeletionCookie"
+              ].map((key) => [key, boolean(o[key])]));
+              for (const key of ["wrongOwnerStatus", "wrongOwnerCookieCount", "correctOwnerStatus", "lateCookieCount"])
+                observations[key] = observedInteger(o[key]);
+              const sourceBindings = boundarySources.map((path) => ({ path, sha256: sha256(v?.sourceBindings?.find((b) => b?.path === path)?.sha256) }));
+              let sourceBindingsValid = false;
+              try {
+                assert.deepEqual(v.sourceBindings, boundarySources.map((path) => ({ path, sha256: baseline
+                  ? createHash("sha256").update(execFileSync("git", ["show", baselineSha + ":" + path])).digest("hex")
+                  : hash(path) })));
+                sourceBindingsValid = true;
+              } catch { /* Preserve a sanitized invalid partial report. */ }
+              const detailsValid = mode !== null && v.sourceSha === expectedSource &&
+                v.exitCode === (baseline ? 1 : 0) && v.outcome === expectedOutcome &&
+                v.caseCount === 2 && v.safeCaseCount === (baseline ? 0 : 2) && v.errorCount === (baseline ? 1 : 0) &&
+                v.expectedAssertionOnly === true && v.networkAttempts === 0 && v.limiterResets === 0 &&
+                v.helperSha256 === hash("scripts/probe-account-owner-boundary.mjs") && sha256(v.receiptSha256) !== null &&
+                sourceBindingsValid && v.detailsValid === true &&
+                o.wrongOwnerStatus === (baseline ? 200 : 401) && o.originalUnchanged === true &&
+                o.replacementUnchanged === !baseline && o.replacementDeactivated === baseline &&
+                o.correctOwnerStatus === 200 && o.originalDeactivated === true && o.originalSessionRevoked === true &&
+                o.replacementActive === true && o.sessionDeletionCookie === baseline &&
+                [o.wrongOwnerCookieCount, o.lateCookieCount].every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 10 && (n > 0) === baseline);
+              boundaryProbes.push({
+                mode, sourceSha: v.sourceSha === expectedSource ? expectedSource : null,
+                exitCode: observedInteger(v.exitCode), outcome: v.outcome === expectedOutcome ? expectedOutcome : null,
+                caseCount: observedInteger(v.caseCount), safeCaseCount: observedInteger(v.safeCaseCount), errorCount: observedInteger(v.errorCount),
+                expectedAssertionOnly: boolean(v.expectedAssertionOnly), networkAttempts: observedInteger(v.networkAttempts), limiterResets: observedInteger(v.limiterResets),
+                helperSha256: sha256(v.helperSha256), receiptSha256: sha256(v.receiptSha256), sourceBindings,
+                observations, detailsValid: Boolean(detailsValid)
+              });
+            }
+            for (const [suite, definition] of Object.entries(definitions)) {
+              const v = read(join(fixture, definition.file));
+              if (!v) continue;
+              const google = suite === "credential-google", deactivation = suite === "deactivation-owner";
+              const trustedNativeBlur = deactivation ? Array.isArray(v.trustedEvents) && v.trustedEvents.some((e) => e.type === "blur" && e.trusted === true && e.focused === false) : null;
+              const trustedNativeFocus = deactivation ? Array.isArray(v.trustedEvents) && v.trustedEvents.some((e) => e.type === "focus" && e.trusted === true && e.focused === true) : null;
+              let detailsValid = empty(v[definition.errors]) &&
+                (google ? v.externalAttempts === 0 : empty(v[definition.external]));
+              if (google) {
+                const r = v.results;
+                detailsValid &&= v.outcome === "passed" && v.source === sourceSha && v.sourceUnchanged === true &&
+                  count(r) === 6 && v.actualCredentialCommands === 2 &&
+                  Number.isSafeInteger(v.simulatedReauthRequests) && v.simulatedReauthRequests > 0 &&
+                  r[0]?.originalDraftRetained === true && r[0]?.explicitRecoveryLinksAccessible === true && r[0]?.accountReplacementConcealed === true &&
+                  r.slice(1, 4).every((e) => e.lateRedirectOccurred === false && e.explicitVisibleRetryNavigates === true) &&
+                  r.slice(4).every((e) => e.status === 200 && e.newerStoredBefore === true && e.newerCookieSurvives === true && e.newerProofRemainsInDb === true && e.replacementSessionCookieSurvives === true && e.clearsRecentCookie === false);
+              } else detailsValid &&= labels(v.results, definition.groups);
+              if (deactivation) detailsValid &&= v.source === sourceSha && v.build === buildId && trustedNativeBlur && trustedNativeFocus;
+              if (suite === "display-settings") detailsValid &&= v.passed === 6 && v.productionWrites === 0 && v.externalSends === null;
+              if (suite === "credential-privacy") detailsValid &&= v.productionWrites === 0 && v.externalSends === 0;
+              if (google) detailsValid &&= v.productionWrites === 0;
+              browsers.push({
+                suite, reportedGroups: count(v.results), errorCount: count(v[definition.errors]),
+                externalRequestCount: google ? observedInteger(v.externalAttempts) : count(v[definition.external]),
+                detailsValid: Boolean(detailsValid), productionWrites: deactivation ? null : v.productionWrites ?? null,
+                externalSends: suite === "credential-privacy" ? v.externalSends ?? null : null,
+                scopeEvidence: google ? "full-application-and-direct-handler-with-fictional-google-proofs-and-injected-redirects" : "full-application-over-isolated-https",
+                physicalDevice: false, trustedNativeBlur, trustedNativeFocus,
+                actualCredentialCommands: google ? observedInteger(v.actualCredentialCommands) : null,
+                simulatedReauthRequests: google ? observedInteger(v.simulatedReauthRequests) : null
+              });
+            }
+            const provider = read(join(fixture, "fictional-provider-summary.json"));
+            if (provider) providerSummaries.push({
+              sourceSha: provider.sourceSha === sourceSha ? provider.sourceSha : null,
+              deliveryAdapter: provider.deliveryAdapter === "fictional-fetch-preload" ? provider.deliveryAdapter : null,
+              simulatedDeliveries: observedInteger(provider.simulatedDeliveries),
+              productionWrites: provider.productionWrites === 0 ? 0 : null,
+              actualProviderSends: provider.actualProviderSends === 0 ? 0 : null,
+              scopeEvidence: "guarded-fictional-Resend-fetch-preload-only"
+            });
+            const v = read(join(fixture, "data-saver-client/results.json"));
+            if (v) {
+              const bundle = join(fixture, "data-saver-client/bundle.js");
+              const detailsValid = v.suite === "data-saver-browser" && labels(v.passed, 7) &&
+                empty(v.errors) && empty(v.external) && v.failure === null &&
+                v.scopeEvidence === "controlled-component-with-fictional-gallery-and-image-transport" &&
+                v.productionWrites === null && v.externalSends === null && cssBindings.length > 0 && existsSync(bundle);
+              controlled.push({
+                suite: "data-saver-browser", reportedGroups: count(v.passed), errorCount: count(v.errors), detailsValid,
+                sourceBindings: dataSaverSources.map((path) => ({ path, sha256: hash(path), bytes: readFileSync(path).length })),
+                runtimeModules: runtimeModules.map(([name, pkg, file]) => ({ name, package: pkg, file, sha256: hash(join(dirname(require.resolve(pkg + "/package.json")), "cjs", file)) })),
+                harnessSha256: hash("scripts/qa-data-saver-browser.mjs"), cssBindings, buildId,
+                bundleSha256: existsSync(bundle) ? hash(bundle) : null,
+                productionWrites: null, externalSends: null, unexpectedExternalRequests: count(v.external),
+                scopeEvidence: "controlled-component-with-fictional-gallery-and-image-transport"
+              });
+            }
+            for (const path of screenshotFiles) {
+              const actual = join(fixture, path);
+              if (existsSync(actual)) screenshots.push({ path, sha256: hash(actual), bytes: readFileSync(actual).length });
+            }
+          }
+          const runtimeOutcome = process.env.ACCOUNT_RUNTIME_OUTCOME ?? "unknown";
+          const report = {
+            sourceSha, profile, buildId, servingIdentities, runtimeOutcome, complete: false,
+            environment: "isolated-fictional", omittedLogLines: lines.length - safeLines.length,
+            tests: totals("tests"), pass: totals("pass"), fail: totals("fail"),
+            cancelled: totals("cancelled"), skipped: totals("skipped"), todo: totals("todo"),
+            expectedBrowserGroups: 40, browsers, controlled, conditionalObservations: [],
+            boundaryProbes, providerSummaries, screenshots
+          };
+          const save = () => writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
+          save();
+          writeFileSync(join(output, "verification.log"), log);
+          // Always fail a partial collector, including a runtime that exited unsuccessfully.
+          // Upload still runs so the safe partial aggregate is preserved.
+          assert.equal(runtimeOutcome, "success", "Fictional runtime must complete");
+          assert.equal(fixtures.length, 1);
+          assert.match(buildId ?? "", /^[A-Za-z0-9_-]+$/);
+          assert.deepEqual([...log.matchAll(/^Platform production build ID: ([A-Za-z0-9_-]+)$/gm)].map((m) => m[1]), [buildId]);
+          assert.deepEqual(servingIdentities, [{ sourceSha, mode: "enforce" }, { sourceSha, mode: "enforce" }]);
+          assert.deepEqual(report.tests, [65, 9]);
+          assert.deepEqual(report.pass, [65, 9]);
+          for (const metric of ["fail", "cancelled", "skipped", "todo"]) assert.deepEqual(report[metric], [0, 0]);
+          assert.deepEqual(boundaryProbes.map((p) => p.mode), ["baseline", "fixed"]);
+          assert.ok(boundaryProbes.every((p) => p.detailsValid));
+          assert.equal(browsers.length, 4);
+          for (const [suite, definition] of Object.entries(definitions))
+            assert.deepEqual(browsers.filter((b) => b.suite === suite).map((b) => b.reportedGroups), [definition.groups]);
+          assert.ok(browsers.every((b) => b.detailsValid));
+          assert.equal(controlled.length, 1);
+          assert.ok(controlled[0].detailsValid);
+          assert.equal(providerSummaries.length, 1);
+          assert.ok(providerSummaries[0].sourceSha === sourceSha && providerSummaries[0].deliveryAdapter === "fictional-fetch-preload" && providerSummaries[0].simulatedDeliveries > 0 && providerSummaries[0].productionWrites === 0 && providerSummaries[0].actualProviderSends === 0);
+          assert.deepEqual(screenshots.map((s) => s.path), screenshotFiles);
+          report.complete = true;
+          save();
+          NODE
+      - name: Preserve sanitized account verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: account-deactivation-owner-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/account-deactivation-owner-evidence/report.json
+            ${{ runner.temp }}/account-deactivation-owner-evidence/verification.log
+            .account-test/account-deactivation-owner-hosted-*/deactivation-owner-small.png
+            .account-test/account-deactivation-owner-hosted-*/credential-privacy/credential-privacy-browser/320-enlarged.png
+            .account-test/account-deactivation-owner-hosted-*/display-settings-browser/display-preview-390.png
+            .account-test/account-deactivation-owner-hosted-*/data-saver-client/data-saver-mobile.png
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

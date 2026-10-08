@@ -96,8 +96,8 @@ async function proof(a, purpose) {
   return token;
 }
 const { chromium } = createRequire(
-  process.env.HOME +
-    "/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json"
+  process.env.PLAYWRIGHT_MODULE ??
+    process.env.HOME + "/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/package.json"
 )("playwright");
 const pub = execFileSync("openssl", [
   "x509",
@@ -111,8 +111,8 @@ const der = execFileSync("openssl", ["pkey", "-pubin", "-outform", "DER"], {
 });
 const browser = await chromium.launch({
   headless: true,
-  executablePath:
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  executablePath: process.env.CHROMIUM_PATH ??
+    (process.platform === "darwin" ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" : undefined),
   args: [
     "--ignore-certificate-errors-spki-list=" +
       createHash("sha256").update(der).digest("base64"),
@@ -121,13 +121,14 @@ const browser = await chromium.launch({
   ]
 });
 const context = await browser.newContext({
+  serviceWorkers: "block",
   viewport: { width: 390, height: 844 }
 });
 let externalAttempts = 0,
   actualCredentialCommands = 0,
   simulatedReauthRequests = 0;
 await context.route("**/*", (route) => {
-  if (new URL(route.request().url()).hostname !== "mfa-fixture.example.test") {
+  if (new URL(route.request().url()).origin !== config.origin) {
     externalAttempts++;
     return route.abort();
   }
@@ -155,11 +156,13 @@ const forward = async (route) => {
     headers = await incoming.allHeaders(),
     pathname =
       new URL(incoming.url()).pathname + new URL(incoming.url()).search;
+  assert.equal(new URL(incoming.url()).origin, config.origin);
   return new Promise((resolve, reject) => {
     const r = httpsRequest(
       config.localOrigin + pathname,
       {
         method: incoming.method(),
+        timeout: 20000,
         ca: readFileSync(config.certificate),
         headers: {
           host: new URL(config.origin).host,
@@ -175,13 +178,14 @@ const forward = async (route) => {
       }
     );
     r.on("error", () => reject(new Error("Loopback request failed")));
+    r.once("timeout", () => r.destroy(new Error("Loopback response timed out")));
     r.end(incoming.postData() ?? undefined);
   });
 };
 let stage = "starting";
 try {
   const a = await actor();
-  await context.route("**/api/platform/settings", async (route) => {
+  await context.route(config.origin + "/api/platform/settings", async (route) => {
     const response = await forward(route);
     assert.equal(response.status, 200);
     const data = JSON.parse(response.body);
@@ -208,7 +212,7 @@ try {
       })
     });
   };
-  await context.route("**/api/platform/google", statusOnly);
+  await context.route(config.origin + "/api/platform/google", statusOnly);
   const swappedOwner = await actor();
   await signIn(a);
   await page.goto(config.origin + "/platform/settings/account/methods");
@@ -237,7 +241,7 @@ try {
     await page.locator(selector).waitFor();
     assert.equal(await page.locator(selector).inputValue(), value);
   }
-  await context.unroute("**/api/platform/google", statusOnly);
+  await context.unroute(config.origin + "/api/platform/google", statusOnly);
   results.push({
     kind: "connected sign-in methods parent recovery",
     originalDraftRetained: true,
@@ -279,7 +283,7 @@ try {
       });
       handled();
     };
-    await context.route("**/api/platform/google", googleRoute);
+    await context.route(config.origin + "/api/platform/google", googleRoute);
     await page.goto(config.origin + "/platform/settings/security/password");
     await page.getByRole("button", { name: "Use Google", exact: true }).click();
     await page
@@ -339,9 +343,9 @@ try {
       JSON.stringify({ source, stage, results }, null, 2),
       { mode: 0o600 }
     );
-    await context.unroute("**/api/platform/google", googleRoute);
+    await context.unroute(config.origin + "/api/platform/google", googleRoute);
   }
-  await context.unroute("**/api/platform/settings");
+  await context.unroute(config.origin + "/api/platform/settings");
   const replacement = await actor();
   for (const operation of ["change-password", "confirm-email-change"]) {
     stage = "Newer Google proof cookie after " + operation;
@@ -414,7 +418,7 @@ try {
         headers: responseHeaders,
         body: payload
       });
-    await page.route("**/api/platform/account", delayed);
+    await page.route(config.origin + "/api/platform/account", delayed);
     const browserStatus = await page.evaluate(
       async () =>
         (
@@ -455,8 +459,9 @@ try {
         c.startsWith("__Host-gc_google_recent=;")
       )
     });
-    await page.unroute("**/api/platform/account", delayed);
+    await page.unroute(config.origin + "/api/platform/account", delayed);
   }
+  assert.equal(results.length, 6);
   assert.equal(externalAttempts, 0);
   assert.deepEqual(errors, []);
   const finalSource = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -470,6 +475,7 @@ try {
     candidate: config.candidate,
     at: new Date().toISOString(),
     results,
+    errors,
     fictionalActors: actors.length,
     actualCredentialCommands,
     simulatedReauthRequests,
@@ -477,8 +483,8 @@ try {
     productionWrites: 0,
     sourceUnchanged: true,
     limits: [
-      "Google redirect response was injected; provider remains disabled.",
-      "Google cookie responses came from actual candidate handleAccountRequest with fictional proof rows and were applied through browser route fulfillment; not the disabled server Google HTTP branch.",
+      "Google redirect response was injected; no real provider exchange was performed.",
+      "Google cookie responses came from actual candidate handleAccountRequest with fictional proof rows and were applied through browser route fulfillment; not a real provider exchange.",
       "No secrets, provider payloads or screenshots recorded."
     ]
   };

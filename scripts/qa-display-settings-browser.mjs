@@ -4,7 +4,8 @@ import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
-const fixtureDir = process.argv[2];
+import { resolve } from "node:path";
+const fixtureDir = resolve(process.argv[2]);
 assert.ok(fixtureDir, "Pass the existing isolated preview artifact directory");
 const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
@@ -17,7 +18,7 @@ Object.assign(process.env, {
   NEXT_PUBLIC_SITE_URL: config.origin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
+  ACCOUNT_TEST_SINK_DIR: fixtureDir + "/sink",
   AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: ""
@@ -44,15 +45,22 @@ const browser = await chromium.launch({
   headless: true,
   executablePath:
     process.env.CHROMIUM_PATH ??
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    (process.platform === "darwin" ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" : undefined),
   args: [
     "--ignore-certificate-errors-spki-list=" +
       createHash("sha256").update(der).digest("base64")
   ]
 });
 const context = await browser.newContext({
+  serviceWorkers: "block",
   timezoneId: "America/Chicago",
   viewport: { width: 390, height: 844 }
+});
+const external = [];
+await context.route("**/*", (route) => {
+  if (new URL(route.request().url()).origin === config.origin) return route.continue();
+  external.push("unexpected-origin");
+  return route.abort();
 });
 const page = await context.newPage();
 const errors = [];
@@ -174,7 +182,7 @@ try {
     id: "display-future-fixture",
     version: "2026.09.13.1"
   };
-  await page.route("**/api/platform/release", (route) =>
+  await page.route(config.origin + "/api/platform/release", (route) =>
     route.fulfill({
       json: {
         release: "2".repeat(40),
@@ -197,7 +205,7 @@ try {
       .count(),
     0
   );
-  await page.unroute("**/api/platform/release");
+  await page.unroute(config.origin + "/api/platform/release");
   await page
     .getByRole("link", { name: "Back to Appearance and reading", exact: true })
     .click();
@@ -419,11 +427,13 @@ try {
   ok(
     "Actual focused post animation honors both device reduced motion and the saved explicit reduction"
   );
+  assert.equal(results.length, 6);
+  assert.deepEqual(external, []);
   assert.deepEqual(errors, []);
   writeFileSync(
     output + "/result.json",
     JSON.stringify(
-      { passed: results.length, results, errors, productionWrites: 0 },
+      { passed: results.length, results, errors, external, productionWrites: 0, externalSends: null },
       null,
       2
     )

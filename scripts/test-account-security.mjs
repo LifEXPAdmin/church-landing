@@ -1126,6 +1126,7 @@ try {
   await runTests("tests/early-community.test.ts");
   await runTests("tests/feed-gesture.test.ts");
   await runTests("tests/account-email-change.test.ts");
+  await runTests("tests/account-deactivation-owner.test.ts");
   await runTests("tests/google-accounts.test.ts");
   await runTests("tests/google-boundary.test.ts");
   if (portalTests) await runTests("tests/portal-service.test.ts");
@@ -1558,7 +1559,15 @@ try {
     await runTests("tests/account-sessions.test.ts", productionEnv);
     await runTests("tests/account-session-rotation.test.ts", productionEnv);
     await runTests("tests/account-export.test.ts", productionEnv);
-    await runTests("tests/account-lifecycle.test.ts", productionEnv);
+    // Lifecycle's assignment race calls canonical MFA services in this child.
+    // The existing broad HTTP server keeps its original production/off phase;
+    // enforced built-server acceptance belongs to account-deactivation-owner.
+    await runTests("tests/account-lifecycle.test.ts", {
+      ...portalEnv,
+      NODE_ENV: "test",
+      ACCOUNT_DELIVERY_MODE: "test-sink",
+      PRIVILEGED_MFA_MODE: "enforce"
+    });
     await runTests("tests/account-email-http.test.ts", productionEnv);
     await runTests("tests/google-http.test.ts", productionEnv);
     console.log(

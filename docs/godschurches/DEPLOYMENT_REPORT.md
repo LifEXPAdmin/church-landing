@@ -1,3 +1,9 @@
+## Account deactivation owner safety candidate, 8 October 2026 UTC
+
+Candidate **2026.10.08.14**, release entry `account-deactivation-owner-safety`, has no deployment or live acceptance yet. The canonical baseline is version 2026.10.08.13, source `b5f892dbfc906f15e18ca3d17155cde2ee5fdc12`, confirmed at 2026-10-08T20:09:35.611Z. Its final closeout is retained below.
+
+The bounded deactivation change introduces no migration, dependency or provider activation. Current source and isolated-runtime acceptance, independent review and the existing recovery, staging and live checks remain pending for this candidate. Planned runtime scope is 65 service/handler cases, 9 HTTPS cases, 40 browser groups and 7 separate controlled scenarios; no historical result is counted as a new pass.
+
 ## 2026.10.08.13: module adoption summaries
 
 Release status: verified live. Exact application b5f892dbfc906f15e18ca3d17155cde2ee5fdc12, production deployment dpl_FK2hHpUjKnizsUd9iSEpG8UaAWrT. Isolated verification build 0RUOf4YBLK0VMSc7iqXZJ is not the production build identity. Integration completed at 2026-10-08T19:56:55.915Z; staged READY at 2026-10-08T20:00:21.645Z; promotion at 2026-10-08T20:09:09.676Z to 2026-10-08T20:09:12.895Z; canonical identity verified at 2026-10-08T20:09:35.611Z. [Release notes](https://godschurches.com/platform/releases/module-adoption-summaries).

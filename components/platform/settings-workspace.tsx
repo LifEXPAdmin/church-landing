@@ -23,6 +23,7 @@ import { SettingsHelp } from "./settings-help";
 import { SettingsChurch } from "./settings-church";
 import { SettingsMedia } from "./settings-media";
 import { SettingsCalendar } from "./settings-calendar";
+import { useReadVisibility } from "./read-visibility";
 
 const positions = new Map<string, { y: number; focus: string }>();
 let positionOwner: string | null = null;
@@ -36,6 +37,7 @@ export function SettingsWorkspace({
   folder?: string;
   setting?: string;
 }) {
+  const parentVisible = useReadVisibility();
   const router = useRouter(),
     pathname = usePathname(),
     params = useSearchParams();
@@ -52,12 +54,18 @@ export function SettingsWorkspace({
   // Keep their original owner mounted on a failed refresh; explicit navigation
   // can discard the draft, but a background identity check cannot.
   const preserveCredentialDraft =
+    (folder === "data" && setting === "deactivate") ||
     (folder === "security" && setting === "password") ||
     (folder === "account" && ["email", "methods"].includes(setting ?? ""));
   const key =
     pathname + (initialQuery ? "?q=" + encodeURIComponent(initialQuery) : "");
   const load = useCallback(async () => {
     const seq = ++generation.current;
+    if (!parentVisible) {
+      setHidden(true);
+      setBusy(false);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -114,7 +122,7 @@ export function SettingsWorkspace({
     } finally {
       if (seq === generation.current) setBusy(false);
     }
-  }, [owner, router, folder, preserveCredentialDraft]);
+  }, [owner, router, folder, preserveCredentialDraft, parentVisible]);
   useEffect(() => {
     if (positionOwner !== owner) {
       positions.clear();
@@ -309,9 +317,9 @@ export function SettingsWorkspace({
         )}
         {data && (
           <div
-            inert={hidden ? true : undefined}
-            aria-hidden={hidden ? true : undefined}
-            style={hidden ? { visibility: "hidden" } : undefined}
+            inert={hidden || !parentVisible ? true : undefined}
+            aria-hidden={hidden || !parentVisible ? true : undefined}
+            style={hidden || !parentVisible ? { visibility: "hidden" } : undefined}
           >
             <GoogleAccountOptions enabled={data.googleAvailable}>
               {!folder && (

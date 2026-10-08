@@ -30,6 +30,21 @@ type OwnedSession = Prisma.PlatformSessionGetPayload<{
   select: typeof sessionSelect;
 }>;
 
+export class AccountSessionOwnerError extends AccountError {
+  constructor() {
+    super("session");
+  }
+}
+
+/** Expected identity is a consistency check, never an authentication source. */
+export function requireSessionOwner(
+  current: { userId: string },
+  expectedOwner?: unknown
+) {
+  if (expectedOwner != null && expectedOwner !== current.userId)
+    throw new AccountSessionOwnerError();
+}
+
 export async function withOwnedSession<T>(
   db: PrismaClient,
   token: unknown,

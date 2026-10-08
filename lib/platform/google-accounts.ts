@@ -6,7 +6,7 @@ import {
 import { Prisma, PlatformRole, type PrismaClient } from "@prisma/client";
 import { SESSION_SECONDS } from "./accounts";
 import { AccountError } from "./account-error";
-import { withOwnedSession } from "./account-sessions";
+import { requireSessionOwner, withOwnedSession } from "./account-sessions";
 import {
   AccountLifecycleError,
   reactivateVerifiedAccount
@@ -46,7 +46,8 @@ export async function beginGoogleReauthentication(
   sessionToken: unknown,
   browserToken: string,
   purpose: RecentAuthenticationPurpose,
-  next: unknown
+  next: unknown,
+  expectedOwner?: string | null
 ) {
   if (!validToken(browserToken) || !isRecentAuthenticationPurpose(purpose))
     throw new GoogleAccountError();
@@ -56,6 +57,7 @@ export async function beginGoogleReauthentication(
     db,
     sessionToken,
     async (tx, current) => {
+      requireSessionOwner(current, expectedOwner);
       if (
         !(await tx.platformGoogleIdentity.findUnique({
           where: { userId: current.userId },

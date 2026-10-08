@@ -1,3 +1,9 @@
+## Account deactivation owner safety prepared, 8 October 2026 UTC
+
+Candidate **2026.10.08.14** keeps a deactivation form tied to the account that opened it. Access uncertainty conceals retained entries; a replacement sign-in cannot receive the original command, and a late success cannot clear that newer login or redirect it. The retained settings frame applies only to deactivation; current reading and Data Saver behavior remain in place.
+
+Current verification is pending: 65 service/handler cases, 9 built HTTPS cases, 40 browser groups and 7 separately controlled Data Saver scenarios are planned. This preparation changes no schema or dependency. The serving baseline is version 2026.10.08.13; this checkpoint does not publish .14. Broad SEC-01 remains open.
+
 ## 2026.10.08.13: module adoption summaries
 
 Status: verified live. Application b5f892dbfc906f15e18ca3d17155cde2ee5fdc12 serves the private Growth dashboard's Connections, Publishing, Events and Serving summaries. Six existing eligible action categories retain separate actor/action counts, date coverage, suppression and the same permitted CSV values. Unsupported outcomes and owner/church scopes remain unavailable.

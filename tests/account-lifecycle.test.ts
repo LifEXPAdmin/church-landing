@@ -1,7 +1,7 @@
 import { sessionCookieFixtureName } from "../scripts/session-cookie-fixture.mjs";
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import {
   AccountError,
@@ -29,6 +29,10 @@ import {
   ADULT_POLICY
 } from "../lib/platform/portal";
 import { readSupport } from "../lib/platform/support";
+
+import { privilegedAuthenticatorCommand, readPrivilegedAuthentication } from "../lib/platform/privileged-auth";
+import { authenticatorTotp, openAuthenticator } from "../lib/platform/admin-authenticator-crypto";
+import { PortalError } from "../lib/platform/portal-policy";
 
 const db = new PrismaClient();
 const origin = process.env.ACCOUNT_ORIGIN!;
@@ -66,6 +70,35 @@ async function owner() {
       password,
       "Fictional lifecycle test"
     )
+  };
+}
+async function confirmOperator(a: Awaited<ReturnType<typeof owner>>) {
+  assert.equal(process.env.PRIVILEGED_MFA_MODE, "enforce");
+  let commands = 0;
+  async function command(body: Record<string, unknown>, credential?: string) {
+    assert.ok(++commands <= 10, "Fictional operator authenticator command budget");
+    return privilegedAuthenticatorCommand(db, a.token, body, credential);
+  }
+  async function code() {
+    for (;;) {
+      const row = await db.adminAuthenticator.findUniqueOrThrow({ where: { userId: a.user.id } });
+      const current = BigInt(Math.floor(Date.now() / 30000));
+      const counter = row.lastCounter < current - BigInt(1) ? current - BigInt(1) : row.lastCounter + BigInt(1);
+      if (counter <= current + BigInt(1))
+        return { version: row.version, code: authenticatorTotp(openAuthenticator(a.user.id, row.secretCiphertext), counter) };
+      await new Promise((done) => setTimeout(done, 30000 - (Date.now() % 30000) + 50));
+    }
+  }
+  await command({ operation: "mfa-start", requestKey: randomUUID(), expectedVersion: 0 }, password);
+  let next = await code();
+  await command({ operation: "mfa-confirm", requestKey: randomUUID(), expectedVersion: next.version, code: next.code });
+  return {
+    challenge: async () => {
+      next = await code();
+      await command({ operation: "mfa-challenge", requestKey: randomUUID(), expectedVersion: next.version, code: next.code, purpose: "change-access" });
+      assert.equal((await readPrivilegedAuthentication(db, a.token)).confirmedForWork, true);
+    },
+    count: () => commands
   };
 }
 function post(
@@ -158,12 +191,19 @@ test("deactivation requires owner, password and explicit intent; HTTPS rejects f
     400
   );
   assert.equal(
-    (await post({ ...body, currentPassword: "Wrong-password-1" }, a.token))
-      .status,
+    (
+      await post({ ...body, currentPassword: "Wrong-password-1" }, a.token, {
+        "X-Expected-Account": a.user.id
+      })
+    ).status,
     400
   );
   assert.equal(
-    (await post({ ...body, confirmed: "true" }, a.token)).status,
+    (
+      await post({ ...body, confirmed: "true" }, a.token, {
+        "X-Expected-Account": a.user.id
+      })
+    ).status,
     400
   );
   assert.equal(
@@ -255,7 +295,8 @@ test("all duty categories block deactivation, including retained case and enable
         currentPassword: password,
         confirmed: true
       },
-      a.token
+      a.token,
+      { "X-Expected-Account": a.user.id }
     );
     assert.equal(response.status, 409);
     assert.equal((await response.json()).code, "ACCOUNT_HANDOFF");
@@ -330,12 +371,12 @@ test("deactivation ends all access and sharing while preserving records; reactiv
       currentPassword: password,
       confirmed: true
     },
-    a.token
+    a.token,
+    { "X-Expected-Account": a.user.id }
   );
   assert.equal(response.status, 200);
   assert.match(response.headers.get("cache-control")!, /no-store/);
-  assert.match(response.headers.get("set-cookie")!, /Max-Age=0/);
-  assert.match(response.headers.get("set-cookie")!, /Secure/);
+  assert.equal(response.headers.get("set-cookie"), null);
   assert.equal(await readAccountSession(db, a.token), null);
   assert.equal(await readAccountSession(db, other), null);
   assert.ok(await readAccountSession(db, b.token));
@@ -564,8 +605,11 @@ test("stale community writes and concurrent role assignments cannot cross deacti
       slug: operator.user.username
     }
   });
+  const authenticator = await confirmOperator(operator);
   for (let index = 0; index < 3; index++) {
     const target = await owner();
+    await authenticator.challenge();
+    assert.equal((await readPrivilegedAuthentication(db, operator.token)).confirmedForWork, true);
     const results = await Promise.allSettled([
       deactivateAccount(db, target.token, password, true),
       portalCommand(db, operator.token, {
@@ -577,6 +621,13 @@ test("stale community writes and concurrent role assignments cannot cross deacti
       })
     ]);
     assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+    const grantResult = results[1];
+    if (grantResult.status === "rejected")
+      assert.ok(grantResult.reason instanceof PortalError && grantResult.reason.status === 403 &&
+        grantResult.reason.message === "Verify your email and confirm adult eligibility before joining this private journey.",
+        "The grant loses only because its target is now inactive, never missing operator MFA");
+    else
+      assert.ok(results[0].status === "rejected" && handoffError(results[0].reason));
     const saved = await db.platformUser.findUniqueOrThrow({
       where: { id: target.user.id }
     });
@@ -585,6 +636,7 @@ test("stale community writes and concurrent role assignments cannot cross deacti
     });
     assert.ok(saved.deactivatedAt ? grants === 0 : grants === 1);
   }
+  assert.equal(authenticator.count(), 5);
 });
 
 test("reactivation never bypasses suspension or claims legacy accounts; active-account requests preserve sessions", async () => {

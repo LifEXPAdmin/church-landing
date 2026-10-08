@@ -1048,6 +1048,25 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "account-deactivation-owner-safety",
+    version: "2026.10.08.14",
+    date: "2026-10-08",
+    summary: "Keep account deactivation tied to the account that opened the form.",
+    added: [],
+    improved: [
+      "Deactivation entries stay in the open page while access is checked and return only when the original account is confirmed.",
+      "An interrupted confirmation requires an explicit recovery choice; it is never submitted again automatically."
+    ],
+    fixed: [
+      "Changing accounts cannot apply an earlier deactivation form to the new account.",
+      "A delayed deactivation response cannot clear a newer sign-in or send that account to reactivation."
+    ],
+    featureIds: [
+      "data-controls",
+      "account"
+    ]
+  },
+  {
     id: "module-adoption-summaries", version: "2026.10.08.13", date: "2026-10-08",
     summary: "Review community module activity with clear dates, coverage and privacy limits.",
     added: ["Authorized operators can view four module summaries in Platform growth, comparing six existing activity measures with the preceding period."],

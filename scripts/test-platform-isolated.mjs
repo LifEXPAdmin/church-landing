@@ -8,12 +8,14 @@ import {
   writeFileSync,
   readdirSync,
   copyFileSync,
+  symlinkSync,
   constants
 } from "node:fs";
 import { createServer } from "node:net";
 import { createServer as createHttpsServer, get as httpsGet } from "node:https";
 import { request as httpRequest } from "node:http";
 import { join, relative, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const suite = process.argv[2] ?? "artists";
 assert.ok(
@@ -41,13 +43,19 @@ assert.ok(
     "public-resource-sharing",
     "resource-feeds",
     "c19-journeys",
-    "metric-module-summaries"
+    "metric-module-summaries",
+    "account-deactivation-owner"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "account-deactivation-owner": {
+    services: ["account-deactivation-owner", "google-accounts", "google-boundary", "account-email-change", "account-session-activity", "reading-preferences"],
+    browsers: ["qa-account-deactivation-owner", "qa-display-settings-browser", "qa-account-credential-privacy-browser", "qa-account-credential-google-browser"],
+    https: ["account-lifecycle"]
+  },
   "metric-module-summaries": {
     services: [
       "platform-metric-modules",
@@ -425,6 +433,15 @@ const env = {
   ARTIST_BUNDLED_CHROMIUM: "1",
   NODE_EXTRA_CA_CERTS: cert
 };
+if (suite === "account-deactivation-owner") {
+  if (process.platform !== "darwin") assert.ok(process.env.DISPLAY, "Use headed Chromium under an owned Xvfb display");
+  Object.assign(env, {
+    DISPLAY: process.env.DISPLAY,
+    ACCOUNT_GOOGLE_ENABLED: "true",
+    GOOGLE_CLIENT_ID: "fixture.apps.googleusercontent.com",
+    GOOGLE_CLIENT_SECRET: "fictional-deactivation-owner-secret"
+  });
+}
 if (suite === "metric-module-summaries")
   Object.assign(env, {
     PLATFORM_MEASUREMENT_ENABLED: "true",
@@ -492,7 +509,7 @@ const health = () =>
       done(false);
     });
   });
-async function start(mode) {
+async function start(mode, serverOverrides = {}) {
   server = spawn(
     process.execPath,
     [
@@ -509,7 +526,8 @@ async function start(mode) {
         ...env,
         NODE_ENV: "production",
         ACCOUNT_DELIVERY_MODE: "disabled",
-        PRIVILEGED_MFA_MODE: mode
+        PRIVILEGED_MFA_MODE: mode,
+        ...serverOverrides
       },
       stdio: "inherit"
     }
@@ -557,6 +575,89 @@ async function start(mode) {
   }
   throw new Error("Production-mode server did not become healthy");
 }
+async function verifyAccountOwnerBoundary() {
+  const baselineSha = "b5f892dbfc906f15e18ca3d17155cde2ee5fdc12";
+  const baselineRoot = join(fixture, "owner-boundary-baseline-source");
+  sync("git", ["worktree", "add", "--detach", baselineRoot, baselineSha]);
+  for (const path of ["package.json", "package-lock.json", "prisma/schema.prisma"])
+    assert.deepEqual(readFileSync(join(baselineRoot, path)), readFileSync(join(root, path)), "Baseline dependency/schema mismatch");
+  symlinkSync(join(root, "node_modules"), join(baselineRoot, "node_modules"), "dir");
+  mkdirSync(env.ACCOUNT_TEST_SINK_DIR, { recursive: true, mode: 0o700 });
+  const helper = join(root, "scripts/probe-account-owner-boundary.mjs");
+  const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+  const bindingPaths = [
+    "lib/platform/account-boundary.ts", "lib/platform/account-lifecycle.ts",
+    "lib/platform/account-sessions.ts", "lib/platform/account-cookies.ts",
+    "lib/platform/account-credential.ts", "lib/platform/accounts.ts",
+    "lib/platform/google-cookies.ts", "lib/platform/account-limits.ts",
+    "tests/seed-portal.ts", "tests/register.mjs", "scripts/session-cookie-fixture.mjs",
+    "lib/platform/account-config.ts", "package-lock.json", "prisma/schema.prisma"
+  ];
+  const boundaryProbes = [];
+  for (const mode of ["baseline", "fixed"]) {
+    const baseline = mode === "baseline";
+    const sourceRoot = baseline ? baselineRoot : root;
+    const sourceSha = baseline ? baselineSha : source;
+    const output = join(env.ACCOUNT_TEST_SINK_DIR, "owner-boundary-" + mode);
+    const child = spawnSync(process.execPath, [
+      "--import", join(sourceRoot, "tests/register.mjs"), helper,
+      "--source-root", sourceRoot, "--source-sha", sourceSha,
+      "--output", output, "--mode", mode
+    ], {
+      cwd: sourceRoot,
+      env: { ...env, PRIVILEGED_MFA_MODE: "enforce", ACCOUNT_GOOGLE_ENABLED: "false", NODE_DISABLE_COMPILE_CACHE: "1" },
+      encoding: "utf8", timeout: 120000, maxBuffer: 1024 * 1024
+    });
+    // These diagnostic logs and raw results are never uploaded by the workflow.
+    for (const stream of ["stdout", "stderr"])
+      writeFileSync(join(fixture, "owner-boundary-" + mode + "." + stream + ".log"), child[stream] ?? "", { flag: "wx", mode: 0o600 });
+    assert.equal(child.error, undefined, "Boundary probe must start and finish within its bound");
+    assert.equal(child.signal, null, "Boundary probe must finish normally");
+    assert.equal(child.status, baseline ? 1 : 0, "Unexpected boundary probe exit");
+    const receiptPath = join(output, "result.json");
+    const value = JSON.parse(readFileSync(receiptPath, "utf8"));
+    assert.equal(value.sourceSha, sourceSha);
+    assert.equal(value.mode, mode);
+    assert.equal(value.outcome, baseline ? "baseline-two-invariant-failures-reproduced" : "safe-invariants-passed");
+    assert.equal(value.baselineReproductionConfirmed, baseline);
+    assert.equal(value.cases.length, 2);
+    assert.ok(value.cases.every((entry) => entry.safe === !baseline));
+    assert.deepEqual(value.errors, baseline ? [{ name: "AssertionError", message: "Account actions must preserve original-owner intent and emit no stale cookie deletion" }] : []);
+    assert.equal(value.networkAttempts, 0);
+    assert.equal(value.limiterResets, 0);
+    assert.deepEqual(value.sourceBindings, bindingPaths.map((path) => ({ path, sha256: hash(join(sourceRoot, path)) })));
+    const [wrong, late] = value.cases;
+    assert.equal(wrong.status, baseline ? 200 : 401);
+    assert.equal(wrong.originalUnchanged, true);
+    assert.equal(wrong.replacementUnchanged, !baseline);
+    assert.equal(wrong.replacementDeactivated, baseline);
+    assert.equal(late.status, 200);
+    assert.equal(late.originalDeactivated, true);
+    assert.equal(late.originalSessionRevoked, true);
+    assert.equal(late.replacementActive, true);
+    assert.equal(late.sessionDeletionCookie, baseline);
+    for (const count of [wrong.setCookieCount, late.setCookieCount]) {
+      assert.ok(Number.isSafeInteger(count) && count >= 0 && count <= 10);
+      assert.equal(count > 0, baseline);
+    }
+    boundaryProbes.push({
+      mode, sourceSha, exitCode: child.status, outcome: value.outcome,
+      caseCount: 2, safeCaseCount: baseline ? 0 : 2, errorCount: value.errors.length,
+      expectedAssertionOnly: true, networkAttempts: 0, limiterResets: 0,
+      helperSha256: hash(helper), receiptSha256: hash(receiptPath), sourceBindings: value.sourceBindings,
+      observations: {
+        wrongOwnerStatus: wrong.status, originalUnchanged: wrong.originalUnchanged,
+        replacementUnchanged: wrong.replacementUnchanged, replacementDeactivated: wrong.replacementDeactivated,
+        wrongOwnerCookieCount: wrong.setCookieCount, correctOwnerStatus: late.status,
+        originalDeactivated: late.originalDeactivated, originalSessionRevoked: late.originalSessionRevoked,
+        replacementActive: late.replacementActive, lateCookieCount: late.setCookieCount,
+        sessionDeletionCookie: late.sessionDeletionCookie
+      },
+      detailsValid: true
+    });
+    writeFileSync(join(fixture, "boundary-probes.json"), JSON.stringify(boundaryProbes, null, 2) + "\n", { mode: 0o600 });
+  }
+}
 async function verifyBuiltApplication() {
   await run("npm", ["run", "build"], {
     ...env,
@@ -567,7 +668,7 @@ async function verifyBuiltApplication() {
     "Platform production build ID:",
     readFileSync(".next/BUILD_ID", "utf8").trim()
   );
-  if (suite === "c19-journeys") {
+  if (["c19-journeys", "account-deactivation-owner"].includes(suite)) {
     assert.equal(process.env.DATA_SAVER_BASELINE_SOURCE, undefined);
     await run(process.execPath, ["scripts/qa-data-saver-browser.mjs"], {
       ...env,
@@ -583,10 +684,18 @@ async function verifyBuiltApplication() {
         response.end();
         return;
       }
+      const requestHost = request.headers.host;
+      if (suite === "account-deactivation-owner" &&
+          ![new URL(origin).host, "mfa-fixture.example.test:" + tlsPort].includes(requestHost ?? "")) {
+        response.writeHead(400);
+        response.end();
+        return;
+      }
+      const forwardedHost = suite === "account-deactivation-owner" ? requestHost : new URL(origin).host;
       const headers = {
         ...request.headers,
-        host: new URL(origin).host,
-        "x-forwarded-host": new URL(origin).host,
+        host: forwardedHost,
+        "x-forwarded-host": forwardedHost,
         "x-forwarded-proto": "https",
         "x-forwarded-for": "127.0.0.1"
       };
@@ -630,7 +739,7 @@ async function verifyBuiltApplication() {
     proxy.once("error", reject);
     proxy.listen(tlsPort, "127.0.0.1", done);
   });
-  const identity = await start("off");
+  const identity = await start(suite === "account-deactivation-owner" ? "enforce" : "off");
   if (suite === "resources") {
     const product = JSON.parse(
       execFileSync(
@@ -680,6 +789,9 @@ async function verifyBuiltApplication() {
     }
     const browserFailures = [];
     for (const name of profile.browsers) {
+      if (suite === "account-deactivation-owner" &&
+          ["qa-account-credential-privacy-browser", "qa-account-credential-google-browser"].includes(name))
+        continue; // These require the explicit alias/email phase below.
       try {
         await run(process.execPath, [
           "--import",
@@ -696,7 +808,7 @@ async function verifyBuiltApplication() {
           ].includes(name)
             ? relative(root, fixture)
             : fixture
-        ], suite === "metric-module-summaries" ? { ...env, PRIVILEGED_MFA_MODE: "enforce" } : env);
+        ], ["metric-module-summaries", "account-deactivation-owner"].includes(suite) ? { ...env, PRIVILEGED_MFA_MODE: "enforce" } : env);
       } catch (error) {
         if (suite !== "public-resource-sharing") throw error;
         // Collect independent fixture failures in one hosted run. Each failed
@@ -705,7 +817,7 @@ async function verifyBuiltApplication() {
         console.error("Isolated browser suite failed:", name, error);
       }
     }
-    if (suite !== "metric-module-summaries") {
+    if (!["metric-module-summaries", "account-deactivation-owner"].includes(suite)) {
       await stop(server);
       await start("enforce");
     }
@@ -728,6 +840,44 @@ async function verifyBuiltApplication() {
         ...(suite === "c19-journeys" ? { B1_MEDIA_MFA_HTTP: "1" } : {})
       }
     );
+    if (suite === "account-deactivation-owner") {
+      await stop(server);
+      const aliasOrigin = "https://mfa-fixture.example.test:" + tlsPort;
+      const providerLog = join(fixture, "fictional-provider.jsonl");
+      const preload = pathToFileURL(join(root, "tests/fixture-account-email.mjs")).href;
+      await start("enforce", {
+        ACCOUNT_ORIGIN: aliasOrigin, NEXT_PUBLIC_SITE_URL: aliasOrigin,
+        ACCOUNT_DELIVERY_MODE: "resend", RESEND_API_KEY: "re_synthetic_never_real",
+        ACCOUNT_EMAIL_FROM: "accounts@mail.mfa-fixture.example.test",
+        FICTIONAL_PROVIDER_LOG: providerLog,
+        FICTIONAL_PROVIDER_FIXTURE: fixture,
+        FICTIONAL_ALLOWED_ORIGIN: origin,
+        NODE_OPTIONS: "--import=" + preload
+      });
+      const credentialFixture = join(fixture, "credential-privacy");
+      mkdirSync(credentialFixture, { mode: 0o700 });
+      writeFileSync(join(credentialFixture, "browser-env.json"),
+        JSON.stringify({ origin: aliasOrigin, localOrigin: origin, database, certificate: cert }),
+        { flag: "wx", mode: 0o600 });
+      const googleConfig = join(fixture, "credential-google-config.json");
+      writeFileSync(googleConfig,
+        JSON.stringify({ origin: aliasOrigin, localOrigin: origin, database, certificate: cert,
+          candidate: root, source, fixture, testEnv: join(fixture, "environment.json") }),
+        { flag: "wx", mode: 0o600 });
+      for (const [name, argument] of [
+        ["qa-account-credential-privacy-browser", credentialFixture],
+        ["qa-account-credential-google-browser", googleConfig]
+      ])
+        await run(process.execPath, ["--import", "./tests/register.mjs", "scripts/" + name + ".mjs", argument],
+          { ...env, PRIVILEGED_MFA_MODE: "enforce" });
+      const deliveries = readFileSync(providerLog, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
+      assert.ok(deliveries.length > 0, "The email-change flow must exercise the simulated server transport");
+      assert.ok(deliveries.every((entry) => entry.simulated === true && entry.provider === "Resend" && Number.isSafeInteger(entry.recipients) && entry.recipients > 0));
+      writeFileSync(join(fixture, "fictional-provider-summary.json"),
+        JSON.stringify({ sourceSha: source, deliveryAdapter: "fictional-fetch-preload", simulatedDeliveries: deliveries.length,
+          productionWrites: 0, actualProviderSends: 0, scope: "Only the inspected Resend fetch transport is simulated; no real provider is called" }),
+        { flag: "wx", mode: 0o600 });
+    }
     assert.deepEqual(browserFailures, [], "All declared browser suites must pass");
   }
 }
@@ -789,7 +939,7 @@ try {
   const config = join(fixture, "localhost-cert.cnf");
   writeFileSync(
     config,
-    "[req]\nprompt=no\ndistinguished_name=dn\nx509_extensions=local_tls\n[dn]\nCN=localhost\n[local_tls]\nsubjectAltName=IP:127.0.0.1,DNS:localhost\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,digitalSignature,keyEncipherment,keyCertSign\nextendedKeyUsage=serverAuth\n",
+    ("[req]\nprompt=no\ndistinguished_name=dn\nx509_extensions=local_tls\n[dn]\nCN=localhost\n[local_tls]\nsubjectAltName=IP:127.0.0.1,DNS:localhost\nbasicConstraints=critical,CA:TRUE\nkeyUsage=critical,digitalSignature,keyEncipherment,keyCertSign\nextendedKeyUsage=serverAuth\n").replace("DNS:localhost", "DNS:localhost" + (suite === "account-deactivation-owner" ? ",DNS:mfa-fixture.example.test" : "")),
     { mode: 0o600 }
   );
   sync("openssl", [
@@ -839,6 +989,7 @@ try {
     "godschurches_security_test"
   ]);
   sync("npm", ["run", "prisma:deploy"]);
+  if (suite === "account-deactivation-owner") await verifyAccountOwnerBoundary();
   writeFileSync(join(fixture, "environment.json"), JSON.stringify(env), {
     mode: 0o600
   });

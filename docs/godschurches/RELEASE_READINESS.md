@@ -1,3 +1,9 @@
+## Account deactivation owner safety — pending, 8 October 2026 UTC
+
+Candidate **2026.10.08.14** is not release-accepted. It preserves original-account deactivation, mounted draft recovery and newer logins across delayed replies. The current combined source must pass the existing source/security and release checks, plus the planned 65 service/handler, 9 HTTPS and 40 browser cases and 7 separately scoped controlled Data Saver scenarios.
+
+Version 2026.10.08.13 remains the serving baseline. Broad SEC-01 stays open; this candidate does not close account-export work, native activation or real provider/device acceptance. Existing approval and release rules are unchanged.
+
 ## Module adoption summaries: 2026.10.08.13
 
 Status: verified live for application b5f892dbfc906f15e18ca3d17155cde2ee5fdc12. Current source, build, service, enforced HTTPS and browser evidence: 591 source checks, 29 service checks, 5 enforced HTTPS checks and 13 full-application browser groups; 8 controlled AdminWorkspace parent scenarios are separate. Stage/live/data/recovery acceptance: 98 staged read-only checks, 285 live guest checks and 5 canonical/health checks passed; 165 tables unchanged at 2026-10-08T20:11:50.870Z, 123 migrations unchanged and no new migration. The observed runtime window had zero error, fatal and CSP rows; test writes and recipient sends were zero within the recorded scopes. The same staged deployment was promoted once without rebuild; recovery used the retained ordinary restore, not a new restore. Reviews: Exact-source final review and post-live review accepted with no blockers; the latter independently rehashed all 466 aggregate artifact bindings, 7 historical Git blobs, 21 current source bindings and 21 live screenshots.
