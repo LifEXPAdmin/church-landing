@@ -148,7 +148,7 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
     scroll.generation === state.generation ? scroll.page : "";
   if (scroll.generation !== state.generation || scroll.page !== page) setScroll({ generation: state.generation, page });
   useEffect(() => observeSessionVisibility({
-    nativePrivacy: Platform.OS === "ios" ? { source: createNativePrivacySource(),
+    nativePrivacy: Platform.OS === "ios" || Platform.OS === "android" ? { source: createNativePrivacySource(),
       generation: () => runtime.session.getSnapshot().generation, publish: setPresentation } : undefined,
     requiresFocus: Platform.OS === "android",
     currentFocus: readNativeWindowFocus,
@@ -166,7 +166,7 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
     }
   }, runtime.setForeground), [runtime]);
   const visible = state.foreground && state.phase !== "concealed" &&
-    (Platform.OS !== "ios" || presentationMatches(presentation, state));
+    ((Platform.OS !== "ios" && Platform.OS !== "android") || presentationMatches(presentation, state));
   const post = navigation.destination?.kind === "post";
   const routeKey = post ? "post:" + navigation.destination.postId : "feed:" + page;
   return <><Screen foreground={visible} scrollKey={state.generation + ":" + routeKey}>
