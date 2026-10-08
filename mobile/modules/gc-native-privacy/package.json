@@ -2,6 +2,6 @@
   "name": "@godschurches/native-privacy",
   "version": "0.0.1",
   "private": true,
-  "description": "Native iPhone lifecycle and private-window snapshot cover",
+  "description": "Native lifecycle and private-window snapshot cover",
   "license": "UNLICENSED"
 }
