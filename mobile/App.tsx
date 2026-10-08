@@ -91,6 +91,7 @@ function Preview({ fixture }: { fixture: Fixture }) {
       <Text variant="heading">Preview checks</Text>
       <Text variant="small" tone="muted">Fictional responses stay in memory. These checks do not connect to a real account.</Text>
       <Button label="Try interrupted read" secondary disabled={session.phase !== "ready"} onPress={() => readCase(fixture.failNextRead)} />
+      <Button label="Interrupt next Like reply" secondary disabled={session.phase !== "ready"} onPress={fixture.interruptNextLikeReply} />
       <Button label="Try empty feed" secondary disabled={session.phase !== "ready"} onPress={() => readCase(fixture.emptyNextFeed)} />
       <Button label="Test app link" secondary onPress={() => { void checkLink(); }} />
       {linkStatus ? <Text accessibilityLiveRegion="polite">{linkStatus}</Text> : null}
@@ -123,6 +124,12 @@ function ApplicationOwner() {
       return () => fixture.runtime.dispose();
     }
     const created = createNativeApplication(selected.configuration, {
+      mutationId() {
+        // A new explicit choice loads the existing native randomness provider.
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { randomUUID } = require("expo-crypto") as typeof import("expo-crypto");
+        return randomUUID();
+      },
       wire(configuration) {
         // Bind native modules only after selection, inside construction's catch.
         // eslint-disable-next-line @typescript-eslint/no-require-imports

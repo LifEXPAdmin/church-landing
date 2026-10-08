@@ -47,7 +47,7 @@ final class GCJSONTransport: NSObject, URLSessionDataDelegate, @unchecked Sendab
     }
   }
   func reserve(_ id: String, completion: @escaping @Sendable (Bool) -> Void) {
-    queue.async {
+    queue.async { [self] in
       guard !self.closed, self.origin != nil, GCJSONPolicy.validID(id), self.flights[id] == nil,
         self.flights.count < GCJSONPolicy.maximumFlights else { completion(false); return }
       let flight = Flight(id)

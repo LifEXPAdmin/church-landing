@@ -96,7 +96,8 @@ Plain reposts use the currently projected original and its content note. Quoted
 originals remain independent previews requiring their own detail read. Missing
 originals never fall back to obsolete wrapper content. Hidden counts remain
 hidden, and church authors, audiences and closed discussions remain distinct.
-Body links are inert text; this slice adds no media loads, writes or WebViews.
+Body links are inert text. The original reading slice added no media loads, writes
+or WebViews; the detail Like consumer below adds its separately admitted command.
 
 Sign-out conceals content immediately. Local removal and remote revocation have
 separate, truthful status messages. Interrupted verification and read errors
@@ -185,3 +186,66 @@ checkpoint; this is not a download-size or performance result.
 Native transport and storage, iOS/Android
 builds, device lifecycle/network behavior, keyboard and assistive-technology
 checks remain separate from source, type and unit-test evidence.
+
+
+## Detail Like choices and interrupted replies
+
+The detail screen now composes a small Like subscriber alongside the existing
+post presentation. The runtime loads Like capabilities and current state only
+for its authorized detail. Feed cards issue no Like requests. Post readability
+does not wait for that optional state. Missing or duplicate read capabilities
+fail closed; a missing write capability disables choosing. Plain reposts retain
+the requested wrapper path while validating responses against the original's
+interaction ID. Quote commentary owns its own interaction. A hidden total in
+either current projection stays hidden, and the detail shows one Like count.
+
+A new choice uses an injected mutation ID, current Like version and desired
+state. Native composition invokes the existing Expo Crypto provider lazily;
+fixture IDs are deterministic. There is no fallback random generator or new
+dependency. The UI never chooses an account, version, command ID or request body.
+Commands require the exact rendered immutable snapshot. Mounted-leaf and
+in-flight guards reject obsolete controls and repeated gestures before renewing
+foreground activity. Passive reads and rendering send no mutation or renewal.
+
+The runtime holds at most one immutable pending choice in memory. A lost reply
+can be retried explicitly with the same path and canonical body. A successful
+historical receipt clears that choice and triggers a fresh authorized Like read;
+it never supplies the displayed current state. A failed follow-up read offers
+status refresh, not another mutation retry. After an earlier uncertain attempt,
+a later confirmed pause or denial keeps the original choice but requires a fresh
+capability/state check before retry. New choices remain disabled while a prior
+choice is unresolved, including on another post.
+
+Back and other navigation remain available. A generic Review pending Like choice
+control returns through normal authorized navigation without retaining post text
+or author data. Concealment hides all Like and pending metadata, cancels the
+flight and discards its executable attempt. A private session-owned continuity
+predicate permits explicit identical re-admission only after the same saved
+credential is freshly verified. Existing prepared-request generation guards are
+unchanged. Sign-out, credential replacement and disposal clear the choice. A
+process restart loses this memory-only recovery; there is no persistent outbox,
+automatic resend or automatic rebasing of the expected version.
+
+The labeled preview can interrupt the next fictional Like reply after saving its
+choice, allowing the real controller and UI to exercise recovery. The fixture
+retains one bounded historical receipt and does not implement a real server or
+prove native HTTPS behavior. Comments, prayer actions, sharing and preference
+editing are outside this slice. Accepted native configuration remains unavailable
+until the independent backend and native-session gates are satisfied.
+
+The 8 October source checkpoint passes 301 mobile tests. A fresh corrected iOS
+Release binary on iPhone SE with iOS 18.3.1 exercised visible-count Like/Unlike,
+interrupted-reply recovery, the native privacy cover, verified return and pending
+choice removal at sign-out. Its fictional sign-in form also preserved values
+across live normal-to-largest-to-normal system text changes without navigation.
+The theme observes public font-scale changes once, and only the iOS text host
+remounts to recalculate its layout. Text inputs, pressable hosts and session owners
+stay mounted; no second font multiplier or maximum scale is introduced.
+
+The largest retry controls visibly wrap, but periodic authorized detail reads
+also remount post content and can reset its scroll position. That continuity is
+separate follow-up. Input-host identity tests and retained fictional values do
+not prove software-keyboard, selection or VoiceOver focus preservation. Android's
+separately reported feed-label clipping remains unresolved by this iOS-only fix.
+See [the build receipt summary](IOS_BUILD.md#detail-like-and-live-text-verification)
+for exact validation boundaries and open native/release gates.
