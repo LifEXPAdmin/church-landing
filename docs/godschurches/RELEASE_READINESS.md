@@ -1,3 +1,7 @@
+## Resource feed candidate, 8 October 2026 UTC
+
+Version 2026.10.08.11 requires exact-source security and isolated production-build service, HTTPS, full application browser and separate controlled foreground acceptance. Source-ready historical handoffs are not receiving acceptance. Preserve finite reading sets, explicit continuation, current permissions, account and guest separation, retained drafts and return geometry. Independent final review, applicable recovery, staged and canonical live checks remain required. No schema or dependency change is proposed. Production publication has not occurred.
+
 ## 8 October 2026: public resource release acceptance
 
 Release 2026.10.08.10 / e603becbf947c2e1536b42f8dca0c9372c8306f4 passed its required exact-source gates and independent reviews, then used the same READY staged deployment for staging, promotion and canonical verification at 2026-10-08T15:18:18.262Z. Actual checks were 94 staged, 278 live and 5 health; 165 table fingerprints and 123 migration records remained unchanged at 2026-10-08T15:20:39.303Z; no migration was applied. The ordinary restore completed at 2026-10-08T04:51:44.297Z was reused after applicability checks at 2026-10-08T15:10:47.111Z; no new restore or protected replay ran. Scheduled backup inspection at 2026-10-08T15:18:40.727Z found no operational problems; its installed verified copy was 6.19 hours old, within the 20-hour refresh threshold. The inspection ran no backup job or new copy.

@@ -168,6 +168,7 @@ try {
     : process.argv.includes("--discovery")
       ? [
           "tests/discovery-options.test.ts",
+          "tests/discovery-resource-preferences.test.ts",
           "tests/discovery-feeds.test.ts",
           "tests/four-feeds.test.ts",
           "tests/post-workspace.test.ts",

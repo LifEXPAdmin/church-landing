@@ -38,13 +38,32 @@ assert.ok(
     "need-contribution",
     "need-incoming",
     "need-volunteer",
-    "public-resource-sharing"
+    "public-resource-sharing",
+    "resource-feeds"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "resource-feeds": {
+    services: [
+      "discovery-options",
+      "discovery-resource-preferences",
+      "discovery-feeds",
+      "discovery-device",
+      "four-feeds",
+      "post-reader",
+      "reader-navigation"
+    ],
+    browsers: [
+      "qa-resource-feed-preferences-browser",
+      "qa-resource-feed-reader-browser",
+      "qa-discovery-browser",
+      "qa-four-feeds-browser"
+    ],
+    https: ["discovery-http", "four-feeds-http", "post-reader-http"]
+  },
   "public-resource-sharing": {
     services: ["public-resource-discovery", "public-discoverability", "gallery-sharing", "share-card-images"],
     browsers: ["qa-public-resource-metadata", "qa-resource-sharing-browser", "qa-sharing-browser", "qa-calendar-sharing-browser", "qa-friend-invitations-browser"],
@@ -639,12 +658,23 @@ async function verifyBuiltApplication() {
         "--test-concurrency=1",
         ...profile.https.map((name) => `tests/${name}.test.ts`)
       ],
-      { ...env, PRIVILEGED_MFA_MODE: "enforce", ARTIST_HTTP_MFA_ENFORCED: "1" }
+      {
+        ...env,
+        PRIVILEGED_MFA_MODE: "enforce",
+        ARTIST_HTTP_MFA_ENFORCED: "1",
+        ...(suite === "resource-feeds" ? { POST_RENDER_PHASE: "production" } : {})
+      }
     );
     assert.deepEqual(browserFailures, [], "All declared browser suites must pass");
   }
 }
 try {
+  if (suite === "resource-feeds") {
+    await run(process.execPath, [
+      "scripts/qa-resource-foreground-client.mjs",
+      join(fixture, "resource-foreground-client")
+    ]);
+  }
   if (suite === "public-resource-sharing") {
     const qrFixture = mkdtempSync(join(fixture, "share-qr-client-"));
     await run(process.execPath, [
@@ -722,7 +752,7 @@ try {
   writeFileSync(join(fixture, "environment.json"), JSON.stringify(env), {
     mode: 0o600
   });
-  if (suite === "public-resource-sharing")
+  if (["public-resource-sharing", "resource-feeds"].includes(suite))
     writeFileSync(join(fixture, "test-env.json"), JSON.stringify(env), {
       mode: 0o600,
       flag: "wx"

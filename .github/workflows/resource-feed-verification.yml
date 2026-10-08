@@ -1,0 +1,259 @@
+name: Resource feed isolated verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/release-resource-feeds-20261008
+    paths:
+      - .github/workflows/resource-feed-verification.yml
+      - package.json
+      - package-lock.json
+      - prisma/**
+      - scripts/test-platform-isolated.mjs
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - scripts/patch-next-hydration.mjs
+      - scripts/verify-hydration-output.mjs
+      - scripts/verify-runtime-traces.mjs
+      - scripts/qa-resource-feed-*-browser.mjs
+      - scripts/qa-resource-foreground-client.mjs
+      - scripts/qa-discovery-browser.mjs
+      - scripts/qa-four-feeds-browser.mjs
+      - tests/discovery*.test.*
+      - tests/four-feeds*.test.*
+      - tests/post-reader*.test.*
+      - tests/reader-navigation.test.ts
+      - tests/resource-*.test.*
+      - tests/feed-snapshot-page.test.mjs
+      - components/platform/discovery-settings.tsx
+      - components/platform/repost-source-boundary.tsx
+      - components/platform/post-resource-cards.tsx
+      - components/platform/feed-reader.tsx
+      - lib/platform/discovery*.ts
+      - lib/platform/feed-reads.ts
+      - lib/platform/feed-snapshot-page.ts
+      - lib/platform/release-*.ts
+      - app/api/platform/release/route.ts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: resource-feeds-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/resource-feed-chromium
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
+      - name: Prepare runner-only browser and PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+          npm install --prefix "$RUNNER_TEMP/resource-feed-browser" --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/resource-feed-browser/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/resource-feed-browser/node_modules/playwright/package.json" >> "$GITHUB_ENV"
+          chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/resource-feed-browser/node_modules/playwright")"
+          echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
+      - name: Build and verify fictional resource feeds over local HTTPS
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs resource-feeds 2>&1 | tee "$RUNNER_TEMP/resource-feeds-verification.log"
+      - name: Record exact source, build and observed test totals
+        if: always()
+        env:
+          RESOURCE_FEED_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { createHash } from "node:crypto";
+          import { createRequire } from "node:module";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { dirname, join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const profile = "resource-feeds";
+          const output = join(process.env.RUNNER_TEMP, profile + "-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, profile + "-verification.log");
+          const lines = existsSync(logPath) ? readFileSync(logPath, "utf8").split(/\r?\n/) : [];
+          // Only aggregate diagnostics are exported. Raw errors, fixture identities,
+          // API bodies, signed cursors, history and environment remain excluded.
+          const safeLines = lines.filter((line) => /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line) || /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) || /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
+          const log = safeLines.join("\n") + "\n";
+          const totals = (metric) => [...log.matchAll(new RegExp("^(?:#|ℹ) " + metric + " (\\d+)$", "gm"))].map((match) => Number(match[1]));
+          const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
+          const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((match) => ({ sourceSha: match[1], mode: match[2] }));
+          const definitions = {
+            "resource-feed-preferences-browser": { file: "results.json", groups: 6, external: true, productionWrites: true },
+            "resource-feed-reader-browser": { file: "results.json", groups: 8, external: true, productionWrites: true, reader: true },
+            "discovery-browser": { file: "results.json", groups: 11, external: true, physicalDevice: false },
+            "four-feeds-browser": { file: "RESULT.json", groups: 11, external: true, productionWrites: true, externalSends: true }
+          };
+          const fixtures = (existsSync(".account-test") ? readdirSync(".account-test") : []).filter((name) => name.startsWith(profile + "-hosted-"));
+          const count = (value) => Array.isArray(value) ? value.length : null;
+          const empty = (value) => Array.isArray(value) && value.length === 0;
+          const browsers = [], controlled = [], conditionalObservations = [];
+          const hash = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+          const require = createRequire(join(process.cwd(), "package.json"));
+          const controlledSources = [
+            "components/platform/repost-source-boundary.tsx",
+            "components/platform/discovery-settings.tsx",
+            "components/platform/read-visibility.ts",
+            "lib/platform/discovery-options.ts",
+            "lib/platform/feed-options.ts",
+            "lib/platform/post-options.ts",
+            "lib/platform/portal-policy.ts",
+            "lib/platform/portal-types.ts",
+            "data/discovery/countries.json",
+            "data/discovery/languages.json"
+          ];
+          const controlledRuntimeModules = [
+            ["react", "react", "react.development.js"],
+            ["react/jsx-runtime", "react", "react-jsx-runtime.development.js"],
+            ["react-dom", "react-dom", "react-dom.development.js"],
+            ["react-dom/client", "react-dom", "react-dom-client.development.js"],
+            ["scheduler", "scheduler", "scheduler.development.js"]
+          ];
+
+          const readJson = (path) => { try { return JSON.parse(readFileSync(path, "utf8")); } catch { return null; } };
+          for (const name of fixtures) {
+            const fixture = join(".account-test", name);
+            for (const directory of readdirSync(fixture)) {
+              if (directory === "resource-foreground-client") {
+                const result = readJson(join(fixture, directory, "results.json"));
+                const sourceBindings = controlledSources.map((path) => ({ path, sha256: hash(path), bytes: readFileSync(path).length }));
+                const runtimeModules = controlledRuntimeModules.map(([name, pkg, file]) => ({
+                  name, package: pkg, file,
+                  sha256: hash(join(dirname(require.resolve(pkg + "/package.json")), "cjs", file))
+                }));
+                const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+                const detailsValid = result?.suite === "resource-foreground-client" && result?.status === "passed" && result?.passed === 12 && result?.failed === 0 && count(result?.results) === 12 && result.results.every((entry) => entry.pass === true) && empty(result?.errors) && result?.blockedNetworkRequests === 0 && result?.productionWrites === null && result?.externalSends === null && result?.scopeEvidence === "controlled-component-with-blocked-network-and-stub-transport" && same(result?.sourceBindings, sourceBindings) && same(result?.runtimeModules, runtimeModules) && result?.harnessSha256 === hash("scripts/qa-resource-foreground-client.mjs");
+                controlled.push({
+                  suite: "resource-foreground-client", reportedGroups: count(result?.results), errorCount: count(result?.errors), detailsValid,
+                  sourceBindings, runtimeModules, harnessSha256: hash("scripts/qa-resource-foreground-client.mjs"),
+                  productionWrites: null, externalSends: null, blockedNetworkRequests: result?.blockedNetworkRequests ?? null,
+                  scopeEvidence: "controlled-component-with-blocked-network-and-stub-transport"
+                });
+                continue;
+              }
+              const suite = directory.replace(/-\d+$/, "");
+              const definition = definitions[suite];
+              if (!definition) continue;
+              const result = readJson(join(fixture, directory, definition.file));
+              let detailsValid = empty(result?.errors) && count(result?.results) === definition.groups && result.results.every((entry) => typeof entry === "string" && entry.length > 0);
+              if (definition.external) detailsValid &&= empty(result?.external) && result?.externalRequests === 0;
+              if (definition.productionWrites) detailsValid &&= result?.productionWrites === 0;
+              if (definition.externalSends) detailsValid &&= result?.externalSends === 0;
+              if (Object.hasOwn(definition, "physicalDevice")) detailsValid &&= result?.physicalDeviceTested === definition.physicalDevice;
+              if (definition.reader) {
+                detailsValid &&= result?.initialPosts === 35 && result?.firstSet === 30 && result?.continuation === 5;
+                const held = readJson(join(fixture, directory, "withdrawal-held-permission.json"));
+                const heldValid = typeof held?.cachedPostPresent === "boolean" && held?.heldTextVisible === false && Number.isSafeInteger(held?.heldResponses) && held.heldResponses >= 0 && (!held.cachedPostPresent || (held.heldResponses >= 1 && existsSync(join(fixture, directory, "withdrawal-held-permission.png"))));
+                detailsValid &&= heldValid;
+                conditionalObservations.push({
+                  suite,
+                  cachedPostPresent: typeof held?.cachedPostPresent === "boolean" ? held.cachedPostPresent : null,
+                  heldTextVisible: typeof held?.heldTextVisible === "boolean" ? held.heldTextVisible : null,
+                  heldResponses: Number.isSafeInteger(held?.heldResponses) ? held.heldResponses : null,
+                  heldResponseBranchObserved: heldValid ? held.cachedPostPresent : null,
+                  detailsValid: heldValid
+                });
+              }
+              browsers.push({
+                suite, reportedGroups: count(result?.results), errorCount: count(result?.errors), detailsValid,
+                productionWrites: definition.productionWrites ? result?.productionWrites ?? null : null,
+                externalSends: definition.externalSends ? result?.externalSends ?? null : null,
+                externalRequestCount: definition.external ? count(result?.external) : null,
+                scopeEvidence: "guarded-fictional-runner-and-successful-child-exit",
+                physicalDevice: false
+              });
+            }
+          }
+          const runtimeOutcome = process.env.RESOURCE_FEED_RUNTIME_OUTCOME;
+          const expectedBrowserGroups = Object.values(definitions).reduce((sum, value) => sum + value.groups, 0);
+          const report = { sourceSha, profile, buildId, servingIdentities, runtimeOutcome, complete: false, environment: "isolated-fictional", omittedLogLines: lines.filter(Boolean).length - safeLines.length, tests: totals("tests"), pass: totals("pass"), fail: totals("fail"), cancelled: totals("cancelled"), skipped: totals("skipped"), todo: totals("todo"), expectedBrowserGroups, browsers, controlled, conditionalObservations };
+          const save = () => writeFileSync(join(output, "report.json"), JSON.stringify(report, null, 2) + "\n");
+          save();
+          writeFileSync(join(output, "verification.log"), log);
+          if (runtimeOutcome === "success") {
+            assert.equal(fixtures.length, 1);
+            assert.match(buildId ?? "", /^[A-Za-z0-9_-]+$/);
+            assert.deepEqual([...log.matchAll(/^Platform production build ID: ([A-Za-z0-9_-]+)$/gm)].map((match) => match[1]), [buildId]);
+            assert.deepEqual(servingIdentities, [{ sourceSha, mode: "off" }, { sourceSha, mode: "enforce" }]);
+            assert.deepEqual(report.tests, [65, 5]);
+            assert.deepEqual(report.pass, [65, 5]);
+            for (const metric of ["fail", "cancelled", "skipped", "todo"]) assert.deepEqual(report[metric], [0, 0]);
+            assert.equal(browsers.length, Object.keys(definitions).length);
+            for (const [suite, definition] of Object.entries(definitions)) assert.deepEqual(browsers.filter((entry) => entry.suite === suite).map((entry) => entry.reportedGroups), [definition.groups]);
+            assert.ok(browsers.every((entry) => entry.detailsValid));
+            assert.equal(browsers.reduce((sum, entry) => sum + entry.reportedGroups, 0), expectedBrowserGroups);
+            assert.equal(conditionalObservations.length, 1);
+            assert.ok(conditionalObservations[0].detailsValid);
+            assert.equal(controlled.length, 1);
+            assert.equal(controlled[0].reportedGroups, 12);
+            assert.ok(controlled[0].detailsValid, "Current source-bound foreground component receipt required");
+            report.complete = true;
+            save();
+          }
+          NODE
+      - name: Preserve aggregate results and fictional resource feed screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: resource-feeds-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/resource-feeds-evidence/report.json
+            ${{ runner.temp }}/resource-feeds-evidence/verification.log
+            .account-test/resource-feeds-hosted-*/resource-feed-preferences-browser-*/resource-choices-large-text-320.png
+            .account-test/resource-feeds-hosted-*/resource-feed-preferences-browser-*/settings-large-text-320.png
+            .account-test/resource-feeds-hosted-*/resource-feed-preferences-browser-*/current-resource-access.png
+            .account-test/resource-feeds-hosted-*/resource-feed-reader-browser-*/pages-320.png
+            .account-test/resource-feeds-hosted-*/resource-feed-reader-browser-*/pages-1440.png
+            .account-test/resource-feeds-hosted-*/resource-feed-reader-browser-*/list-resource-320.png
+            .account-test/resource-feeds-hosted-*/resource-feed-reader-browser-*/list-resource-1440.png
+            .account-test/resource-feeds-hosted-*/resource-feed-reader-browser-*/focused-resource-320.png
+            .account-test/resource-feeds-hosted-*/resource-feed-reader-browser-*/focused-resource-1440.png
+            .account-test/resource-feeds-hosted-*/resource-feed-reader-browser-*/withdrawal-held-permission.png
+            .account-test/resource-feeds-hosted-*/discovery-browser-*/settings-320.png
+            .account-test/resource-feeds-hosted-*/discovery-browser-*/settings-390.png
+            .account-test/resource-feeds-hosted-*/discovery-browser-*/settings-1280.png
+            .account-test/resource-feeds-hosted-*/discovery-browser-*/standalone-large-text-320.png
+            .account-test/resource-feeds-hosted-*/discovery-browser-*/final.png
+            .account-test/resource-feeds-hosted-*/four-feeds-browser/feed-settings-320.png
+            .account-test/resource-feeds-hosted-*/four-feeds-browser/focused-320.png
+            .account-test/resource-feeds-hosted-*/four-feeds-browser/focused-390.png
+            .account-test/resource-feeds-hosted-*/four-feeds-browser/focused-1280.png
+            .account-test/resource-feeds-hosted-*/four-feeds-browser/selector-320.png
+            .account-test/resource-feeds-hosted-*/four-feeds-browser/selector-390.png
+            .account-test/resource-feeds-hosted-*/four-feeds-browser/selector-1280.png
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+

@@ -55,11 +55,30 @@ const browser = await chromium.launch({
 });
 const context = await browser.newContext({
   timezoneId: "America/Chicago",
+  serviceWorkers: "block",
   viewport: { width: 390, height: 844 }
 });
-const page = await context.newPage();
 let phase = "initial";
-const errors = [];
+const errors = [],
+  external = [];
+let feedFault;
+const fixtureRoute = (route, localHandler) => {
+  const url = new URL(route.request().url());
+  if (url.origin !== config.origin) {
+    external.push({ phase, reason: "non-fixture-origin" });
+    return route.abort();
+  }
+  return localHandler ? localHandler(route, url) : route.continue();
+};
+await context.route("**/*", (route) =>
+  fixtureRoute(route, (route, url) =>
+    url.pathname === "/api/platform/feed" && feedFault
+      ? feedFault(route)
+      : route.continue()
+  )
+);
+const page = await context.newPage();
+await page.bringToFront();
 page.on("pageerror", (e) => {
   const issue = {
     phase,
@@ -278,8 +297,10 @@ try {
     "fictional-new-feed-session"
   );
   const freshContext = await browser.newContext({
-    viewport: { width: 390, height: 844 }
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: "block"
   });
+  await freshContext.route("**/*", (route) => fixtureRoute(route));
   await freshContext.addCookies([
     {
       name: sessionCookieFixtureName(config.origin),
@@ -291,9 +312,11 @@ try {
     }
   ]);
   const freshPage = await freshContext.newPage();
+  await freshPage.bringToFront();
   await freshPage.goto(config.origin + "/platform");
   assert.equal(await selectedFeed(freshPage), "friends");
   await freshContext.close();
+  await page.bringToFront();
   ok(
     "Signed-in accounts ignore the guest choice, include own Latest posts and restore their saved Friends choice in a new session"
   );
@@ -403,14 +426,18 @@ try {
   );
 
   let dropped;
-  await page.route("**/api/platform/feed", async (route) => {
+  feedFault = async (route) => {
     if (route.request().method() === "POST" && !dropped) {
       dropped = route.request().postData();
-      const response = await route.fetch();
-      assert.equal(response.status(), 200);
-      await route.abort("failed");
+      const response = await route.fetch({ maxRedirects: 0 });
+      try {
+        assert.equal(response.status(), 200);
+        await route.abort("failed");
+      } finally {
+        await response.dispose();
+      }
     } else await route.continue();
-  });
+  };
   await selectFeed("trending");
   await page
     .getByRole("button", { name: "Retry the same feed choice", exact: true })
@@ -430,7 +457,7 @@ try {
       .feedVersion,
     version
   );
-  await page.unroute("**/api/platform/feed");
+  feedFault = undefined;
   ok(
     "A lost preference acknowledgement retains identical retry bytes and keeps the previous label with its previous posts until confirmation"
   );
@@ -585,9 +612,11 @@ try {
   );
   await bounded();
   const coldContext = await browser.newContext({
-    viewport: { width: 390, height: 844 }
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: "block"
   });
   const coldPage = await coldContext.newPage();
+  await coldPage.bringToFront();
   coldPage.on("pageerror", (error) =>
     errors.push({
       phase: "cold-controls",
@@ -600,10 +629,12 @@ try {
   const chunksHeld = new Promise((resolve) => {
     releaseChunks = resolve;
   });
-  await coldContext.route("**/_next/static/chunks/**", async (route) => {
-    await chunksHeld;
-    await route.continue();
-  });
+  await coldContext.route("**/*", (route) =>
+    fixtureRoute(route, async (route, url) => {
+      if (url.pathname.startsWith("/_next/static/chunks/")) await chunksHeld;
+      await route.continue();
+    })
+  );
   try {
     await coldPage.goto(config.origin + "/platform?feed=latest&mode=list", {
       waitUntil: "commit"
@@ -642,12 +673,21 @@ try {
   } finally {
     releaseChunks();
     await coldContext.close();
+    await page.bringToFront();
   }
   assert.deepEqual(errors, []);
+  assert.deepEqual(external, []);
   writeFileSync(
     output + "/RESULT.json",
     JSON.stringify(
-      { results, errors, productionWrites: 0, externalSends: 0 },
+      {
+        results,
+        errors,
+        external,
+        externalRequests: external.length,
+        productionWrites: 0,
+        externalSends: 0
+      },
       null,
       2
     )

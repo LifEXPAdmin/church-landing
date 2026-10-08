@@ -1,3 +1,7 @@
+## Resource feed choices and reader return prepared, 8 October 2026 UTC
+
+Candidate 2026.10.08.11 adds independent listing, event, media and opportunity choices to the existing Home feeds, with current access checks during ranking, paging and retained-set replay. Returning from resource detail preserves the selected feed and List geometry while current post access is confirmed. Two reproduced foreground races received narrow admission and settlement repairs. Current bounded snapshot optimization, numeric reaction behavior, schema and dependencies are preserved. Fresh combined acceptance is pending; the verified live site remains 2026.10.08.10.
+
 ## 8 October 2026: public metadata and sharing verified live
 
 Release 2026.10.08.10 serves application e603becbf947c2e1536b42f8dca0c9372c8306f4; canonical identity was verified at 2026-10-08T15:18:18.262Z. Public listings and media now use current-permission metadata, sitemap entries and truthful structured facts, with canonical Copy/Share/QR controls and fresh download access checks. Existing private Exchange and sharing behavior is preserved.

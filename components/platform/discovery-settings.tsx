@@ -11,6 +11,8 @@ import {
   discoveryMode,
   DISCOVERY_RADII,
   DISCOVERY_TYPES,
+  DISCOVERY_RESOURCE_KINDS,
+  discoveryResourceLabels,
   discoveryLanguages,
   GUEST_DISCOVERY_COOKIE,
   guestDiscoveryPreferences,
@@ -48,6 +50,10 @@ const cookie = (name: string) =>
     .split("; ")
     .find((entry) => entry.startsWith(name + "="))
     ?.slice(name.length + 1);
+const hasCurrentForeground = () =>
+  document.visibilityState === "visible" &&
+  document.hasFocus() &&
+  navigator.onLine;
 export function DiscoverySettings({
   owner,
   initialMode,
@@ -67,6 +73,10 @@ export function DiscoverySettings({
   const generation = useRef(0);
   const load = useCallback(async () => {
     const seq = ++generation.current;
+    if (!owner && !hasCurrentForeground()) {
+      setGuestVisible(false);
+      return;
+    }
     setError("");
     setUnreadableGuest(false);
     try {
@@ -106,7 +116,7 @@ export function DiscoverySettings({
         "SHA-256",
         new TextEncoder().encode(JSON.stringify(data))
       );
-      if (seq === generation.current) {
+      if (seq === generation.current && (owner || hasCurrentForeground())) {
         setSnapshot({
           data,
           checksum: Array.from(new Uint8Array(hash), (b) =>
@@ -145,13 +155,30 @@ export function DiscoverySettings({
       seq = 0;
     const hide = () => {
       seq++;
+      generation.current++;
       setGuestVisible(false);
     };
     const check = async () => {
+      if (!hasCurrentForeground()) {
+        hide();
+        return;
+      }
+      // A blurred first load was discarded. Resume it, but keep an existing
+      // mounted form and its unsaved choices when only rechecking identity.
+      if (!snapshot) {
+        await load();
+        return;
+      }
       const n = ++seq;
+      const loadGeneration = generation.current;
       try {
         const current = await currentSocialOwner();
-        if (active && n === seq) {
+        if (
+          active &&
+          n === seq &&
+          loadGeneration === generation.current &&
+          hasCurrentForeground()
+        ) {
           setGuestVisible(current === null);
           if (current)
             setError(
@@ -159,7 +186,7 @@ export function DiscoverySettings({
             );
         }
       } catch {
-        if (active && n === seq) {
+        if (active && n === seq && loadGeneration === generation.current) {
           setGuestVisible(false);
           setError(
             "Reconnect to check whether these guest choices still apply."
@@ -168,8 +195,10 @@ export function DiscoverySettings({
       }
     };
     const visible = () =>
-      document.visibilityState === "hidden" ? hide() : void check();
+      hasCurrentForeground() ? void check() : hide();
     window.addEventListener("blur", hide);
+    window.addEventListener("pagehide", hide);
+    window.addEventListener("pageshow", check);
     window.addEventListener("focus", check);
     window.addEventListener("online", check);
     window.addEventListener("offline", hide);
@@ -177,12 +206,14 @@ export function DiscoverySettings({
     return () => {
       active = false;
       window.removeEventListener("blur", hide);
+      window.removeEventListener("pagehide", hide);
+      window.removeEventListener("pageshow", check);
       window.removeEventListener("focus", check);
       window.removeEventListener("online", check);
       window.removeEventListener("offline", hide);
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [owner]);
+  }, [owner, load, snapshot]);
   const form = snapshot && (
     <DiscoverySettingsForm
       key={snapshot.checksum}
@@ -491,6 +522,38 @@ function DiscoverySettingsForm({
             </option>
           ))}
         </select>
+        <fieldset aria-describedby={`${id}-resources-description`}>
+          <legend className="font-semibold">Posts sharing resources</legend>
+          <p
+            id={`${id}-resources-description`}
+            className="text-sm text-gc-muted"
+          >
+            These choices apply to all Home feeds. Turn off a kind to hide posts
+            sharing it, including posts sharing several kinds. Posts without
+            available resource cards stay in the feed. Each resource keeps its
+            existing access rules.
+          </p>
+          <div className="flex flex-wrap gap-x-4">
+            {DISCOVERY_RESOURCE_KINDS.map((kind) => (
+              <label key={kind} className="flex min-h-11 items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={prefs.filters.resources.includes(kind)}
+                  onChange={(e) =>
+                    filters({
+                      resources: e.target.checked
+                        ? [...prefs.filters.resources, kind]
+                        : prefs.filters.resources.filter(
+                            (item) => item !== kind
+                          )
+                    })
+                  }
+                />
+                {discoveryResourceLabels[kind]}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <details open={!!advanced} className="space-y-4">
           <summary className="min-h-11 cursor-pointer py-2 font-semibold">
             Discovery filters and interests
@@ -498,8 +561,8 @@ function DiscoverySettingsForm({
           <p className="text-sm text-gc-muted">
             These advanced filters apply to For You, Following, Your Church,
             Churches, Local, Public and Favorites. Latest, Friends, Top This
-            Week and Trending keep their existing ordering. Hidden words and
-            topics below apply to all Home feeds.
+            Week and Trending keep their existing ordering. Resource choices,
+            hidden words and hidden topics apply to all Home feeds.
           </p>
           <label className="block font-semibold" htmlFor={`${id}-church`}>
             Your selected approved church

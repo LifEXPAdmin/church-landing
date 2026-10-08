@@ -442,7 +442,7 @@ export const features: Feature[] = [
     description:
       "Read For You, Following, Your Church, Churches, Local, Public or Favorites using choices you control.",
     steps:
-      "Choose a feed in Home or My feed, then open Feed Settings. Select exact topics, languages, traditions, post types or a broad area, and save a strict or explicitly expanded preset. Why this post explains the reading set. More/Less changes topic recommendations; hidden words and topics apply across all Home feeds. Refresh when you want a new set.",
+      "Choose a feed in Home or My feed, then open Feed Settings. Choose whether to include posts sharing listings, events, media or volunteer opportunities. Select exact topics, languages, traditions, post types or a broad area, and save a strict or explicitly expanded preset. Why this post explains the reading set. More/Less changes topic recommendations; resource choices, hidden words and hidden topics apply across all Home feeds. Refresh when you want a new set.",
     href: "/platform/settings/feed/discovery",
     eligibility:
       "Guest choices stay on that browser. Account preferences and favorites stay private. Following uses current follows; Your Church requires an approved connection. Public and Local never include church-only posts. Recommendations use explicit choices, not inferred faith or reading time.",
@@ -1047,6 +1047,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "resource-feed-choices-and-reader-return", version: "2026.10.08.11", date: "2026-10-08",
+    summary: "Choose which resource posts appear in Home feeds and keep your place when returning from a resource page.",
+    added: ["Feed settings lets you independently include posts sharing listings, events, media and volunteer opportunities. Older saved choices keep all four kinds enabled."],
+    improved: ["Resource choices apply before feed ordering and pagination, including when returning to a saved reading set. Each resource retains its current access rules.", "Returning from a resource page preserves the selected feed and reading position while current access is checked. Reading sets still end deliberately."],
+    fixed: ["Returning post content stays concealed until its current access is confirmed. Pending checks preserve List layout and mounted drafts.", "Unfocused pages cannot redisplay post content or guest feed choices after a delayed check. Guest settings resume safely when focus returns."],
+    featureIds: ["discovery-feeds", "reader"]
+  },
   {
     id: "public-resource-sharing", version: "2026.10.08.10", date: "2026-10-08",
     summary: "Share eligible public listings and media with current previews, clean links and QR codes.",

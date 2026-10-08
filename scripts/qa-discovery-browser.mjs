@@ -56,11 +56,25 @@ const browser = await chromium.launch({
 const context = await browser.newContext({
   timezoneId: "America/Chicago",
   hasTouch: true,
+  serviceWorkers: "block",
   viewport: { width: 390, height: 844 }
 });
-const page = await context.newPage();
 let phase = "initial";
-const errors = [];
+const errors = [],
+  external = [];
+let discoveryFault;
+await context.route("**/*", (route) => {
+  const url = new URL(route.request().url());
+  if (url.origin !== config.origin) {
+    external.push({ phase, reason: "non-fixture-origin" });
+    return route.abort();
+  }
+  if (url.pathname === "/api/platform/discovery" && discoveryFault)
+    return discoveryFault(route);
+  return route.continue();
+});
+const page = await context.newPage();
+await page.bringToFront();
 page.on("pageerror", (e) => {
   const issue = {
     phase,
@@ -401,19 +415,23 @@ try {
     .fill("not present private phrase");
   let dropped;
   const bodies = [];
-  await page.route("**/api/platform/discovery", async (route) => {
+  discoveryFault = async (route) => {
     if (route.request().method() === "POST") {
       bodies.push(route.request().postData());
       if (!dropped) {
         dropped = route.request().postData();
-        const response = await route.fetch();
-        assert.ok([200, 202].includes(response.status()));
-        await route.abort("failed");
+        const response = await route.fetch({ maxRedirects: 0 });
+        try {
+          assert.ok([200, 202].includes(response.status()));
+          await route.abort("failed");
+        } finally {
+          await response.dispose();
+        }
         return;
       }
     }
     await route.continue();
-  });
+  };
   await form()
     .getByRole("button", { name: "Save feed settings", exact: true })
     .click();
@@ -449,7 +467,7 @@ try {
       .discoveryVersion,
     afterLoss.discoveryVersion
   );
-  await page.unroute("**/api/platform/discovery");
+  discoveryFault = undefined;
   ok(
     "A lost settings response survives focus revalidation and retries the exact original mutation once"
   );
@@ -462,18 +480,23 @@ try {
     .waitFor();
   let feedbackDropped;
   const feedbackBodies = [];
-  await page.route("**/api/platform/discovery", async (route) => {
+  discoveryFault = async (route) => {
     if (route.request().method() === "POST") {
       feedbackBodies.push(route.request().postData());
       if (!feedbackDropped) {
         feedbackDropped = route.request().postData();
-        await route.fetch();
-        await route.abort("failed");
+        const response = await route.fetch({ maxRedirects: 0 });
+        try {
+          assert.ok([200, 202].includes(response.status()));
+          await route.abort("failed");
+        } finally {
+          await response.dispose();
+        }
         return;
       }
     }
     await route.continue();
-  });
+  };
   await first
     .getByRole("button", { name: "More of this topic", exact: true })
     .click();
@@ -494,7 +517,7 @@ try {
     .waitFor();
   assert.equal(feedbackBodies.at(-1), feedbackDropped);
   assert.deepEqual(await getIds(), before);
-  await page.unroute("**/api/platform/discovery");
+  discoveryFault = undefined;
   const afterFeedback = await db.socialPreferences.findUniqueOrThrow({
     where: { ownerId: a.id }
   });
@@ -727,6 +750,7 @@ try {
     "The optional in-memory break reminder appears even when its disclosure is closed and stores only the chosen interval"
   );
   assert.deepEqual(errors, []);
+  assert.deepEqual(external, []);
   await page.screenshot({ path: output + "/final.png" });
   writeFileSync(
     output + "/results.json",
@@ -735,6 +759,8 @@ try {
         origin: config.origin,
         results,
         errors,
+        external,
+        externalRequests: external.length,
         applicationWrites: "isolated fictional fixtures only",
         physicalDeviceTested: false
       },

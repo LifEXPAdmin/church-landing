@@ -1,5 +1,66 @@
 # Focused My feed reader
 
+## Receiving integration, 8 October 2026
+
+The retained resource-return repair is selectively reconciled with the current
+website. Pending authorization preserves List geometry and mounted work; only
+confirmed denial collapses retained content. The private stream keeps its own
+bounded authorization owner and the ordinary boundary keeps the existing timer.
+
+A controlled actual-component check reproduced an ordinary post becoming visible
+after blur when that timer's matching read settled. Read admission and settlement
+now require a visible, focused, online document. The original two red component
+probes and their unchanged two-case green rerun are retained separately from
+full application evidence. Current combined service, HTTPS, browser and live
+acceptance remain pending. No physical-device result is implied.
+
+Rapid repeated Back remains an unverified navigation case from the earlier
+Discovery acceptance. A normal single return from resource detail does not
+establish that separate sequence; this integration changes no history owner.
+
+## Resource detail return candidate, October 7, 2026
+
+Mixed listing, event, media and opportunity cards reuse the existing finite
+30-post reading sets, Pages/List modes and full-screen reader. Resource detail
+links use native browser history to return to the selected feed, signed reading
+set and post. Reading another set remains an explicit action, and posts that
+arrive during a session wait for a deliberate refresh.
+
+Browser acceptance reproduced a retained-content privacy gap: after a host post
+was withdrawn while its resource detail was open, Back could show cached host
+text before the current availability response arrived. The post boundary now
+starts concealed and rechecks on return. Its pending children retain layout,
+mounted drafts and form owners while remaining hidden and inert. The checking
+notice adds no layout height. Confirmed denial collapses the body; an unavailable
+slot still supports deliberate navigation without replacing the chosen feed.
+Version changes use the existing refresh owner, and request failures remain
+concealed with a retry action.
+
+The first repair collapsed pending bodies and shifted List restoration to a
+neighboring post. The revised boundary reserves that space while checking.
+Return assertions inspect selection and geometry before any corrective scroll.
+The private stream continues to own its existing bounded authorization read.
+No service, schema, dependency, endpoint or polling interval is added.
+
+The isolated production candidate passed 22 reader/navigation service checks,
+eight resource-reader browser groups and all 11 existing four-feed browser
+groups. The resource journey checks all four resource types, exact Back state
+in Pages/List/full-screen, disjoint explicit continuation, deliberate refresh,
+withdrawal during held current reads, and 320-pixel enlarged-text and
+1440-pixel layouts. The media List return retained exactly the same card
+geometry and scroll position. The existing suite also preserved an unsent
+discussion draft through snapshot expiry and live-count refresh, enforced
+account replacement, and covered lost preference acknowledgements.
+
+The final resource runner waits for the server-selected cursor to enter native
+history after hydration before checking that withdrawn IDs are absent; an
+earlier immediate assertion sampled the requested historical cursor. Privacy
+assertions remained intact. Both browser suites reported no page errors.
+Production build, type checks, lint and copy checks passed. Runtime traces and
+the public build security scan passed. The fictional database restored 165
+tables from the verified prerequisite fixture. Integration, hosted security
+gates, combined release checks and live/physical-device acceptance remain open.
+
 ## Integrated application published
 
 The candidate below is published as application

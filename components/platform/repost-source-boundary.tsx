@@ -12,6 +12,10 @@ import { socialRequest } from "@/lib/platform/social-client";
 import { currentPostAvailability } from "@/lib/platform/post-availability-client";
 import { usePrivatePostWorkspace } from "./private-post-workspace";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
+const hasCurrentForeground = () =>
+  document.visibilityState === "visible" &&
+  document.hasFocus() &&
+  navigator.onLine;
 /** Retained server content is concealed on loss of focus/access and refreshed by version. */
 export function RepostSourceBoundary({
   entryId,
@@ -45,11 +49,19 @@ export function RepostSourceBoundary({
   const parentVisible = useReadVisibility();
   const privateScope = usePrivatePostWorkspace();
   const privateRefresh = privateScope?.refresh;
+  // Back/Forward can remount cached server children. Their retained versions
+  // identify the reading position, but do not confirm current access.
   const [active, setActive] = useState(false),
-    [visible, setVisible] = useState(originalPost || sourceVersion !== null),
-    [message, setMessage] = useState("Original post unavailable.");
+    [visible, setVisible] = useState(false),
+    [denied, setDenied] = useState(false),
+    [message, setMessage] = useState("Checking this post…");
   const check = useCallback(async () => {
-    if (document.visibilityState === "hidden" || !!privateRefresh) return;
+    if (!!privateRefresh) return;
+    if (!hasCurrentForeground()) {
+      generation.current++;
+      setVisible(false);
+      return;
+    }
     const seq = ++generation.current;
     try {
       const r = originalPost
@@ -76,6 +88,10 @@ export function RepostSourceBoundary({
             accountId
           );
       if (seq !== generation.current) return;
+      if (!hasCurrentForeground()) {
+        setVisible(false);
+        return;
+      }
       const match =
         r.data.available &&
         r.data.entryVersion === entryVersion &&
@@ -83,6 +99,7 @@ export function RepostSourceBoundary({
         (commentCount === undefined || r.data.commentCount === commentCount) &&
         (likeCount === undefined || r.data.likeCount === likeCount);
       setVisible(match);
+      setDenied(!r.data.available);
       setMessage("Original post unavailable.");
       if (r.data.available && !match) {
         setMessage("Refreshing the original post…");
@@ -125,16 +142,20 @@ export function RepostSourceBoundary({
     const hide = () => {
       generation.current++;
       setVisible(false);
+      setMessage("Checking this post…");
     };
     const restore = () => {
-      if (document.visibilityState !== "hidden") void check();
+      hide();
+      if (hasCurrentForeground()) void check();
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : restore();
     const timer = setInterval(() => {
-      if (activeReader.current) restore();
+      // Routine checks keep mounted work usable while awaiting revalidation.
+      if (activeReader.current) void check();
     }, 30000);
     window.addEventListener("blur", hide);
+    window.addEventListener("pagehide", hide);
     window.addEventListener("focus", restore);
     window.addEventListener("offline", hide);
     window.addEventListener("online", restore);
@@ -145,6 +166,7 @@ export function RepostSourceBoundary({
       hide();
       clearInterval(timer);
       window.removeEventListener("blur", hide);
+      window.removeEventListener("pagehide", hide);
       window.removeEventListener("focus", restore);
       window.removeEventListener("offline", hide);
       window.removeEventListener("online", restore);
@@ -161,10 +183,17 @@ export function RepostSourceBoundary({
     ) : parentVisible ? (
       <p>Original post unavailable.</p>
     ) : null;
+  // Keep a returning List's geometry while authorization is pending. Opacity
+  // conceals the entire subtree even if a descendant sets its own visibility.
+  // Only a confirmed denial collapses retained content; forms keep their owner.
+  const reserveSpace =
+    !visible && !denied && (originalPost || sourceVersion !== null);
   return (
-    <div ref={root}>
+    <div ref={root} className="relative">
       {!visible && (
-        <div className="rounded-xl border border-gc-border p-4 text-sm">
+        <div
+          className={`rounded-xl border border-gc-border p-4 text-sm ${reserveSpace ? "absolute inset-x-0 top-0" : ""}`}
+        >
           <p role="status">{message}</p>
           <button
             type="button"
@@ -175,14 +204,25 @@ export function RepostSourceBoundary({
           </button>
         </div>
       )}
-      {originalPost || preserveMounted ? (
+      {originalPost || preserveMounted || visible || reserveSpace ? (
         <ReadVisibility.Provider value={visible && parentVisible}>
-          <div hidden={!visible} inert={!visible}>
+          <div
+            hidden={!visible && !reserveSpace}
+            inert={!visible}
+            aria-hidden={!visible || undefined}
+            style={
+              reserveSpace
+                ? {
+                    visibility: "hidden",
+                    opacity: 0,
+                    pointerEvents: "none"
+                  }
+                : undefined
+            }
+          >
             {children}
           </div>
         </ReadVisibility.Provider>
-      ) : visible ? (
-        children
       ) : null}
     </div>
   );

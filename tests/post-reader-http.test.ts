@@ -15,6 +15,7 @@ before(() => assertPortalTestDatabase(db));
 after(() => db.$disconnect());
 const get = (path: string, token = "", rsc = false) =>
   fetch(origin + path, {
+    redirect: "manual",
     headers: {
       Cookie: sessionCookieFixtureName() + "=" + token,
       ...(rsc ? { RSC: "1" } : {})
@@ -104,6 +105,7 @@ test("canonical comment API writes only to the selected reader post without alte
   });
   for (let retry = 0; retry < 2; retry++) {
     const response = await fetch(origin + "/api/platform/comments", {
+      redirect: "manual",
       method: "POST",
       headers: {
         Origin: origin,

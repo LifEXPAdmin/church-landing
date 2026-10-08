@@ -28,6 +28,7 @@ test("feed preference HTTPS boundary pins the account, checks origin and preserv
     from = origin
   ) =>
     fetch(origin + "/api/platform/feed", {
+      redirect: "manual",
       method: "POST",
       headers: {
         origin: from,
