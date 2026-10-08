@@ -150,7 +150,9 @@ try {
   console.log(
     `PASS: ${migrations.length} migrations and populated upgrade preservation`
   );
-  const files = process.argv.includes("--native-comment-editing")
+  const files = process.argv.includes("--native-comment-deletion")
+    ? ["tests/native-comment-deletion.test.ts", "tests/content-withdrawal.test.ts", "tests/native-comments.test.ts", "tests/native-comment-editing.test.ts", "tests/native-comment-likes.test.ts", "tests/comment-notifications.test.ts"]
+    : process.argv.includes("--native-comment-editing")
     ? ["tests/native-comment-editing.test.ts", "tests/native-comment-publishing.test.ts", "tests/native-comment-likes.test.ts", "tests/comment-notifications.test.ts"]
     : process.argv.includes("--native-post-publishing")
     ? ["tests/native-post-publishing.test.ts", "tests/post-publishing.test.ts", "tests/post-editor.test.ts", "tests/social-activity-limits.test.ts", "tests/notification-integration.test.ts"]

@@ -22,6 +22,7 @@ const optional = [
   "comments.read",
   "comments.create",
   "comments.edit",
+  "comments.delete",
   "commentLikes.write",
   "bookmarks.read",
   "bookmarks.write",

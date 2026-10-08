@@ -4,6 +4,7 @@ import { readBody } from "./account-boundary";
 import { allowWorkspaceAttempt } from "./account-limits";
 import { readNativeSession } from "./native-session";
 import { commentCommand } from "./comment-commands";
+import { protectReportedWithdrawal } from "./retention-controls";
 import {
   API_VERSION,
   API_MAX_REQUEST_BYTES,
@@ -115,6 +116,11 @@ const commentWrites = {
     feature: "comments.edit",
     methodMessage: "Use POST to edit a comment."
   },
+  deleteComment: {
+    command: "delete",
+    feature: "comments.delete",
+    methodMessage: "Use POST to delete a comment."
+  },
   setCommentLike: {
     command: "like",
     feature: "commentLikes.write",
@@ -177,13 +183,31 @@ async function handleNativeCommentWriteRequest(
     );
     // The route schedules the existing durable outbox, including exact retries.
     afterWrite?.(data.id);
+    // Like the website, acknowledge the saved removal even if its separate
+    // recovery journal is pending. Exact retries retry protection, not deletion.
+    const recoveryPending =
+      operation === "deleteComment" &&
+      !(await protectReportedWithdrawal(db, "COMMENT", data.id));
+    const responseData =
+      operation === "deleteComment"
+        ? {
+            ...data,
+            recoveryPending,
+            ...(recoveryPending
+              ? {
+                  message:
+                    "Your comment removal is saved. Backup recovery protection is pending and will be retried automatically."
+                }
+              : {})
+          }
+        : data;
     let body: string;
     try {
       body = JSON.stringify(
         encodeApiResponse(operation, {
           apiVersion: API_VERSION,
           viewerId: credential.owner,
-          data
+          data: responseData
         })
       );
       if (Buffer.byteLength(body) > API_MAX_RESPONSE_BYTES) throw new Error();
@@ -191,6 +215,7 @@ async function handleNativeCommentWriteRequest(
       throw new Error("Native comment receipt projection failed");
     }
     return new Response(body, {
+      status: recoveryPending ? 202 : 200,
       headers: { ...nativeAuthHeaders, "Content-Type": "application/json" }
     });
   } catch (error) {
@@ -228,6 +253,15 @@ export function handleNativeCommentEditRequest(
     "editComment",
     afterEdit
   );
+}
+
+/** Author removal preserves canonical tombstones and reported-content recovery. */
+export function handleNativeCommentDeleteRequest(
+  db: PrismaClient,
+  request: Request,
+  params: unknown
+) {
+  return handleNativeCommentWriteRequest(db, request, params, "deleteComment");
 }
 
 /** The receipt is historical; read the thread again for current state and access. */

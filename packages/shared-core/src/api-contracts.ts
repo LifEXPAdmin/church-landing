@@ -577,6 +577,20 @@ export const apiContracts = Object.freeze({
     apiMutationReceipt,
     "member"
   ),
+  deleteComment: endpoint(
+    "POST",
+    "/posts/:postId/comments/:commentId/delete",
+    empty,
+    object({ mutationId, expectedVersion: version }),
+    object({
+      id: apiId,
+      version,
+      message: text(1000),
+      // The deletion is saved; only its separate recovery protection is pending.
+      recoveryPending: boolean
+    }),
+    "member"
+  ),
   setCommentLike: endpoint(
     "POST",
     "/posts/:postId/comments/:commentId/like",
