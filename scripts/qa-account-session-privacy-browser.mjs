@@ -121,12 +121,16 @@ try {
   ok("Failed, denied and throttled list reads remove private presentation and preserve the password for valid current-account recovery");
 
   await context.setOffline(true); await pulse("offline"); await absent(actor.password);
-  const beforeOffline = outbound.length;
-  await page.getByRole("button", { name: "Recheck current account", exact: true }).click();
-  assert.equal(outbound.length, beforeOffline);
-  await context.setOffline(false); await pulse("online"); await listing.waitFor();
+  // The integrated Settings workspace also conceals the session component.
+  // Its local recovery control is unavailable until the outer account check.
+  assert.equal(await page.getByRole("button", { name: "Recheck current account", exact: true }).count(), 0);
+  assert.equal(await count(actor), 2);
+  await context.setOffline(false); await pulse("online");
+  await page.getByRole("button", { name: "Recheck this sign-in", exact: true }).click();
+  await listing.waitFor();
   assert.equal(await password().inputValue(), actor.password);
-  ok("Actual offline mode prevents manual recheck traffic and conceals fields until a fresh online read");
+  assert.equal(await count(actor), 2);
+  ok("Actual offline mode conceals session controls; explicit same-account recheck after reconnect restores the entry without revocation");
 
   const changed = await actorWithOther("sessionchanged");
   await signIn(changed);

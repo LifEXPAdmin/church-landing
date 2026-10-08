@@ -129,7 +129,9 @@ try {
   async function ready(name, heading) {
     if (heading) await page.getByRole("heading", { name: heading, exact: true }).waitFor();
     if (name === "churches") await page.getByText(f.churchA.name, { exact: true }).first().waitFor();
-    if (name === "post" || name === "home") await page.getByText(post.content, { exact: true }).waitFor();
+    // The author also has a hidden editor textarea containing the same text.
+    // Wait for the reader's rendered paragraph, not that retained edit field.
+    if (name === "post" || name === "home") await page.locator("p").filter({ hasText: post.content }).waitFor();
     if (name === "search") await page.getByText("Enter words to search this category.", { exact: true }).waitFor();
     if (name === "menu") await page.getByText("No shortcuts selected. Choose the places you use most.", { exact: true }).waitFor();
     if (name === "messages") await page.getByText("No conversations yet", { exact: true }).waitFor();

@@ -64,7 +64,22 @@ become initial native scope merely because their website pages were observed.
 
 ## Current verification status
 
-The walkthrough source has been prepared. The next step is an owned browser run
-against the existing verified website build, followed by a recorded behavior
-matrix and final review. No native or provider acceptance follows from source
-preparation alone.
+Local verification on 8 October 2026 passed five walkthrough groups and eight
+complementary session-privacy groups. Both runs used the unchanged application
+at `55bb99a7d0839fbcf47608f852cd5922ef51b8a6`, build
+`ledQEe06mObqWAH6LLYqc`, with separate fictional databases created from the
+125 existing migrations. Browser errors and external requests were absent from
+the walkthrough. Owned browser, HTTPS, website and database processes were
+stopped after verification.
+
+The first run exposed an ambiguous test selector: the displayed post and its
+hidden editor contained the same text. Readiness now selects the displayed
+paragraph. The privacy run also reconciled an older test with the integrated
+Settings concealment: its local recovery button is hidden while offline, and an
+explicit sign-in recheck after reconnect restores the retained entry. No
+application behavior or permission check changed in either repair.
+
+The ten destination observations establish entry and layout behavior, not all
+features on each page. Post discussion and management can still be loading in
+the captured reader view. Native transport, installed app, provider and release
+acceptance remain separate.
