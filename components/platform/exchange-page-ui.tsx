@@ -7,7 +7,7 @@ import { PlatformShell } from "./platform-shell";
 import { PrivateSnapshotGuard } from "./private-snapshot-guard";
 import { TopicReadBoundary } from "./topic-read-boundary";
 import { ExchangeEditor } from "./exchange-editor";
-import { ExchangeSaveSearchForm } from "./exchange-saved-controls";
+import { ExchangeSearchSaveEntry } from "./exchange-saved-search-entry";
 import { ExchangeSavedList } from "./exchange-saved-list";
 import { postId } from "@/lib/platform/post-input";
 import { ExchangeSearchPosition } from "./exchange-search-position";
@@ -458,7 +458,8 @@ async function ExchangeSearchSaveRegion({
   query: import("@/lib/platform/exchange-options").ExchangeSearchQuery;
   searchId?: string;
 }) {
-  if (!searchId) return <ExchangeSaveSearchForm owner={owner} query={query} />;
+  if (!searchId)
+    return <ExchangeSearchSaveEntry key={owner} owner={owner} query={query} />;
   try {
     const result = await exchangeSavedPage({ view: "search", searchId });
     if (result.ownerId !== owner)
@@ -467,19 +468,12 @@ async function ExchangeSearchSaveRegion({
         "Your sign-in changed. Reload current choices."
       );
     return (
-      <PrivateSnapshotGuard
+      <ExchangeSearchSaveEntry
+        key={`${owner}:${searchId}`}
         owner={owner}
-        url={`/api/platform/exchange?${new URLSearchParams({ view: "search", searchId })}`}
-        checksum={exchangeChecksum(result)}
-        label="saved search"
-      >
-        <ExchangeSaveSearchForm
-          key={`${searchId}:${result.searches?.[0].version}`}
-          owner={owner}
-          query={query}
-          existing={result.searches?.[0]}
-        />
-      </PrivateSnapshotGuard>
+        query={query}
+        searchId={searchId}
+      />
     );
   } catch (error) {
     return (
