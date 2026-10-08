@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "artist-draft-privacy-and-security-maintenance", version: "2026.10.08.1", date: "2026-10-08",
+    summary: "Keep artist drafts private during access changes and improve security maintenance.",
+    added: [],
+    improved: ["Artist profile and release drafts remain available when you return to the original account and regain editing access. Enlarged text fits the editing controls on narrow screens."],
+    fixed: ["Private artist fields and controls leave the page while access is uncertain. Delayed responses preserve deliberate recovery without revealing another account's work."],
+    featureIds: ["artist-releases", "account"]
+  },
+  {
     id: "private-topic-management-and-followed-posts", version: "2026.09.28.42", date: "2026-09-28",
     summary: "Keep topic management and followed discussions private while preserving work during access changes.",
     added: [],

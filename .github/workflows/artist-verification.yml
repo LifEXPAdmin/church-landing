@@ -3,13 +3,27 @@ name: Artist isolated verification
 on:
   workflow_dispatch:
   push:
-    branches: [codex/daytime-artist-privacy-20261002]
+    branches:
+      - codex/daytime-artist-privacy-20261002
+      - codex/release-artist-security-20261008
     paths:
       - .github/workflows/artist-verification.yml
+      - package.json
+      - package-lock.json
+      - scripts/patch-next-hydration.mjs
+      - scripts/verify-hydration-output.mjs
+      - scripts/verify-runtime-traces.mjs
       - scripts/test-artists-isolated.mjs
       - scripts/qa-artist*.mjs
       - components/platform/artist-*.tsx
       - tests/artist*.test.*
+      - tests/next-hydration-backport.test.ts
+      - lib/platform/artist*.ts
+      - app/platform/artists/**
+      - app/api/platform/artists/**
+      - prisma/**
+      - lib/platform/release-*.ts
+      - app/api/platform/release/route.ts
 
 permissions:
   contents: read
@@ -34,6 +48,9 @@ jobs:
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm run prisma:generate
+          node scripts/patch-next-hydration.mjs
+      - name: Verify the pinned hydration repair and release content
+        run: node --import ./tests/register.mjs --test tests/next-hydration-backport.test.ts tests/release-content.test.ts
       - name: Prepare runner-only browser and PostgreSQL tooling
         shell: bash
         run: |
@@ -46,15 +63,112 @@ jobs:
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/artist-browser/node_modules/playwright/package.json" >> "$GITHUB_ENV"
           echo "ARTIST_BUNDLED_CHROMIUM=1" >> "$GITHUB_ENV"
       - name: Build and verify fictional artists over local HTTPS
-        run: node scripts/test-artists-isolated.mjs
-      - name: Preserve fictional browser results and screenshots
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-artists-isolated.mjs 2>&1 | tee "$RUNNER_TEMP/artist-verification.log"
+      - name: Record affected-tool scope in the exact build
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { createHash } from "node:crypto";
+          import { mkdirSync, readFileSync, readdirSync } from "node:fs";
+          import { writeFileSync } from "node:fs";
+          import { dirname, join, relative, resolve } from "node:path";
+          const root = process.cwd();
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const buildId = readFileSync(".next/BUILD_ID", "utf8").trim();
+          assert.ok(buildId);
+          const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((item) => item.isDirectory() ? walk(join(dir, item.name)) : [join(dir, item.name)]);
+          const files = walk(resolve(".next"));
+          const traces = files.filter((file) => file.endsWith(".nft.json"));
+          const traced = new Set();
+          let entries = 0;
+          for (const file of traces) {
+            const trace = JSON.parse(readFileSync(file, "utf8"));
+            assert.ok(Array.isArray(trace.files));
+            for (const entry of trace.files) { assert.equal(typeof entry, "string"); entries++; traced.add(resolve(dirname(file), entry)); }
+          }
+          const label = (file) => { const value = relative(root, file).split("\\").join("/"); assert.ok(value && !value.startsWith("../") && !value.startsWith("/")); return value; };
+          const pathPattern = /(?:^|\/)node_modules\/(?:braces|micromatch|fast-glob|prettier|tailwindcss)(?:\/|$)|(?:^|\/)next\/dist\/compiled\/@vercel\/nft(?:\/|$)/;
+          const markers = ["expanded array length exceeds range limit. Use options.rangeLimit to increase or disable the limit.", "node_modules/braces/lib/expand.js", "result.push(append(value, stash, enclose));", "s.push(Array.isArray(e)?append(a,e,r):a+e)"];
+          const jsFiles = [...new Set([...files, ...traced].filter((file) => /\.[cm]?js$/.test(file)))].sort();
+          assert.ok(traces.length > 0 && entries > 0 && jsFiles.length > 0);
+          const pathHits = [...traced].map(label).filter((file) => pathPattern.test(file));
+          const markerHits = [];
+          const inventory = [...new Set([...traces, ...jsFiles])].sort().map((file) => {
+            const body = readFileSync(file); const path = label(file);
+            if (/\.[cm]?js$/.test(file)) for (const marker of markers) if (body.includes(marker)) markerHits.push({ path, marker });
+            return { path, bytes: body.length, sha256: createHash("sha256").update(body).digest("hex") };
+          });
+          const output = join(process.env.RUNNER_TEMP, "artist-evidence");
+          mkdirSync(output, { recursive: true });
+          const report = { sourceSha, buildId, interpretation: "Static listed-path and marker evidence only; not complete dynamic reachability proof or audit clearance.", traceCount: traces.length, traceEntries: entries, uniqueTracedFiles: traced.size, javascriptFiles: jsFiles.length, markers, pathHits, markerHits, inventory };
+          writeFileSync(join(output, "affected-tool-scope.json"), JSON.stringify(report, null, 2) + "\n");
+          console.log(JSON.stringify({ sourceSha, buildId, traces: traces.length, javascriptFiles: jsFiles.length, pathHits: pathHits.length, markerHits: markerHits.length }));
+          assert.equal(pathHits.length + markerHits.length, 0, "Affected-tool path or marker requires review");
+          NODE
+      - name: Record exact source, build and observed test totals
+        if: always()
+        env:
+          ARTIST_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const output = join(process.env.RUNNER_TEMP, "artist-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, "artist-verification.log");
+          let log = existsSync(logPath) ? readFileSync(logPath, "utf8") : "Runtime did not start.\n";
+          const browsers = [];
+          for (const name of existsSync(".account-test") ? readdirSync(".account-test") : []) {
+            if (!name.startsWith("artist-hosted-")) continue;
+            const fixture = join(".account-test", name);
+            const environmentPath = join(fixture, "environment.json");
+            if (existsSync(environmentPath)) {
+              const environment = JSON.parse(readFileSync(environmentPath, "utf8"));
+              for (const [key, value] of Object.entries(environment)) {
+                if (/SECRET|TOKEN|PASSWORD|DATABASE_URL|DIRECT_URL/.test(key) && typeof value === "string" && value) log = log.replaceAll(value, "[REDACTED]");
+              }
+            }
+            for (const suite of readdirSync(fixture)) {
+              if (!/^(?:artist-draft-browser|browser)-\d+$/.test(suite)) continue;
+              const resultPath = join(fixture, suite, "results.json");
+              if (!existsSync(resultPath)) continue;
+              const result = JSON.parse(readFileSync(resultPath, "utf8"));
+              browsers.push({ suite: suite.startsWith("artist-draft") ? "artist-draft-privacy" : "artists", passed: result.passed, errorCount: result.errors.length });
+            }
+          }
+          const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
+          const tapTotals = [...log.matchAll(/^# (tests|suites|pass|fail|cancelled|skipped|todo) (\d+)$/gm)].map((match) => ({ metric: match[1], count: Number(match[2]) }));
+          writeFileSync(join(output, "report.json"), JSON.stringify({ sourceSha, buildId, runtimeOutcome: process.env.ARTIST_RUNTIME_OUTCOME, environment: "isolated-fictional", tapTotals, browsers }, null, 2) + "\n");
+          writeFileSync(join(output, "verification.log"), log);
+          NODE
+      - name: Preserve scoped fictional verification evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: artist-browser-${{ github.sha }}
           path: |
+            ${{ runner.temp }}/artist-evidence/report.json
+            ${{ runner.temp }}/artist-evidence/affected-tool-scope.json
+            ${{ runner.temp }}/artist-evidence/verification.log
             .account-test/artist-hosted-*/artist-draft-browser-*/*.png
             .account-test/artist-hosted-*/artist-draft-browser-*/results.json
+            .account-test/artist-hosted-*/browser-*/*.png
+            .account-test/artist-hosted-*/browser-*/results.json
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
