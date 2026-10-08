@@ -1,3 +1,14 @@
+## Data Saver and accessible resource journeys verified live, 8 October 2026 UTC
+
+Version **2026.10.08.12**, source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3`, is verified live at [God's Churches](https://godschurches.com) after canonical verification at 2026-10-08T18:08:16.929Z. [PR51](https://github.com/LifEXPAdmin/church-landing/pull/51).
+
+Data Saver starts the shared photo viewer with a small preview and offers a keyboard-accessible, explicit larger-photo action. Moving to another photo or refreshing access resets that choice. Listing, Media and feed-settings journeys improve field errors, submitted-result focus, keyboard return and narrow layouts. Photo reads require current focus, visibility and connectivity before dispatch and when replies settle. Current account, source-access, retained-request and deferred-navigation protections remain authoritative.
+
+The same READY staged build was promoted: **94 staged checks, 280 live guest checks and 5 health/release checks passed**. The post-release comparison at 2026-10-08T18:09:50.871Z recorded 165 unchanged table fingerprints and 123 unchanged migration records. Applied migrations: 0.
+
+The controlled component checks use fictional transport; full application fixtures and guest live checks have their own evidence. No platform-wide accessibility certification, screen-reader or physical-device acceptance is claimed. Offline-policy acceptance or caching, new media-player/provider behavior, native activation, rapid repeated Back, authenticated production operator acceptance and production capacity remain separate. No full PR22 ancestry, schema or dependency change is included.
+
+
 ## Resource feed choices and reader return verified live, 8 October 2026 UTC
 
 Version **2026.10.08.11**, source `5321e09b3245e52fe95fa9a0a88682aa82a2626c`, is verified live at [God's Churches](https://godschurches.com). [PR48](https://github.com/LifEXPAdmin/church-landing/pull/48). Canonical source and version matched the READY deployment at 2026-10-08T16:52:15.179Z.

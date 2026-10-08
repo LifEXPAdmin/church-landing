@@ -1,5 +1,17 @@
 # Accessible resource journeys
 
+## Current release acceptance, 8 October 2026 UTC
+
+Version **2026.10.08.12**, source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3`, is verified live at [God's Churches](https://godschurches.com) after canonical verification at 2026-10-08T18:08:16.929Z. [PR51](https://github.com/LifEXPAdmin/church-landing/pull/51).
+
+The current full application suite passed 7 complete installed journey groups for listing, Media, feed settings, reading and photos. It exercises keyboard actions, field-specific recovery, submitted-result and return focus, sampled contrast, reduced motion and 320 CSS-pixel layouts with 200 percent root text. This is text resizing rather than a physical-device or browser-zoom test.
+
+Original acceptance intent is preserved while integrating current C13 guest/foreground and Exchange private-work protections. The Media fixture restores prior MFA configuration after fictional setup; the served HTTPS enforcement mode remains independently verified. Photo foreground evidence is separately controlled.
+
+Current visual findings and inherited limitations: All 36 current hosted screenshots and all 20 current live screenshots were reviewed with no new changed-scope blocker. The new guest Reading settings entry is readable and keeps private controls behind account entry. Existing fixed mobile navigation overlap, dense wrapping and long narrow pages at 200 percent text remain documented; the images do not establish that every control is simultaneously visible or independently reachable. No broad accessibility, screen-reader or physical-device certification is claimed. No platform-wide WCAG, screen-reader or physical-device certification is claimed. Original author attribution, historical journey results and retained failures remain unchanged below.
+
+
+
 ## Current integration, 8 October 2026
 
 The preserved journey improvements are selectively integrated onto the current

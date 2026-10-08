@@ -1,3 +1,14 @@
+## Data Saver and accessible journeys accepted, 8 October 2026 UTC
+
+Version **2026.10.08.12**, source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3`, is verified live at [God's Churches](https://godschurches.com) after canonical verification at 2026-10-08T18:08:16.929Z. [PR51](https://github.com/LifEXPAdmin/church-landing/pull/51).
+
+Independent final review accepted at 2026-10-08T17:56:27.970884+00:00; independent post-live review accepted at 2026-10-08T18:13:59.434126+00:00. Exact-source main CI: https://github.com/LifEXPAdmin/church-landing/actions/runs/37821055013. Fresh exact-source acceptance: **583 source checks, 59 service cases, 9 HTTPS cases and 54 full application browser groups**. Separately, **27 controlled component scenarios** comprise Data Saver 7, resource foreground 12 and photo foreground 8. Isolated build: `lTGvaRZ5xjF3iFRZQUt7U`. Controlled write/send counters remain null where unmeasured.
+
+The same READY staged build was promoted: **94 staged checks, 280 live guest checks and 5 health/release checks passed**. The post-release comparison at 2026-10-08T18:09:50.871Z recorded 165 unchanged table fingerprints and 123 unchanged migration records. Applied migrations: 0.
+
+The controlled component checks use fictional transport; full application fixtures and guest live checks have their own evidence. No platform-wide accessibility certification, screen-reader or physical-device acceptance is claimed. Offline-policy acceptance or caching, new media-player/provider behavior, native activation, rapid repeated Back, authenticated production operator acceptance and production capacity remain separate. No full PR22 ancestry, schema or dependency change is included.
+
+
 ## Resource feed choices and reader return verified live, 8 October 2026 UTC
 
 Version **2026.10.08.11**, source `5321e09b3245e52fe95fa9a0a88682aa82a2626c`, is verified live at [God's Churches](https://godschurches.com). [PR48](https://github.com/LifEXPAdmin/church-landing/pull/48). Canonical source and version matched the READY deployment at 2026-10-08T16:52:15.179Z.

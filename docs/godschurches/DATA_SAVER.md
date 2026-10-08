@@ -1,5 +1,17 @@
 # Data saver on active media surfaces
 
+## Current release acceptance, 8 October 2026 UTC
+
+Version **2026.10.08.12**, source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3`, is verified live at [God's Churches](https://godschurches.com) after canonical verification at 2026-10-08T18:08:16.929Z. [PR51](https://github.com/LifEXPAdmin/church-landing/pull/51).
+
+The shared viewer starts from thumbnails when Reduce photo data is enabled. Loading a larger variant remains explicit and keyboard accessible; moving photos or refreshing access resets the larger-photo choice. Zoom does not request an original image. Existing thumbnail surfaces and deliberate media links remain the installed media behavior.
+
+Current Data Saver evidence comprises 7 controlled actual-React scenarios with fictional gallery/image transport and fresh built CSS. Photo foreground adds 8 separate actual-component scenarios. The combined full application accessibility suite passed 7 groups, including its real attached-photo journey. These populations are not interchangeable.
+
+Two retained actual-component baseline failures reproduced visible-but-unfocused admission and late-reply presentation; narrow current-foreground checks repair both. Native focus events, physical devices, provider delivery, offline caching and future players are outside this receipt. Previous implementation and failed evidence below remain historical.
+
+
+
 ## Current integration, 8 October 2026
 
 The preserved small-preview feature is integrated with the current privacy

@@ -1,3 +1,12 @@
+## Data Saver and accessibility source acceptance, 8 October 2026 UTC
+
+Exact source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3` passed its required hosted source runs https://github.com/LifEXPAdmin/church-landing/actions/runs/37818143269 and https://github.com/LifEXPAdmin/church-landing/actions/runs/37818148618: 583 checks, 0 audit advisories, 496 verified package signatures and 86 verified attestations. Lint recorded 0 errors and 42 warnings. Types, authored copy, history scan and required build guards are accepted only as bound by the actual receipts.
+
+The combined runtime passed 59 services and 9 HTTPS cases with source identities verified in both configured modes. 54 full application groups and 27 controlled component scenarios remain separate evidence populations.
+
+This batch changes no schema, dependency graph, shared permission owner or native transport. Current C13 foreground checks and Exchange original-owner/receipt/deferred-navigation behavior remain preserved. No historical acceptance population or physical/device/provider result is substituted for the current run. Broader security scope remains open.
+
+
 ## Resource feed choices and reader return verified live, 8 October 2026 UTC
 
 Version **2026.10.08.11**, source `5321e09b3245e52fe95fa9a0a88682aa82a2626c`, is verified live at [God's Churches](https://godschurches.com). [PR48](https://github.com/LifEXPAdmin/church-landing/pull/48). Canonical source and version matched the READY deployment at 2026-10-08T16:52:15.179Z.
