@@ -1,17 +1,18 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AccessibilityInfo, ActivityIndicator, AppState, Platform, View } from "react-native";
-import { nativePasswordInput } from "@godschurches/shared-core";
 import type { createNativeRuntime } from "../session/runtime";
 import type { SessionSnapshot } from "../session/session-controller";
 import type { ReadingSnapshot } from "../reading/read-controller";
 import { observeSessionVisibility } from "../platform/session-visibility";
 import { readNativeWindowFocus } from "../platform/native-visibility";
-import { Button, Card, Input, Screen, Text } from "./primitives";
+import { Button, Card, Screen, Text } from "./primitives";
 import { NativePost } from "./NativePost";
+import { PasswordSignIn } from "./PasswordSignIn";
 import { useTheme } from "./theme";
 
 type Runtime = ReturnType<typeof createNativeRuntime>;
-type SignInMode = { kind: "password" } | { kind: "fixture"; signIn: () => Promise<void> };
+type SignInMode = { kind: "password" } | { kind: "fixture"; signIn: () => Promise<void>;
+  credentials: Readonly<{ email: string; password: string }> };
 
 function useIosStatus(runtime: Runtime, message: string | null) {
   useEffect(() => {
@@ -52,29 +53,25 @@ function SessionNotice({ state, runtime }: { state: SessionSnapshot; runtime: Ru
 }
 
 function SignIn({ runtime, mode }: { runtime: Runtime; mode: SignInMode }) {
-  const [email, setEmail] = useState(""), [password, setPassword] = useState(""), [invalid, setInvalid] = useState(false);
-  useIosStatus(runtime, invalid ? "Enter your email and a password of 8 to 128 characters." : null);
-  function submit() {
-    let input;
-    try { input = nativePasswordInput.parse({ email: email.trim(), password }); }
-    catch { setInvalid(true); setPassword(""); return; }
-    setEmail(""); setPassword(""); setInvalid(false);
-    void runtime.signIn(input);
-  }
+  const [previewForm, setPreviewForm] = useState(false);
   // This component is keyed by session generation and unmounted on concealment
   // or sign-in. Submitted values never enter navigation, storage or diagnostics.
   return <Card>
     <Text variant="heading">Welcome to God's Churches</Text>
     <Text>Connect with your community, share encouragement and make room for prayer.</Text>
-    {mode.kind === "fixture" ? <Button label="Continue with demo account" onPress={() => { void mode.signIn(); }} /> : <>
-      <Input label="Email" value={email} onChangeText={setEmail} maxLength={254} keyboardType="email-address"
-        autoCapitalize="none" autoCorrect={false} textContentType="username" autoComplete="username" />
-      <Input label="Password" value={password} onChangeText={setPassword} maxLength={128} secureTextEntry
-        autoCapitalize="none" autoCorrect={false} textContentType="password" autoComplete="current-password"
-        returnKeyType="go" onSubmitEditing={submit} />
-      {invalid ? <Text accessibilityLiveRegion="polite" tone="error">Enter your email and a password of 8 to 128 characters.</Text> : null}
-      <Button label="Sign in" onPress={submit} />
-    </>}
+    {mode.kind === "fixture" ? <>
+      {previewForm ? <>
+        <Text variant="subheading">Fictional sign-in form</Text>
+        <Text>Do not enter real account details. Use only the fictional details below.</Text>
+        <Text variant="small">Email: {mode.credentials.email}</Text>
+        <Text variant="small">Password: {mode.credentials.password}</Text>
+        <PasswordSignIn runtime={runtime} />
+        <Button label="Back to demo button" secondary onPress={() => setPreviewForm(false)} />
+      </> : <>
+        <Button label="Continue with demo account" onPress={() => { void mode.signIn(); }} />
+        <Button label="Try fictional sign-in form" secondary onPress={() => setPreviewForm(true)} />
+      </>}
+    </> : <PasswordSignIn runtime={runtime} />}
   </Card>;
 }
 

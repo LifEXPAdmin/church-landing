@@ -28,10 +28,44 @@ test("the bundled preview uses the canonical journey without an HTTP fetch or pe
 
 test("preview issuance accepts only its fixed fictional input", async t => {
   const f = fixture(t); await f.runtime.setForeground(true);
+  assert.equal(Object.isFrozen(f.credentials), true);
+  assert.equal(f.credentials.email, "demo@example.invalid");
   await f.runtime.signIn({ email: "different@example.invalid", password: "fictional-other-password" });
   assert.equal(f.runtime.session.getSnapshot().phase, "signed-out");
   assert.equal(f.runtime.session.getSnapshot().problem, "sign-in-failed");
-  await f.signIn(); assert.equal(f.runtime.session.getSnapshot().phase, "ready");
+  await f.runtime.signIn(f.credentials); assert.equal(f.runtime.session.getSnapshot().phase, "ready");
+});
+
+test("fictional password submissions use one in-flight issuance and preserve the intended post", async t => {
+  const f = createNativeFixture({ latencyMs: 5 }); t.after(f.runtime.dispose);
+  await f.runtime.setForeground(true);
+  assert.equal(await f.runtime.open({ kind: "post", postId: "fixture-prayer" }), "sign-in-required");
+  const first = f.runtime.signIn(f.credentials);
+  const generation = f.runtime.session.getSnapshot().generation;
+  assert.equal(f.runtime.session.getSnapshot().phase, "signing-in");
+  await f.runtime.signIn({ email: "different@example.invalid", password: "fictional-other-password" });
+  assert.equal(f.runtime.session.getSnapshot().generation, generation);
+  assert.equal(f.runtime.session.getSnapshot().phase, "signing-in");
+  await first;
+  assert.equal(f.runtime.session.getSnapshot().phase, "ready");
+  const reading = f.runtime.reading.getSnapshot(); assert.equal(reading.kind, "post");
+  if (reading.kind === "post") { assert.equal(reading.post.id, "fixture-prayer"); assert.equal(reading.revealed, false); }
+});
+
+test("cancelling fictional password issuance cannot restore its session or retained post", async t => {
+  const f = createNativeFixture({ latencyMs: 5 }); t.after(f.runtime.dispose);
+  await f.runtime.setForeground(true);
+  await f.runtime.open({ kind: "post", postId: "fixture-prayer" });
+  const pending = f.runtime.signIn(f.credentials);
+  assert.equal(f.runtime.session.getSnapshot().phase, "signing-in");
+  await f.runtime.cancelSignIn(); await pending;
+  assert.equal(f.runtime.session.getSnapshot().phase, "signed-out");
+  assert.equal(f.runtime.reading.getSnapshot().kind, "concealed");
+  await f.runtime.setForeground(false); await f.runtime.setForeground(true);
+  assert.equal(f.runtime.session.getSnapshot().phase, "signed-out");
+  await f.runtime.signIn(f.credentials);
+  assert.equal(f.runtime.session.getSnapshot().phase, "ready");
+  assert.equal(f.runtime.reading.getSnapshot().kind, "feed");
 });
 
 test("finite pages replace each other and Back reauthorizes the current page", async t => {
