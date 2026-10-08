@@ -28,13 +28,74 @@ assert.ok(
     "exchange-defaults",
     "exchange-inquiry-list",
     "exchange-inquiry-composer",
-    "exchange-privacy"
+    "exchange-privacy",
+    "exchange-handoff-detail",
+    "exchange-saved-list",
+    "exchange-handoff-saved"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
-// Historical handoff profiles remain available; the combined release profile
-// also checks every current consumer of the shared private reader.
+// Keep historical profiles and their exact suites available. The privacy profile
+// covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "exchange-handoff-detail": {
+    services: ["exchange-handoff-input", "exchange-handoffs"],
+    browsers: [
+      "qa-exchange-handoff-detail-privacy-browser",
+      "qa-exchange-inquiry-composer-privacy-browser",
+      "qa-exchange-defaults-privacy-browser",
+      "qa-exchange-handoff-browser"
+    ],
+    https: [
+      "exchange-handoff-detail-http",
+      "exchange-inquiry-composer-http",
+      "exchange-inquiry-list-http",
+      "exchange-defaults-http",
+      "exchange-http"
+    ]
+  },
+  "exchange-saved-list": {
+    services: [
+      "exchange-input",
+      "exchange-listings",
+      "exchange-handoff-input",
+      "exchange-handoffs"
+    ],
+    browsers: [
+      "qa-exchange-saved-list-privacy-browser",
+      "qa-exchange-search-browser",
+      "qa-exchange-handoff-detail-privacy-browser"
+    ],
+    https: [
+      "exchange-saved-list-http",
+      "exchange-http",
+      "exchange-handoff-detail-http"
+    ]
+  },
+  "exchange-handoff-saved": {
+    services: [
+      "exchange-input",
+      "exchange-listings",
+      "exchange-handoff-input",
+      "exchange-handoffs"
+    ],
+    browsers: [
+      "qa-exchange-saved-list-privacy-browser",
+      "qa-exchange-handoff-detail-privacy-browser",
+      "qa-exchange-search-browser",
+      "qa-exchange-inquiry-composer-privacy-browser",
+      "qa-exchange-defaults-privacy-browser",
+      "qa-exchange-handoff-browser"
+    ],
+    https: [
+      "exchange-saved-list-http",
+      "exchange-handoff-detail-http",
+      "exchange-inquiry-composer-http",
+      "exchange-inquiry-list-http",
+      "exchange-defaults-http",
+      "exchange-http"
+    ]
+  },
   "exchange-defaults": {
     services: ["exchange-handoff-input", "exchange-handoffs"],
     browsers: [

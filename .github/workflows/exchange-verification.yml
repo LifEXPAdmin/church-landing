@@ -12,9 +12,24 @@ on:
         codex/exchange-defaults-privacy-20261003,
         codex/exchange-inquiry-list-privacy-20261003,
         codex/exchange-inquiry-composer-privacy-20261003,
-        codex/release-exchange-privacy-20261008
+        codex/release-exchange-privacy-20261008,
+        codex/exchange-handoff-detail-privacy-20261003,
+        codex/exchange-saved-list-privacy-20261003,
+        codex/release-exchange-handoffs-saved-20261008
       ]
     paths:
+      - scripts/qa-exchange-saved-list-privacy-browser.mjs
+      - components/platform/exchange-saved-list.tsx
+      - components/platform/exchange-saved-controls.tsx
+      - tests/exchange-saved-list-privacy.test.mjs
+      - tests/exchange-saved-list-http.test.ts
+      - scripts/qa-exchange-handoff-detail-privacy-browser.mjs
+      - components/platform/exchange-handoff-detail.tsx
+      - tests/exchange-handoff-detail-privacy.test.mjs
+      - tests/exchange-handoff-detail-http.test.ts
+      - tests/exchange-handoffs.test.ts
+      - tests/exchange-handoff-input.test.ts
+      - tests/exchange-input.test.ts
       - .github/workflows/exchange-verification.yml
       - package.json
       - package-lock.json
@@ -80,7 +95,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      EXCHANGE_PROFILE: ${{ github.ref_name == 'codex/release-exchange-privacy-20261008' && 'exchange-privacy' || github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
+      EXCHANGE_PROFILE: ${{ github.ref_name == 'codex/release-exchange-handoffs-saved-20261008' && 'exchange-handoff-saved' || github.ref_name == 'codex/exchange-saved-list-privacy-20261003' && 'exchange-saved-list' || github.ref_name == 'codex/exchange-handoff-detail-privacy-20261003' && 'exchange-handoff-detail' || github.ref_name == 'codex/release-exchange-privacy-20261008' && 'exchange-privacy' || github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -139,6 +154,9 @@ jobs:
           const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
           const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((match) => ({ sourceSha: match[1], mode: match[2] }));
           const expectations = {
+            "exchange-handoff-detail": { tests: [22, 5], browsers: { "exchange-handoff-detail-browser": [8], "exchange-inquiry-composer-browser": [11], "exchange-defaults-browser": [11], "exchange-handoff-browser": [9] } },
+            "exchange-saved-list": { tests: [65, 3], browsers: { "exchange-saved-list-browser": [8], "exchange-browser": [8], "exchange-handoff-detail-browser": [8] } },
+            "exchange-handoff-saved": { tests: [65, 6], browsers: { "exchange-saved-list-browser": [8], "exchange-handoff-detail-browser": [8], "exchange-browser": [8], "exchange-inquiry-composer-browser": [11], "exchange-defaults-browser": [11], "exchange-handoff-browser": [9] } },
             exchange: { tests: [97, 1], browsers: { "exchange-browser": [8, 20] } },
             "exchange-bootstrap": { tests: [141, 1], browsers: { "exchange-browser": [8, 20], "exchange-handoff-browser": [9], "pantry-browser": [13] } },
             "exchange-defaults": { tests: [22, 2], browsers: { "exchange-defaults-browser": [11], "exchange-handoff-browser": [9] } },
@@ -173,7 +191,7 @@ jobs:
               let detailsValid = empty(result?.errors);
               if (standardScope) detailsValid &&= result?.productionWrites === 0 && result?.externalSends === 0;
               if (pantry) detailsValid &&= existsSync(passPath);
-              if (suite === "exchange-inquiry-composer-browser") detailsValid &&= empty(result?.layoutFailures);
+              if (["exchange-inquiry-composer-browser", "exchange-saved-list-browser"].includes(suite)) detailsValid &&= empty(result?.layoutFailures);
               if (topic) detailsValid &&= result?.source === sourceSha && result?.buildId === buildId && empty(result?.routeErrors) && empty(result?.external) && empty(result?.writes);
               if (support) detailsValid &&= result?.fixtureOnly === true && empty(result?.externalRequests) && empty(result?.caseRequests) && Array.isArray(result?.browserWrites) && result.browserWrites.every((request) => request.foregroundActivity === true && request.method === "POST" && request.path === "/api/platform/session");
               browsers.push({
@@ -222,6 +240,25 @@ jobs:
           path: |
             ${{ runner.temp }}/exchange-evidence/report.json
             ${{ runner.temp }}/exchange-evidence/verification.log
+            .account-test/exchange-handoff-detail-hosted-*/exchange-handoff-detail-browser-*/detail-390.png
+            .account-test/exchange-handoff-detail-hosted-*/exchange-handoff-detail-browser-*/detail-320-200.png
+            .account-test/exchange-saved-list-hosted-*/exchange-saved-list-browser-*/saved-390.png
+            .account-test/exchange-saved-list-hosted-*/exchange-saved-list-browser-*/saved-320-200.png
+            .account-test/exchange-saved-list-hosted-*/exchange-handoff-detail-browser-*/detail-390.png
+            .account-test/exchange-saved-list-hosted-*/exchange-handoff-detail-browser-*/detail-320-200.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-saved-list-browser-*/saved-390.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-saved-list-browser-*/saved-320-200.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-handoff-detail-browser-*/detail-390.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-handoff-detail-browser-*/detail-320-200.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-inquiry-composer-browser-*/composer-390.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-inquiry-composer-browser-*/composer-320-200.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-defaults-browser-*/defaults-390.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-defaults-browser-*/defaults-320-200.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-handoff-browser-*/agreed-mobile.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-handoff-browser-*/agreed-enlarged-dark.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-browser-*/saved-search-dark-large-mobile.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-browser-*/long-title-search-mobile.png
+            .account-test/exchange-handoff-saved-hosted-*/exchange-browser-*/exchange-settings-mobile.png
             .account-test/exchange-hosted-*/exchange-browser-*/*.png
             .account-test/exchange-bootstrap-hosted-*/exchange-browser-*/*.png
             .account-test/exchange-bootstrap-hosted-*/exchange-handoff-browser-*/*.png

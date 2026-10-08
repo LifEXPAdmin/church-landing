@@ -1,3 +1,18 @@
+## Private handoffs and saved choices pending acceptance, 8 October 2026 UTC
+
+The prepared **2026.10.08.5** candidate integrates PR11 and PR12 with the later
+exact original handoff receipt revision correction. The combined isolated
+profile covers handoff details, saved choices, search, inquiry composition,
+defaults and handoff recovery, including enforced-MFA HTTPS cases. Required
+counts and source/build identities must come from successful fresh receipts.
+
+No integration, deployment or live acceptance is claimed yet. Final source
+security, required runtime checks, source-bound receipt validation, independent
+final review, recovery applicability and canonical production checks remain
+gates. Prior supplementary evidence may be reused only for explicitly inspected
+unchanged contracts. Schema, dependencies and migrations remain unchanged.
+Broader security, operator, capacity and physical-device acceptance stay open.
+
 ## Defaults and inquiry batch — verified live, 8 October 2026 UTC
 
 Version **2026.10.08.4**, source `5524ee9fcbf32350289279b5bc55c8f71ca27761`, passed independent final review, exact main CI, **55 staged checks**, **228 live guest checks** and **five canonical health/release checks**. The same staged deployment was promoted at 06:57:23 UTC; canonical identity passed at 06:57:34 UTC. All **165 production tables and 123 migration checksums were unchanged** at 07:00:49 UTC; no migration or production test write was introduced.

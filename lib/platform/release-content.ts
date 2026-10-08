@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-exchange-handoffs-and-saved-choices", version: "2026.10.08.5", date: "2026-10-08",
+    summary: "Keep handoff details and saved Exchange choices private through access changes and interrupted actions.",
+    added: [],
+    improved: ["Private handoff details, saved searches and favorites appear after checking your current account access. Saved choices can be reviewed again after an interrupted read.", "Interrupted handoff actions and saved-choice removals retain their original request for deliberate recovery while the same account remains in use."],
+    fixed: ["Unconfirmed access conceals private details and controls. A delayed or mismatched action response cannot confirm a different handoff change or saved-choice removal."],
+    featureIds: ["exchange-private-handoffs", "exchange-search-saved", "account"]
+  },
+  {
     id: "private-exchange-defaults-and-inquiries", version: "2026.10.08.4", date: "2026-10-08",
     summary: "Keep Exchange preferences and private inquiries protected while reviewing or recovering changes.",
     added: [],

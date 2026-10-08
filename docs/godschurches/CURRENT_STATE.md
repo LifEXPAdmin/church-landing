@@ -1,3 +1,17 @@
+## Private handoffs and saved choices prepared, 8 October 2026 UTC
+
+The next candidate, **2026.10.08.5**, combines the preserved handoff-detail and
+saved-choice work from PR11 and PR12 with the later exact handoff-receipt repair.
+Private details load through current account-pinned reads. Same-account recovery
+retains the original request, and action confirmation requires its exact target
+and revision. Confirmed account replacement clears the prior account's entries.
+
+The combined source preserves the current dependency, schema, migration and
+release gates. Fresh hosted source, service, HTTPS and browser acceptance is
+pending, followed by final review and staged/live checks. Historical local
+receipts below are retained as history and do not establish this candidate's
+acceptance. **2026.10.08.4 remains the verified live version.**
+
 ## Exchange defaults and inquiries — live, 8 October 2026 UTC
 
 **2026.10.08.4** is verified live at [God’s Churches](https://godschurches.com), from `5524ee9fcbf32350289279b5bc55c8f71ca27761`. The two completed scopes are personal Exchange defaults and private inquiry lists/composition. Saved private values are omitted from initial HTML/RSC and shown after current account checks. Same-account interruptions retain drafts and exact uncertain requests; confirmed account replacement clears prior entries.
