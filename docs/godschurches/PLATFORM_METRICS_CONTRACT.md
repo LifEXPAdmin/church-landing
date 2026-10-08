@@ -1,3 +1,9 @@
+## Module summaries release: 2026.10.08.13
+
+Status: verified live for b5f892dbfc906f15e18ca3d17155cde2ee5fdc12 at 2026-10-08T20:09:35.611Z. The existing private Growth report now exposes four module groups using six already authorized adoption categories, current/preceding dates and the same suppressed CSV projection. Platform totals remain distinct from unavailable owner/church scope. No new outcome adapter or measurement purpose is activated.
+
+AdminWorkspace now requires current focus at read admission, lifecycle resume and publication of a held reply. Same-owner child retention and current owner/section authorization remain unchanged. Current acceptance: 591 source checks, 29 service checks, 5 enforced HTTPS checks and 13 full-application browser groups; 8 controlled AdminWorkspace parent scenarios are separate. Controlled parent scenarios use a fictional child and do not substitute for actual dashboard/export/MFA verification. Remaining limits: Live checks are guest-only; authenticated Growth reports, date changes and CSV exports were tested with isolated fictional actors. Controlled scenarios use blocked network, stub transport and a fictional child, with unmeasured write/send counters left null. No new performance/capacity, real-operator, external-provider, screen-reader or physical-device acceptance; rapid repeated Back remains unresolved. See [deployment evidence](DEPLOYMENT_REPORT.md); preserve earlier implementation history below.
+
 # Platform growth and optional measurement
 
 ## Module adoption summaries candidate, October 7, 2026

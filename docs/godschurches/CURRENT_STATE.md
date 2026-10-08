@@ -1,3 +1,9 @@
+## 2026.10.08.13: module adoption summaries
+
+Status: verified live. Application b5f892dbfc906f15e18ca3d17155cde2ee5fdc12 serves the private Growth dashboard's Connections, Publishing, Events and Serving summaries. Six existing eligible action categories retain separate actor/action counts, date coverage, suppression and the same permitted CSV values. Unsupported outcomes and owner/church scopes remain unavailable.
+
+Current verification: 591 source checks, 29 service checks, 5 enforced HTTPS checks and 13 full-application browser groups; 8 controlled AdminWorkspace parent scenarios are separate. Canonical identity checked at 2026-10-08T20:09:35.611Z; this report-only follow-up records the accepted application release and does not trigger another production deployment. See [deployment evidence](DEPLOYMENT_REPORT.md) and [release notes](https://godschurches.com/platform/releases/module-adoption-summaries). No new collection, schema, dependencies or production metric grants.
+
 ## Module adoption summaries prepared, 8 October 2026 UTC
 
 Candidate version **2026.10.08.13** groups the six existing permitted activity measures into Connections, Publishing, Events and Serving. Authorized operators can compare the selected and preceding periods using the current measured population. Dashboard and CSV data distinguish measured zero, partial collection coverage, suppressed values and unavailable history. Unsupported personal, church, attendance and completed-service measurements remain unavailable.

@@ -1,3 +1,11 @@
+## Current module-summary release: 2026.10.08.13
+
+Status: verified live, application b5f892dbfc906f15e18ca3d17155cde2ee5fdc12, canonical check 2026-10-08T20:09:35.611Z. Connections, Publishing, Events and Serving now present the six existing approved action categories. Distinct actors and action totals are not combined across categories, and intentions/signups/follows are not promoted to attendance/completion/introductions.
+
+The existing permitted report and CSV share date coverage, eligible population and suppression. Fully covered zero, partial history, unavailable history and suppressed cells remain distinct. Unsupported outcomes, Exchange/media activity and owner/church scopes remain unavailable with reasons. No collection, source queries, consent, schema or dependency changes.
+
+Fresh evidence: 591 source checks, 29 service checks, 5 enforced HTTPS checks and 13 full-application browser groups; 8 controlled AdminWorkspace parent scenarios are separate. Historical candidate measurements below remain historical; no new cost/headroom claim is made. Current production/operator/device limits: Live checks are guest-only; authenticated Growth reports, date changes and CSV exports were tested with isolated fictional actors. Controlled scenarios use blocked network, stub transport and a fictional child, with unmeasured write/send counters left null. No new performance/capacity, real-operator, external-provider, screen-reader or physical-device acceptance; rapid repeated Back remains unresolved. Full release evidence is in [the deployment report](DEPLOYMENT_REPORT.md).
+
 # Community outcome metric definitions
 
 ## Module summaries candidate, October 7, 2026
