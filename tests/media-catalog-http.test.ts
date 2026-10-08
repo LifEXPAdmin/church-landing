@@ -232,14 +232,22 @@ test(
         }
       ]
     });
-    process.env.PRIVILEGED_MFA_MODE = "off";
-    const draft = await mediaCatalogCommand(db, actor.token, {
-      operation: "create",
-      mutationId: randomUUID(),
-      ownerChurchId: church.id,
-      ...reviewed
-    });
-    process.env.PRIVILEGED_MFA_MODE = "enforce";
+    const previousMfaMode = process.env.PRIVILEGED_MFA_MODE;
+    const draft = await (async () => {
+      process.env.PRIVILEGED_MFA_MODE = "off";
+      try {
+        return await mediaCatalogCommand(db, actor.token, {
+          operation: "create",
+          mutationId: randomUUID(),
+          ownerChurchId: church.id,
+          ...reviewed
+        });
+      } finally {
+        if (previousMfaMode === undefined)
+          delete process.env.PRIVILEGED_MFA_MODE;
+        else process.env.PRIVILEGED_MFA_MODE = previousMfaMode;
+      }
+    })();
     const path = `/api/platform/media-catalog?view=editor&id=${draft.id}`;
     assert.equal((await get(path, actor, actor.id)).status, 404);
     const publish = {
