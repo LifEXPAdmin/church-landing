@@ -1,5 +1,11 @@
 # Public listing and media discovery
 
+## Integrated and verified live, 8 October 2026
+
+Release 2026.10.08.10 / e603becbf947c2e1536b42f8dca0c9372c8306f4 is verified live at 2026-10-08T15:18:18.262Z. Public listing/media canonical metadata, truthful WebPage JSON-LD, sitemap partitions and controlled JSON/PNG previews use current anonymous permissions. Private, member-only, withdrawn, invalid-rights and unavailable records remain excluded; an owner session does not widen public discovery. Interchurch help keeps its own route.
+
+Fresh current-source acceptance: 563 source, 24 service, 7 HTTPS and 35 full application browser groups, plus 8 separately scoped controlled QR scenarios. Business/venture routes remain absent and excluded with future implementation acceptance explicit. The implemented-route classification is accepted; external crawler refresh and Search Console are not claimed. The original MacBook handoff and its historical failures below remain preserved.
+
 ## 8 October 2026: public resource sharing candidate
 
 The current release candidate selectively integrates public listing and media metadata into the existing privacy boundaries. It retains the current dependency lock and 123 migrations. Use the hosted **Public resource sharing isolated verification** workflow, which runs `node scripts/test-platform-isolated.mjs public-resource-sharing` against an isolated fictional database and a production build over loopback HTTPS. The runner also supplies the `test-env.json` compatibility file used by the retained metadata browser script. Earlier local commands and counts below describe their dated checkpoints; fresh combined acceptance remains pending.

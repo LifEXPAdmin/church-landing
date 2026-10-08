@@ -1,3 +1,9 @@
+## 8 October 2026: tenth exact-source checkpoint
+
+Exact source e603becbf947c2e1536b42f8dca0c9372c8306f4 passed 563 source checks. Isolated verification build ekVTRgkGp4gYb45E6HdEF passed build, types, authored copy, lint, advisory/signature/history and runtime-source gates: 0 advisories, 496 verified signatures, 86 attestations, 0 lint errors and 42 warnings. Independent final review and actual live acceptance are bound to that application identity.
+
+The feature adds no migration or dependency. Public resource discovery uses current anonymous permission and minimal supplied facts; owner access does not widen it. Fresh QR access and identity/lifecycle checks protect download. Historical advisory/scanner failures in older feature handoffs remain dated evidence, not a waiver or a new current failure. This checkpoint does not close broader SEC-01 work or native/provider/device acceptance.
+
 ## Public resource sharing prepared, 8 October 2026 UTC
 
 Public resource sharing candidate verification is pending. The existing independent source/security workflow retains fatal source, copy, type, audit, signature, lint and reachable-history checks. A separate isolated hosted workflow covers the changed public projection, preview, sitemap and shared QR flows. The candidate retains the current dependency lock, toolchain patches and 123 migrations. No prior source result establishes acceptance of this candidate.

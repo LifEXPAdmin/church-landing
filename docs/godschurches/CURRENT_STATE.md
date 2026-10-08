@@ -1,3 +1,11 @@
+## 8 October 2026: public metadata and sharing verified live
+
+Release 2026.10.08.10 serves application e603becbf947c2e1536b42f8dca0c9372c8306f4; canonical identity was verified at 2026-10-08T15:18:18.262Z. Public listings and media now use current-permission metadata, sitemap entries and truthful structured facts, with canonical Copy/Share/QR controls and fresh download access checks. Existing private Exchange and sharing behavior is preserved.
+
+Fresh acceptance: 563 source checks, 24 service checks, 7 HTTPS checks and 35 full application browser groups. 8 controlled scenarios are separate. Staged/live/health checks: 94 / 278 / 5. 165 table fingerprints and 123 migration records remained unchanged at 2026-10-08T15:20:39.303Z; no migration was applied.
+
+Business and venture routes remain unsupported. The metadata classification is complete for implemented routes; the sharing task remains open for future eligible business destinations. External crawler refresh, Search Console and physical-device share behavior are not established. Broader security, native and provider scopes remain separate.
+
 ## Public resource sharing prepared, 8 October 2026 UTC
 
 Candidate version 2026.10.08.10 combines public listing/media discovery with Copy, Share and QR controls. Public metadata remains constrained to anonymous eligibility, and signed-in preview access may only narrow it. Current listing/favorite and Need privacy boundaries are retained. No dependency graph or schema change is included. Fresh combined verification is pending; the verified live version remains 2026.10.08.9.

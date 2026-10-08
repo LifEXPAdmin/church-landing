@@ -1,3 +1,9 @@
+## 8 October 2026: public metadata and sharing scope
+
+Release 2026.10.08.10 / e603becbf947c2e1536b42f8dca0c9372c8306f4 reuses current resource authorization for listing/media public projections and bounded sitemap partitions. Only original third-source query diagnostics are reused: 8 shapes, 72 matched pairs and 168 prepared executions. Source, time and fictional fixture limits remain those of the retained measurement; no fresh query-plan execution or HTML/browser acceptance is inferred.
+
+The required source, service, HTTPS and browser acceptance is recorded in the deployment report. No new production query-plan, traffic or concurrency capacity result is claimed by this release.
+
 ## Volunteer completion privacy, 2026-10-08 UTC
 
 Version **2026.10.08.9**, source 1a202ceecd44e1fde40296e198f45bb30df1ef8f: **verified live**. [PR46](https://github.com/LifEXPAdmin/church-landing/pull/46). This is a bounded roster privacy and receipt-controller release. Query-plan applicability: the accepted source-applicability inventory retains historical query-plan evidence under its original source, artifact hashes and limits; no current ninth query-plan run is claimed. No fresh query-plan comparison or wider database performance result is claimed. Historical measurements retain their original source and fixture attribution; see [Deployment report](DEPLOYMENT_REPORT.md).

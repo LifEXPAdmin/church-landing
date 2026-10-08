@@ -1,3 +1,9 @@
+## 8 October 2026: public resource release acceptance
+
+Release 2026.10.08.10 / e603becbf947c2e1536b42f8dca0c9372c8306f4 passed its required exact-source gates and independent reviews, then used the same READY staged deployment for staging, promotion and canonical verification at 2026-10-08T15:18:18.262Z. Actual checks were 94 staged, 278 live and 5 health; 165 table fingerprints and 123 migration records remained unchanged at 2026-10-08T15:20:39.303Z; no migration was applied. The ordinary restore completed at 2026-10-08T04:51:44.297Z was reused after applicability checks at 2026-10-08T15:10:47.111Z; no new restore or protected replay ran. Scheduled backup inspection at 2026-10-08T15:18:40.727Z found no operational problems; its installed verified copy was 6.19 hours old, within the 20-hour refresh threshold. The inspection ran no backup job or new copy.
+
+Current listing/media metadata and sharing scope is accepted. C16 business destinations remain unsupported and open until an eligible canonical public route and access contract exist. No broader task, physical device, provider or external crawler acceptance is inferred. No documentation-only deployment is required for this dated receipt.
+
 ## Public resource sharing prepared, 8 October 2026 UTC
 
 Public resource sharing candidate 2026.10.08.10 is not yet release accepted. Required gates include independent source/security CI, the isolated production-build service/HTTPS/browser workflow, review of source-bound controlled QR checks, exact-candidate evidence validation, serialized integration, staged checks and canonical live acceptance. Earlier results are not substituted for changed shared-control coverage. No migration is proposed.

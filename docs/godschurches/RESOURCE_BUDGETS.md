@@ -1,3 +1,9 @@
+## 8 October 2026: public metadata and sharing scope
+
+Release 2026.10.08.10 / e603becbf947c2e1536b42f8dca0c9372c8306f4 adds listing/media public metadata and share/QR controls. Only original third-source service measurements are reused: 11 paths, 11 warmups and 220 measured calls at concurrency 1. The complete 920-call HTTP population, response-byte conclusions and HTTP p95 are excluded because shared feed HTML changed. No new capacity or production headroom result is claimed.
+
+Functional response and lifecycle acceptance remains distinct from resource-budget measurements. No new 100-client test, production capacity margin or external-provider performance result is claimed. Historical measured values retain their original source, fixture and applicability limits.
+
 ## Public resource sharing prepared, 8 October 2026 UTC
 
 The public resource candidate reuses current sharing controls and dynamically loads the existing QR encoder. QR download adds a fresh existing preview request with normal account checks. Sitemap enumeration adds listing/media counts and ordered pages bounded to 500 entries. Metadata and preview reads select source ID, title and description; no provider fetch or new background worker is introduced. These are source observations, not measured speed or capacity improvements. Prior unrelated resource measurements retain their original scope.

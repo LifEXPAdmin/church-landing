@@ -1,5 +1,13 @@
 # Public listing and media sharing
 
+## Integrated website scope, 8 October 2026
+
+Release 2026.10.08.10 / e603becbf947c2e1536b42f8dca0c9372c8306f4 is verified live at 2026-10-08T15:18:18.262Z. Public listings/media expose canonical Copy/Share/QR through fresh current-owner access checks, preserving existing post/church/event/topic/site and personal-invitation behavior. Failed, revoked or superseded QR validation cannot authorize download.
+
+Fresh current-source acceptance: 563 source, 24 service, 7 HTTPS and 35 full application browser groups, plus 8 separately scoped controlled QR scenarios. Physical-device clipboard/native chooser behavior is not established.
+
+The original sharing task stays open for business URL registration: no eligible business route exists in this implementation. The completed listing/media release is retained, and the residual waits for its canonical route/access contract. Historical local receipts and unsuccessful attempts below are preserved.
+
 ## 8 October 2026: public resource sharing candidate
 
 The current release candidate combines this sharing feature with its public metadata prerequisite. Existing favorite, Need, inquiry and session boundaries are preserved. The hosted **Public resource sharing isolated verification** workflow runs the two focused browser scripts and complete existing sharing, calendar-sharing and invitation regressions. Additional controlled QR lifecycle evidence is reported separately from the built application. Historical incomplete scripts below remain historical until fresh verification completes. The candidate adds no dependencies or migrations; integration and live acceptance remain pending.
