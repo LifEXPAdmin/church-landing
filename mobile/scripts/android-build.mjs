@@ -52,7 +52,9 @@ export function verifyAndroidToolchain(storage, { sdk, java }) {
 // An init script changes only the local build invocation, leaving the generated
 // Expo template and the shared iOS launcher untouched. Metro gets one worker.
 export const boundedGradleInit = `
+def expectedRoot = new File(System.getenv('GC_ANDROID_PROJECT_ROOT')).canonicalFile
 gradle.beforeProject { project ->
+  if (project.rootProject.projectDir.canonicalFile != expectedRoot) return
   ['com.android.application', 'com.android.library'].each { plugin ->
     project.pluginManager.withPlugin(plugin) {
       project.extensions.getByName('android').defaultConfig.externalNativeBuild.cmake.arguments.addAll([
@@ -67,6 +69,9 @@ gradle.beforeProject { project ->
   }
 }
 gradle.projectsEvaluated {
+  // Gradle also applies init scripts to included plugin builds. Only the owned
+  // app root has an :app target and is eligible for these package/signing checks.
+  if (gradle.rootProject.projectDir.canonicalFile != expectedRoot) return
   def app = gradle.rootProject.findProject(':app')
   if (app == null) throw new GradleException('Expected one Android app target.')
   def android = app.extensions.getByName('android')
@@ -105,6 +110,7 @@ function run() {
     const init = join(plan.variantRoot, "bounded-build.gradle");
     writeFileSync(init, boundedGradleInit);
     const env = { ...process.env, ...mobileBuildEnv(), GC_ANDROID_EXPECTED_PACKAGE: plan.packageName,
+      GC_ANDROID_PROJECT_ROOT: join(mobile, "android"),
       ANDROID_HOME: sdk, ANDROID_SDK_ROOT: sdk, JAVA_HOME: java,
       GRADLE_USER_HOME: join(plan.generated, "gradle"), ANDROID_USER_HOME: join(plan.generated, "user"),
       npm_config_cache: join(generated, "npm-cache"), TMPDIR: join(generated, "tmp"),
