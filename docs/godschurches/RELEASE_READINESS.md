@@ -1,3 +1,7 @@
+## Verified Needs roles and account replacement prepared, 8 October 2026 UTC
+
+The bounded role and shared account-guard prerequisite is applied. Current Node reproduction observed three specific assertion failures, followed by 152 focused passes. These deterministic component checks do not establish browser or release readiness. Current full application and shared-consumer regression evidence, independent review and operational release gates remain open. Broad security, later Needs owner/rearm, export and provider/device acceptance remain separate.
+
 ## Needs form privacy verified live, 2026.10.08.15
 
 Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.15, source 78962a8b79163216cf38bb74f983b6e4c8db738b, [PR68](https://github.com/LifEXPAdmin/church-landing/pull/68).

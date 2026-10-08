@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useReadVisibility } from "./read-visibility";
+import { useNeedRoleChoices } from "./exchange-need-roles";
 import { useCallback, useId, useRef, useState } from "react";
 import type {
   NeedSetupContext,
@@ -150,8 +151,10 @@ export function NeedSlotForm({
   owner,
   need,
   slot,
-  roles
-}: { owner: string; roles: NeedRoleChoice[] } & NeedSlotContext) {
+  roles: suppliedRoles
+}: { owner: string; roles?: NeedRoleChoice[] } & NeedSlotContext) {
+  const currentRoles = useNeedRoleChoices();
+  const roles = suppliedRoles ?? currentRoles;
   const visible = useReadVisibility();
   const id = useId(),
     reference = useRef<string | null>(slot?.id ?? null);

@@ -976,8 +976,8 @@ function guardHarness(
       )
     )
     .digest("hex");
-  s.h.mount(() =>
-    PrivateSnapshotGuard({
+  s.h.mount(() => {
+    const wrapper = PrivateSnapshotGuard({
       owner,
       url: "/api/platform/exchange?view=listing&id=listing-a",
       checksum,
@@ -985,8 +985,11 @@ function guardHarness(
       children,
       ...(optIn ? { recoverWithoutSnapshot: true } : {}),
       ...(projected ? { project: projection.exchangeListingSnapshot } : {})
-    })
-  );
+    });
+    return wrapper.props.owner === owner && typeof wrapper.type === "function"
+      ? wrapper.type(wrapper.props)
+      : wrapper;
+  });
   t.after(() => s.h.unmount());
   return {
     ...s,

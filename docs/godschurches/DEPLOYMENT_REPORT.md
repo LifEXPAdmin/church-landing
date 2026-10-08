@@ -1,3 +1,7 @@
+## Verified Needs roles and account replacement prepared, 8 October 2026 UTC
+
+No deployment has been submitted for this candidate. The source preserves current recipient contexts, progress/loan behavior, canonical authorization, schema and dependencies. Fresh combined source, build, service, HTTPS, shared-consumer browser, recovery and live checks are required before publication. The verified production baseline remains 2026.10.08.15. See [Need role privacy](NEED_ROLE_PRIVACY.md) for the intended scope and current evidence.
+
 ## Needs form privacy verified live, 2026.10.08.15
 
 Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.15, source 78962a8b79163216cf38bb74f983b6e4c8db738b, [PR68](https://github.com/LifEXPAdmin/church-landing/pull/68).

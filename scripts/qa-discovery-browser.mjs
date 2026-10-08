@@ -612,46 +612,21 @@ try {
   await signIn(c);
   await resume();
   await page
-    .getByRole("button", { name: "Recheck current access", exact: true })
-    .waitFor();
-  assert.equal(
-    await form()
-      .getByLabel("Hidden words or phrases", { exact: true })
-      .isVisible(),
-    false
-  );
-  assert.equal(
-    await db.socialPreferences.count({ where: { ownerId: c.id } }),
-    0
-  );
-  // Wait for the session reader's completed account-change check. The recheck
-  // button also exists during a pending check, before its concealment event.
-  await page
     .getByText(
-      "The signed-in account changed. This tab keeps its original account and entries. Reload before using a different account.",
+      "Your sign-in changed. Private entries and requests were cleared. Reload for your current account.",
       { exact: true }
     )
-    .waitFor();
+    .first()
+    .waitFor({ state: "attached" });
+  assert.equal(await page.locator("form[aria-label=\"Save feed settings\"]").count(), 0);
+  assert.equal(await db.socialPreferences.count({ where: { ownerId: c.id } }), 0);
   await signIn(a);
   await resume();
-  await form()
-    .getByLabel("Hidden words or phrases", { exact: true })
-    .waitFor({ state: "visible" });
-  assert.equal(
-    await form()
-      .getByLabel("Hidden words or phrases", { exact: true })
-      .inputValue(),
-    "unsent private owner marker"
-  );
-  await form()
-    .getByRole("button", {
-      name: "Discard local choices and reload",
-      exact: true
-    })
-    .click();
-  await ready();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.locator("form[aria-label=\"Save feed settings\"]").count(), 0);
+  assert.equal(await page.getByRole("button", { name: "Confirm original request", exact: true }).count(), 0);
   ok(
-    "Account switches conceal retained private entries, prevent cross-account writes and restore the original owner's unsent form"
+    "Confirmed account replacement clears this mounted settings form, prevents cross-account writes and cannot restore old entries on return"
   );
   phase = "standalone-settings";
   await go("/platform/settings/feed/discovery");

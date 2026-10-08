@@ -532,19 +532,27 @@ try {
   await signIn(other);
   await signal("blur");
   await signal("focus");
-  await panel
+  await page
     .getByText(
-      "Your sign-in changed. Private choices were cleared. Reload for your current account.",
+      "Your sign-in changed. Private entries and requests were cleared. Reload for your current account.",
       { exact: true }
     )
+    .first()
     .waitFor({ state: "attached" });
+  assert.equal(await panel.count(), 0);
   assert.equal(await stateButton.count(), 0);
   assert.equal(
     await db.exchangeFavorite.count({ where: { ownerId: other.id } }),
     0
   );
+  await signIn(owner);
+  await signal("focus");
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await panel.count(), 0);
+  assert.equal(await exact("Confirm original request").count(), 0);
+  await signIn(other);
   ok(
-    "Confirmed account replacement clears favorite ownership and never transfers the original choice"
+    "Confirmed account replacement clears favorite ownership and returning to the original account cannot restore this visit"
   );
   const foreign = await (await go(path)).text();
   assert.ok(!foreign.includes(favorite.id));

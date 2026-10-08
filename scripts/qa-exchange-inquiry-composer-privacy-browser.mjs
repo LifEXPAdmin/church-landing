@@ -632,22 +632,27 @@ try {
   // Leave the previous user's owner mounted while replacing the authenticated account.
   await signIn(requester);
   await signal("focus");
-  await composer
+  await page
     .getByText(
-      "Your sign-in changed. Private entries were cleared. Reload for your current account.",
+      "Your sign-in changed. Private entries and requests were cleared. Reload for your current account.",
       { exact: true }
     )
     .waitFor({ state: "attached" });
   assert.equal(await purpose.count(), 0);
+  assert.equal(await composer.count(), 0, "Parent clears the original owner");
   assert.equal(
-    await composer
+    await page
       .locator("button")
       .filter({ hasText: /^Confirm original save$/ })
       .count(),
     0
   );
+  await signIn(revoked);
+  await signal("focus");
+  assert.equal(await composer.count(), 0);
+  assert.equal(await purpose.count(), 0);
   ok(
-    "A confirmed account replacement clears the old composer's pending owner and private fields"
+    "The parent clears the old composer owner on replacement; returning to its account cannot restore it"
   );
   await clearIntercepts();
   assert.deepEqual(errors, []);

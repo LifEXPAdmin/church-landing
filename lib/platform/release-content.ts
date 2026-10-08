@@ -1048,6 +1048,22 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "needs-roles-account-guard",
+    version: "2026.10.08.16",
+    date: "2026-10-08",
+    summary: "Show current event roles only after access is confirmed and clear private forms when your sign-in changes.",
+    added: [],
+    improved: [
+      "Church Need slot forms receive current event role choices through their existing access check, with bounded pages of available roles.",
+      "An interrupted access check keeps the original account's entries available for deliberate recovery."
+    ],
+    fixed: [
+      "Private event role choices and their next-page details are no longer included in the initial Need form data.",
+      "A confirmed account change or sign-out clears retained private forms and requests for that page visit."
+    ],
+    featureIds: ["church-needs", "account"]
+  },
+  {
     id: "needs-form-privacy",
     version: "2026.10.08.15",
     date: "2026-10-08",

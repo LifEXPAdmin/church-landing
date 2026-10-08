@@ -26,12 +26,14 @@ const { chromium } = createRequire(
 const sources = {
   context: "lib/platform/exchange-need-form-context.ts",
   forms: "components/platform/exchange-need-forms.tsx",
+  "./exchange-need-roles": "components/platform/exchange-need-roles.tsx",
   "./exchange-need-actions": "components/platform/exchange-need-actions.tsx",
   "./exchange-saved-controls":
     "components/platform/exchange-saved-controls.tsx",
   "./use-private-choice-action":
     "components/platform/use-private-choice-action.tsx",
   "./read-visibility": "components/platform/read-visibility.ts",
+  "./private-snapshot-guard": "components/platform/private-snapshot-guard.tsx",
   "@/lib/platform/social-client": "lib/platform/social-client.ts",
   "@/lib/platform/exchange-need-options":
     "lib/platform/exchange-need-options.ts",
@@ -39,10 +41,9 @@ const sources = {
 };
 const modules = {
   "next/link": `exports.__esModule = true; exports.default = ({prefetch, children, ...props}) => require("react").createElement("a", props, children);`,
-  "next/navigation": `const router = {refresh() {window.fixture.refreshes++;}}; exports.useRouter = () => router;`,
+  "next/navigation": `const router = {refresh() {window.fixture.refreshes++; void window.refreshGuard?.();}}; exports.useRouter = () => router;`,
   "./exchange-need-progress": `const refresh = async () => {window.fixture.totals++;}; exports.useNeedProgressRefresh = (owner, needId) => {if(owner !== "owner-a" || needId !== "need-a") throw Error("Wrong progress scope"); return refresh;};`,
   "./use-photo-back-guard": `exports.settlePhotoNavigation = async () => {};`,
-  "./private-snapshot-guard": `exports.usePrivateRecovery = () => {};`,
   "./use-unsaved-social-work": `exports.useUnsavedSocialWork = (value) => {window.fixture.guard = value;};`,
   "./privileged-auth-navigation": `exports.announcePrivilegedChallenge = () => false;`,
   "./exchange-saved-controls": `exports.useExchangeAction = () => {throw Error("Unused legacy action");};`,
@@ -82,6 +83,11 @@ const bundle = `(() => {
   const React=require("react"), {flushSync}=require("react-dom");
   const forms=require("forms"),actions=require("./exchange-need-actions"),context=require("context");
   const Visibility=require("./read-visibility").ReadVisibility;
+  const Guard=require("./private-snapshot-guard").PrivateSnapshotGuard;
+  if(!crypto.subtle)Object.defineProperty(crypto,"subtle",{value:{digest:async(_algorithm,bytes)=>Uint8Array.from(await window.fixtureDigest(Array.from(bytes))).buffer}});
+  const hash=async(data)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(JSON.stringify(data)))),b=>b.toString(16).padStart(2,"0")).join("");
+  Object.defineProperty(document,"hasFocus",{value:()=>window.fixture?.focused!==false});
+
   const root=require("react-dom/client").createRoot(document.getElementById("root"));
   let epoch=0,uuid=0,kind;
   if(!crypto.randomUUID)crypto.randomUUID=()=>"00000000-0000-4000-8000-"+String(++uuid).padStart(12,"0");
@@ -91,6 +97,7 @@ const bundle = `(() => {
   const cases={
     setup:[forms.NeedSetupForm,context.needSetupContext({listingId:"need-a",listingVersion:1,need,canCoordinate:true})],
     slot:[forms.NeedSlotForm,{...context.needSlotContext(need,slot),roles:[]}],
+    roles:[forms.NeedSlotForm,context.needSlotContext(need)],
     donation:[forms.NeedClaimForm,context.needClaimContext(need,slot)],
     quote:[forms.NeedClaimForm,context.needClaimContext(need,{...slot,action:"SELL"})],
     organizer:[actions.NeedOrganizerActions,context.needOrganizerContext(need)],
@@ -98,18 +105,23 @@ const bundle = `(() => {
     volunteer:[actions.NeedVolunteerReceipt,{needId:"need-a",signup:{id:"signup-a",version:1,name:"Fictional private name",state:"ACTIVE",completedAt:"2026-10-01T12:00:00Z"}}],
     posts:[actions.NeedPostLinks,{...context.needPostContext(need),posts:[{id:"post-a",version:1,excerpt:"Fictional private post excerpt",linked:false}]}]
   };
-  function paint(){const [Component,props]=cases[kind];flushSync(()=>root.render(React.createElement(React.StrictMode,null,React.createElement(Visibility.Provider,{value:window.fixture.visible},React.createElement(Component,{key:epoch,owner:"owner-a",...props})))));}
-  window.mount=(value)=>{kind=value;epoch++;window.fixture={visible:true,owner:"owner-a",writes:[],mode:"lost",refreshes:0,guard:null};paint();};
+  function paint(){const [Component,props]=cases[kind];let child=React.createElement(Component,{key:epoch,owner:window.fixture.ownerProp,...props});if(window.fixture.guarded)child=React.createElement(kind==="roles"?require("./exchange-need-roles").ExchangeNeedRoles:Guard,{key:epoch,owner:window.fixture.ownerProp,url:"/api/fixture-private",checksum:window.fixture.checksum,label:"need form",path:"/needs/a"},child);flushSync(()=>root.render(React.createElement(React.StrictMode,null,React.createElement(Visibility.Provider,{value:window.fixture.visible},child))));}
+  window.mount=async(value,guarded=false,focused=true,readMode="success")=>{kind=value;epoch++;window.fixture={visible:true,owner:"owner-a",ownerProp:"owner-a",writes:[],mode:"lost",refreshes:0,guard:null,guarded,focused,reads:0,privateData:kind==="roles"?{ownerId:"owner-a",roles:[{id:"role-a",role:"Fictional private role",eventTitle:"Fictional private event",capacity:4,postId:"post-a",startAt:"2026-10-05T12:00:00Z",approvalRequired:false}],next:"private-role-cursor"}:{ownerId:"owner-a",version:1},readMode};window.fixture.checksum=await hash(window.fixture.privateData);paint();};
+  window.refreshGuard=async()=>{if(window.fixture.guarded){window.fixture.checksum=await hash(window.fixture.privateData);paint();}};
+  window.lifecycle=(event)=>{if(event==="blur")window.fixture.focused=false;if(event==="focus")window.fixture.focused=true;window.dispatchEvent(new Event(event));};
   window.setVisible=(value)=>{window.fixture.visible=value;paint();};
+  window.changeOwnerProps=async(owner)=>{window.fixture.owner=owner;window.fixture.ownerProp=owner;window.fixture.privateData.ownerId=owner;window.fixture.checksum=await hash(window.fixture.privateData);paint();};
   window.unmount=()=>flushSync(()=>root.render(null));
   const response=(data,status=200)=>({ok:status>=200&&status<300,status,headers:new Headers(),body:{cancel:async()=>{}},json:async()=>structuredClone(data)});
   window.fetch=async(path,options={})=>{
     const f=window.fixture;
-    if(path==="/api/platform/profile?view=identity")return response({id:f.owner});
-    if(options.cache!=="no-store" || options.headers["X-Expected-Account"]!=="owner-a" || !options.body)throw Error("Wrong pinned command");
+    if(path==="/api/platform/profile?view=identity")return f.owner?response({id:f.owner}):response({message:"Fictional sign-out"},401);
+    if(path==="/api/fixture-private") {if(options.cache!=="no-store"||options.headers["X-Expected-Account"]!==f.ownerProp)throw Error("Wrong private read");f.reads++;if(f.readMode==="denied")return response({message:"Fictional denied read"},401);if(f.readMode==="held")return new Promise(resolve=>{window.releaseRead=()=>{f.readMode="success";resolve(response(f.privateData));};});return response(f.privateData);}
+
+    if(options.cache!=="no-store" || options.headers["X-Expected-Account"]!==f.ownerProp || !options.body)throw Error("Wrong pinned command");
     f.writes.push(options.body);const body=JSON.parse(options.body);
     if(f.mode==="lost")throw Error("Fictional private lost-reply message");
-    return response({id:body.id??body.signupId??"need-a",version:body.expectedVersion+1,message:"Fictional saved reply"});
+    return response({id:body.id??body.signupId??body.slotId??"need-a",version:body.expectedVersion+1,message:"Fictional saved reply"});
   };
 })();`;
 const browser = await chromium.launch({
@@ -149,6 +161,9 @@ try {
     }
   });
   await page.setContent('<div id="root"></div>');
+  await page.exposeFunction("fixtureDigest", (bytes) =>
+    Array.from(createHash("sha256").update(Buffer.from(bytes)).digest())
+  );
   await page.addScriptTag({ content: bundle });
   const tick = () =>
     page.evaluate(
@@ -271,6 +286,385 @@ try {
       assert.equal(await field.inputValue(), "");
     }
   );
+  await scenario(
+    "real parent guard waits for focus before revealing a private form",
+    async () => {
+      await page.evaluate(() => window.mount("donation", true, false));
+      await tick();
+      assert.equal(await page.getByRole("textbox").count(), 0);
+      assert.equal(await page.evaluate(() => window.fixture.reads), 0);
+      await page.evaluate(() => window.lifecycle("focus"));
+      await page
+        .getByRole("textbox", {
+          name: "Optional private note to the coordinator",
+          exact: true
+        })
+        .waitFor();
+    }
+  );
+  await scenario(
+    "real parent guard keeps drafts concealed through blur and passive notifications",
+    async () => {
+      await page.evaluate(() => window.mount("donation", true));
+      const field = page.getByRole("textbox", {
+        name: "Optional private note to the coordinator",
+        exact: true
+      });
+      await field.fill("Fictional guarded draft");
+      await page.evaluate(() => window.lifecycle("blur"));
+      await tick();
+      const reads = await page.evaluate(() => window.fixture.reads);
+      for (const event of ["online", "social-relationships-changed"]) {
+        await page.evaluate((value) => window.lifecycle(value), event);
+        await tick();
+      }
+      assert.equal(await page.getByRole("textbox").count(), 0);
+      assert.equal(
+        await page
+          .locator("#root")
+          .innerHTML()
+          .then((x) => x.includes("Fictional guarded draft")),
+        false
+      );
+      assert.equal(await page.evaluate(() => window.fixture.reads), reads);
+      assert.equal(await page.evaluate(() => window.fixture.guard.dirty), true);
+      await page.evaluate(() => window.lifecycle("focus"));
+      await field.waitFor();
+      assert.equal(await field.inputValue(), "Fictional guarded draft");
+    }
+  );
+  await scenario(
+    "real parent guard conceals a pagehide while retaining the slot editor",
+    async () => {
+      await page.evaluate(() => window.mount("slot", true));
+      await page.locator("details").waitFor();
+      await page.locator("details").evaluate((el) => (el.open = true));
+      const field = page.getByRole("textbox", {
+        name: "Item or help description",
+        exact: true
+      });
+      await field.fill("Fictional retained slot draft");
+      await page.evaluate(() => window.lifecycle("pagehide"));
+      await tick();
+      assert.equal(await page.locator("input").count(), 0);
+      await page.evaluate(() =>
+        window.lifecycle("social-relationships-changed")
+      );
+      await tick();
+      assert.equal(await page.locator("input").count(), 0);
+      await page.evaluate(() => window.lifecycle("pageshow"));
+      await page.locator("details").waitFor();
+      await page.locator("details").evaluate((el) => (el.open = true));
+      assert.equal(await field.inputValue(), "Fictional retained slot draft");
+    }
+  );
+  await scenario(
+    "real parent guard retains a lost original command across a changed private snapshot",
+    async () => {
+      await page.evaluate(() => window.mount("donation", true));
+      const field = page.getByRole("textbox", {
+        name: "Optional private note to the coordinator",
+        exact: true
+      });
+      await field.fill("Fictional guarded original");
+      await page
+        .getByRole("button", { name: "Commit this quantity", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Confirm original save", exact: true })
+        .waitFor();
+      const original = await page.evaluate(() => window.fixture.writes[0]);
+      await page.evaluate(() => {
+        window.fixture.privateData.version++;
+        window.lifecycle("blur");
+      });
+      await tick();
+      await page.evaluate(() => window.lifecycle("online"));
+      await tick();
+      assert.equal(await page.getByRole("textbox").count(), 0);
+      await page.evaluate(() => {
+        window.fixture.mode = "success";
+        window.lifecycle("focus");
+      });
+      await page
+        .getByRole("button", { name: "Confirm original request", exact: true })
+        .click();
+      await field.waitFor();
+      await tick();
+      assert.deepEqual(await page.evaluate(() => window.fixture.writes), [
+        original,
+        original
+      ]);
+      assert.equal(await page.evaluate(() => window.fixture.refreshes), 1);
+      assert.equal(await field.inputValue(), "");
+    }
+  );
+  const roleField = () =>
+    page.getByRole("combobox", { name: "Current event role", exact: true });
+  async function openRoles() {
+    await page.locator("details").waitFor();
+    await page.locator("details").evaluate((el) => (el.open = true));
+    await page
+      .getByRole("combobox", { name: "Help requested", exact: true })
+      .selectOption("VOLUNTEER");
+    await roleField().waitFor();
+  }
+  await scenario(
+    "current role adapter exposes no choices or cursor before the existing guard verifies",
+    async () => {
+      await page.evaluate(() => window.mount("roles", true, true, "held"));
+      await tick();
+      assert.equal(await page.getByRole("combobox").count(), 0);
+      assert.equal(
+        (await page.locator("#root").innerHTML()).includes(
+          "Fictional private event"
+        ),
+        false
+      );
+      assert.equal(
+        await page
+          .getByRole("link", { name: "More current event roles" })
+          .count(),
+        0
+      );
+      await page.evaluate(() => window.releaseRead());
+      await openRoles();
+      assert.equal(await roleField().locator("option").count(), 2);
+      assert.match(
+        await roleField().innerText(),
+        /Fictional private event: Fictional private role/
+      );
+      assert.equal(
+        await page
+          .getByRole("link", { name: "More current event roles" })
+          .getAttribute("href"),
+        "/needs/a?rolesAfter=private-role-cursor"
+      );
+    }
+  );
+  await scenario(
+    "changed role choices stay concealed without replacing the selected role or unsent description",
+    async () => {
+      await page.evaluate(() => window.mount("roles", true));
+      await openRoles();
+      await roleField().selectOption("role-a");
+      const field = page.getByRole("textbox", {
+        name: "Item or help description",
+        exact: true
+      });
+      await field.fill("Fictional role draft");
+      await page.evaluate(() => {
+        window.fixture.privateData.roles[0].role = "Changed role";
+        window.lifecycle("social-relationships-changed");
+      });
+      await tick();
+      assert.equal(await page.getByRole("combobox").count(), 0);
+      assert.equal(
+        await page
+          .getByRole("link", { name: "More current event roles" })
+          .count(),
+        0
+      );
+      await page.evaluate(() => {
+        window.fixture.privateData.roles[0].role = "Fictional private role";
+        window.lifecycle("focus");
+      });
+      await page.locator("details").waitFor();
+      await page.locator("details").evaluate((el) => (el.open = true));
+      assert.equal(await roleField().inputValue(), "role-a");
+      assert.equal(await field.inputValue(), "Fictional role draft");
+    }
+  );
+  await scenario(
+    "lost role-slot command keeps exact role and mutation through changed-role recovery",
+    async () => {
+      await page.evaluate(() => window.mount("roles", true));
+      await openRoles();
+      await roleField().selectOption("role-a");
+      await page
+        .getByRole("textbox", { name: "Item or help description", exact: true })
+        .fill("Fictional volunteer help");
+      await page
+        .getByRole("button", { name: "Save action slot", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Confirm original save", exact: true })
+        .waitFor();
+      const original = await page.evaluate(() => window.fixture.writes[0]);
+      assert.equal(JSON.parse(original).fields.volunteerSlotId, "role-a");
+      await page.evaluate(() => {
+        window.fixture.privateData.next = "new-role-cursor";
+        window.lifecycle("social-relationships-changed");
+      });
+      await page
+        .getByRole("button", { name: "Confirm original request", exact: true })
+        .waitFor();
+      assert.equal(await page.getByRole("combobox").count(), 0);
+      await page.evaluate(() => {
+        window.fixture.mode = "success";
+      });
+      await page
+        .getByRole("button", { name: "Confirm original request", exact: true })
+        .click();
+      await page.locator("details").waitFor();
+      assert.deepEqual(await page.evaluate(() => window.fixture.writes), [
+        original,
+        original
+      ]);
+      assert.equal(await page.evaluate(() => window.fixture.refreshes), 1);
+    }
+  );
+  await scenario(
+    "wrong-owner role page fails the complete guard without rendering choices",
+    async () => {
+      await page.evaluate(() => window.mount("roles", true, true, "held"));
+      await tick();
+      await page.evaluate(() => {
+        window.fixture.privateData.ownerId = "owner-b";
+        window.releaseRead();
+      });
+      await tick();
+      assert.equal(await page.getByRole("combobox").count(), 0);
+      assert.equal(
+        (await page.locator("#root").innerHTML()).includes(
+          "Fictional private event"
+        ),
+        false
+      );
+    }
+  );
+  for (const identity of ["owner-b", null])
+    await scenario(
+      "actual guard clears draft after identity " +
+        identity +
+        " and does not revive it on return",
+      async () => {
+        await page.evaluate(() => window.mount("donation", true));
+        const field = page.getByRole("textbox", {
+          name: "Optional private note to the coordinator",
+          exact: true
+        });
+        await field.fill("Fictional old account draft");
+        await page.evaluate((owner) => {
+          window.fixture.owner = owner;
+          window.lifecycle("focus");
+        }, identity);
+        await page
+          .getByText(
+            "Your sign-in changed. Private entries and requests were cleared. Reload for your current account.",
+            { exact: true }
+          )
+          .waitFor();
+        assert.equal(await page.getByRole("textbox").count(), 0);
+        await page.evaluate(() => {
+          window.fixture.owner = "owner-a";
+          window.lifecycle("focus");
+        });
+        await tick();
+        assert.equal(await page.getByRole("textbox").count(), 0);
+        assert.equal(
+          await page
+            .getByRole("button", {
+              name: "Recheck current access",
+              exact: true
+            })
+            .count(),
+          0
+        );
+        assert.equal(
+          await page.evaluate(() => window.fixture.writes.length),
+          0
+        );
+      }
+    );
+  await scenario(
+    "account replacement removes a lost original request without retrying it",
+    async () => {
+      await page.evaluate(() => window.mount("donation", true));
+      await page
+        .getByRole("textbox", {
+          name: "Optional private note to the coordinator",
+          exact: true
+        })
+        .fill("Fictional lost account original");
+      await page
+        .getByRole("button", { name: "Commit this quantity", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Confirm original save", exact: true })
+        .waitFor();
+      await page.evaluate(() => {
+        window.fixture.owner = "owner-b";
+        window.lifecycle("focus");
+      });
+      await page
+        .getByText(
+          "Your sign-in changed. Private entries and requests were cleared. Reload for your current account.",
+          { exact: true }
+        )
+        .waitFor();
+      await page.evaluate(() => {
+        window.fixture.owner = "owner-a";
+        window.fixture.mode = "success";
+        window.lifecycle("focus");
+      });
+      await tick();
+      assert.equal(
+        await page.getByRole("button", { name: /Confirm original/ }).count(),
+        0
+      );
+      assert.equal(await page.evaluate(() => window.fixture.writes.length), 1);
+    }
+  );
+  await scenario(
+    "same-account read denial preserves its draft for explicit current recovery",
+    async () => {
+      await page.evaluate(() => window.mount("donation", true));
+      const field = page.getByRole("textbox", {
+        name: "Optional private note to the coordinator",
+        exact: true
+      });
+      await field.fill("Fictional retained same-account draft");
+      await page.evaluate(() => {
+        window.fixture.readMode = "denied";
+        window.lifecycle("social-relationships-changed");
+      });
+      await page.getByText("Fictional denied read", { exact: true }).waitFor();
+      assert.equal(await page.getByRole("textbox").count(), 0);
+      await page.evaluate(() => {
+        window.fixture.readMode = "success";
+      });
+      await page
+        .getByRole("button", { name: "Recheck current access", exact: true })
+        .click();
+      await field.waitFor();
+      assert.equal(
+        await field.inputValue(),
+        "Fictional retained same-account draft"
+      );
+    }
+  );
+  await scenario(
+    "new owner props mount a fresh guard while its first read remains held",
+    async () => {
+      await page.evaluate(() => window.mount("donation", true));
+      const field = page.getByRole("textbox", {
+        name: "Optional private note to the coordinator",
+        exact: true
+      });
+      await field.fill("Fictional prior owner entry");
+      await page.evaluate(async () => {
+        window.fixture.readMode = "held";
+        await window.changeOwnerProps("owner-b");
+      });
+      await tick();
+      assert.equal(await page.getByRole("textbox").count(), 0);
+      await page.evaluate(() => window.releaseRead());
+      await field.waitFor();
+      assert.equal(await field.inputValue(), "");
+      assert.equal(await page.evaluate(() => window.fixture.writes.length), 0);
+    }
+  );
   assert.deepEqual(errors, []);
   assert.equal(externalRequests, 0);
 } catch (error) {
@@ -290,9 +684,10 @@ const report = {
   productionWrites: null,
   externalSends: null,
   visibility: "controlled-ReadVisibility-context-not-native-focus",
+  lifecycleEvidence: "controlled-document-focus-events-not-native-focus",
   complete:
     !fatal &&
-    results.length === 9 &&
+    results.length === 22 &&
     results.every((r) => r.pass) &&
     errors.length === 0 &&
     externalRequests === 0,

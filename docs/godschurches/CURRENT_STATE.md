@@ -1,3 +1,7 @@
+## Verified Needs roles and account replacement prepared, 8 October 2026 UTC
+
+Candidate **2026.10.08.16**, `needs-roles-account-guard`, removes private role choices from initial slot form data and clears retained private children only after a confirmed replacement account or sign-out. Three current mocked-source assertion failures were reproduced; all 152 focused Node checks pass on the applied source. Fresh hosted, browser, HTTPS and live acceptance remain pending. Current canonical release remains separately verified **2026.10.08.15**. See [Need role privacy](NEED_ROLE_PRIVACY.md).
+
 ## Needs form privacy verified live, 2026.10.08.15
 
 Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.15, source 78962a8b79163216cf38bb74f983b6e4c8db738b, [PR68](https://github.com/LifEXPAdmin/church-landing/pull/68).

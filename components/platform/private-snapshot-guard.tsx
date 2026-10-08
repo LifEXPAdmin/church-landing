@@ -9,7 +9,11 @@ import {
   useState,
   type ReactNode
 } from "react";
-import { socialRequest } from "@/lib/platform/social-client";
+import {
+  currentSocialOwner,
+  socialRequest,
+  SocialClientError
+} from "@/lib/platform/social-client";
 import { ReadVisibility, useReadVisibility } from "./read-visibility";
 
 type PendingRecovery = { retry: () => void; busy: boolean; allowed?: boolean };
@@ -32,27 +36,35 @@ export function usePrivateRecovery(
 
 // Keep form state mounted but concealed while rechecking. A changed version
 // requires deliberate reload, so this guard never rebases an uncertain write.
-export function PrivateSnapshotGuard({
-  owner,
-  url,
-  checksum,
-  label = "private information",
-  project,
-  recoverWithoutSnapshot = false,
-  children
-}: {
+type Props = {
   owner: string;
   url: string;
   checksum: string;
   label?: string;
   project?: (data: unknown) => unknown;
+  onVerified?: (snapshot: unknown) => void;
   recoverWithoutSnapshot?: boolean;
   children: ReactNode;
-}) {
+};
+export function PrivateSnapshotGuard(props: Props) {
+  return <SnapshotGuard key={props.owner} {...props} />;
+}
+function SnapshotGuard({
+  owner,
+  url,
+  checksum,
+  label = "private information",
+  project,
+  onVerified,
+  recoverWithoutSnapshot = false,
+  children
+}: Props) {
   const parentVisible = useReadVisibility();
   const [visible, setVisible] = useState(false),
     [notice, setNotice] = useState(`Checking current ${label} access…`);
   const [currentAccess, setCurrentAccess] = useState(false);
+  const replaced = useRef(false),
+    [accountChanged, setAccountChanged] = useState(false);
   const [recoveries, setRecoveries] = useState<Record<string, PendingRecovery>>(
     {}
   );
@@ -62,13 +74,14 @@ export function PrivateSnapshotGuard({
   // was lost. Keep the original management snapshot until its owner confirms
   // that exact request; refreshing props cannot confirm it on the owner's behalf.
   useEffect(() => {
-    if (Object.keys(recoveries).length === 0) {
+    if (!replaced.current && Object.keys(recoveries).length === 0) {
       setConfirmedChecksum(checksum);
       setConfirmedChildren(children);
     }
   }, [checksum, children, recoveries]);
   const register = useCallback(
     (id: string, recovery: PendingRecovery | null) => {
+      if (replaced.current) return;
       setRecoveries((current) => {
         if (!recovery && !current[id]) return current;
         const next = { ...current };
@@ -80,6 +93,7 @@ export function PrivateSnapshotGuard({
     []
   );
   const generation = useRef(0),
+    identityGeneration = useRef(0),
     checking = useRef(false),
     queued = useRef(false),
     active = useRef(true);
@@ -97,6 +111,7 @@ export function PrivateSnapshotGuard({
   const check = useCallback(async () => {
     if (
       !active.current ||
+      replaced.current ||
       !foreground.current ||
       document.visibilityState === "hidden" ||
       navigator.onLine === false
@@ -107,14 +122,16 @@ export function PrivateSnapshotGuard({
       return;
     }
     checking.current = true;
-    const seq = ++generation.current;
+    const seq = ++generation.current,
+      identity = ++identityGeneration.current;
     setVisible(false);
     setCurrentAccess(false);
     try {
       const { data } = await socialRequest<unknown>(url, undefined, owner);
+      const snapshot = project ? project(data) : data;
       const digest = await crypto.subtle.digest(
         "SHA-256",
-        new TextEncoder().encode(JSON.stringify(project ? project(data) : data))
+        new TextEncoder().encode(JSON.stringify(snapshot))
       );
       if (seq !== generation.current) return;
       setCurrentAccess(true);
@@ -127,6 +144,7 @@ export function PrivateSnapshotGuard({
           `This ${label} or its access changed. Reload to inspect current details. Unsaved entries will be cleared; an unconfirmed request may already be saved.`
         );
       } else {
+        onVerified?.(snapshot);
         setVisible(true);
         setNotice("");
       }
@@ -137,19 +155,39 @@ export function PrivateSnapshotGuard({
             ? error.message
             : `Current ${label} access could not be confirmed.`
         );
+      if (error instanceof SocialClientError && error.status === 401) {
+        const actual = await currentSocialOwner().catch(() => undefined);
+        if (
+          active.current &&
+          identity === identityGeneration.current &&
+          actual !== undefined &&
+          actual !== owner
+        ) {
+          replaced.current = true;
+          queued.current = false;
+          conceal();
+          setAccountChanged(true);
+          setRecoveries({});
+          setConfirmedChildren(null);
+          setNotice(
+            "Your sign-in changed. Private entries and requests were cleared. Reload for your current account."
+          );
+        }
+      }
     } finally {
       checking.current = false;
-      if (queued.current && active.current) {
+      if (queued.current && active.current && !replaced.current) {
         queued.current = false;
         // A route or confirmed snapshot may have changed during this request.
         // Retry its current callback, never the old URL/checksum closure.
         void latestCheck.current();
       }
     }
-  }, [owner, url, confirmedChecksum, label, project]);
+  }, [owner, url, confirmedChecksum, label, project, onVerified, conceal]);
   latestCheck.current = check;
   const resume = useCallback(() => {
     if (
+      !replaced.current &&
       document.visibilityState !== "hidden" &&
       document.hasFocus() &&
       navigator.onLine !== false
@@ -159,6 +197,7 @@ export function PrivateSnapshotGuard({
     }
   }, [check]);
   useEffect(() => {
+    const accountGeneration = identityGeneration;
     active.current = true;
     const hide = () => {
       foreground.current = false;
@@ -179,6 +218,7 @@ export function PrivateSnapshotGuard({
     return () => {
       active.current = false;
       queued.current = false;
+      accountGeneration.current++;
       // Invalidate old reads without replacing foreground state on a changed
       // checksum/URL or React's development effect replay.
       conceal();
@@ -216,18 +256,21 @@ export function PrivateSnapshotGuard({
                   : "Confirm original request"}
               </button>
             ))}
-          <button
-            type="button"
-            className="gc-button gc-button-quiet"
-            onClick={resume}
-          >
-            Recheck current access
-          </button>
+          {!accountChanged && (
+            <button
+              type="button"
+              className="gc-button gc-button-quiet"
+              onClick={resume}
+            >
+              Recheck current access
+            </button>
+          )}
           <button
             type="button"
             className="gc-button gc-button-quiet"
             onClick={() => {
               if (
+                accountChanged ||
                 confirm(
                   "Reload current details and discard local entries? A previous unconfirmed request may already be saved."
                 )
@@ -241,7 +284,11 @@ export function PrivateSnapshotGuard({
       )}
       <ReadVisibility.Provider value={visible && parentVisible}>
         <div hidden={!visible} inert={!visible}>
-          {Object.keys(recoveries).length ? confirmedChildren : children}
+          {accountChanged
+            ? null
+            : Object.keys(recoveries).length
+              ? confirmedChildren
+              : children}
         </div>
       </ReadVisibility.Provider>
     </RecoveryContext.Provider>

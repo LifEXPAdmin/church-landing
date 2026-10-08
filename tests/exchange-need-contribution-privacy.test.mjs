@@ -320,6 +320,7 @@ async function serverPage(after, account = owner) {
       },
       "./exchange-need-contributions": { ExchangeNeedContributions },
       "./exchange-need-volunteers": { ExchangeNeedVolunteers: "volunteers" },
+      "./exchange-need-roles": { ExchangeNeedRoles: "current-roles" },
       "./exchange-need-progress": {
         ExchangeNeedProgressProvider: ({ children }) => children,
         NeedSlotProgress: "progress"

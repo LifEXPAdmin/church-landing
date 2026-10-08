@@ -41,6 +41,7 @@ assert.ok(
     "need-incoming",
     "need-volunteer",
     "need-form-context",
+    "need-roles-guard",
     "public-resource-sharing",
     "resource-feeds",
     "c19-journeys",
@@ -117,6 +118,11 @@ const privacyProfiles = {
     services: ["public-resource-discovery", "public-discoverability", "gallery-sharing", "share-card-images"],
     browsers: ["qa-public-resource-metadata", "qa-resource-sharing-browser", "qa-sharing-browser", "qa-calendar-sharing-browser", "qa-friend-invitations-browser"],
     https: ["discoverability-http"]
+  },
+  "need-roles-guard": {
+    services: ["exchange-needs"],
+    browsers: ["qa-exchange-need-role-browser", "qa-exchange-need-form-browser", "qa-exchange-need-volunteer-privacy-browser", "qa-exchange-need-incoming-privacy-browser", "qa-exchange-need-contribution-privacy-browser", "qa-exchange-needs-browser", "qa-exchange-favorite-privacy-browser", "qa-exchange-inquiry-composer-privacy-browser", "qa-discovery-browser"],
+    https: ["exchange-need-role-http", "exchange-need-volunteer-http", "exchange-need-contribution-http", "exchange-http"]
   },
   "need-form-context": {
     services: ["exchange-needs"],
@@ -439,7 +445,7 @@ const env = {
   ARTIST_BUNDLED_CHROMIUM: "1",
   NODE_EXTRA_CA_CERTS: cert
 };
-if (suite === "need-form-context") {
+if (["need-form-context", "need-roles-guard"].includes(suite)) {
   if (process.platform !== "darwin") assert.ok(process.env.DISPLAY && process.env.XAUTHORITY, "Use the authenticated owned Xvfb display");
   Object.assign(env, { DISPLAY: process.env.DISPLAY, XAUTHORITY: process.env.XAUTHORITY });
 }
@@ -823,7 +829,7 @@ async function verifyBuiltApplication() {
             : fixture
         ], ["metric-module-summaries", "account-deactivation-owner"].includes(suite) ? { ...env, PRIVILEGED_MFA_MODE: "enforce" } : env);
       } catch (error) {
-        if (!["public-resource-sharing", "need-form-context"].includes(suite)) throw error;
+        if (!["public-resource-sharing", "need-form-context", "need-roles-guard"].includes(suite)) throw error;
         // Collect independent fixture failures in one hosted run. Each failed
         // suite remains fatal after the remaining browser and HTTPS checks.
         browserFailures.push(name);
@@ -935,21 +941,21 @@ try {
       join(qrFixture, "results.json")
     ]);
   }
-  if (["need-incoming", "need-volunteer", "need-form-context"].includes(suite)) {
+  if (["need-incoming", "need-volunteer", "need-form-context", "need-roles-guard"].includes(suite)) {
     const progressFixture = mkdtempSync(join(fixture, "need-progress-browser-"));
     await run(process.execPath, [
       "scripts/qa-exchange-need-progress-client.mjs",
       join(progressFixture, "results.json")
     ]);
   }
-  if (["need-volunteer", "need-form-context"].includes(suite)) {
+  if (["need-volunteer", "need-form-context", "need-roles-guard"].includes(suite)) {
     const volunteerFixture = mkdtempSync(join(fixture, "need-volunteer-client-"));
     await run(process.execPath, [
       "scripts/qa-exchange-need-volunteer-client.mjs",
       join(volunteerFixture, "results.json")
     ]);
   }
-  if (suite === "need-form-context") {
+  if (["need-form-context", "need-roles-guard"].includes(suite)) {
     const formFixture = mkdtempSync(join(fixture, "need-form-client-"));
     const { NODE_EXTRA_CA_CERTS: pendingCertificate, ...controlledEnv } = env;
     assert.equal(pendingCertificate, cert);

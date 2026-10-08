@@ -1,3 +1,7 @@
+## Verified Needs roles and account replacement prepared, 8 October 2026 UTC
+
+The current server-page body reproduced role identity in serialized output; two modeled account replacement cases retained the original child after denied reads. These three failures were `ERR_ASSERTION` results, not missing imports or setup errors. All 152 focused guard, role, favorite and current Need checks pass after the four-file source reconciliation. The new role adapter cases are fixed-only. Fresh source/security CI, full application, HTTPS and separately scoped controlled verification remain pending; no older passing count is treated as current acceptance.
+
 ## Needs form privacy verified live, 2026.10.08.15
 
 Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.15, source 78962a8b79163216cf38bb74f983b6e4c8db738b, [PR68](https://github.com/LifEXPAdmin/church-landing/pull/68).

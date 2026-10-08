@@ -51,6 +51,7 @@ async function volunteerServer(extra = {}) {
       "./exchange-need-volunteers": {
         ExchangeNeedVolunteers: "volunteers-client"
       },
+      "./exchange-need-roles": { ExchangeNeedRoles: "current-roles" },
       "./exchange-need-progress": {
         ExchangeNeedProgressProvider: ({ children }) => children,
         NeedSlotProgress: "progress"

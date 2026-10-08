@@ -79,6 +79,7 @@ async function serverForms() {
       ExchangeNeedContributions: "contributions"
     },
     "./exchange-need-volunteers": { ExchangeNeedVolunteers: "volunteers" },
+    "./exchange-need-roles": { ExchangeNeedRoles: "current-roles" },
     "./exchange-need-progress": {
       ExchangeNeedProgressProvider: "progress-owner",
       NeedSlotProgress: "progress"
@@ -149,6 +150,7 @@ function formHarness() {
     )
   };
   const forms = h.load("components/platform/exchange-need-forms.tsx", {
+    "./exchange-need-roles": { useNeedRoleChoices: () => [] },
     ...common,
     "@/lib/platform/exchange-options": h.load(
       "lib/platform/exchange-options.ts"

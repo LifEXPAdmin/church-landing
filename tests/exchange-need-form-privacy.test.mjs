@@ -72,6 +72,7 @@ function setup(t) {
     "@/lib/platform/exchange-need-options": options
   };
   const forms = h.load("components/platform/exchange-need-forms.tsx", {
+    "./exchange-need-roles": { useNeedRoleChoices: () => [] },
     ...common,
     "@/lib/platform/exchange-options": h.load(
       "lib/platform/exchange-options.ts"

@@ -9,6 +9,7 @@ import {
 import { PlatformShell } from "./platform-shell";
 import { ExchangeNeedContributions } from "./exchange-need-contributions";
 import { ExchangeNeedVolunteers } from "./exchange-need-volunteers";
+import { ExchangeNeedRoles } from "./exchange-need-roles";
 import {
   ExchangeNeedProgressProvider,
   NeedSlotProgress
@@ -25,8 +26,7 @@ import {
 import {
   NeedClaimForm,
   NeedSetupForm,
-  NeedSlotForm,
-  type NeedRoleChoice
+  NeedSlotForm
 } from "./exchange-need-forms";
 import {
   NeedContributionCard,
@@ -95,8 +95,6 @@ export async function ExchangeNeedsPage({
       if (!("listingId" in result))
         throw new Error("Need projection unavailable");
       const need = result.need;
-      let roles: NeedRoleChoice[] = [],
-        rolesNext: string | null = null;
       let rolesAccess: { url: string; checksum: string } | null = null,
         postsAccess: { url: string; checksum: string } | null = null;
       let posts: {
@@ -120,8 +118,6 @@ export async function ExchangeNeedsPage({
           })
         ]);
         if ("roles" in roleView) {
-          roles = roleView.roles ?? [];
-          rolesNext = roleView.next;
           rolesAccess = {
             url: `/api/platform/exchange?${new URLSearchParams({ view: "need-roles", listingId, ...(query.rolesAfter ? { after: postId(query.rolesAfter) } : {}) })}`,
             checksum: exchangeChecksum(roleView)
@@ -308,10 +304,10 @@ export async function ExchangeNeedsPage({
               {user && result.canCoordinate && (
                 <>
                   {!need.closed && rolesAccess && (
-                    <PrivateSnapshotGuard
+                    <ExchangeNeedRoles
                       owner={user.id}
                       {...rolesAccess}
-                      label="available event roles"
+                      path={path}
                     >
                       <section
                         className="space-y-4"
@@ -322,27 +318,16 @@ export async function ExchangeNeedsPage({
                           <NeedSlotForm
                             key={`edit:${slot.id}:${slot.version}:${need.version}`}
                             owner={user.id}
-                            roles={roles}
                             {...needSlotContext(need, slot)}
                           />
                         ))}
                         <NeedSlotForm
                           key={`new:${need.version}`}
                           owner={user.id}
-                          roles={roles}
                           {...needSlotContext(need)}
                         />
-                        {rolesNext && (
-                          <Link
-                            prefetch={false}
-                            className="gc-button gc-button-quiet"
-                            href={`${path}?rolesAfter=${encodeURIComponent(rolesNext)}`}
-                          >
-                            More current event roles
-                          </Link>
-                        )}
                       </section>
-                    </PrivateSnapshotGuard>
+                    </ExchangeNeedRoles>
                   )}
                   <Link
                     prefetch={false}
