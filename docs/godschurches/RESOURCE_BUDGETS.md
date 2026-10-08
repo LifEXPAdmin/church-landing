@@ -1,5 +1,13 @@
 # Resource budgets for enabled modules
 
+## Reused measurements for the handoff and saved-choice release, 8 October 2026 UTC
+
+Version **2026.10.08.5**, source `284e054dd35222d47896562506364cdd1989af0f`: **verified live**. No new resource measurement is claimed. Applicable data remains [run 37733434001](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001) on `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, build `htYDOyxWxYnqSM6MpLwIJ`: **220 measured service reads after 11 warmups, 920 HTTPS calls including 20 warmups and 900 measured calls, and 124,168,694 delivered response-body bytes**. The source review binds the unchanged measured contracts and retained artifacts. Ten fourth-release inquiry-list browser groups are separately reused under seven unchanged source hashes and are excluded from the fresh 55.
+
+At 25 fictional clients, Exchange newest remains **1100.89 ms p95** and price **1033.13 ms p95**, above the provisional one-second target. Preserve the original path mix, sample counts and limits below. These are reused loopback observations, not production samples, physical transport-byte measurements or evidence of 100-client/provider headroom.
+
+Fresh affected acceptance: **393 source/security checks, 65 service tests, 6 HTTPS cases and 55 browser groups**. Canonical identity: **2026-10-08T07:47:53.921Z**; live guest checks: **238 checks passed at 2026-10-08T07:48:54.185Z**. 165 original table fingerprints and all 123 migration records remained unchanged in read-only comparison at 2026-10-08T07:49:53.193Z; no new migration was applied. Guest checks avoid successful ranked reads that can allocate snapshot-cache rows. Immutable measurement evidence remains separate; rapid repeated Back and broader performance acceptance are unresolved. See [Deployment report](DEPLOYMENT_REPORT.md).
+
 ## Reused measurements for the live privacy release, 8 October 2026 UTC
 
 Release **2026.10.08.4**, source `5524ee9fcbf32350289279b5bc55c8f71ca27761`, introduces no new resource measurement. Applicable evidence remains [the original run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001) on `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`, build `htYDOyxWxYnqSM6MpLwIJ`: **220 measured service reads after 11 warmups, 920 HTTPS calls including 20 warmups and 900 measured calls, and 124,168,694 delivered response-body bytes**. Reviewed source equality supports reuse only for the unchanged measured contracts.

@@ -1,17 +1,12 @@
-## Private handoffs and saved choices pending acceptance, 8 October 2026 UTC
+## Handoff and saved-choice release acceptance, 8 October 2026 UTC
 
-The prepared **2026.10.08.5** candidate integrates PR11 and PR12 with the later
-exact original handoff receipt revision correction. The combined isolated
-profile covers handoff details, saved choices, search, inquiry composition,
-defaults and handoff recovery, including enforced-MFA HTTPS cases. Required
-counts and source/build identities must come from successful fresh receipts.
+Version **2026.10.08.5**, source `284e054dd35222d47896562506364cdd1989af0f`: **verified live**. Final review: accepted for the exact source and receipt; independent post-live review accepted the resulting evidence at 2026-10-08T07:52:35.269037+00:00. Main integration: ordinary fast-forward to the exact candidate at 2026-10-08T07:41:27.502Z; main CI: [run 37744996734](https://github.com/LifEXPAdmin/church-landing/actions/runs/37744996734) completed successfully at 2026-10-08T07:43:40Z. Staging, live guest and health/release checks respectively: **62 checks passed at 2026-10-08T07:47:20.741Z**, **238 checks passed at 2026-10-08T07:48:54.185Z**, **5 health/release checks**. 165 original table fingerprints and all 123 migration records remained unchanged in read-only comparison at 2026-10-08T07:49:53.193Z; no new migration was applied.
 
-No integration, deployment or live acceptance is claimed yet. Final source
-security, required runtime checks, source-bound receipt validation, independent
-final review, recovery applicability and canonical production checks remain
-gates. Prior supplementary evidence may be reused only for explicitly inspected
-unchanged contracts. Schema, dependencies and migrations remain unchanged.
-Broader security, operator, capacity and physical-device acceptance stay open.
+Fresh exact-source acceptance is **393 source/security checks, 65 service tests, 6 HTTPS cases and 55 browser groups** on fixture build `YxsYhQ1TEhLZEOQtKXsPF`. The advisory audit reported zero vulnerabilities; registry verification accepted 496 signatures and 86 attestations. Lint reported 41 warnings and zero errors. Of these, 39 are inherited and two are unused fixture bindings in the new browser checks; review found no runtime effect or authority bypass. Supplementary artist/discovery/query/resource results remain explicitly reused from `bbc5589`: the source review binds the unchanged measured contracts and retained artifacts. Ten fourth-release inquiry-list browser groups are separately reused under seven unchanged source hashes and are excluded from the fresh 55. No new schema, migration or dependency change belongs to this batch.
+
+Recovery applicability: The ordinary encrypted-copy/restore completed at 2026-10-08T04:51:44.297Z was reused under the no-schema/recovery-change review and rechecked at 2026-10-08T07:41:00.819Z against all 123 migration checksums; no new copy, restore or protected replay was performed. Scheduled backup health: Read-only inspection at 2026-10-08T07:48:22.634Z found the installed scheduler loaded, last exit 0 and no operational problems. Its retained daily copy was 22.70 hours old, above the 20-hour refresh threshold; this separate inventory was not refreshed. The ordinary restore, protected replay and installed daily inventory retain distinct scopes; no new copy or restore is inferred.
+
+This accepts the two bounded handoff-detail/actions and saved-list scopes, not broad SEC-01/SEC-02 closure. Same-account recovery retains original work; confirmed owner replacement clears prior entries. Rapid repeated Back, 100-client/production headroom, unfinished export/native work and actual operator/provider/device acceptance remain open. [Deployment report](DEPLOYMENT_REPORT.md) contains the exact source and live evidence.
 
 ## Defaults and inquiry batch — verified live, 8 October 2026 UTC
 

@@ -1,16 +1,12 @@
-## Private handoffs and saved choices prepared, 8 October 2026 UTC
+## Private Exchange handoffs and saved choices, 8 October 2026 UTC
 
-The next candidate, **2026.10.08.5**, combines the preserved handoff-detail and
-saved-choice work from PR11 and PR12 with the later exact handoff-receipt repair.
-Private details load through current account-pinned reads. Same-account recovery
-retains the original request, and action confirmation requires its exact target
-and revision. Confirmed account replacement clears the prior account's entries.
+Version **2026.10.08.5**, source `284e054dd35222d47896562506364cdd1989af0f`: **verified live** at [God’s Churches](https://godschurches.com). This batch completes the two preserved handoff-detail/actions and saved-list scopes from PR11/12, including the later exact handoff-receipt correction. Private summaries load after current account checks. Same-account interruptions retain original requests and drafts; confirmation requires the original target and exact revision. Confirmed account replacement clears the prior account’s retained entries.
 
-The combined source preserves the current dependency, schema, migration and
-release gates. Fresh hosted source, service, HTTPS and browser acceptance is
-pending, followed by final review and staged/live checks. Historical local
-receipts below are retained as history and do not establish this candidate's
-acceptance. **2026.10.08.4 remains the verified live version.**
+Fresh acceptance: **393 source/security checks, 65 service tests, 6 HTTPS cases and 55 browser groups**. The advisory audit reported zero vulnerabilities; registry verification accepted 496 signatures and 86 attestations. Lint reported 41 warnings and zero errors. Of these, 39 are inherited and two are unused fixture bindings in the new browser checks; review found no runtime effect or authority bypass. Applicable artist, discovery, query-plan and resource evidence is explicitly reused from `bbc5589`; the source review binds the unchanged measured contracts and retained artifacts. Ten fourth-release inquiry-list browser groups are separately reused under seven unchanged source hashes and are excluded from the fresh 55. It is not fresh performance execution on this release.
+
+Staging: **62 checks passed at 2026-10-08T07:47:20.741Z**. The same build was promoted at **2026-10-08T07:47:41.901Z**; canonical identity and **5 health/release checks** passed at **2026-10-08T07:47:53.921Z**. Live guest checks: **238 checks passed at 2026-10-08T07:48:54.185Z**. The scoped runtime window 2026-10-08T07:47:53.921Z–2026-10-08T07:49:01.821Z recorded zero error, fatal and CSP diagnostic rows. 165 original table fingerprints and all 123 migration records remained unchanged in read-only comparison at 2026-10-08T07:49:53.193Z; no new migration was applied.
+
+[Deployment report](DEPLOYMENT_REPORT.md) records exact evidence and recovery scope. Broad security, unfinished export/native work, rapid repeated Back, production/100-client capacity and operator/provider/device acceptance remain separate. Guest checks do not establish authenticated production-flow or cross-account draft-restoration acceptance.
 
 ## Exchange defaults and inquiries — live, 8 October 2026 UTC
 

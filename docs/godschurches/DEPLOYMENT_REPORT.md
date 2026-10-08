@@ -1,3 +1,38 @@
+## Private Exchange handoffs and saved choices, 8 October 2026 UTC
+
+Version **2026.10.08.5**, source `284e054dd35222d47896562506364cdd1989af0f`: **verified live** at [God’s Churches](https://godschurches.com), deployment `dpl_GrWZq4dn4ET7HjsDk8HwPxp3qxg9`. This batch integrates PR11’s handoff detail/actions, PR12’s saved choices and the preserved `b1688b0` receipt repair.
+
+Private handoff and saved-list snapshots are omitted from initial HTML/RSC and shown after current account-pinned reads. Same-account concealment preserves original request bytes and unrelated drafts. All eight handoff actions require the original target and exactly its submitted revision plus one; wrong or lost replies remain uncertain. Saved choices bind each row and receipt before another action. Confirmed account replacement clears the old owner’s retained entries. Cross-account draft restoration is not claimed.
+
+### Source and isolated acceptance
+
+Final review: accepted for the exact source and receipt; independent post-live review accepted the resulting evidence at 2026-10-08T07:52:35.269037+00:00. Main integration: ordinary fast-forward to the exact candidate at 2026-10-08T07:41:27.502Z. Main CI: [run 37744996734](https://github.com/LifEXPAdmin/church-landing/actions/runs/37744996734) completed successfully at 2026-10-08T07:43:40Z. Exact-candidate [push security](https://github.com/LifEXPAdmin/church-landing/actions/runs/37742938247) and [PR security](https://github.com/LifEXPAdmin/church-landing/actions/runs/37742981870): **393 source/security checks**. The advisory audit reported zero vulnerabilities; registry verification accepted 496 signatures and 86 attestations. Lint reported 41 warnings and zero errors. Of these, 39 are inherited and two are unused fixture bindings in the new browser checks; review found no runtime effect or authority bypass.
+
+[Fresh Exchange verification](https://github.com/LifEXPAdmin/church-landing/actions/runs/37742938301): **65 service tests, 6 HTTPS cases and 55 browser groups**, fixture build `YxsYhQ1TEhLZEOQtKXsPF`. The combined profile covers saved lists, handoff details and exact retries, existing search, inquiry composition, defaults and handoffs. Browser MFA is off; HTTPS uses enforcement configuration. This does not establish a new operator authenticator ceremony.
+
+Supplementary evidence remains **reused from `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`**: the source review binds the unchanged measured contracts and retained artifacts. Ten fourth-release inquiry-list browser groups are separately reused under seven unchanged source hashes and are excluded from the fresh 55.
+
+- [Artist](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733431156): 25 service tests, five HTTPS cases and 26 browser groups.
+- [Discovery](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733432965): 34 service tests, two HTTPS cases and 33 browser groups.
+- [Query plans](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079): 97 service checks, 72 full-response/cursor comparisons and 168 prepared executions.
+- [Resources](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733434001): 220 measured service reads and 920 workload HTTPS calls.
+
+These were not rerun on the fifth candidate. The unchanged optional-hook defaults preserve existing one-shot callers; Artist uses its separate write hook. No broader shared-reader, performance or capacity acceptance is inferred.
+
+### Stage and live evidence
+
+Staged read-only result: **62 checks passed at 2026-10-08T07:47:20.741Z**, with the previous canonical release preserved. The same staged build was promoted without rebuilding at **2026-10-08T07:47:41.901Z**. Canonical source/version identity and **5 health/release checks** passed at **2026-10-08T07:47:53.921Z**.
+
+Live guest result: **238 checks passed at 2026-10-08T07:48:54.185Z**. The scoped runtime window 2026-10-08T07:47:53.921Z–2026-10-08T07:49:01.821Z recorded zero error, fatal and CSP diagnostic rows. 165 original table fingerprints and all 123 migration records remained unchanged in read-only comparison at 2026-10-08T07:49:53.193Z; no new migration was applied. Retained-run deployment/promotion count: 1 deployment submission and 1 promotion in this retained run, with zero production test writes, recipient sends or queue publications; this is not an account-wide provider inventory. Acceptance closed at **2026-10-08T07:50:13.145Z**. Any failed attempt or diagnostic correction: An initial local copy-check could not start because the source-only checkout lacked TypeScript; hosted copy acceptance passed. Private evidence-reader schema corrections were reviewed before operational use. Completed release checks required no operational retry, additional product edit or redeployment.
+
+### Recovery and limits
+
+The ordinary encrypted-copy/restore completed at 2026-10-08T04:51:44.297Z was reused under the no-schema/recovery-change review and rechecked at 2026-10-08T07:41:00.819Z against all 123 migration checksums; no new copy, restore or protected replay was performed. Read-only inspection at 2026-10-08T07:48:22.634Z found the installed scheduler loaded, last exit 0 and no operational problems. Its retained daily copy was 22.70 hours old, above the 20-hour refresh threshold; this separate inventory was not refreshed. The ordinary encrypted-copy/restore evidence is separate from protected replay and the installed daily-copy receipt. Read-only inspection does not run a backup job or refresh inventory.
+
+No schema, dependency or recovery-owner change is included. Existing dependency repairs and fatal security checks remain intact. Broad security acceptance, later saved-editor/favorite-bootstrap work, unfinished export/native work and actual operator/provider/adult-pilot/physical-device acceptance remain separate.
+
+Rapid repeated Back remains unresolved. Reused fictional 25-client loopback Exchange newest **1100.89 ms p95** and price **1033.13 ms p95** exceed the provisional one-second target. They do not certify production headroom, PostgreSQL 17 workload behavior or 100-client capacity. Guest live reads do not certify authenticated private flows, successful ranked snapshot paging, dense production load, provider delivery or queue-consumer execution.
+
 ## Exchange defaults and private inquiries — verified live, 8 October 2026 UTC
 
 Product **2026.10.08.4**, application `5524ee9fcbf32350289279b5bc55c8f71ca27761`, is live at [God’s Churches](https://godschurches.com). This release completes two coherent scopes: personal Exchange defaults from PR 8, and private inquiry lists/composition from PRs 9 and 10.

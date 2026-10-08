@@ -1,5 +1,13 @@
 # Measured resource query plans and bounded traversal
 
+## Applicability to the handoff and saved-choice release, 8 October 2026 UTC
+
+Version **2026.10.08.5**, source `284e054dd35222d47896562506364cdd1989af0f`: **verified live**. Query-plan evidence remains the original [run](https://github.com/LifEXPAdmin/church-landing/actions/runs/37733416079) on `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`: **97 service checks, 72 full-response/cursor comparisons across eight shapes and 168 prepared executions**. The source review binds the unchanged measured contracts and retained artifacts. Ten fourth-release inquiry-list browser groups are separately reused under seven unchanged source hashes and are excluded from the fresh 55. No new query-plan or performance run is claimed.
+
+The same-run newest median remains **176.03 → 51.26 ms** and price-low **178.68 → 41.29 ms** across the original eight measured pairs per shape. These are fictional service-call observations, not production speedup or HTTP tail-latency evidence. Preserve the original source, host, fixture and detailed results below.
+
+Fresh affected release acceptance: **393 source/security checks, 65 service tests, 6 HTTPS cases and 55 browser groups**. Canonical identity: **2026-10-08T07:47:53.921Z**; live guest checks: **238 checks passed at 2026-10-08T07:48:54.185Z**. 165 original table fingerprints and all 123 migration records remained unchanged in read-only comparison at 2026-10-08T07:49:53.193Z; no new migration was applied. These read-only checks do not measure load or capacity. Rapid repeated Back and production/100-client headroom remain open; [Deployment report](DEPLOYMENT_REPORT.md) records the release evidence.
+
 ## Applicability to the live defaults and inquiry release, 8 October 2026 UTC
 
 Release **2026.10.08.4**, source `5524ee9fcbf32350289279b5bc55c8f71ca27761`, reuses query-plan evidence from `bbc5589ad566abc4d3140fa7fdb92a128c665d4d`. The measured query, authorization, ordering, paging, schema, fixture and measurement contracts are unchanged; source and retained artifact hashes were reviewed. No new query-plan or performance execution is claimed.
