@@ -1,3 +1,13 @@
+## Resource feed choices and reader return verified live, 8 October 2026 UTC
+
+Version **2026.10.08.11**, source `5321e09b3245e52fe95fa9a0a88682aa82a2626c`, is verified live at [God's Churches](https://godschurches.com). [PR48](https://github.com/LifEXPAdmin/church-landing/pull/48). Canonical source and version matched the READY deployment at 2026-10-08T16:52:15.179Z.
+
+Home feeds now support independent listing, event, media and opportunity choices. Existing preferences default to all four; explicit empty choices persist. Filtering preserves current source permissions before ranking, paging and retained-set replay. Returning from resource detail preserves the selected feed, position, List geometry and mounted drafts while current post access is confirmed. Background intervals and delayed guest settings loads cannot redisplay concealed content.
+
+Publication used one staged production deployment, `dpl_8WciR98HRMZFawzcoyxpqCRcd4o3`, then promoted that same READY build. **94 staged checks, 279 live guest checks and 5 health/release checks passed**. At 2026-10-08T16:54:02.770Z, all 165 original table fingerprints and 123 migration records remained unchanged; no migration was applied. Observed browser/CSP errors, attempted test mutations, scoped runtime errors/fatals and recipient sends were zero.
+
+The cached single-Back held-permission branch was observed with concealed text. Rapid repeated Back remains unverified. Controlled scenarios, guest live checks and static screenshots do not establish physical-device, screen-reader, authenticated production operator, provider-delivery or queue-consumer acceptance. Existing fixed navigation overlays and dense narrow settings layouts remain documented limitations. No historical service or performance population is counted as fresh acceptance, and no new capacity claim is made. Broader security and native work remain separate.
+
 ## Resource feed choices and reader return prepared, 8 October 2026 UTC
 
 Candidate 2026.10.08.11 adds independent listing, event, media and opportunity choices to the existing Home feeds, with current access checks during ranking, paging and retained-set replay. Returning from resource detail preserves the selected feed and List geometry while current post access is confirmed. Two reproduced foreground races received narrow admission and settlement repairs. Current bounded snapshot optimization, numeric reaction behavior, schema and dependencies are preserved. Fresh combined acceptance is pending; the verified live site remains 2026.10.08.10.

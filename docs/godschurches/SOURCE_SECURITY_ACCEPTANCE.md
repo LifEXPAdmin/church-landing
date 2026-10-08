@@ -1,3 +1,11 @@
+## Resource feed choices and reader return verified live, 8 October 2026 UTC
+
+Version **2026.10.08.11**, source `5321e09b3245e52fe95fa9a0a88682aa82a2626c`, is verified live at [God's Churches](https://godschurches.com). [PR48](https://github.com/LifEXPAdmin/church-landing/pull/48). Canonical source and version matched the READY deployment at 2026-10-08T16:52:15.179Z.
+
+Fresh exact-source acceptance: **574 source checks, 65 services, 5 HTTPS cases and 36 full application browser groups**, plus **12 separately scoped controlled component scenarios**. Isolated verification build: `i82JIZZhZG9PC-1bel0LY`. Both serving configurations matched the candidate; all 22 current hosted screenshots were reviewed. Audit: zero vulnerabilities, 496 registry signatures and 86 attestations; lint: zero errors and 42 existing warnings. The initial workflow-context rejection and later MFA seed failure are retained as failed attempts. The corrected run passed every original assertion with server MFA enforcement retained.
+
+The cached single-Back held-permission branch was observed with concealed text. Rapid repeated Back remains unverified. Controlled scenarios, guest live checks and static screenshots do not establish physical-device, screen-reader, authenticated production operator, provider-delivery or queue-consumer acceptance. Existing fixed navigation overlays and dense narrow settings layouts remain documented limitations. No historical service or performance population is counted as fresh acceptance, and no new capacity claim is made. Broader security and native work remain separate.
+
 ## 8 October 2026: tenth exact-source checkpoint
 
 Exact source e603becbf947c2e1536b42f8dca0c9372c8306f4 passed 563 source checks. Isolated verification build ekVTRgkGp4gYb45E6HdEF passed build, types, authored copy, lint, advisory/signature/history and runtime-source gates: 0 advisories, 496 verified signatures, 86 attestations, 0 lint errors and 42 warnings. Independent final review and actual live acceptance are bound to that application identity.

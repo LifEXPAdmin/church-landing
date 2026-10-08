@@ -1,3 +1,15 @@
+## Resource feed choices and reader return verified live, 8 October 2026 UTC
+
+Version **2026.10.08.11**, source `5321e09b3245e52fe95fa9a0a88682aa82a2626c`, is verified live at [God's Churches](https://godschurches.com). [PR48](https://github.com/LifEXPAdmin/church-landing/pull/48). Canonical source and version matched the READY deployment at 2026-10-08T16:52:15.179Z.
+
+Home feeds now support independent listing, event, media and opportunity choices. Existing preferences default to all four; explicit empty choices persist. Filtering preserves current source permissions before ranking, paging and retained-set replay. Returning from resource detail preserves the selected feed, position, List geometry and mounted drafts while current post access is confirmed. Background intervals and delayed guest settings loads cannot redisplay concealed content.
+
+Fresh exact-source acceptance: **574 source checks, 65 services, 5 HTTPS cases and 36 full application browser groups**, plus **12 separately scoped controlled component scenarios**. Isolated verification build: `i82JIZZhZG9PC-1bel0LY`. Both serving configurations matched the candidate; all 22 current hosted screenshots were reviewed. Audit: zero vulnerabilities, 496 registry signatures and 86 attestations; lint: zero errors and 42 existing warnings. The initial workflow-context rejection and later MFA seed failure are retained as failed attempts. The corrected run passed every original assertion with server MFA enforcement retained.
+
+Publication used one staged production deployment, `dpl_8WciR98HRMZFawzcoyxpqCRcd4o3`, then promoted that same READY build. **94 staged checks, 279 live guest checks and 5 health/release checks passed**. At 2026-10-08T16:54:02.770Z, all 165 original table fingerprints and 123 migration records remained unchanged; no migration was applied. Observed browser/CSP errors, attempted test mutations, scoped runtime errors/fatals and recipient sends were zero.
+
+The cached single-Back held-permission branch was observed with concealed text. Rapid repeated Back remains unverified. Controlled scenarios, guest live checks and static screenshots do not establish physical-device, screen-reader, authenticated production operator, provider-delivery or queue-consumer acceptance. Existing fixed navigation overlays and dense narrow settings layouts remain documented limitations. No historical service or performance population is counted as fresh acceptance, and no new capacity claim is made. Broader security and native work remain separate.
+
 # Resource preferences across Home feeds
 
 The existing Feed settings owner offers independent choices for posts sharing
