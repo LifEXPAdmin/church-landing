@@ -352,3 +352,46 @@ test("subscriber-triggered sign-out during restore cannot let the outer restore 
   assert.equal(f.controller.getSnapshot().account, null);
   assert.equal(f.state.requests.length, 0);
 });
+
+test("private command continuity requires current verification of the same saved credential", async t => {
+  const f = fixture(); t.after(() => f.controller.dispose());
+  assert.equal(f.controller.captureVerifiedContinuity(), null);
+  await f.seed(); await f.controller.setForeground(true);
+  const continuity = f.controller.captureVerifiedContinuity(); assert.ok(continuity);
+  assert.equal(continuity(), true);
+  const before = f.controller.getSnapshot().generation;
+  await f.controller.setForeground(false);
+  assert.equal(continuity(), false); assert.equal(f.controller.captureVerifiedContinuity(), null);
+  const reached = deferred(), release = deferred();
+  f.state.onRequest = async request => { if (pathIs(request, "/session")) { reached.resolve(); await release.promise; } };
+  const returning = f.controller.setForeground(true); await reached.promise;
+  assert.equal(continuity(), false, "A loaded candidate is not verified access");
+  release.resolve(); await returning;
+  assert.ok(f.controller.getSnapshot().generation > before); assert.equal(continuity(), true);
+  const publicState = JSON.stringify(f.state.snapshots);
+  for (const privateValue of [oldToken, "credentialId", "installationId", "scope", "captureVerifiedContinuity"])
+    assert.equal(publicState.includes(privateValue), false);
+});
+
+test("same-owner saved credential replacement and logout never inherit command continuity", async t => {
+  const f = fixture(); t.after(() => f.controller.dispose()); await f.seed(); await f.controller.setForeground(true);
+  const original = f.controller.captureVerifiedContinuity(); assert.ok(original);
+  await f.controller.setForeground(false);
+  // Even an identical token saved under a fresh credential nonce is a replacement.
+  await f.vault.replace(ticket, { ownerId: owner, token: oldToken });
+  await f.controller.setForeground(true); assert.equal(original(), false);
+  const replacement = f.controller.captureVerifiedContinuity(); assert.ok(replacement);
+  assert.equal(replacement(), true);
+  await f.controller.signOut(); assert.equal(replacement(), false);
+  await f.controller.signIn(input);
+  assert.equal(f.controller.getSnapshot().phase, "ready"); assert.equal(replacement(), false);
+  assert.equal(original(), false);
+});
+
+test("private command continuity fails closed after expiry or disposal", async t => {
+  const f = fixture(); t.after(() => f.controller.dispose()); await f.seed(); await f.controller.setForeground(true);
+  const continuity = f.controller.captureVerifiedContinuity(); assert.ok(continuity);
+  f.advance(60001, false);
+  assert.equal(continuity(), false); assert.equal(f.controller.captureVerifiedContinuity(), null);
+  f.controller.dispose(); assert.equal(continuity(), false);
+});

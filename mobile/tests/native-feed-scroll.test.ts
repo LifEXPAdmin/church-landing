@@ -87,6 +87,7 @@ function componentHarness(runtime: Runtime) {
     return exports;
   }
   modules["./NativeFeedChoices"] = evaluate(choicesCode);
+  modules["./NativePostLike"] = evaluate(compile("NativePostLike"));
   const { NativeJourney } = evaluate(journeyCode);
   assert.equal(typeof NativeJourney, "function");
   function cleanup(instance: Instance) { for (const work of instance.cleanups.values()) work(); instance.cleanups.clear(); }
@@ -174,8 +175,9 @@ async function subject(t: { after(cleanup: () => void): void }) {
     backToFeed: () => dispatch("backToFeed")
   } as Runtime;
   let view = componentHarness(runtime); t.after(() => view.unmount());
+  const seedFeed = seed.feed;
   function freshFeed() {
-    state.reading = { kind: "feed", feed: structuredClone(seed.feed) };
+    state.reading = { kind: "feed", feed: structuredClone(seedFeed) };
     state.navigation = { ...state.navigation, destination: { kind: "screen", screen: "home" } };
     return view.render();
   }

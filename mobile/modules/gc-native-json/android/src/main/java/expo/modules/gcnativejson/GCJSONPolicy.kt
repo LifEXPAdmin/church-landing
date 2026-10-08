@@ -40,9 +40,11 @@ internal object GCJSONPolicy {
     }
     val post = input.method == "POST"
     val issuance = path == prefix + "auth/password"
+    val like = Regex("/api/platform/v1/posts/[A-Za-z0-9_-]{1,100}/like").matches(path)
+    require(!like || uri.rawQuery == null)
     val gets = setOf("capabilities", "session", "session/activity", "feed", "churches").map { prefix + it }
-    require(if (post) uri.rawQuery == null && path in setOf(prefix + "auth/password", prefix + "session/activity", prefix + "session/logout")
-      else input.method == "GET" && (path in gets || Regex("/api/platform/v1/(posts|profiles|churches)/[A-Za-z0-9_-]{1,100}").matches(path)))
+    require(if (post) uri.rawQuery == null && (like || path in setOf(prefix + "auth/password", prefix + "session/activity", prefix + "session/logout"))
+      else input.method == "GET" && (like || path in gets || Regex("/api/platform/v1/(posts|profiles|churches)/[A-Za-z0-9_-]{1,100}").matches(path)))
     val allowed = setOf("Accept", "Cache-Control", "Pragma", "X-API-Version", "Content-Type", "Authorization", "X-Expected-Account")
     val headers = input.headers
     require(allowed.containsAll(headers.keys) && headers["Accept"] == "application/json" && headers["Cache-Control"] == "no-store" &&

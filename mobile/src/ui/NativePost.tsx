@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ApiPost } from "@godschurches/shared-core";
 import { Button, Card, Text } from "./primitives";
 import { authorLabel, postBodyPresentation, postMeta, postParts, type PresentedPost } from "./post-presentation";
@@ -27,8 +28,8 @@ function PostIdentity({ post }: { post: PresentedPost }) {
 
 /** Receives only the current authorized projection. Links are inert text until
  * a reviewed website handoff is connected; no per-card network or media loads. */
-export function NativePost({ post, detail = false, revealed = false, onOpen, onReveal }:
-  { post: ApiPost; detail?: boolean; revealed?: boolean; onOpen: (id: string) => void; onReveal?: () => void }) {
+export function NativePost({ post, detail = false, revealed = false, onOpen, onReveal, interaction }:
+  { post: ApiPost; detail?: boolean; revealed?: boolean; onOpen: (id: string) => void; onReveal?: () => void; interaction?: ReactNode }) {
   const { primary, quoted, missingSource, reposter } = postParts(post, detail, revealed);
   const meta = primary ? postMeta(primary) : null;
   return <Card>
@@ -46,9 +47,10 @@ export function NativePost({ post, detail = false, revealed = false, onOpen, onR
       <Button label={"Read original post by " + authorLabel(quoted.author)} secondary onPress={() => onOpen(quoted.id)} />
     </Card> : null}
     {meta ? <>
-      <Text variant="small" tone="muted">{meta.likes} · {meta.comments}</Text>
+      <Text variant="small" tone="muted">{interaction === undefined ? meta.likes + " · " : ""}{meta.comments}</Text>
       {meta.discussion ? <Text variant="small" tone="muted">{meta.discussion}</Text> : null}
     </> : null}
+    {interaction}
     {detail && (post.requiresWeb || primary?.requiresWeb || quoted?.requiresWeb) ?
       <Text variant="small" tone="muted">Some parts of this post, including media and replies, are available on the website.</Text> : null}
     {!detail ? <Button label={primary ? "Read post by " + authorLabel(primary.author) : "Check original post"}

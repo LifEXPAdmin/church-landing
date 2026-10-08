@@ -9,6 +9,7 @@ import { createNativePrivacySource } from "../platform/native-privacy.native";
 import { presentationMatches, type NativePrivacyPresentation as Presentation } from "../platform/native-privacy.ts";
 import { Button, Card, Screen, Text } from "./primitives";
 import { NativePost } from "./NativePost";
+import { NativePendingLike, NativePostLike } from "./NativePostLike";
 import { NativeFeedChoices } from "./NativeFeedChoices";
 import { captureFeedScrollPosition, restoreFeedScrollPosition, type FeedScrollIdentity, type FeedScrollPosition } from "./feed-scroll-position";
 import { PasswordSignIn } from "./PasswordSignIn";
@@ -206,8 +207,9 @@ function Reading({ runtime, state, post, clearScroll }:
       {state.feed.page.items.map((item, index) => <NativePost key={item.id + ":" + index} post={item} onOpen={open} />)}
       {state.feed.page.nextCursor ? <Button label="Next page" onPress={() => reset(runtime.nextPage)} /> : <Text variant="small" tone="muted">You're up to date on this page.</Text>}
     </> : null}
+    <NativePendingLike runtime={runtime} />
     {state.kind === "post" ? <NativePost post={state.post} detail revealed={state.revealed} onOpen={open}
-      onReveal={() => act(runtime.reveal)} /> : null}
+      onReveal={() => act(runtime.reveal)} interaction={<NativePostLike runtime={runtime} postId={state.post.id} />} /> : null}
     {state.kind === "idle" ? <Button label="Load posts" onPress={() => reset(() => runtime.startFeed("latest"))} /> : null}
   </>;
 }
