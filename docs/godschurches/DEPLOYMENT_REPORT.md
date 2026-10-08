@@ -1,3 +1,9 @@
+## Module adoption summaries candidate, 8 October 2026 UTC
+
+Candidate 2026.10.08.13 adds the existing authorized module summaries and their period/coverage projection. It preserves current VIEW and EXPORT permissions, one-use export confirmation, consent and source filtering. No migration or dependency change is proposed.
+
+No production deployment is claimed for this candidate. Exact-source verification, final review, recovery applicability, production data comparison, staged checks and canonical live acceptance are pending. The website remains on verified-live version 2026.10.08.12. Publish this completed task as one batch under the existing twelve-per-hour ceiling after its gates pass.
+
 ## Data Saver and accessible resource journeys, 8 October 2026 UTC
 
 Version **2026.10.08.12**, source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3`, is verified live at [God's Churches](https://godschurches.com) after canonical verification at 2026-10-08T18:08:16.929Z. [PR51](https://github.com/LifEXPAdmin/church-landing/pull/51).

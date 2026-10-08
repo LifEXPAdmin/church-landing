@@ -1,5 +1,59 @@
 # Community outcome metric definitions
 
+## Module summaries candidate, October 7, 2026
+
+The private Growth dashboard groups approved adoption categories into
+Connections, Publishing, Events and Serving. Following, ordinary posts, ordinary
+replies, RSVP intentions, volunteer signups and event creation remain separate
+counting units. Distinct actors are never summed across these categories, and
+none of these actions is relabeled as a stronger community outcome.
+
+Cards and accessible tables reuse the selected dates and the same permitted
+report projection serialized by CSV. Fully covered measured zero, partial
+coverage, unavailable history and small-group suppression remain distinct.
+Periods entirely outside retained collection coverage have null adoption counts.
+Partially covered periods describe the observed portion.
+Pausing current collection does not erase retained eligible history.
+
+Platform aggregates are explicitly scoped. Personal-owner and church summaries
+remain unavailable until their current authority and aggregate contracts exist;
+the report does not accept invented owner or church filters. Fulfilled needs,
+attendance, completed service, helpful saved resources and accepted introductions
+remain unavailable with source-specific reasons. Unsupported Exchange and media
+adoption also remain unavailable. A source module existing in the application
+does not by itself authorize measuring its private behavior.
+
+This candidate adds a report projection and dashboard presentation. It reuses
+current source eligibility, consent, suppression, view and export owners without
+new queries, collection, schema, dependencies or source lifecycle changes.
+The isolated candidate passed 23 metric, module, source, feedback and measurement
+checks across staged runs, plus six existing metric-math checks. Coverage includes
+actual canonical records, corrections and withdrawal, separate actor/action
+counts, complementary suppression, retained zero, unavailable and partial
+history, paused collection, rejected scope filters and shared CSV values.
+
+Six new production-browser groups and all seven existing admin-metrics privacy
+groups passed. Real current and preceding source counts, five downloaded CSVs
+with matching audit hashes, date changes and 320/1440-pixel keyboard-scrollable
+tables were verified. Existing checks retain unsent dates, conceal reports on
+lost access, discard late CSV responses and preserve exact interrupted-export
+recovery. Both suites reported zero browser errors or external requests.
+
+The restored fictional environment initially disabled support intake, causing
+two unchanged support-denominator checks to fail. Enabling that fixture gate
+made their targeted rerun pass. The first new browser run used a row-header
+selector that omitted its module label; correcting the selector passed the
+same assertions. Neither issue required a production behavior change.
+
+Production build, types, lint, copy, runtime traces and public build-security
+checks passed. A matched fixture comparison used seven database commands for
+both base and candidate; report JSON grew from 37,870 to 43,757 bytes, with a
+5,150-byte bounded module projection. These are fixture measurements, not a
+production latency or capacity claim. The four production source files match
+the tested build. Integration, hosted security gates and combined/live
+acceptance remain open; unsupported numeric adapters and scope contracts remain
+separate work.
+
 ## Definition scope
 
 The existing `metric-policy.ts` dictionary now names fulfilled needs, event attendance, completed service, saved helpful resources and successful introductions. The authorized Growth dictionary and its authorized CSV export consume the same definitions. Each new entry explicitly says it is not measured in the current report. There are no new counts, source queries, collection, database fields, consent changes, provider calls or public dashboards.

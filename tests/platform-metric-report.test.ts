@@ -9,7 +9,8 @@ import {
 } from "./seed-portal";
 import {
   aggregateMetrics,
-  readPlatformMetrics
+  readPlatformMetrics,
+  type MetricReport
 } from "../lib/platform/metric-report";
 import { metricConfiguration } from "../lib/platform/platform-measurement";
 import {
@@ -18,7 +19,10 @@ import {
   metricAddDays
 } from "../lib/platform/metric-time";
 import { METRIC_POLICY } from "../lib/platform/metric-policy";
-import { exportPlatformMetrics } from "../lib/platform/metric-export";
+import {
+  exportPlatformMetrics,
+  metricCsv
+} from "../lib/platform/metric-export";
 import {
   readMeasurementChoice,
   saveMeasurementChoice,
@@ -46,6 +50,75 @@ before(async () => {
   });
 });
 after(() => db.$disconnect());
+
+function moduleActions(report: MetricReport) {
+  return report.modules.groups.flatMap((group) => group.actions);
+}
+
+function moduleAction(report: MetricReport, key: string) {
+  const action = moduleActions(report).find((item) => item.key === key);
+  assert.ok(action, "The permitted report must include the named action.");
+  return action;
+}
+
+function actionCounts(value: ReturnType<typeof moduleAction>["current"]) {
+  const { actors, actions, suppressed } = value;
+  return { actors, actions, suppressed };
+}
+
+function assertModuleProjection(report: MetricReport) {
+  assert.equal(report.modules.scope, "platform");
+  assert.deepEqual(
+    report.modules.unavailableScopes.map((scope) => scope.key).sort(),
+    ["church", "owner"]
+  );
+  for (const scope of report.modules.unavailableScopes)
+    assert.ok(scope.reason.length > 0);
+  assert.deepEqual(
+    report.modules.unavailable.map((outcome) => outcome.key).sort(),
+    [
+      "completedService",
+      "eventAttendance",
+      "exchangeActivity",
+      "fulfilledNeeds",
+      "mediaActivity",
+      "savedHelpfulResources",
+      "successfulIntroductions"
+    ]
+  );
+  for (const outcome of report.modules.unavailable) {
+    assert.equal(outcome.count, null, "A definition is not a numeric adapter.");
+    assert.ok(outcome.reason.length > 0);
+  }
+  const actions = moduleActions(report);
+  assert.equal(actions.length, 6);
+  for (const action of actions) {
+    assert.equal(
+      action.current.percent,
+      action.current.actors === null || report.coverage.measuredAccounts === 0
+        ? null
+        : (100 * action.current.actors) / report.coverage.measuredAccounts
+    );
+    for (const period of ["current", "previous"] as const) {
+      const source = report[period].adoption.find(
+        (row) => row.key === action.key
+      );
+      assert.ok(source);
+      assert.equal(action[period].actors, source.actors);
+      assert.equal(action[period].actions, source.actions);
+      assert.equal(action[period].suppressed, source.suppressed);
+      assert.equal(action[period].state, source.state);
+      assert.equal(action[period].reason, source.reason);
+    }
+  }
+}
+
+function moduleCsvRows(report: MetricReport) {
+  return metricCsv(report)
+    .split("\r\n")
+    .filter((line) => line.startsWith("modules."));
+}
+
 test("actual aggregate queries resolve A2's 10/8/6/4/2 cohort, exact-day maturity, distinct windows and current-source withdrawal", async () => {
   const viewer = await createPortalActor(db, "metricviewer");
   await seedOperatorGrants(db, viewer, ["VIEW_PLATFORM_METRICS"]);
@@ -124,6 +197,14 @@ test("actual aggregate queries resolve A2's 10/8/6/4/2 cohort, exact-day maturit
   });
   assert.equal(report.current.active, 8);
   assert.equal(report.current.returning, 0);
+  assertModuleProjection(report);
+  assert.equal(report.window.partial, true);
+  assert.equal(report.modules.periods.current.coverage, "complete");
+  assert.deepEqual(actionCounts(moduleAction(report, "FOLLOW").current), {
+    actors: 6,
+    actions: 6,
+    suppressed: false
+  });
   for (const zone of ["America/Los_Angeles", "Asia/Tokyo"]) {
     const other = await db.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(`SET LOCAL TIME ZONE '${zone}'`);
@@ -174,14 +255,181 @@ test("actual aggregate queries resolve A2's 10/8/6/4/2 cohort, exact-day maturit
     )
   ).report;
   assert.equal(removed.funnel.firstValue.percent, 50);
+  assertModuleProjection(removed);
+  assert.equal(moduleAction(removed, "FOLLOW").current.actors, 5);
+  const collection = process.env.PLATFORM_MEASUREMENT_ENABLED;
+  process.env.PLATFORM_MEASUREMENT_ENABLED = "false";
+  try {
+    const paused = (
+      await readPlatformMetrics(
+        db,
+        viewer.token,
+        { from: day, through: metricAddDays(day, 31) },
+        at(31)
+      )
+    ).report;
+    assert.equal(paused.configuration.collecting, false);
+    assert.deepEqual(paused.modules, removed.modules);
+  } finally {
+    if (collection === undefined)
+      delete process.env.PLATFORM_MEASUREMENT_ENABLED;
+    else process.env.PLATFORM_MEASUREMENT_ENABLED = collection;
+  }
+
+  // Canonical records in the frozen interval distinguish people from actions.
+  // One author has two posts; none of the source IDs or text is a report field.
+  const privateBody = "Fictional module source body " + randomUUID();
+  await db.platformPost.createMany({
+    data: [...actors.slice(0, 6), actors[0]].map((actor) => ({
+      authorId: actor.id,
+      content: privateBody,
+      audience: "PUBLIC" as const,
+      createdAt: at(4),
+      publishedAt: at(4)
+    }))
+  });
+  const currentModules = async () =>
+    (
+      await readPlatformMetrics(
+        db,
+        viewer.token,
+        { from: day, through: metricAddDays(day, 31) },
+        at(31)
+      )
+    ).report;
+  const published = await currentModules();
+  assertModuleProjection(published);
+  assert.deepEqual(actionCounts(moduleAction(published, "POST").current), {
+    actors: 6,
+    actions: 7,
+    suppressed: false
+  });
+  assert.equal(moduleAction(published, "FOLLOW").current.actors, 5);
+  for (const privateValue of [privateBody, actors[0].id, actors[0].email]) {
+    assert.equal(
+      JSON.stringify(published.modules).includes(privateValue),
+      false
+    );
+    assert.equal(metricCsv(published).includes(privateValue), false);
+  }
+  await db.platformPost.updateMany({
+    where: { authorId: actors[0].id, content: privateBody },
+    data: { status: "WITHDRAWN", withdrawnAt: at(5) }
+  });
+  const withdrawn = await currentModules();
+  assert.deepEqual(actionCounts(moduleAction(withdrawn, "POST").current), {
+    actors: 5,
+    actions: 5,
+    suppressed: false
+  });
+  await db.platformFollow.deleteMany({ where: { followerId: actors[1].id } });
+  const small = await currentModules();
+  assertModuleProjection(small);
+  for (const action of moduleActions(small)) {
+    assert.equal(action.current.actors, null);
+    assert.equal(action.current.actions, null);
+    assert.equal(action.current.suppressed, true);
+    assert.equal(action.current.state, "suppressed");
+  }
+  assert.ok(
+    moduleCsvRows(small).some((line) =>
+      line.endsWith(".current.actors,Unavailable or suppressed")
+    )
+  );
   assert.equal(JSON.stringify(report).includes(actors[0].id), false);
   await assert.rejects(readPlatformMetrics(db, target.token, {}));
+  await assert.rejects(readPlatformMetrics(db, null, {}));
+  for (const scope of [{ ownerId: actors[0].id }, { churchId: randomUUID() }])
+    await assert.rejects(
+      readPlatformMetrics(db, viewer.token, { preset: "7", ...scope }),
+      /supported report date fields/
+    );
   await db.platformOperatorGrant.updateMany({
     where: { userId: viewer.id },
     data: { revokedAt: new Date() }
   });
   await assert.rejects(readPlatformMetrics(db, viewer.token, {}));
 });
+
+test("module report coverage distinguishes retained zero, partial observations, unavailable history and expired intervals", async () => {
+  const viewer = await createPortalActor(db, "metriccover");
+  await seedOperatorGrants(db, viewer, ["VIEW_PLATFORM_METRICS"]);
+  const config = await metricConfiguration(db);
+  const futureDay = metricAddDays(metricDay(new Date(), config.zone), 50);
+  const now = new Date(
+    metricDayStart(futureDay, config.zone).getTime() + 3600000
+  );
+  const boundary = new Date(
+    Math.max(config.startedAt.getTime(), now.getTime() - 90 * 86400000)
+  );
+  const boundaryDay = metricDay(boundary, config.zone);
+  const read = async (from: string, through = from, observedAt = now) =>
+    (await readPlatformMetrics(db, viewer.token, { from, through }, observedAt))
+      .report;
+
+  const empty = await read(metricAddDays(futureDay, -1));
+  assertModuleProjection(empty);
+  assert.equal(empty.modules.periods.current.coverage, "complete");
+  for (const action of moduleActions(empty)) {
+    assert.deepEqual(actionCounts(action.current), {
+      actors: 0,
+      actions: 0,
+      suppressed: false
+    });
+    assert.equal(action.current.state, "measured");
+  }
+  assert.ok(
+    moduleCsvRows(empty).some((row) => row.endsWith(".current.actions,0"))
+  );
+
+  const partial = await read(
+    metricAddDays(boundaryDay, -1),
+    metricAddDays(boundaryDay, 1)
+  );
+  assertModuleProjection(partial);
+  assert.equal(partial.modules.periods.current.coverage, "partial");
+  assert.equal(
+    partial.modules.periods.current.observedFrom,
+    boundary.toISOString()
+  );
+
+  const unavailable = await read(metricAddDays(boundaryDay, -2));
+  const expired = await read(
+    empty.window.from,
+    empty.window.through,
+    new Date(now.getTime() + 100 * 86400000)
+  );
+  for (const report of [unavailable, expired]) {
+    assertModuleProjection(report);
+    assert.equal(report.modules.periods.current.coverage, "unavailable");
+    assert.equal(report.modules.periods.current.observedFrom, null);
+    for (const action of moduleActions(report)) {
+      assert.equal(action.current.actors, null);
+      assert.equal(action.current.actions, null);
+      assert.equal(action.current.state, "unavailable");
+    }
+    for (const row of report.current.adoption) {
+      assert.equal(
+        row.actors,
+        null,
+        "Legacy CSV values cannot contradict coverage."
+      );
+      assert.equal(row.actions, null);
+    }
+    assert.ok(
+      moduleCsvRows(report).some((row) =>
+        row.endsWith(".current.actions,Unavailable or suppressed")
+      )
+    );
+    assert.equal(
+      moduleCsvRows(report).some((row) =>
+        /\.current\.(?:actors|actions),\d+$/.test(row)
+      ),
+      false
+    );
+  }
+});
+
 test("canonical successful-state timestamps survive edits and retries, clear on withdrawal, and begin again on a real new action", async () => {
   const actor = await createPortalActor(db, "metrictimes");
   const church = await db.church.create({
@@ -302,6 +550,22 @@ test("aggregate export needs separate current authority, contains definitions an
   assert.ok(result.csv.includes("configuration.zone,America/Chicago"));
   assert.ok(!result.csv.includes(viewer.email));
   assert.ok(!result.csv.includes(viewer.id));
+  const permitted = (
+    await readPlatformMetrics(
+      db,
+      viewer.token,
+      { preset: input.preset },
+      new Date(result.checkedAt)
+    )
+  ).report;
+  assertModuleProjection(permitted);
+  const rows = moduleCsvRows(permitted);
+  assert.ok(rows.length > 0);
+  assert.deepEqual(
+    result.csv.split("\r\n").filter((row) => row.startsWith("modules.")),
+    rows,
+    "The authorized CSV must serialize the same module counts, nulls and coverage as the report."
+  );
   const audit = await db.adminOperation.findUniqueOrThrow({
     where: {
       actorId_requestKey: { actorId: viewer.id, requestKey: input.requestKey }

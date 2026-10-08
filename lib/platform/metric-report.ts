@@ -9,6 +9,10 @@ import { metricConfiguration } from "./platform-measurement";
 import { metricSources } from "./metric-sources";
 import { metricSupport } from "./metric-support";
 import { metricFeedback } from "./metric-feedback";
+import {
+  metricAdoptionCoverage,
+  metricModuleProjection
+} from "./metric-modules";
 import { releases } from "./release-content";
 import {
   metricWindow,
@@ -195,6 +199,20 @@ export async function aggregateMetrics(
       };
     });
   };
+  const boundaries = {
+    startedAt: configuration.startedAt,
+    retainedFrom: cutoff
+  };
+  const currentAdoption = metricAdoptionCoverage(
+    adoption(core.current),
+    window,
+    boundaries
+  );
+  const previousAdoption = metricAdoptionCoverage(
+    adoption(core.previous),
+    window.comparison,
+    boundaries
+  );
   const edges = await tx.$queryRaw<
     {
       period: string;
@@ -280,13 +298,18 @@ export async function aggregateMetrics(
     current: {
       ...core.current,
       methods: bins(core.current.methods, ["EMAIL", "GOOGLE", "UNKNOWN"]),
-      adoption: adoption(core.current)
+      adoption: currentAdoption.adoption
     },
     previous: {
       ...core.previous,
       methods: bins(core.previous.methods, ["EMAIL", "GOOGLE", "UNKNOWN"]),
-      adoption: adoption(core.previous)
+      adoption: previousAdoption.adoption
     },
+    modules: metricModuleProjection(
+      currentAdoption,
+      previousAdoption,
+      core.measured
+    ),
     active: core.active,
     series: core.series.map((s) => ({
       ...s,

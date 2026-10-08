@@ -40,13 +40,29 @@ assert.ok(
     "need-volunteer",
     "public-resource-sharing",
     "resource-feeds",
-    "c19-journeys"
+    "c19-journeys",
+    "metric-module-summaries"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "metric-module-summaries": {
+    services: [
+      "platform-metric-modules",
+      "platform-metric-report",
+      "platform-metric-sources",
+      "platform-measurement",
+      "feedback-metrics",
+      "platform-metric-math"
+    ],
+    browsers: [
+      "qa-metric-module-summaries-browser",
+      "qa-admin-metrics-privacy-browser"
+    ],
+    https: ["platform-metric-modules-http"]
+  },
   "c19-journeys": {
     services: [
       "exchange-input",
@@ -409,6 +425,12 @@ const env = {
   ARTIST_BUNDLED_CHROMIUM: "1",
   NODE_EXTRA_CA_CERTS: cert
 };
+if (suite === "metric-module-summaries")
+  Object.assign(env, {
+    PLATFORM_MEASUREMENT_ENABLED: "true",
+    PLATFORM_METRICS_ZONE: "America/Chicago",
+    SUPPORT_INTAKE_ENABLED: "true"
+  });
 if (["resources", "exchange-plans"].includes(suite))
   Object.assign(env, {
     CAPACITY_FIXTURE_DIR: fixture,
@@ -652,6 +674,10 @@ async function verifyBuiltApplication() {
         phase
       ]);
   } else {
+    if (suite === "metric-module-summaries") {
+      await stop(server);
+      await start("enforce");
+    }
     const browserFailures = [];
     for (const name of profile.browsers) {
       try {
@@ -670,7 +696,7 @@ async function verifyBuiltApplication() {
           ].includes(name)
             ? relative(root, fixture)
             : fixture
-        ]);
+        ], suite === "metric-module-summaries" ? { ...env, PRIVILEGED_MFA_MODE: "enforce" } : env);
       } catch (error) {
         if (suite !== "public-resource-sharing") throw error;
         // Collect independent fixture failures in one hosted run. Each failed
@@ -679,8 +705,10 @@ async function verifyBuiltApplication() {
         console.error("Isolated browser suite failed:", name, error);
       }
     }
-    await stop(server);
-    await start("enforce");
+    if (suite !== "metric-module-summaries") {
+      await stop(server);
+      await start("enforce");
+    }
     await run(
       process.execPath,
       [
@@ -704,6 +732,20 @@ async function verifyBuiltApplication() {
   }
 }
 try {
+  if (suite === "metric-module-summaries") {
+    assert.equal(process.env.ADMIN_FOREGROUND_SOURCE_ROOT, undefined);
+    assert.equal(process.env.ADMIN_FOREGROUND_CASE_FILTER, undefined);
+    const { NODE_EXTRA_CA_CERTS: pendingCertificate, ...controlledEnv } = env;
+    assert.equal(pendingCertificate, cert);
+    await run(
+      process.execPath,
+      [
+        "scripts/qa-admin-workspace-foreground-client.mjs",
+        join(fixture, "admin-workspace-foreground-client")
+      ],
+      controlledEnv
+    );
+  }
   if (suite === "c19-journeys") {
     assert.equal(process.env.PHOTO_FOREGROUND_SOURCE_ROOT, undefined);
     assert.equal(process.env.PHOTO_FOREGROUND_CASE_FILTER, undefined);
@@ -800,7 +842,7 @@ try {
   writeFileSync(join(fixture, "environment.json"), JSON.stringify(env), {
     mode: 0o600
   });
-  if (["public-resource-sharing", "resource-feeds", "c19-journeys"].includes(suite))
+  if (["public-resource-sharing", "resource-feeds", "c19-journeys", "metric-module-summaries"].includes(suite))
     writeFileSync(join(fixture, "test-env.json"), JSON.stringify(env), {
       mode: 0o600,
       flag: "wx"

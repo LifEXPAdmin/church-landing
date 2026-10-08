@@ -1,0 +1,353 @@
+name: Module summaries isolated verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/release-module-summaries-20261008
+    paths:
+      - .github/workflows/metric-module-summaries-verification.yml
+      - package.json
+      - package-lock.json
+      - prisma/**
+      - scripts/test-platform-isolated.mjs
+      - scripts/patch-toolchain-depth.mjs
+      - scripts/toolchain-depth-manifest.json
+      - scripts/patch-next-hydration.mjs
+      - scripts/verify-hydration-output.mjs
+      - scripts/verify-runtime-traces.mjs
+      - scripts/qa-metric-module-summaries-browser.mjs
+      - scripts/qa-admin-metrics-privacy-browser.mjs
+      - scripts/qa-admin-workspace-foreground-client.mjs
+      - tests/platform-metric*.test.ts
+      - tests/platform-measurement.test.ts
+      - tests/feedback-metrics.test.ts
+      - tests/admin-workspace-foreground.test.mjs
+      - components/platform/admin-workspace.tsx
+      - components/platform/admin-metrics.tsx
+      - components/platform/metric-module-summaries.tsx
+      - components/platform/read-visibility.ts
+      - lib/platform/metric-*.ts
+      - lib/platform/platform-measurement.ts
+      - lib/platform/admin-*.ts
+      - lib/platform/privileged-*.ts
+      - lib/platform/release-*.ts
+      - app/platform/admin/**
+      - app/api/platform/admin/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metric-module-summaries-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
+      - name: Prepare runner-only browser and PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/metrics-chromium"
+          echo "PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH" >> "$GITHUB_ENV"
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+          npm install --prefix "$RUNNER_TEMP/metrics-browser" --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/metrics-browser/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/metrics-browser/node_modules/playwright/package.json" >> "$GITHUB_ENV"
+          chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/metrics-browser/node_modules/playwright")"
+          echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
+      - name: Build and verify fictional module summaries over local HTTPS
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-platform-isolated.mjs metric-module-summaries 2>&1 | tee "$RUNNER_TEMP/metric-module-summaries-verification.log"
+      - name: Record exact source, build and observed test totals
+        if: always()
+        env:
+          METRICS_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { execFileSync } from "node:child_process";
+          import { createHash } from "node:crypto";
+          import { createRequire } from "node:module";
+          import {
+            existsSync,
+            mkdirSync,
+            readFileSync,
+            readdirSync,
+            writeFileSync
+          } from "node:fs";
+          import { dirname, join } from "node:path";
+          const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], {
+            encoding: "utf8"
+          }).trim();
+          assert.equal(sourceSha, process.env.GITHUB_SHA);
+          const profile = "metric-module-summaries",
+            output = join(process.env.RUNNER_TEMP, profile + "-evidence");
+          mkdirSync(output, { recursive: true });
+          const logPath = join(process.env.RUNNER_TEMP, profile + "-verification.log");
+          const lines = existsSync(logPath)
+            ? readFileSync(logPath, "utf8").split(/\r?\n/)
+            : [];
+          const safe = lines.filter(
+            (line) =>
+              /^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(
+                line
+              ) ||
+              /^Platform production build ID: [A-Za-z0-9_-]+$/.test(line) ||
+              /^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(
+                line
+              )
+          );
+          const log = safe.join("\n") + "\n",
+            totals = (key) =>
+              [...log.matchAll(new RegExp("^(?:#|ℹ) " + key + " (\\d+)$", "gm"))].map(
+                (m) => Number(m[1])
+              );
+          const buildId = existsSync(".next/BUILD_ID")
+            ? readFileSync(".next/BUILD_ID", "utf8").trim()
+            : null;
+          const servingIdentities = [
+            ...log.matchAll(
+              /^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm
+            )
+          ].map((m) => ({ sourceSha: m[1], mode: m[2] }));
+          const fixtures = (
+            existsSync(".account-test") ? readdirSync(".account-test") : []
+          ).filter((n) => n.startsWith(profile + "-hosted-"));
+          const hash = (p) => createHash("sha256").update(readFileSync(p)).digest("hex"),
+            read = (p) => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : null);
+          const empty = (x) => Array.isArray(x) && x.length === 0,
+            count = (x) => (Array.isArray(x) ? x.length : null);
+          const definitions = {
+            "metric-module-summaries-browser": { file: "results.json", groups: 6 },
+            "admin-metrics-privacy-browser": { file: "result.json", groups: 7 }
+          };
+          const browsers = [],
+            controlled = [];
+          for (const fixture of fixtures) {
+            const root = join(".account-test", fixture);
+            for (const [suite, definition] of Object.entries(definitions)) {
+              for (const name of readdirSync(root).filter((n) =>
+                n.startsWith(suite + "-")
+              )) {
+                const v = read(join(root, name, definition.file));
+                if (!v) continue;
+                const privacy = suite === "admin-metrics-privacy-browser";
+                const receiptsValid = privacy
+                  ? v.fixtureEffects?.metricExportOperations === 7 &&
+                    v.fixtureEffects?.sharedMetricConfigurationWrites === 0 &&
+                    v.fixtureEffects?.otherActorMetricFlagWrites === 0 &&
+                    count(v.browserWrites) === 13 &&
+                    count(v.downloads) === 2
+                  : count(v.receipts) === 5 &&
+                    v.receipts.every((r) => /^[a-f0-9]{64}$/.test(r.sha256)) &&
+                    count(v.observations) > 0;
+                const mfaCounts = privacy
+                  ? v.authenticatorCommandsByCohort
+                  : v.authenticatorCommandCounts;
+                const mfaValid =
+                  Array.isArray(mfaCounts) &&
+                  mfaCounts.length === (privacy ? 2 : 1) &&
+                  mfaCounts.every((n) => Number.isSafeInteger(n) && n > 0 && n <= 10);
+                const detailsValid =
+                  mfaValid &&
+                  count(v.results) === definition.groups &&
+                  v.results.every((r) => typeof r === "string" && r.length > 0) &&
+                  empty(v.errors) &&
+                  empty(v.externalRequests) &&
+                  (!privacy || empty(v.routeErrors)) &&
+                  receiptsValid;
+                browsers.push({
+                  suite,
+                  reportedGroups: count(v.results),
+                  errorCount: count(v.errors),
+                  routeErrorCount: privacy ? count(v.routeErrors) : null,
+                  externalRequestCount: count(v.externalRequests),
+                  detailsValid,
+                  productionWrites: privacy ? (v.productionWrites ?? null) : null,
+                  externalSends: null,
+                  recipientSends: privacy ? (v.recipientSends ?? null) : null,
+                  scopeEvidence: "full-application-over-isolated-https",
+                  physicalDevice: false,
+                  authenticatorCommandCounts: mfaCounts
+                });
+              }
+            }
+            const v = read(
+              join(root, "admin-workspace-foreground-client", "results.json")
+            );
+            if (v) {
+              const sourcePaths = [
+                "components/platform/admin-workspace.tsx",
+                "components/platform/read-visibility.ts"
+              ];
+              const sourceValid =
+                Array.isArray(v.sourceBindings) &&
+                v.sourceBindings.length === 2 &&
+                sourcePaths.every((p) => v.sourceBindings.some((e) => e.path === p)) &&
+                v.sourceBindings.every(
+                  (e) =>
+                    e.sha256 === hash(e.path) && e.bytes === readFileSync(e.path).length
+                );
+              const modules = [
+                ["react", "react", "react.development.js"],
+                ["react/jsx-runtime", "react", "react-jsx-runtime.development.js"],
+                ["react-dom", "react-dom", "react-dom.development.js"],
+                ["react-dom/client", "react-dom", "react-dom-client.development.js"],
+                ["scheduler", "scheduler", "scheduler.development.js"]
+              ];
+              const require = createRequire(join(process.cwd(), "package.json"));
+              const moduleValid =
+                Array.isArray(v.runtimeModules) &&
+                v.runtimeModules.length === modules.length &&
+                modules.every(([name, pkg, file], i) => {
+                  const e = v.runtimeModules[i];
+                  return (
+                    e.name === name &&
+                    e.package === pkg &&
+                    e.file === file &&
+                    e.sha256 ===
+                      hash(
+                        join(dirname(require.resolve(pkg + "/package.json")), "cjs", file)
+                      )
+                  );
+                });
+              const detailsValid =
+                v.suite === "admin-workspace-foreground-client" &&
+                count(v.results) === 8 &&
+                v.results.every((e) => e.pass === true && typeof e.name === "string") &&
+                empty(v.errors) &&
+                v.blockedNetworkRequests === 0 &&
+                sourceValid &&
+                moduleValid &&
+                v.harnessSha256 ===
+                  hash("scripts/qa-admin-workspace-foreground-client.mjs") &&
+                v.sourceOverride === false &&
+                v.caseFilter === null &&
+                v.scopeEvidence ===
+                  "controlled-component-with-blocked-network-and-stub-transport" &&
+                v.productionWrites === null &&
+                v.externalSends === null;
+              controlled.push({
+                suite: v.suite,
+                reportedGroups: count(v.results),
+                errorCount: count(v.errors),
+                detailsValid,
+                blockedNetworkRequests: v.blockedNetworkRequests,
+                sourceBindings: v.sourceBindings,
+                runtimeModules: v.runtimeModules,
+                harnessSha256: v.harnessSha256,
+                sourceOverride: v.sourceOverride,
+                caseFilter: v.caseFilter,
+                productionWrites: v.productionWrites,
+                externalSends: v.externalSends,
+                scopeEvidence: v.scopeEvidence
+              });
+            }
+          }
+          const tests = totals("tests"),
+            pass = totals("pass"),
+            negatives = Object.fromEntries(
+              ["fail", "cancelled", "skipped", "todo"].map((k) => [k, totals(k)])
+            );
+          const runtimeOutcome = process.env.METRICS_RUNTIME_OUTCOME ?? "unknown";
+          const complete =
+            runtimeOutcome === "success" &&
+            fixtures.length === 1 &&
+            JSON.stringify(tests) === "[29,5]" &&
+            JSON.stringify(pass) === "[29,5]" &&
+            Object.values(negatives).every((v) => JSON.stringify(v) === "[0,0]") &&
+            browsers.length === 2 &&
+            new Set(browsers.map((b) => b.suite)).size === 2 &&
+            browsers.every((b) => b.detailsValid) &&
+            controlled.length === 1 &&
+            controlled.every((c) => c.detailsValid) &&
+            JSON.stringify(servingIdentities) ===
+              JSON.stringify([
+                { sourceSha, mode: "off" },
+                { sourceSha, mode: "enforce" }
+              ]) &&
+            typeof buildId === "string" &&
+            /^[A-Za-z0-9_-]+$/.test(buildId);
+          writeFileSync(join(output, "verification.log"), log);
+          writeFileSync(
+            join(output, "report.json"),
+            JSON.stringify(
+              {
+                sourceSha,
+                profile,
+                buildId,
+                servingIdentities,
+                runtimeOutcome,
+                complete,
+                environment: "isolated-fictional",
+                omittedLogLines: lines.length - safe.length,
+                tests,
+                pass,
+                ...negatives,
+                expectedBrowserGroups: 13,
+                browsers,
+                controlled,
+                conditionalObservations: []
+              },
+              null,
+              2
+            ) + "\n"
+          );
+          assert.equal(
+            complete,
+            true,
+            "Incomplete or failed exact-source metrics verification"
+          );
+          NODE
+      - name: Upload bounded fictional verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: metric-module-summaries-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/metric-module-summaries-evidence/report.json
+            ${{ runner.temp }}/metric-module-summaries-evidence/verification.log
+            .account-test/metric-module-summaries-hosted-*/metric-module-summaries-browser-*/modules-320.png
+            .account-test/metric-module-summaries-hosted-*/metric-module-summaries-browser-*/connections-320.png
+            .account-test/metric-module-summaries-hosted-*/metric-module-summaries-browser-*/modules-1440.png
+            .account-test/metric-module-summaries-hosted-*/metric-module-summaries-browser-*/connections-1440.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-390-top.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-390-dates.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-390-export.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-390-population.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-320-top.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-320-dates.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-320-export.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-320-population.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-320-font-200-top.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-320-font-200-dates.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-320-font-200-export.png
+            .account-test/metric-module-summaries-hosted-*/admin-metrics-privacy-browser-*/draft-320-font-200-population.png
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

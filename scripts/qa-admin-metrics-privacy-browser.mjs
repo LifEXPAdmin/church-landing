@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sessionCookieFixtureName } from "./session-cookie-fixture.mjs";
@@ -18,27 +18,31 @@ const config = JSON.parse(
 );
 assert.match(config.origin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
-Object.assign(process.env, {
-  DATABASE_URL: config.database,
-  DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.origin,
-  NEXT_PUBLIC_SITE_URL: config.origin,
-  ACCOUNT_TEST_ISOLATED: "1",
-  ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: resolve(fixtureDir, "sink"),
-  RETENTION_TEST_DIR: resolve(fixtureDir, "retention"),
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
-  NODE_ENV: "test",
-  VERCEL: "",
-  RESEND_API_KEY: "",
-  MAILERLITE_API_KEY: "",
-  SOCIAL_EMAIL_ENABLED: "false",
-  FOUNDER_WELCOME_ENABLED: "false",
-  FOUNDER_ANNOUNCEMENTS_ENABLED: "false",
-  PUSH_ENABLED: "false",
-  PLATFORM_MEASUREMENT_ENABLED: "true",
-  PLATFORM_METRICS_ZONE: "America/Chicago"
-});
+Object.assign(
+  process.env,
+  JSON.parse(readFileSync(resolve(fixtureDir, "test-env.json"), "utf8")),
+  {
+    DATABASE_URL: config.database,
+    DIRECT_URL: config.database,
+    ACCOUNT_ORIGIN: config.origin,
+    NEXT_PUBLIC_SITE_URL: config.origin,
+    ACCOUNT_TEST_ISOLATED: "1",
+    ACCOUNT_DELIVERY_MODE: "test-sink",
+    ACCOUNT_TEST_SINK_DIR: resolve(fixtureDir, "sink"),
+    RETENTION_TEST_DIR: resolve(fixtureDir, "retention"),
+    PRIVILEGED_MFA_MODE: "enforce",
+    NODE_ENV: "test",
+    VERCEL: "",
+    RESEND_API_KEY: "",
+    MAILERLITE_API_KEY: "",
+    SOCIAL_EMAIL_ENABLED: "false",
+    FOUNDER_WELCOME_ENABLED: "false",
+    FOUNDER_ANNOUNCEMENTS_ENABLED: "false",
+    PUSH_ENABLED: "false",
+    PLATFORM_MEASUREMENT_ENABLED: "true",
+    PLATFORM_METRICS_ZONE: "America/Chicago"
+  }
+);
 // Use the inspected runtime's modules even when this script lives elsewhere.
 const require = createRequire(resolve("package.json"));
 const load = (name) => import(pathToFileURL(resolve(name)));
@@ -48,6 +52,105 @@ const { assertPortalTestDatabase, createPortalActor, seedOperatorGrants } =
 const { metricDay, metricAddDays } = await load("lib/platform/metric-time.ts");
 const db = new PrismaClient();
 await assertPortalTestDatabase(db);
+assert.equal(process.env.PRIVILEGED_MFA_MODE, "enforce");
+
+const { privilegedAuthenticatorCommand, readPrivilegedAuthentication } =
+  await import("../lib/platform/privileged-auth.ts");
+const { authenticatorTotp, openAuthenticator } =
+  await import("../lib/platform/admin-authenticator-crypto.ts");
+const { withOwnedSession } =
+  await import("../lib/platform/account-sessions.ts");
+const { privilegedAssurance } =
+  await import("../lib/platform/privileged-auth-policy.ts");
+const mfaCommands = new Map();
+const authenticate = async (who, input, credential) => {
+  const next = (mfaCommands.get(who.id) ?? 0) + 1;
+  assert.ok(
+    next <= 10,
+    "This fictional actor exceeded the real ten-command authenticator budget; split independent cohorts"
+  );
+  mfaCommands.set(who.id, next);
+  return privilegedAuthenticatorCommand(db, who.token, input, credential);
+};
+// All proofs come from canonical commands for this suite's fictional actor.
+// No proof row, factor counter or production policy is fabricated.
+const nextMfaCode = async (who) => {
+  for (;;) {
+    const factor = await db.adminAuthenticator.findUniqueOrThrow({
+      where: { userId: who.id }
+    });
+    const current = BigInt(Math.floor(Date.now() / 30000));
+    const next =
+      factor.lastCounter < current - 1n
+        ? current - 1n
+        : factor.lastCounter + 1n;
+    if (next <= current + 1n)
+      return {
+        version: factor.version,
+        code: authenticatorTotp(
+          openAuthenticator(who.id, factor.secretCiphertext),
+          next
+        )
+      };
+    await new Promise((done) =>
+      setTimeout(done, 30000 - (Date.now() % 30000) + 50)
+    );
+  }
+};
+const confirmWork = async (who, purpose = "privileged-work") => {
+  assert.match(who.username, /^p_/);
+  let snapshot = await readPrivilegedAuthentication(db, who.token);
+  assert.equal(snapshot.mode, "enforce");
+  if (!snapshot.factor) {
+    await authenticate(
+      who,
+      {
+        operation: "mfa-start",
+        requestKey: randomUUID(),
+        expectedVersion: 0
+      },
+      who.password
+    );
+    const next = await nextMfaCode(who);
+    await authenticate(
+      who,
+      {
+        operation: "mfa-confirm",
+        requestKey: randomUUID(),
+        expectedVersion: next.version,
+        code: next.code
+      },
+      undefined
+    );
+    snapshot = await readPrivilegedAuthentication(db, who.token);
+  }
+  if (
+    await withOwnedSession(
+      db,
+      who.token,
+      (tx) => privilegedAssurance(tx, who.id, purpose),
+      "shared"
+    )
+  )
+    return;
+  const next = await nextMfaCode(who);
+  await authenticate(
+    who,
+    {
+      operation: "mfa-challenge",
+      requestKey: randomUUID(),
+      expectedVersion: next.version,
+      code: next.code,
+      purpose
+    },
+    undefined
+  );
+  assert.equal(
+    (await readPrivilegedAuthentication(db, who.token)).confirmedForWork,
+    true
+  );
+};
+
 const { chromium } = createRequire(
   process.env.PLAYWRIGHT_MODULE ??
     process.env.HOME +
@@ -67,13 +170,16 @@ const browser = await chromium.launch({
   headless: true,
   executablePath:
     process.env.CHROMIUM_PATH ??
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    (process.platform === "darwin"
+      ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      : chromium.executablePath()),
   args: [
     "--ignore-certificate-errors-spki-list=" +
       createHash("sha256").update(der).digest("base64")
   ]
 });
 const context = await browser.newContext({
+  serviceWorkers: "block",
   timezoneId: "America/Chicago",
   viewport: { width: 390, height: 844 },
   acceptDownloads: true
@@ -85,6 +191,7 @@ const output = resolve(
   "admin-metrics-privacy-browser-" + Date.now()
 );
 mkdirSync(output, { recursive: true, mode: 0o700 });
+const cohortOwners = [];
 const results = [],
   errors = [],
   routeErrors = [],
@@ -158,7 +265,8 @@ context.on("request", (request) => {
       method: request.method(),
       path: url.pathname,
       body: request.postData(),
-      owner: request.headers()["x-expected-account"]
+      owner: request.headers()["x-expected-account"],
+      expectedOwner: actor?.id
     });
 });
 page.on("pageerror", (error) => errors.push(error.message));
@@ -252,7 +360,9 @@ const inactive = async (label) => {
   });
 };
 const resume = async () => {
-  await event("focus");
+  const recheck = button("Recheck this sign-in");
+  if (await recheck.isVisible()) await recheck.click();
+  else await event("focus");
   await valuesAre(draftDates);
 };
 const readApi = async (status = 200) => {
@@ -261,6 +371,7 @@ const readApi = async (status = 200) => {
       "/api/platform/admin?" +
       new URLSearchParams({ view: "metrics", ...reportDates }),
     {
+      maxRedirects: 0,
       headers: { "X-Expected-Account": actor.id }
     }
   );
@@ -276,7 +387,7 @@ const readApi = async (status = 200) => {
 };
 const rows = () =>
   db.adminOperation.findMany({
-    where: { actorId: actor.id, sourceType: "METRICS_EXPORT" },
+    where: { actorId: { in: cohortOwners }, sourceType: "METRICS_EXPORT" },
     orderBy: { createdAt: "asc" }
   });
 const effectCount = async (count) => assert.equal((await rows()).length, count);
@@ -298,7 +409,7 @@ const receipt = async (body) => {
   );
   return row;
 };
-const updateGrant = async (grant, revoked) => {
+const updateGrant = async (grant, revoked, reauthenticate = true) => {
   await db.platformOperatorGrant.update({
     where: { id: grant.id },
     data: {
@@ -309,6 +420,22 @@ const updateGrant = async (grant, revoked) => {
   grantUpdates++;
   if (revoked) restoredGrants.set(grant.id, grant);
   else restoredGrants.delete(grant.id);
+  // Grant generations invalidate prior assurance, including remaining duties.
+  assert.equal(
+    (await readPrivilegedAuthentication(db, actor.token)).confirmedForWork,
+    false
+  );
+  if (
+    reauthenticate && (cohortOwners.length === 1 ||
+    (await db.platformOperatorGrant.count({
+      where: {
+        userId: actor.id,
+        capability: "VIEW_PLATFORM_METRICS",
+        revokedAt: null
+      }
+    })))
+  )
+    await confirmWork(actor);
 };
 const capturedWithin = async (captured) => {
   let timer;
@@ -338,7 +465,7 @@ const hold = (matches) => {
   releases.add(release);
   const remove = register(matches, (route) => {
     const delivery = (async () => {
-      const response = await route.fetch();
+      const response = await route.fetch({ maxRedirects: 0 });
       assert.equal(response.status(), 200, await response.text());
       capture({ response, request: route.request() });
       await gate;
@@ -514,6 +641,7 @@ const fit = async (width, enlarged = false) => {
 const downloadCurrent = async (label) => {
   const before = browserWrites.length;
   const pending = page.waitForEvent("download");
+  await confirmWork(actor, "export-metrics");
   await currentExport.click();
   const download = await pending;
   const path = resolve(output, label + ".csv");
@@ -550,6 +678,7 @@ const run = async () => {
     orderBy: { version: "desc" }
   });
   actor = await createPortalActor(db, "metricread");
+  cohortOwners.push(actor.id);
   replacement = await createPortalActor(db, "metricswap");
   await seedOperatorGrants(db, actor, [
     "VIEW_PLATFORM_METRICS",
@@ -558,10 +687,10 @@ const run = async () => {
   const grants = await db.platformOperatorGrant.findMany({
     where: { userId: actor.id }
   });
-  const viewGrant = grants.find(
+  let viewGrant = grants.find(
     (grant) => grant.capability === "VIEW_PLATFORM_METRICS"
   );
-  const exportGrant = grants.find(
+  let exportGrant = grants.find(
     (grant) => grant.capability === "EXPORT_PLATFORM_METRICS"
   );
   assert.ok(viewGrant && exportGrant);
@@ -575,13 +704,14 @@ const run = async () => {
     through: metricAddDays(today, -2)
   };
   growthPath = "/platform/admin/growth?" + new URLSearchParams(reportDates);
+  await confirmWork(actor, "export-metrics");
   await signIn(actor);
   const snapshot = await readApi();
   for (const rsc of [false, true]) {
-    const response = await context.request.get(
-      config.origin + growthPath,
-      rsc ? { headers: { RSC: "1" } } : {}
-    );
+    const response = await context.request.get(config.origin + growthPath, {
+      maxRedirects: 0,
+      ...(rsc ? { headers: { RSC: "1" } } : {})
+    });
     assert.equal(response.status(), 200);
     if (rsc)
       assert.match(response.headers()["content-type"], /text\/x-component/);
@@ -646,6 +776,10 @@ const run = async () => {
             ? "online"
             : "pageshow"
       );
+    if (trigger === "offline") {
+      await button("Recheck this sign-in").waitFor();
+      await button("Recheck this sign-in").click();
+    }
     await valuesAre(draftDates);
   }
   await failedRead(identity);
@@ -695,6 +829,7 @@ const run = async () => {
       beforeWrites = browserWrites.length;
     const held = hold(command);
     try {
+      await confirmWork(actor, "export-metrics");
       await currentExport.click();
       const captured = await capturedWithin(held.captured);
       await receipt(captured.request.postData());
@@ -744,6 +879,35 @@ const run = async () => {
     "Real export responses held across blur, pagehide and an authorized source refresh each leave one audit, drop their CSV without downloading, and never replay it after restoration. Only a deliberate new export is offered."
   );
 
+  // The first four independent groups are complete. Start a separate original
+  // owner/document for the inseparable retry/revocation/discard chain below.
+  // No old owner's retained private frame or request is adopted by this actor.
+  assert.equal(restoredGrants.size, 0);
+  assert.equal(await retry.count(), 0);
+  actor = await createPortalActor(db, "metricretry");
+  cohortOwners.push(actor.id);
+  await seedOperatorGrants(db, actor, [
+    "VIEW_PLATFORM_METRICS",
+    "EXPORT_PLATFORM_METRICS"
+  ]);
+  const retryGrants = await db.platformOperatorGrant.findMany({
+    where: { userId: actor.id }
+  });
+  viewGrant = retryGrants.find((g) => g.capability === "VIEW_PLATFORM_METRICS");
+  exportGrant = retryGrants.find(
+    (g) => g.capability === "EXPORT_PLATFORM_METRICS"
+  );
+  assert.ok(viewGrant && exportGrant);
+  await confirmWork(actor, "export-metrics");
+  await signIn(actor);
+  await page.goto(config.origin + growthPath);
+  await valuesAre(reportDates);
+  await from.fill(draftDates.from);
+  await through.fill(draftDates.through);
+  await page.evaluate(() => {
+    window.__metricsDocument = "original";
+  });
+
   const attempts = [],
     statuses = [],
     denialHolds = new Map();
@@ -765,7 +929,7 @@ const run = async () => {
       owner: request.headers()["x-expected-account"]
     });
     if (attempts.length === 1) {
-      const response = await route.fetch();
+      const response = await route.fetch({ maxRedirects: 0 });
       assert.equal(response.status(), 200);
       statuses.push(200);
       return route.abort("failed");
@@ -787,13 +951,14 @@ const run = async () => {
         })
       });
     }
-    const response = await route.fetch();
+    const response = await route.fetch({ maxRedirects: 0 });
     statuses.push(response.status());
     assert.equal(response.status(), 409);
     return route.fulfill({ response });
   });
   let originalAudit;
   try {
+    await confirmWork(actor, "export-metrics");
     await currentExport.click();
     await retry.waitFor();
     originalAudit = await receipt(attempts[0].body);
@@ -950,11 +1115,12 @@ const run = async () => {
   let discardBody;
   const removeDiscard = register(command, async (route) => {
     discardBody = route.request().postData();
-    const response = await route.fetch();
+    const response = await route.fetch({ maxRedirects: 0 });
     assert.equal(response.status(), 200);
     return route.abort("failed");
   });
   try {
+    await confirmWork(actor, "export-metrics");
     await currentExport.click();
     await retry.waitFor();
   } finally {
@@ -1016,11 +1182,24 @@ const run = async () => {
       (write) =>
         write.method === "POST" &&
         write.path === "/api/platform/admin" &&
-        write.owner === actor.id &&
+        cohortOwners.includes(write.owner) &&
+        write.owner === write.expectedOwner &&
         JSON.parse(write.body).operation === "metrics-export"
     )
   );
   assert.equal(new Set((await rows()).map((row) => row.requestKey)).size, 7);
+  assert.deepEqual(
+    await Promise.all(
+      cohortOwners.map((id) =>
+        db.adminOperation.count({
+          where: { actorId: id, sourceType: "METRICS_EXPORT" }
+        })
+      )
+    ),
+    [4, 3]
+  );
+  assert.equal(mfaCommands.size, 2);
+  assert.ok([...mfaCommands.values()].every((n) => n <= 10));
   assert.deepEqual(errors, []);
   assert.deepEqual(routeErrors, []);
   assert.deepEqual(externalRequests, []);
@@ -1046,14 +1225,18 @@ const run = async () => {
     fixtureOnly: true,
     browserMutationAttempts: browserWrites.length,
     fixtureEffects: {
-      createdActors: 2,
-      seededOperatorGrants: 2,
+      createdActors: 3,
+      seededOperatorGrants: 4,
+      independentOwnerCohorts: 2,
       metricExportOperations: 7,
       grantRevokeRestoreUpdates: grantUpdates,
       sharedMetricConfigurationWrites: 0,
       otherActorMetricFlagWrites: 0,
-      localVerificationMessages: 2
+      localVerificationMessages: 3
     },
+    authenticatorCommandsByCohort: cohortOwners.map(
+      (id) => mfaCommands.get(id) ?? 0
+    ),
     productionWrites: 0,
     recipientSends: 0,
     limitations: [
@@ -1061,7 +1244,7 @@ const run = async () => {
       "Held/lost responses and 401/403/404/429/503 are explicit response simulations. Actual owner checks, grant revocation, exports, duplicate 409 and audit hashes use the isolated server and database.",
       "Aggregate correctness beyond displayed current population, selected report period and downloaded audit hash remains covered by existing Metrics service/browser suites.",
       "Actors use existing test-sink signup helpers, including their existing isolated authentication-rate fixture reset. No shared metric configuration or unrelated measurement choices are changed.",
-      "This suite exercises the candidate's existing privileged-auth fixture mode; it does not claim production MFA/provider or release acceptance."
+      "Two independent fictional owner cohorts use canonical authenticator commands with the current enforced policy; each retry/revocation chain keeps its original actor. This is isolated browser evidence, not provider or release acceptance."
     ]
   });
   console.log("ADMIN_METRICS_PRIVACY_BROWSER_PASS " + results.length);
@@ -1096,7 +1279,7 @@ try {
   } finally {
     try {
       for (const grant of restoredGrants.values())
-        await updateGrant(grant, false);
+        await updateGrant(grant, false, false);
     } finally {
       await db.$disconnect();
     }

@@ -1,3 +1,9 @@
+## Module adoption summaries source preparation, 8 October 2026 UTC
+
+Current candidate acceptance is pending. Existing fatal source, type, copy, lint, audit, signature and reachable-history gates remain in place. The isolated metrics profile must verify current owner and VIEW/EXPORT permissions, real fictional authenticator enrollment/challenges, one-use export receipts, and concealed foreground presentation against the built application.
+
+Controlled component checks and full application evidence remain separate. Earlier module-source handoff checks retain their original provenance and do not substitute for current verification. This candidate changes neither the dependency graph nor the database schema.
+
 ## Data Saver and accessibility source acceptance, 8 October 2026 UTC
 
 Exact source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3` passed its required hosted source runs https://github.com/LifEXPAdmin/church-landing/actions/runs/37818143269 and https://github.com/LifEXPAdmin/church-landing/actions/runs/37818148618: 583 checks, 0 audit advisories, 496 verified package signatures and 86 verified attestations. Lint recorded 0 errors and 42 warnings. Types, authored copy, history scan and required build guards are accepted only as bound by the actual receipts.

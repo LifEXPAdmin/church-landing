@@ -74,7 +74,12 @@ export function AdminWorkspace({
     queued = useRef(false);
   const weeklyQuery = useRef<{ input: string; resolved: string } | null>(null);
   const load = useCallback(async () => {
-    if (!active.current || document.visibilityState === "hidden") return;
+    if (
+      !active.current ||
+      document.visibilityState === "hidden" ||
+      !document.hasFocus()
+    )
+      return;
     if (reading.current) {
       queued.current = true;
       return;
@@ -90,7 +95,13 @@ export function AdminWorkspace({
         undefined,
         navigation.viewer.id
       );
-      if (seq !== generation.current) return;
+      if (
+        seq !== generation.current ||
+        !active.current ||
+        document.visibilityState === "hidden" ||
+        !document.hasFocus()
+      )
+        return;
       const nav = "navigation" in next ? next.navigation : next;
       if (
         nav.viewer.id !== navigation.viewer.id ||
@@ -136,7 +147,7 @@ export function AdminWorkspace({
       setBusy(false);
     };
     const resume = () => {
-      if (document.visibilityState !== "hidden") {
+      if (document.visibilityState !== "hidden" && document.hasFocus()) {
         active.current = true;
         void load();
       }

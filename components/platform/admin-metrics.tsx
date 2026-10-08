@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MetricSnapshot } from "@/lib/platform/metric-report";
 import {
-  metricActions,
   metricBrowsers,
   metricDevices,
   metricReferrals
@@ -11,12 +10,11 @@ import {
 import { socialRequest, SocialClientError } from "@/lib/platform/social-client";
 import type { ReactNode } from "react";
 import { FeedbackMetrics } from "./feedback-metrics";
+import { MetricModuleSummaries } from "./metric-module-summaries";
 import { useReadVisibility } from "./read-visibility";
 import { useUnsavedSocialWork } from "./use-unsaved-social-work";
 const box = "rounded-xl border border-gc-divider p-4";
 const labels: Record<string, string> = {
-  ...metricActions,
-  EVENT: "Creating calendar events",
   ...metricReferrals,
   ...metricDevices,
   ...metricBrowsers,
@@ -697,40 +695,13 @@ export function AdminMetrics({ data }: { data: MetricSnapshot }) {
           ]}
         />
       </section>
-      <section className="space-y-3">
-        <h2 className="text-2xl">Feature adoption</h2>
-        <p>
-          {r.definitions.adoption} Denominator: {r.coverage.measuredAccounts}{" "}
-          currently eligible opted-in accounts. Current source records with
-          unknown successful-state times are excluded, with no historical
-          backfill.
-        </p>
-        <Table
-          caption="Successful ordinary actions in selected period"
-          heads={[
-            "Feature",
-            "Distinct actors",
-            "Actions",
-            "Share of measured population"
-          ]}
-          rows={Object.keys({ ...metricActions, EVENT: "" }).map((key) => {
-            const a = r.current.adoption.find((a) => a.key === key);
-            return [
-              labels[key],
-              a?.suppressed ? "Suppressed" : (a?.actors ?? 0),
-              a?.suppressed ? "Suppressed" : (a?.actions ?? 0),
-              a?.suppressed
-                ? "Suppressed: small complementary breakdown"
-                : r.coverage.measuredAccounts
-                  ? (
-                      ((a?.actors ?? 0) / r.coverage.measuredAccounts) *
-                      100
-                    ).toFixed(1) + "%"
-                  : "Unavailable"
-            ];
-          })}
-        />
-      </section>
+      <MetricModuleSummaries
+        modules={r.modules}
+        window={r.window}
+        configuration={r.configuration}
+        checkedAt={r.checkedAt}
+        definitions={r.definitions}
+      />
       <section className="space-y-3">
         <h2 className="text-2xl">Churches and topic spaces</h2>
         <p>{r.definitions.organizations}</p>

@@ -324,9 +324,9 @@ export const features: Feature[] = [
     category: "Privacy and account",
     name: "Platform growth reports",
     description:
-      "Explicitly authorized operators can review aggregate registrations, lifecycle, measured use and request outcomes.",
+      "Explicitly authorized operators can review aggregate registrations, lifecycle, measured use, module activity and request outcomes.",
     steps:
-      "Open Admin → Growth. Choose dates, inspect definitions and measured coverage, and compare the preceding period. CSV export requires its own permission and records an audit receipt.",
+      "Open Admin → Growth. Choose dates, inspect definitions and collection coverage, and compare module activity with the preceding period. CSV export uses the same summaries, requires its own permission and records an audit receipt.",
     href: "/platform/admin/growth",
     eligibility:
       "Current explicit metric permission is required. Reports do not grant private account or case access. Optional collection, immature cohorts, small breakdowns and missing prompt evidence are labeled separately.",
@@ -1047,6 +1047,14 @@ export const features: Feature[] = [
   }
 ];
 export const releases: ReleaseEntry[] = [
+  {
+    id: "module-adoption-summaries", version: "2026.10.08.13", date: "2026-10-08",
+    summary: "Review community module activity with clear dates, coverage and privacy limits.",
+    added: ["Authorized operators can view four module summaries in Platform growth, comparing six existing activity measures with the preceding period."],
+    improved: ["Dashboard tables and CSV exports distinguish measured zero, partial coverage, suppressed values and unavailable history.", "Owner and church summaries, attendance and completed service stay labeled unavailable when no supported measurement exists."],
+    fixed: ["Private admin views wait for foreground access checks before requesting or displaying refreshed results."],
+    featureIds: ["platform-growth"]
+  },
   {
     id: "data-saver-and-accessible-resource-journeys", version: "2026.10.08.12", date: "2026-10-08",
     summary: "Choose when to load larger photos and move through resource forms with clearer keyboard focus and errors.",

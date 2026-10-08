@@ -1,5 +1,20 @@
 # Platform growth and optional measurement
 
+## Module adoption summaries candidate, October 7, 2026
+
+Growth adds module cards and an accessible coverage table using its existing
+approved aggregate categories, date filters and current view/export authority.
+The report owns one permitted projection for the screen and CSV. Whole periods
+without retained collection coverage are unavailable, partial periods identify
+their observed coverage, and valid measured zeros remain distinct from
+suppression. Current collection being paused does not erase existing history.
+
+The scope remains platform-wide. Unsupported personal-owner and church summaries
+are explicitly unavailable, as are outcome metrics without their own authorized
+numeric source adapters. See [module summary boundaries](COMMUNITY_OUTCOME_METRICS.md)
+for the category, counting-unit and unavailable-outcome contract. This candidate
+adds no new source queries, measurement purpose or source lifecycle changes.
+
 ## Community outcome definitions: September 18, 2026 candidate
 
 The shared dictionary defines fulfilled needs, attendance, completed service,

@@ -1,3 +1,9 @@
+## Module adoption summaries candidate readiness, 8 October 2026 UTC
+
+The retained module summary implementation is integrated for current verification. It adds four readable groups over six existing authorized action aggregates; it does not add measurement sources or unsupported outcome counts. Dashboard and CSV summaries use the same report projection.
+
+Fresh current-source service, HTTPS, full application and foreground regression acceptance remains pending. Source inspection and earlier feature evidence do not establish this candidate's release readiness. No production deployment or task completion is claimed yet. Existing security, recovery and live gates remain required.
+
 ## Data Saver and accessible journeys accepted, 8 October 2026 UTC
 
 Version **2026.10.08.12**, source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3`, is verified live at [God's Churches](https://godschurches.com) after canonical verification at 2026-10-08T18:08:16.929Z. [PR51](https://github.com/LifEXPAdmin/church-landing/pull/51).

@@ -1,3 +1,9 @@
+## Module adoption summaries prepared, 8 October 2026 UTC
+
+Candidate version **2026.10.08.13** groups the six existing permitted activity measures into Connections, Publishing, Events and Serving. Authorized operators can compare the selected and preceding periods using the current measured population. Dashboard and CSV data distinguish measured zero, partial collection coverage, suppressed values and unavailable history. Unsupported personal, church, attendance and completed-service measurements remain unavailable.
+
+The preserved feature delta is being integrated onto verified-live version 2026.10.08.12. Three modeled foreground failures were reproduced in the current admin parent: unfocused initial admission, unfocused lifecycle resume and focus loss before a held reply settles. Narrow current-focus checks repair those cases; the same eight deterministic parent tests now pass. Six module-projection unit cases also pass. These are focused source checks; fresh full source, service, HTTPS, browser and release evidence is pending. This candidate introduces no schema or dependency change.
+
 ## Data Saver and accessible resource journeys verified live, 8 October 2026 UTC
 
 Version **2026.10.08.12**, source `f0fc289b36b684c88f2941a2edf5ddada0b17ef3`, is verified live at [God's Churches](https://godschurches.com) after canonical verification at 2026-10-08T18:08:16.929Z. [PR51](https://github.com/LifEXPAdmin/church-landing/pull/51).
