@@ -403,3 +403,35 @@ follow-up. Full assistive-technology checks, Kotlin execution, Android acceptanc
 and its separately reported feed-label clipping remain open. These observations
 do not replace real HTTPS/session, physical-device, minimum-iOS, signing, security
 or store gates. The four existing high mobile dependency findings remain open.
+
+## Shared button label width
+
+The shared Button now gives its text the available padded content width while
+keeping glyphs centered. Native wrapping and intrinsic height remain enabled;
+there is no fixed label height, line limit, extra font multiplier or new wrapper.
+The existing iOS font-scale text-host key and pressable identity are unchanged.
+This targets the separately measured Android label clipping; iPhone evidence
+alone does not close that defect.
+
+The 8 October correction passes all 301 existing mobile tests, mobile types,
+lint, the 46-module boundary check, copy and source-security checks. A fresh
+unsigned Xcode 27 Release build passed. The installed iPhone SE app on iOS 18.3.1
+matches its JavaScript, executable and Info.plist hashes. Its Hermes bundle is
+1,771,755 bytes, four bytes above the Like checkpoint, without a performance claim.
+
+At normal text size, the complete Top This Week label is centered in selected
+and unselected states. A live maximum-text change on the mounted guest screen
+shows the complete Try fictional sign-in form control wrapping across four lines
+inside its visible border. Restoring normal text allows demo sign-in and weekly
+selection. After a second maximum-to-normal cycle, the selected weekly label is
+again complete. The managed session closed with source unchanged, normal text
+restored and the task device shut down.
+
+Automated scrolling did not reliably position the whole weekly control at
+maximum text size; that visual case remains unverified. The largest guest capture
+also shows apparent horizontal clipping of the separate Preview checks heading,
+preserved for follow-up. This bounded Button check does not establish complete
+large-text or assistive-technology acceptance. Android must verify the corrected
+binary's visible labels and allocated text height against native line layout at
+default, enlarged and restored sizes. Existing backend, device and release gates
+remain open.

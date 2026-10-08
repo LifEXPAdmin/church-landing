@@ -249,3 +249,40 @@ not prove software-keyboard, selection or VoiceOver focus preservation. Android'
 separately reported feed-label clipping remains unresolved by this iOS-only fix.
 See [the build receipt summary](IOS_BUILD.md#detail-like-and-live-text-verification)
 for exact validation boundaries and open native/release gates.
+
+The subsequent shared Button correction stretches its existing label to the
+available padded width while preserving centered text, native wrapping and
+intrinsic height. All 301 existing mobile regressions and a fresh iPhone Release
+build pass. The small iPhone shows the complete normal-size weekly label in both
+selection states and a longer four-line button at maximum text size. The weekly
+control at maximum size and separate heading overflow remain explicit visual
+follow-ups. Android's measured text-view/layout mismatch still requires its own
+corrected-binary acceptance. See [the bounded width check](IOS_BUILD.md#shared-button-label-width).
+
+## Detail scroll continuity
+
+The subsequent shared source correction restores the current post's scroll
+offset after a fresh authorized response, using the feed's existing layout and
+callback checks. It retains at most one feed bookmark and one current-detail
+bookmark, each containing only an account, generation, address and pixel offset.
+There is no body cache, stored reveal choice, persistence or additional request.
+Both current layout measurements are required, and shorter content clamps the
+offset to its new bounds. Delayed events from an old response or native view
+cannot overwrite or restore another response's position.
+
+Periodic reads still remove the old post while access is checked. A newly hidden
+content note remains hidden; revealing the current response keeps its scroll
+owner. Opening another route or explicitly reopening a post drops detail
+history, including coalesced route changes. Back retains the separate feed
+bookmark. Concealment, errors, account/generation or runtime replacement and
+unmount discard positions. Passive layout callbacks never renew session activity.
+
+The prior source failed the new detail restoration regression. The correction
+passes 25 scroll policy/component-callback checks and a 104-test focused set
+covering reading, feed choices, presentation, Like, fixture and navigation
+boundaries. Scoped lint, the 46-module boundary, copy, source-security and staged
+secret checks pass; independent source review found no actionable issues.
+The callback harness is not React/Fabric or native-device evidence. Fresh iPhone
+and Android checks of periodic detail restoration, changed-content clamping and
+large-text layout remain open, alongside the existing backend, accessibility,
+dependency-security and release gates.
