@@ -51,7 +51,7 @@ function fixture(enabled = true, homeAvailable = true) {
         { name: "feed.read", available: true }, { name: "post.read", available: true }] });
       if (path(request).endsWith("/feed")) {
         const query = new URL(request.url).searchParams;
-        const second = query.get("cursor") === "next.page";
+        const second = ["next.page", "second.page"].includes(query.get("cursor") ?? "");
         return envelope({ ...apiResponseExamples.feed.data, mode: query.get("mode"), scope: "current-scope",
           pageCursor: second ? "second.page" : "first.page",
           page: { items: [{ ...examplePost, id: second ? "second-post" : examplePost.id }], nextCursor: second ? null : "next.page" } });
@@ -120,6 +120,33 @@ test("next page replaces the current page and back reauthorizes the exact return
   assert.equal(query.has("cursor"), false); assert.equal(query.has("scope"), false);
 });
 
+test("weekly and trending retain mode across next, detail and back while new choices and refresh reset cursors", async t => {
+  for (const mode of ["weekly", "trending"] as const) {
+    const f = fixture(); t.after(f.dispose); await f.signIn(); await f.runtime.nextPage();
+    const query = () => Object.fromEntries(new URL(f.reads("/feed").at(-1)!.url).searchParams);
+    await f.runtime.startFeed(mode);
+    assert.deepEqual(query(), { mode });
+    await f.runtime.nextPage();
+    assert.deepEqual(query(), { mode, scope: "current-scope", cursor: "next.page" });
+    const page = f.runtime.reading.getSnapshot(); assert.equal(page.kind, "feed");
+    if (page.kind === "feed") assert.deepEqual(page.feed.page.items.map(item => item.id), ["second-post"]);
+    await f.runtime.open(post); await f.runtime.backToFeed();
+    assert.deepEqual(query(), { mode, scope: "current-scope", cursor: "second.page" });
+    const returned = f.runtime.reading.getSnapshot(); assert.equal(returned.kind, "feed");
+    if (returned.kind === "feed") {
+      assert.equal(returned.feed.pageCursor, "second.page");
+      assert.deepEqual(returned.feed.page.items.map(item => item.id), ["second-post"]);
+    }
+    await f.runtime.refresh();
+    assert.deepEqual(query(), { mode });
+    const refreshed = f.runtime.reading.getSnapshot(); assert.equal(refreshed.kind, "feed");
+    if (refreshed.kind === "feed") {
+      assert.equal(refreshed.feed.pageCursor, "first.page");
+      assert.deepEqual(refreshed.feed.page.items.map(item => item.id), [examplePost.id]);
+    }
+  }
+});
+
 test("missing, disabled, duplicate or incompatible capabilities cannot dispatch a content read", async t => {
   for (const capability of [
     { supportedVersions: ["1"], features: [] },
@@ -155,13 +182,21 @@ test("additive v1 fields and unknown capabilities neither enter visible data nor
 });
 
 test("superseded feed reads abort and late data cannot replace the current mode", async t => {
-  const f = fixture(); t.after(f.dispose); await f.signIn();
-  const reached = deferred(), release = deferred(); let held: NativeWireRequest | undefined;
-  f.state.intercept = async r => { if (path(r).endsWith("/feed") && r.url.includes("mode=friends")) { held = r; reached.resolve(); await release.promise; } };
-  const old = f.runtime.startFeed("friends"); await reached.promise;
-  await f.runtime.startFeed("latest"); const current = f.runtime.reading.getSnapshot();
-  assert.equal(held!.signal.aborted, true); release.resolve(); await old;
-  assert.equal(f.runtime.reading.getSnapshot(), current);
+  for (const [priorMode, nextMode] of [["friends", "latest"], ["weekly", "trending"]] as const) {
+    const f = fixture(); t.after(f.dispose); await f.signIn();
+    const reached = deferred(), release = deferred(); let held: NativeWireRequest | undefined;
+    f.state.intercept = async r => {
+      if (path(r).endsWith("/feed") && new URL(r.url).searchParams.get("mode") === priorMode) {
+        held = r; reached.resolve(); await release.promise;
+      }
+    };
+    const old = f.runtime.startFeed(priorMode); await reached.promise;
+    await f.runtime.startFeed(nextMode); const current = f.runtime.reading.getSnapshot();
+    assert.equal(current.kind, "feed");
+    if (current.kind === "feed") assert.equal(current.feed.mode, nextMode);
+    assert.equal(held!.signal.aborted, true); release.resolve(); await old;
+    assert.equal(f.runtime.reading.getSnapshot(), current);
+  }
 });
 
 test("route changes discard visible data before a held detail resolves", async t => {
