@@ -220,3 +220,27 @@ It compiles the Foundation-only policy under Swift 6 with warnings as errors and
 retains its executable and cache in a fresh generated directory. This check is
 separate from the Expo/UIKit build and actual snapshot acceptance described in
 the [native journey](NATIVE_JOURNEY.md#native-ios-privacy-cover).
+
+The subsequent password-visibility checkpoint consumes the reviewed shared
+Show/Hide form and handler tests without changing the session or native cover.
+All 244 mobile tests, full and focused TypeScript, lint, boundary checks and an
+unsigned Xcode 27 Release build pass. The 1,741,115-byte Hermes bundle adds
+473 JavaScript bytes to the privacy checkpoint, without a performance claim.
+
+On iPhone SE with iOS 18.3.1 and on iOS 27, visible masking, explicit reveal,
+full-value preservation and keyboard use were observed. On iOS 27 the initial
+keyboard covered the toggle; scrolling dismissed the keyboard, and refocusing
+the repositioned field left the toggle usable above it. Both versions moved a
+selected range to the end after Hide then Show. A software key appended there
+without losing the existing value. Selection preservation is not established.
+
+The SE run also verified software Next/Go, invalid submission clearing and
+remasking, valid fictional sign-in through the button, sign-out, and fresh empty
+masked forms after replacement. Both Simulators concealed a revealed form in
+the app switcher and discarded its draft on return. The iOS 27 transition began
+with the software keyboard visibly open; that condition was not captured for
+the SE switcher sequence. Screenshots and accessibility observations establish
+bounded states, not every intermediate frame. VoiceOver speech, actual autofill,
+physical-device, minimum-version and real-account acceptance remain open.
+These build results apply to the recorded dependency graph; later dependency
+repairs require their own source and native validation.
