@@ -121,8 +121,12 @@ The mobile integration branch consumes the canonical website repair from
 15.5.27, Sharp 0.35.5, scoped selector-parser updates, reviewed braces alias and
 hash-guarded embedded toolchain patches. It also consumes the canonical source
 security workflow's independent fatal checks and suppression-path rejection.
-The existing portable command and both portable/mobile workflows are preserved.
-The source-security unit step explicitly selects its four tooling test files;
+The existing portable command and mobile checks retain their scope and gates.
+Fresh hosted runs exposed invalid `runner.temp` references in both workflows'
+job-level environment. Portable storage now uses step environment; mobile setup
+exports runner-owned paths through `GITHUB_ENV` before installation. Missing
+runner storage fails closed. The source-security unit step explicitly selects
+its tooling tests, including execution of the actual temporary-storage steps;
 the portable workflow retains tests that require its compiled shared package.
 
 Canonical verification establishes the origin of the consumed repair. Fresh

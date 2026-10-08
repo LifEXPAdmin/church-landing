@@ -35,7 +35,7 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           npm run check:security
-          node --test tests/source-security.test.mjs tests/prisma-deploy.test.mjs tests/source-security-workflow.test.mjs tests/toolchain-depth-backport.test.mjs
+          node --test tests/source-security.test.mjs tests/prisma-deploy.test.mjs tests/source-security-workflow.test.mjs tests/toolchain-depth-backport.test.mjs tests/native-workflows.test.mjs
       - name: Validate authored website copy
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run check:copy
