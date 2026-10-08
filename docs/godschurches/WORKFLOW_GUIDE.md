@@ -1,6 +1,6 @@
 # Godschurches workflow guide
 
-Version 5.2 · Updated 2 October 2026 UTC
+Version 5.3 · Updated 8 October 2026 UTC
 
 This is the repository entry point for work that continues between ChatGPT, Codex,
 the private second brain, and the development workstation. Keep this file's path
@@ -112,11 +112,14 @@ inside the feature instead of being deferred to another agent or later task.
 
 Finish and meaningfully verify each coherent task on localhost, including its
 necessary smaller steps. Keep its tested checkpoint and acceptance evidence.
-Combine compatible completed work into a named release batch with explicit
-included and excluded changes. Publish when that chunk is ready instead of
-publishing every intermediate edit, small feature or report-only commit. An
-urgent production repair may warrant its own focused release. No fixed feature
-count or deployment quota is a reason to ship an unfinished batch.
+Publish after one or two completed coherent tasks, naming the included and
+excluded changes. Group related edits within the task and verify the batch on
+the canonical production site before starting the next release. Do not deploy
+every small edit or a report-only commit, and do not hold ready work all day.
+Keep production releases at or below twelve in any rolling hour. This is a
+ceiling, not a quota; unfinished work and failed gates never qualify for release.
+Prioritize the completed backlog and actual release blockers before adding
+unrelated feature work.
 
 Before publication, verify the combined source and required CI, migration,
 recovery and live acceptance gates. Reuse earlier checks only when their source
@@ -152,7 +155,11 @@ queue continuation below.
 
 One designated release owner handles integration, main updates, production
 migrations and deployment under existing permissions and the atomic release
-lock. The existing A1 slot retains that role until an explicit safe handoff.
+lock. Inspect the current registered release owner instead of assuming a
+historical worker slot. A direct human instruction can authorize an explicit
+safe handoff through the coordination helper after the previous owner has no
+claim or release lock. Preserve its identity, worktree and checkpoint; do not
+resume paused chats or impersonate another session.
 Other chats submit tested commits as gc_ready_to_merge, clear their active task
 indicator after checkpointing, and continue independent eligible work. At safe
 checkpoints, inspect any gc_ready_to_merge work left by previous sessions and
@@ -426,12 +433,18 @@ allow an authorized assistant to locate the context without publishing it.
 
 ## Change log
 
+- **5.3, 8 October 2026 UTC:** The owner clarified publication after one or two
+  completed tasks, a ceiling of twelve production releases per rolling hour,
+  and immediate priority for the completed backlog and genuine release blockers.
+  Task completion, security, migration, recovery and live gates remain intact.
+
 - **5.2, 2 October 2026 UTC:** Added the candidate-SHA release evidence command
   and private hashed-log contract. It checks consistency of recorded static,
   service, HTTPS, build and browser evidence without replacing scope review,
   release ownership, recovery or live acceptance. CI independently adds copy,
   generated-client TypeScript and all standalone guard tests. Adoption on main
   remains contingent on integration; the private task records actual CI results.
+
 
 - **5.1, 26 September 2026 UTC:** Adopted local task completion and named release
   batches, deliberate publication, suppressed intermediate Git deployments,

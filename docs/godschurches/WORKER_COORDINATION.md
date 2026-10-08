@@ -13,10 +13,13 @@ the actual feature; a directory claim deliberately excludes all descendants.
 Only its owner may narrow an active reservation. Never remove a live or
 unexamined lock or take another chat's checkpoint.
 
-The existing A1 slot remains the single integration/release owner during this
-transition. Other chats build independent features and hand over tested commits.
-This is cooperative coordination, not an OS, Git-host or provider access control,
-and does not grant production authority beyond the current user scope.
+One designated worker and exact session own integration and release. Inspect
+`registry.releaseOwner`; an older registry without that field defaults to the
+registered A1 session. Direct human authorization can transfer the role with
+`release-handoff` after the previous owner has no active claim or release lock.
+Keep the previous identity, worktree, checkpoint and paused status intact. Other
+chats hand over tested commits. This is cooperative coordination, not an OS,
+Git-host or provider access control, and grants no authority beyond user scope.
 
 ## Visible task ownership
 
@@ -98,11 +101,19 @@ returns the registry, readable ownership summary and whether the short `claim.lo
   Successful owner operations also refresh the identity's recorded update time.
 - `finish`: clear your feature reservations after a committed checkpoint and
   task handoff. It does not complete a task in Todoist. Other chats can finish
-  independent work while A1 holds a release lock.
-- `release-acquire` / `release-release`: A1-only atomic release ownership in the
-  shared registry. A1 must have a current claim. Hold this through integration,
-  main update, migration/deployment and exact live closeout; release only after a
-  saved receipt or precise interrupted-release checkpoint.
+  independent work while the designated owner holds a release lock.
+- `release-handoff`: assign the role only to the requesting registered worker
+  and session from its bound worktree. Supply `expectedOwner: { worker, session }`
+  matching the inspected current owner, plus a bounded single-line `authorization`
+  referencing the direct human instruction. The caller must have a current claim;
+  the previous owner must have none, and the release lock must be empty. The
+  helper records the previous owner, authorization and time without changing
+  other identities or checkpoints. This is an explicit handoff, never an
+  automatic timeout takeover or permission to resume a stopped chat.
+- `release-acquire` / `release-release`: atomic lock operations for the designated
+  worker and exact session. Acquiring requires its current claim. Hold through
+  integration, main update, migration/deployment and exact live closeout; release
+  only after a saved receipt or precise interrupted-release checkpoint.
 - `unregister`: relinquish only your own identity after claims/release are clear.
   Retained checkpoints remain available to the next session.
 
@@ -126,9 +137,9 @@ Use disposable temporary repositories; never test contention against a live
 worker's claims. Actual startup additionally verifies both real worktrees,
 current states, separate database identities/ports and private configuration.
 
-At safe checkpoints A1 reads ready-to-merge task evidence and each submitting
-chat's checkpoint. Builders provide tested commits and explicit migration and
-configuration needs. A1 records
+At safe checkpoints the designated owner reads ready-to-merge task evidence and
+each submitting chat's checkpoint. Builders provide tested commits and explicit
+migration and configuration needs. The release owner records
 merged and verified-live status separately. The initial setup does not prove a
 later session automatically loaded instructions, a physical device worked, or a
 feature passed acceptance. Leave those existing gates open until observed.
@@ -139,3 +150,19 @@ migration does not refresh an already installed client. Stop that worktree's
 checks before regeneration; preserve a failed stale-client attempt and rerun the
 affected checks against the merged schema. Do not modify the other worker's
 dependencies or database.
+
+## Release handoff compatibility, 8 October 2026 UTC
+
+The role is additive within schema 1 so other active workers can finish and
+checkpoint using their existing helpers. Older helpers retain the field and
+respect an already-held release lock. They do not enforce the new role on a
+later empty lock: a former release owner must adopt the updated helper before
+any newly authorized release work. Keep paused owners paused. Record the source
+commit and checksum when installing the versioned helper in the shared private
+`bin` directory; preserve earlier copies. The helper does not verify human
+identity or grant hosting permission. Current human authorization remains required.
+
+Publish completed tasks in batches of one or two, with at most twelve production
+releases per rolling hour. This ceiling never replaces security, verification,
+migration, recovery or canonical live acceptance. Resolve actual release blockers
+before accumulating unrelated features; do not deploy each small edit.

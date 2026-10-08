@@ -33,10 +33,12 @@ meaningful checkpoints and handoffs. Never steal an active or unexamined lock.
 Coordinate overlaps with their owner and take other eligible work meanwhile.
 
 Finish every required UI, integration, configuration, regression and documentation
-step locally for each feature. Save tested checkpoints and combine compatible
-finished work into a named release batch. Publish when that batch is ready; avoid
-intermediate, per-small-feature and report-only deployments. Urgent production
-repairs may justify a focused release. Before new work, honor any requested
+step locally for each feature. Save tested checkpoints and publish after one or
+two completed coherent tasks, with no more than twelve production releases in
+any rolling hour. This is a ceiling, not a quota or a reason to delay ready work.
+Group related edits inside their task; do not deploy every small edit or a
+report-only commit. Prioritize releasing the completed backlog and resolving
+actual release blockers before accumulating unrelated feature work. Before new work, honor any requested
 progress review with completed work, remaining gates and owner actions.
 One designated release owner
 integrates main, applies production migrations and deploys under existing

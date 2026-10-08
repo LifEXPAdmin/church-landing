@@ -38,6 +38,16 @@ function overlaps(a, b) {
   return a === b || (a.startsWith("file:") && b.startsWith("file:") && (a.startsWith(b + "/") || b.startsWith(a + "/")));
 }
 const workerPattern = /^[A-Z][A-Z0-9_-]{0,31}$/;
+function releaseOwner(state) {
+  // Schema-one helpers preserve additive fields. Legacy release owners must use
+  // this helper after a handoff; the registry is cooperative, not an ACL.
+  if (state.releaseOwner === undefined) return { worker: "A1", session: state.identities.A1?.session ?? null };
+  const owner = state.releaseOwner;
+  assert.ok(owner && typeof owner === "object" && !Array.isArray(owner), "Invalid release owner");
+  assert.match(owner.worker ?? "", workerPattern, "Invalid release owner");
+  assert.match(owner.session ?? "", /^[A-Za-z0-9_-]{8,120}$/, "Invalid release owner session");
+  return { worker: owner.worker, session: owner.session };
+}
 function taskIds(value = []) {
   assert.ok(Array.isArray(value) && value.length <= 100, "Use at most 100 exact task IDs");
   for (const id of value) {
@@ -162,13 +172,29 @@ export function workerCommand(request, cwd = process.cwd()) {
         } else if (request.operation === "finish") {
           assert.notEqual(state.release?.session, request.session, "Release closeout must finish before clearing the feature claim");
           delete state.claims[request.worker];
+        } else if (request.operation === "release-handoff") {
+          assert.deepEqual(Object.keys(request).sort(), ["authorization", "expectedOwner", "operation", "session", "worker"], "Handoff assigns only the requesting worker; use the documented handoff fields");
+          const previousOwner = releaseOwner(state);
+          assert.deepEqual(request.expectedOwner, previousOwner, "The release owner changed; inspect the current owner before handoff");
+          assert.ok(!state.release, "Close out the existing release lock before handoff");
+          if (previousOwner.worker === request.worker) {
+            assert.notEqual(previousOwner.session, request.session, "This session already owns the release role; no handoff is needed");
+            assert.ok(!state.claims[previousOwner.worker] || state.claims[previousOwner.worker].session === request.session, "The previous release owner still has a claim; never transfer active work");
+          } else {
+            assert.ok(!state.claims[previousOwner.worker], "The previous release owner still has a claim; never transfer active work");
+          }
+          assert.equal(state.claims[request.worker]?.session, request.session, "Claim release work in this session before handoff");
+          assert.equal(typeof request.authorization, "string", "Record the direct human authorization reference");
+          assert.ok(request.authorization.trim().length > 0 && request.authorization.length <= 2000 && !/[\r\n\u0000-\u001f\u007f]/.test(request.authorization), "Record a bounded, single-line direct human authorization reference");
+          state.releaseOwner = { worker: request.worker, session: request.session, previousOwner, assignedAt: now, authorization: request.authorization.trim() };
         } else if (request.operation === "release-acquire") {
-          assert.equal(request.worker, "A1", "Only A1 may hold the integration/release lock");
-          assert.ok(state.claims.A1, "Claim release work before acquiring the release lock");
-          assert.ok(!state.release || state.release.session === request.session, "Another session owns the release lock");
-          state.release ??= { worker: "A1", session: request.session, task: state.claims.A1.task, acquiredAt: now };
+          assert.deepEqual({ worker: request.worker, session: request.session }, releaseOwner(state), "Only the designated release owner session may hold the integration/release lock");
+          assert.equal(state.claims[request.worker]?.session, request.session, "Claim release work in this session before acquiring the release lock");
+          assert.ok(!state.release || (state.release.worker === request.worker && state.release.session === request.session), "Another session owns the release lock");
+          state.release ??= { worker: request.worker, session: request.session, task: state.claims[request.worker].task, acquiredAt: now };
         } else if (request.operation === "release-release") {
-          assert.equal(request.worker, "A1");
+          assert.deepEqual({ worker: request.worker, session: request.session }, releaseOwner(state), "Only the designated release owner session may release the integration/release lock");
+          assert.equal(state.release?.worker, request.worker, "No release lock is owned by this worker");
           assert.equal(state.release?.session, request.session, "No release lock is owned by this session");
           state.release = null;
         } else if (request.operation === "checkpoint") {
@@ -194,7 +220,7 @@ export function workerCommand(request, cwd = process.cwd()) {
     state.updatedAt = now;
     atomic(registryPath, state);
     return { directory, operation: request.operation, worker: request.worker, identity: state.identities[request.worker] ?? null,
-      claim: state.claims[request.worker] ?? null, release: state.release };
+      claim: state.claims[request.worker] ?? null, release: state.release, releaseOwner: state.releaseOwner ?? null };
   } finally {
     if (existsSync(join(mutex, "owner.json")) && read(join(mutex, "owner.json")).token === token) rmSync(mutex, { recursive: true });
   }
