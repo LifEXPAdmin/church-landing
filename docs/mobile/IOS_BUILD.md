@@ -48,7 +48,9 @@ The app opts into Expo 57's scene lifecycle through the pinned
 the iOS 27 SDK. Prebuild declares `EXExpoAppSceneDelegate`, disables multiple
 scenes and makes the app delegate provide its React Native factory. Expo owns
 window creation and forwards lifecycle and link events; the app does not add
-a second native event bridge. See [Expo's SDK 57 migration guidance](https://github.com/expo/fyi/blob/main/ios-scene-lifecycle.md#staying-on-sdk-57-with-xcode-27).
+a replacement delegate. The local privacy module subscribes through Expo's
+existing app-delegate subscriber API and consumes its forwarded lifecycle.
+See [Expo's SDK 57 migration guidance](https://github.com/expo/fyi/blob/main/ios-scene-lifecycle.md#staying-on-sdk-57-with-xcode-27).
 
 From `mobile/`, with `APP_VARIANT=development` or `staging`:
 
@@ -207,3 +209,14 @@ Separately verify the real journey against an accepted nonproduction
 HTTPS endpoint with fictional accounts. Source checks, Hermes exports, native
 compilation, Simulator behavior and physical-device acceptance are distinct.
 Existing dependency-security and release gates remain in force.
+
+The native privacy-cover preparation adds a local iOS module and a mounted
+presentation marker. Re-run guarded Pods installation before building this
+change, then verify the generated Expo provider contains both its module and
+app-delegate subscriber. Older binaries lack the bridge and stay concealed.
+The standalone policy check is `node scripts/check-native-privacy.mjs` from
+`mobile/`, with the same explicit storage profile and machine-build ownership.
+It compiles the Foundation-only policy under Swift 6 with warnings as errors and
+retains its executable and cache in a fresh generated directory. This check is
+separate from the Expo/UIKit build and actual snapshot acceptance described in
+the [native journey](NATIVE_JOURNEY.md#native-ios-privacy-cover).

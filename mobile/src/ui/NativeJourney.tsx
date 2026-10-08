@@ -5,9 +5,12 @@ import type { SessionSnapshot } from "../session/session-controller";
 import type { ReadingSnapshot } from "../reading/read-controller";
 import { observeSessionVisibility } from "../platform/session-visibility";
 import { readNativeWindowFocus } from "../platform/native-visibility";
+import { createNativePrivacySource } from "../platform/native-privacy.native";
+import { presentationMatches, type NativePrivacyPresentation as Presentation } from "../platform/native-privacy.ts";
 import { Button, Card, Screen, Text } from "./primitives";
 import { NativePost } from "./NativePost";
 import { PasswordSignIn } from "./PasswordSignIn";
+import { NativePrivacyPresentation } from "./NativePrivacyPresentation";
 import { useTheme } from "./theme";
 
 type Runtime = ReturnType<typeof createNativeRuntime>;
@@ -137,6 +140,7 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
   const state = useSyncExternalStore(runtime.session.subscribe, runtime.session.getSnapshot);
   const navigation = useSyncExternalStore(runtime.navigation.subscribe, runtime.navigation.getSnapshot);
   const reading = useSyncExternalStore(runtime.reading.subscribe, runtime.reading.getSnapshot);
+  const [presentation, setPresentation] = useState<Presentation | null>(null);
   const [scroll, setScroll] = useState({ generation: state.generation, page: "" });
   // Keep just one bounded page address through a loading/recheck state. A new
   // page resets scrolling; rechecking the same page or revealing text does not.
@@ -144,6 +148,8 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
     scroll.generation === state.generation ? scroll.page : "";
   if (scroll.generation !== state.generation || scroll.page !== page) setScroll({ generation: state.generation, page });
   useEffect(() => observeSessionVisibility({
+    nativePrivacy: Platform.OS === "ios" ? { source: createNativePrivacySource(),
+      generation: () => runtime.session.getSnapshot().generation, publish: setPresentation } : undefined,
     requiresFocus: Platform.OS === "android",
     currentFocus: readNativeWindowFocus,
     currentState: () => AppState.isAvailable ? AppState.currentState : null,
@@ -159,10 +165,11 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
       } catch (error) { focus.remove(); throw error; }
     }
   }, runtime.setForeground), [runtime]);
-  const visible = state.foreground && state.phase !== "concealed";
+  const visible = state.foreground && state.phase !== "concealed" &&
+    (Platform.OS !== "ios" || presentationMatches(presentation, state));
   const post = navigation.destination?.kind === "post";
   const routeKey = post ? "post:" + navigation.destination.postId : "feed:" + page;
-  return <Screen foreground={visible} scrollKey={state.generation + ":" + routeKey}>
+  return <><Screen foreground={visible} scrollKey={state.generation + ":" + routeKey}>
     <Text variant="small" tone="muted">GOD'S CHURCHES</Text>
     {signInMode.kind === "fixture" ? <Text variant="small" tone="muted">Development preview. Fictional accounts and posts only.</Text> : null}
     <SessionNotice state={state} runtime={runtime} />
@@ -176,5 +183,5 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
     {state.phase === "ready" || state.phase === "unavailable" || state.cleanup === "cleanup-pending" || state.cleanup === "unconfirmed" ?
       <Button label={state.phase === "ready" ? "Sign out" : "Retry sign-out"} secondary onPress={() => { void runtime.signOut(); }} /> : null}
     {signInMode.kind === "fixture" ? previewTools : null}
-  </Screen>;
+  </Screen><NativePrivacyPresentation presentation={presentation} generation={state.generation} ready={visible} /></>;
 }
