@@ -64,6 +64,17 @@ const page = await context.newPage(),
   errors = [],
   results = [];
 page.on("pageerror", (e) => errors.push(e.message));
+let detailReads = 0;
+page.on("request", (request) => {
+  const url = new URL(request.url());
+  if (
+    request.method() === "GET" &&
+    url.origin === origin &&
+    url.pathname === "/api/platform/media-catalog" &&
+    url.searchParams.get("view") === "detail"
+  )
+    detailReads++;
+});
 page.on("dialog", (d) => d.accept());
 const output = fixture + "/browser-" + Date.now();
 mkdirSync(output, { recursive: true });
@@ -251,11 +262,31 @@ try {
       .count(),
     0
   );
+  const readsBeforeReconnect = detailReads;
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  const recheckSignIn = page.getByRole("button", {
+    name: "Recheck this sign-in",
+    exact: true
+  });
+  await recheckSignIn.waitFor();
+  assert.equal(
+    await page
+      .getByRole("heading", { name: title, exact: true, level: 1 })
+      .count(),
+    0
+  );
+  assert.equal(detailReads, readsBeforeReconnect);
+  assert.equal(providerAttempts, 1);
+  // SessionActivity deliberately conceals readers after an offline event.
+  // Its explicit same-owner check emits the recovery focus event.
+  await recheckSignIn.click();
   await page
     .getByRole("heading", { name: title, exact: true, level: 1 })
     .waitFor();
-  ok("focused offline-to-online restores only fresh permitted metadata");
+  assert.ok(detailReads > readsBeforeReconnect);
+  assert.equal(providerAttempts, 1);
+  ok("focused reconnect rechecks this sign-in before restoring fresh permitted metadata");
+  const readsBeforeBackgroundReconnect = detailReads;
   await page.evaluate(() => {
     window.dispatchEvent(new Event("blur"));
     window.dispatchEvent(new Event("offline"));
@@ -268,11 +299,16 @@ try {
       .count(),
     0
   );
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  assert.equal(detailReads, readsBeforeBackgroundReconnect);
+  assert.equal(providerAttempts, 1);
+  await recheckSignIn.waitFor();
+  await recheckSignIn.click();
   await page
     .getByRole("heading", { name: title, exact: true, level: 1 })
     .waitFor();
-  ok("background reconnect remains concealed until focus");
+  assert.ok(detailReads > readsBeforeBackgroundReconnect);
+  assert.equal(providerAttempts, 1);
+  ok("background reconnect stays concealed until a same-account recheck restores focus");
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await page.addStyleTag({ content: "html {font-size:32px !important}" });
