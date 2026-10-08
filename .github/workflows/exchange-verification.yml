@@ -18,9 +18,18 @@ on:
         codex/release-exchange-handoffs-saved-20261008,
         codex/exchange-saved-search-privacy-20261003,
         codex/exchange-favorite-privacy-20261003,
-        codex/release-exchange-search-favorites-20261008
+        codex/release-exchange-search-favorites-20261008,
+        codex/needs-contribution-privacy-20261003,
+        codex/release-my-needs-contributions-20261008
       ]
     paths:
+      - components/platform/exchange-needs-page.tsx
+      - components/platform/exchange-need-actions.tsx
+      - components/platform/exchange-need-contributions.tsx
+      - tests/exchange-need-contribution-privacy.test.mjs
+      - tests/exchange-need-contribution-http.test.ts
+      - scripts/qa-exchange-need-contribution-privacy-browser.mjs
+      - scripts/qa-exchange-needs-browser.mjs
       - scripts/qa-exchange-favorite-privacy-browser.mjs
       - components/platform/exchange-favorite-entry.tsx
       - components/platform/private-snapshot-guard.tsx
@@ -109,7 +118,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      EXCHANGE_PROFILE: ${{ github.ref_name == 'codex/release-exchange-search-favorites-20261008' && 'exchange-search-favorite' || github.ref_name == 'codex/exchange-favorite-privacy-20261003' && 'exchange-favorite' || github.ref_name == 'codex/exchange-saved-search-privacy-20261003' && 'exchange-saved-search' || github.ref_name == 'codex/release-exchange-handoffs-saved-20261008' && 'exchange-handoff-saved' || github.ref_name == 'codex/exchange-saved-list-privacy-20261003' && 'exchange-saved-list' || github.ref_name == 'codex/exchange-handoff-detail-privacy-20261003' && 'exchange-handoff-detail' || github.ref_name == 'codex/release-exchange-privacy-20261008' && 'exchange-privacy' || github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
+      EXCHANGE_PROFILE: ${{ (github.ref_name == 'codex/release-my-needs-contributions-20261008' || github.ref_name == 'codex/needs-contribution-privacy-20261003') && 'need-contribution' || github.ref_name == 'codex/release-exchange-search-favorites-20261008' && 'exchange-search-favorite' || github.ref_name == 'codex/exchange-favorite-privacy-20261003' && 'exchange-favorite' || github.ref_name == 'codex/exchange-saved-search-privacy-20261003' && 'exchange-saved-search' || github.ref_name == 'codex/release-exchange-handoffs-saved-20261008' && 'exchange-handoff-saved' || github.ref_name == 'codex/exchange-saved-list-privacy-20261003' && 'exchange-saved-list' || github.ref_name == 'codex/exchange-handoff-detail-privacy-20261003' && 'exchange-handoff-detail' || github.ref_name == 'codex/release-exchange-privacy-20261008' && 'exchange-privacy' || github.ref_name == 'codex/exchange-inquiry-composer-privacy-20261003' && 'exchange-inquiry-composer' || github.ref_name == 'codex/exchange-inquiry-list-privacy-20261003' && 'exchange-inquiry-list' || github.ref_name == 'codex/exchange-defaults-privacy-20261003' && 'exchange-defaults' || (github.ref_name == 'codex/exchange-editor-bootstrap-20261003' || github.ref_name == 'codex/release-exchange-20261008') && 'exchange-bootstrap' || 'exchange' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -168,6 +177,7 @@ jobs:
           const buildId = existsSync(".next/BUILD_ID") ? readFileSync(".next/BUILD_ID", "utf8").trim() : null;
           const servingIdentities = [...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map((match) => ({ sourceSha: match[1], mode: match[2] }));
           const expectations = {
+            "need-contribution": { tests: [18, 2], browsers: { "need-contribution-browser": [10], "needs-browser": [10] } },
             "exchange-saved-search": { tests: [43, 3], browsers: { "exchange-saved-search-browser": [9], "exchange-browser": [8], "exchange-saved-list-browser": [8] } },
             "exchange-favorite": { tests: [43, 4], browsers: { "exchange-favorite-browser": [8], "exchange-browser": [8], "exchange-saved-search-browser": [9], "exchange-saved-list-browser": [8] } },
             "exchange-search-favorite": { tests: [65, 8], browsers: { "exchange-favorite-browser": [8], "exchange-saved-search-browser": [9], "exchange-saved-list-browser": [8], "exchange-handoff-detail-browser": [8], "exchange-browser": [8], "exchange-inquiry-composer-browser": [11], "exchange-defaults-browser": [11], "exchange-handoff-browser": [9], "exchange-inquiry-list-browser": [10], "topic-catalogue-privacy-browser": [9], "support-index-browser": [13], "notification-integration-browser": [14] } },
@@ -208,7 +218,7 @@ jobs:
               let detailsValid = empty(result?.errors);
               if (standardScope) detailsValid &&= result?.productionWrites === 0 && result?.externalSends === 0;
               if (pantry) detailsValid &&= existsSync(passPath);
-              if (["exchange-inquiry-composer-browser", "exchange-saved-list-browser", "exchange-saved-search-browser", "exchange-favorite-browser"].includes(suite)) detailsValid &&= empty(result?.layoutFailures);
+              if (["need-contribution-browser", "exchange-inquiry-composer-browser", "exchange-saved-list-browser", "exchange-saved-search-browser", "exchange-favorite-browser"].includes(suite)) detailsValid &&= empty(result?.layoutFailures);
               if (topic) detailsValid &&= result?.source === sourceSha && result?.buildId === buildId && empty(result?.routeErrors) && empty(result?.external) && empty(result?.writes);
               if (support) detailsValid &&= result?.fixtureOnly === true && empty(result?.externalRequests) && empty(result?.caseRequests) && Array.isArray(result?.browserWrites) && result.browserWrites.every((request) => request.foregroundActivity === true && request.method === "POST" && request.path === "/api/platform/session");
               browsers.push({
@@ -255,6 +265,10 @@ jobs:
         with:
           name: exchange-browser-${{ github.sha }}
           path: |
+            .account-test/need-contribution-hosted-*/need-contribution-browser-*/contribution-390.png
+            .account-test/need-contribution-hosted-*/need-contribution-browser-*/contribution-320-200.png
+            .account-test/need-contribution-hosted-*/needs-browser-*/contributions-390.png
+            .account-test/need-contribution-hosted-*/needs-browser-*/contributions-320.png
             ${{ runner.temp }}/exchange-evidence/report.json
             ${{ runner.temp }}/exchange-evidence/verification.log
             .account-test/exchange-search-favorite-hosted-*/exchange-inquiry-list-browser-*/inquiries-390.png

@@ -10,27 +10,32 @@ const config = JSON.parse(
   readFileSync(fixtureDir + "/browser-env.json", "utf8")
 );
 assert.match(config.origin, /^https:\/\/127\.0\.0\.1:\d+$/);
-assert.match(config.localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
+const localOrigin = config.localOrigin ?? config.origin;
+assert.match(localOrigin, /^https:\/\/127\.0\.0\.1:\d+$/);
 assert.equal(new URL(config.database).hostname, "127.0.0.1");
 Object.assign(process.env, {
   DATABASE_URL: config.database,
   DIRECT_URL: config.database,
-  ACCOUNT_ORIGIN: config.localOrigin,
-  NEXT_PUBLIC_SITE_URL: config.localOrigin,
+  ACCOUNT_ORIGIN: localOrigin,
+  NEXT_PUBLIC_SITE_URL: localOrigin,
   ACCOUNT_TEST_ISOLATED: "1",
   ACCOUNT_DELIVERY_MODE: "test-sink",
-  ACCOUNT_TEST_SINK_DIR: process.cwd() + "/" + fixtureDir + "/sink",
-  AUTH_RATE_LIMIT_SECRET: "medium-fixture-only-secret-".repeat(3),
+  ACCOUNT_TEST_SINK_DIR:
+    process.env.ACCOUNT_TEST_SINK_DIR ?? fixtureDir + "/sink",
+  AUTH_RATE_LIMIT_SECRET:
+    process.env.AUTH_RATE_LIMIT_SECRET ??
+    "medium-fixture-only-secret-".repeat(3),
   NODE_ENV: "test",
   VERCEL: "",
-  PRIVILEGED_MFA_MODE: "enroll",
+  PRIVILEGED_MFA_MODE: process.env.PRIVILEGED_MFA_MODE ?? "enroll",
   COMMUNITY_REPORTS_ENABLED: "true",
   BLOB_READ_WRITE_TOKEN: "",
   RESEND_API_KEY: "",
   MAILERLITE_API_KEY: "",
   MEDIA_STORAGE_MODE: "local-test",
-  RETENTION_TEST_DIR: process.cwd() + "/" + fixtureDir + "/retention",
-  MEDIA_TEST_DIR: process.cwd() + "/" + fixtureDir + "/images"
+  RETENTION_TEST_DIR:
+    process.env.RETENTION_TEST_DIR ?? fixtureDir + "/retention",
+  MEDIA_TEST_DIR: process.env.MEDIA_TEST_DIR ?? fixtureDir + "/images"
 });
 const { PrismaClient } = await import("@prisma/client");
 const { createPortalActor, assertPortalTestDatabase, seedOperatorGrants } =
@@ -381,6 +386,8 @@ try {
       (await db.platformPost.findUniqueOrThrow({ where: { id: needPost.id } }))
         .exchangeNeedId === listing.id
   );
+  await exact("Remove this need link").waitFor();
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   ok(
     "Independent publisher and volunteer duty revocation conceal retained picker content; restored current authority links the existing Need post to canonical slots"
   );
@@ -397,6 +404,11 @@ try {
         })
       ).state === "ACTIVE"
   );
+  // The committed database row can precede the browser's canonical readback.
+  // Complete that acknowledgement before leaving its guarded editor.
+  await waitUntil(async () => (await exact("Publish as active").count()) === 0);
+  await waitUntil(() => exact("Archive listing").isEnabled());
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   await go(path);
   await page
     .getByRole("heading", { name: "Food parcels", exact: true })
@@ -576,6 +588,12 @@ try {
     ).received,
     0
   );
+  await page
+    .getByRole("article", { name: "Private contribution", exact: true })
+    .filter({ hasText: "Fictional paid sourcing" })
+    .getByText("Committed. Promised 3. Received 0.", { exact: true })
+    .waitFor();
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   ok(
     "Organizer confirms partial receipts, contributor cancellation reopens only unreceived quantity and paid quotes require deliberate acceptance"
   );
@@ -625,6 +643,10 @@ try {
         })
       ).received === 1
   );
+  await loanIncoming
+    .getByText("Committed. Promised 1. Received 1.", { exact: true })
+    .waitFor();
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   const closing = page.getByRole("region", {
     name: "Close Loaned equipment",
     exact: true
@@ -638,6 +660,13 @@ try {
     .getByRole("button", { name: "Close this slot", exact: true })
     .click();
   await waitUntil(async () => !!(await slotRow("Loaned equipment")).closedAt);
+  await page
+    .getByText(
+      "Slot closing reason: One loan received; the other item is no longer needed.",
+      { exact: true }
+    )
+    .waitFor();
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   assert.equal(
     (
       await db.exchangeNeedContribution.findUniqueOrThrow({
@@ -668,6 +697,15 @@ try {
         })
       ).returned === 1
   );
+  await waitUntil(() =>
+    loanOwn
+      .getByRole("button", {
+        name: "Confirm equipment returned to me",
+        exact: true
+      })
+      .isEnabled()
+  );
+  await page.waitForFunction(() => !history.state?.gcPhotoWork);
   ok(
     "Equipment terms require explicit agreement; partial closing preserves the outstanding return until its actual confirmation"
   );
@@ -692,6 +730,9 @@ try {
     }),
     0
   );
+  await volunteers
+    .getByText("Your event signup is active.", { exact: true })
+    .waitFor();
   await page.waitForFunction(() => !history.state?.gcPhotoWork);
   await signIn(manager);
   await go(path + "?volunteers=" + (await slotRow("Event helpers")).id);
@@ -794,6 +835,10 @@ try {
   await go("/platform/settings/exchange");
   await page.getByRole("link", { name: /My Needs contributions/ }).waitFor();
   await go("/platform/exchange/needs");
+  await page
+    .getByRole("article", { name: "Your need contribution", exact: true })
+    .first()
+    .waitFor();
   for (const width of [1348, 390, 320]) {
     await page.setViewportSize({ width, height: 926 });
     await bounded();

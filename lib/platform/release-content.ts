@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-my-needs-contributions", version: "2026.10.08.7", date: "2026-10-08",
+    summary: "Keep My Needs contributions private while preserving unfinished changes through interrupted access.",
+    added: [],
+    improved: ["My Needs contributions appear after checking your current account access. Unfinished dispute and equipment-return entries remain available when the same account regains access.", "Each contribution change is confirmed against its own original request and saved version, preserving unfinished entries on other cards."],
+    fixed: ["Unfocused pages keep private contribution details and controls concealed. Confirmed account changes clear the previous account's retained entries.", "Delayed or mismatched responses cannot confirm a different contribution change."],
+    featureIds: ["church-needs", "account"]
+  },
+  {
     id: "private-exchange-searches-and-favorites", version: "2026.10.08.6", date: "2026-10-08",
     summary: "Protect saved-search editing and favorite choices through access changes and interrupted saves.",
     added: [],

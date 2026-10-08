@@ -34,13 +34,19 @@ assert.ok(
     "exchange-handoff-saved",
     "exchange-saved-search",
     "exchange-favorite",
-    "exchange-search-favorite"
+    "exchange-search-favorite",
+    "need-contribution"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "need-contribution": {
+    services: ["exchange-needs"],
+    browsers: ["qa-exchange-need-contribution-privacy-browser", "qa-exchange-needs-browser"],
+    https: ["exchange-need-contribution-http", "exchange-http"]
+  },
   "exchange-saved-search": {
     services: ["exchange-input", "exchange-listings"],
     browsers: [

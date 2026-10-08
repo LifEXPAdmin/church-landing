@@ -1,3 +1,11 @@
+## My Needs contribution privacy prepared, 8 October 2026 UTC
+
+The seventh catch-up batch integrates the preserved standalone My Needs scope. Contribution rows load through current account-pinned reads instead of initial HTML/RSC. Each card retains its original request and requires its own exact receipt and canonical version. Same-account access recovery preserves sibling dispute and equipment-return drafts; confirmed account replacement clears prior entries.
+
+Two actual-component regressions reproduced private reads and presentation after unfocused return events. A narrow current-focus guard fixes both. **256 focused checks pass**, including the contribution owner, shared action consumers and snapshot lifecycle. The existing browser journey now includes controlled unfocused return assertions; browser execution remains pending here. This does not establish native-window behavior.
+
+This source is prepared for fresh hosted security, service, HTTPS, production-build and browser verification. It is **not integrated or live at this checkpoint**. Canonical production remains **2026.10.08.6**. Final review, staged checks, same-build promotion and canonical acceptance remain required. No dependency, schema, migration or backend change belongs to this batch. Broader Needs, export and native work remain separate.
+
 ## Saved searches and favorite controls, 8 October 2026 UTC
 
 Version **2026.10.08.6**, source `dca251e58aedf04ce20aa016981242dc22ce11fe`: **verified live** at [God’s Churches](https://godschurches.com). This batch completes the two preserved saved-search editing and favorite-control scopes. Private fields load after current account-pinned reads. Same-account interruptions retain drafts and exact uncertain requests; confirmed account replacement clears the prior owner’s entries. Unfocused return events cannot reopen the affected private readers or favorite recovery control.
@@ -97,6 +105,32 @@ The fictional loopback measurements do not establish production latency, provide
 headroom or 100-client capacity. Broader discovery/navigation acceptance and real
 operator, provider and device gates remain open. See
 [deployment evidence](DEPLOYMENT_REPORT.md) and [resource budgets](RESOURCE_BUDGETS.md).
+
+## My Needs contribution privacy runtime verified, 3 October 2026 UTC
+
+[Draft PR15](https://github.com/LifEXPAdmin/church-landing/pull/15) retains
+canonical server authorization while omitting contribution rows from initial
+HTML/RSC. A bounded current page read initializes retained card owners;
+concealed private articles, links and inputs are physically absent. Exact
+per-row receipts and canonical versions are required before changed rows can
+be presented or another command sent. Unsent sibling dispute and equipment-return
+entries survive other confirmed actions. Unexpected row/order/page changes
+remain concealed until deliberate recovery.
+
+Application `009efd2bef92d1c110deb3eff4ad4e9fb9ee092c` passes 267 focused checks.
+Final test candidate `22f22650e92e0c49101151942a0a7251e4db596c` passes
+[runtime 37122595014](https://github.com/LifEXPAdmin/church-landing/actions/runs/37122595014),
+build `uRbfHWiPxg8LTlGXVX6gd`: 18 services, 20 browser groups and two HTTPS
+cases, including own-only reads/replay, source redaction, outstanding loan
+returns and current coordinator MFA. Exact serving source is verified in both
+MFA modes. Source checks pass 368 tests, copy and types before the existing
+seven-high advisory audit fails; subsequent security steps skip.
+[Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md) preserves baseline exposure,
+failed fixture attempts, strengthened browser completion checks and eight hashed
+final artifacts totaling 1,597,456 bytes. Application code is unchanged across
+the test corrections. PR15 stacks on PR14; final review closure is recorded in
+the existing private task handoff. No integration, deployment or release
+acceptance is claimed.
 
 ## Saved Exchange choices runtime verified, 3 October 2026 UTC
 

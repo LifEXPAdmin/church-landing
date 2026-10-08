@@ -47,46 +47,78 @@ function environment(kind) {
   let timerId = 0;
   const timers = new Map();
   const data =
-    kind === "defaults"
+    kind === "contributions"
       ? {
           ownerId: owner,
-          version: 3,
-          fields: { pickupDetails: "PRIVATE DEFAULT PICKUP" },
-          churches: [],
-          available: true,
-          recoveryRequired: false
+          contributions: [
+            {
+              id: "contribution-a",
+              version: 3,
+              state: "COMMITTED",
+              quantity: 5,
+              received: 3,
+              returned: 0,
+              createdAt: "2026-10-01T10:00:00.000Z",
+              endedAt: null,
+              current: true,
+              own: true,
+              needId: "need-a",
+              slotId: "slot-a",
+              listingId: "listing-a",
+              title: "Private contribution title",
+              note: "Private retained contribution note",
+              quoteMinor: 18765,
+              quoteCurrency: "USD",
+              shareName: false,
+              disputed: false,
+              disputeNote: "",
+              loanReturnAt: "2026-10-10T10:00:00.000Z",
+              loanResponsibility: "Private loan terms",
+              contributor: null
+            }
+          ],
+          next: null
         }
-      : kind === "composer"
+      : kind === "defaults"
         ? {
             ownerId: owner,
-            target: {
-              listingId: "listing-a",
-              listingVersion: 3,
-              contactVersion: 2,
-              receiver: { id: "receiver-a", name: "Private named receiver" },
-              activeId: null,
-              available: true
-            }
+            version: 3,
+            fields: { pickupDetails: "PRIVATE DEFAULT PICKUP" },
+            churches: [],
+            available: true,
+            recoveryRequired: false
           }
-        : kind === "detail"
+        : kind === "composer"
           ? {
               ownerId: owner,
-              inquiry: {
-                id: "inquiry-a",
-                version: 3,
-                planVersion: 1,
-                history: [],
-                available: true,
-                purpose: "PRIVATE PURPOSE",
-                pickupDetails: "PRIVATE PICKUP",
-                cancelNote: "",
-                side: "incoming",
-                state: "DECLINED",
-                listing: { id: "listing-a", title: "Private handoff" },
-                person: null
+              target: {
+                listingId: "listing-a",
+                listingVersion: 3,
+                contactVersion: 2,
+                receiver: { id: "receiver-a", name: "Private named receiver" },
+                activeId: null,
+                available: true
               }
             }
-          : { ownerId: owner, searches: [search], after: null };
+          : kind === "detail"
+            ? {
+                ownerId: owner,
+                inquiry: {
+                  id: "inquiry-a",
+                  version: 3,
+                  planVersion: 1,
+                  history: [],
+                  available: true,
+                  purpose: "PRIVATE PURPOSE",
+                  pickupDetails: "PRIVATE PICKUP",
+                  cancelNote: "",
+                  side: "incoming",
+                  state: "DECLINED",
+                  listing: { id: "listing-a", title: "Private handoff" },
+                  person: null
+                }
+              }
+            : { ownerId: owner, searches: [search], after: null };
   const h = clientHarness({
     window,
     document,
@@ -166,6 +198,15 @@ function environment(kind) {
       view: "searches",
       returnHref: "/platform/exchange/saved?view=searches"
     };
+  } else if (kind === "contributions") {
+    ({ ExchangeNeedContributions: Component } = load(
+      "components/platform/exchange-need-contributions.tsx",
+      {
+        ...common,
+        "./exchange-need-actions": { NeedContributionCard: "private-leaf" }
+      }
+    ));
+    props = { owner };
   } else if (kind === "defaults") {
     ({ ExchangeDefaultsEntry: Component } = load(
       "components/platform/exchange-defaults-entry.tsx",
@@ -260,6 +301,7 @@ for (const kind of [
   "detail",
   "list",
   "composer",
+  "contributions",
   "defaults",
   "reader"
 ])
