@@ -100,7 +100,7 @@ jobs:
           const markers = ["expanded array length exceeds range limit. Use options.rangeLimit to increase or disable the limit.", "node_modules/braces/lib/expand.js", "result.push(append(value, stash, enclose));", "s.push(Array.isArray(e)?append(a,e,r):a+e)"];
           const jsFiles = [...new Set([...files, ...traced].filter((file) => /\.[cm]?js$/.test(file)))].sort();
           assert.ok(traces.length > 0 && entries > 0 && jsFiles.length > 0);
-          const pathHits = [...traced].map(label).filter((file) => pathPattern.test(file));
+          const pathHits = [...new Set([...files, ...traced])].map(label).filter((file) => pathPattern.test(file));
           const markerHits = [];
           const inventory = [...new Set([...traces, ...jsFiles])].sort().map((file) => {
             const body = readFileSync(file); const path = label(file);
