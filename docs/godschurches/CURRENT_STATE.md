@@ -78,6 +78,32 @@ headroom or 100-client capacity. Broader discovery/navigation acceptance and rea
 operator, provider and device gates remain open. See
 [deployment evidence](DEPLOYMENT_REPORT.md) and [resource budgets](RESOURCE_BUDGETS.md).
 
+## Private Exchange handoff detail runtime verified, 3 October 2026 UTC
+
+[Draft PR 11](https://github.com/LifEXPAdmin/church-landing/pull/11) keeps the
+canonical participant check while moving private handoff details out of initial
+HTML/RSC. Its retained action owner physically removes private presentation
+during uncertainty, keeps dirty siblings after confirmed actions, binds agreement
+to the exact pickup plan and preserves an original history-clear retry after the
+detail endpoint correctly returns 404. Defaults copying is bounded and cannot
+apply after concealment or a newer edit.
+
+Unchanged application `da759bca71975908c951a803bdc5358b1ae38863` reproduced the
+bootstrap and retained-DOM exposures. Application
+`43187227373fae40f20adccf2c617832d8145a48` passes 147 focused local checks and
+248 hosted source tests plus copy checks. Hosted types caught an optional-result
+assertion missing from the new HTTPS test. [Runtime 37109131131](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109131131)
+passes 22 services, 39 browser groups and five HTTPS cases with build
+`GvToxFWks1-nUy42ymGdY`. Two additional focused regressions bring the local
+check set to 149 cases. Final candidate `40d11527e857775507cc090b30a72f0a8e9d525a`
+passes [runtime 37109492543](https://github.com/LifEXPAdmin/church-landing/actions/runs/37109492543),
+build `VP97nnyjk6oEjbUwDgQFU`, with the same 22/39/5 checks. Hosted source runs
+pass 250 tests, copy and types, then fail the unchanged dependency audit.
+Independent final review closed without actionable findings and verified all
+12 final artifact hashes and sizes. [Security acceptance](SOURCE_SECURITY_ACCEPTANCE.md)
+records exact evidence.
+PR11 stacks on PR10. No integration, deployment or live acceptance is claimed.
+
 ## Private Exchange inquiry composer runtime verified, 3 October 2026 UTC
 
 [Draft PR 10](https://github.com/LifEXPAdmin/church-landing/pull/10) removes the
