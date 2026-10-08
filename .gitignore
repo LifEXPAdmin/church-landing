@@ -37,3 +37,4 @@ yarn-error.log*
 /mobile/.generated/
 /mobile/ios/
 /mobile/android/
+/mobile/modules/*/android/build/

@@ -1,6 +1,6 @@
 import { useState, type ReactNode, type Ref } from "react";
 import {
-  Platform, Pressable, ScrollView, Text as NativeText, TextInput, View,
+  KeyboardAvoidingView, Platform, Pressable, ScrollView, Text as NativeText, TextInput, View,
   type TextProps, type TextInputProps, type ViewProps, type ScrollViewProps
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -72,11 +72,16 @@ export function Card({ style, ...props }: ViewProps) {
 export function Screen({ children, foreground = true, scrollKey, ...props }:
   Omit<ScrollViewProps, "children"> & { children: ReactNode; foreground?: boolean; scrollKey?: string }) {
   const { theme } = useTheme();
+  const content = foreground ? <ScrollView {...props} key={scrollKey} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
+    contentContainerStyle={[{ padding: theme.space.stack, gap: theme.space.stack,
+      paddingBottom: theme.space.stack * 2 }, props.contentContainerStyle]}>{children}</ScrollView>
+    : <View style={{ padding: theme.space.stack }}><Text variant="title">God's Churches</Text></View>;
   return <SafeAreaView style={{ flex: 1, backgroundColor: theme.color.canvas }}>
     <StatusBar style={theme.scheme === "dark" ? "light" : "dark"} />
-    {foreground ? <ScrollView {...props} key={scrollKey} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets
-      contentContainerStyle={[{ padding: theme.space.stack, gap: theme.space.stack,
-        paddingBottom: theme.space.stack * 2 }, props.contentContainerStyle]}>{children}</ScrollView>
-      : <View style={{ padding: theme.space.stack }}><Text variant="title">God's Churches</Text></View>}
+    {/* ScrollView's automatic keyboard insets are iOS-only. Android edge-to-edge
+        needs a bounded viewport above the IME, including after focus changes. */}
+    {Platform.OS === "android" ? <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      {content}
+    </KeyboardAvoidingView> : content}
   </SafeAreaView>;
 }
