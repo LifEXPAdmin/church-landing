@@ -1,5 +1,21 @@
 # Deactivation account ownership and recovery
 
+## Current release acceptance, 8 October 2026 UTC
+
+Status: Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.14, source 9473d87906b3951290eaee3b6b97cbdf50995370, [PR62](https://github.com/LifEXPAdmin/church-landing/pull/62).
+
+Fresh exact-source acceptance: 591 source/security checks, 65 service/handler cases, 9 built HTTPS lifecycle cases and 40 full-application browser groups. The 7 controlled Data Saver scenarios are separate. The two receiving-baseline handler failures and two fixed-source safe cases are also separate, with no network attempts or limiter resets. Isolated verification build: DyESnfj721wgUyIJkA6p3. Both built serving phases enforce MFA. The current audit reported zero advisories, 496 signatures and 86 attestations; lint reported zero errors and 42 warnings.
+
+Earlier candidate 82b8d102 failed because the hosted headed browser lacked forwarded XAUTHORITY. Candidate ccffd11 retained that repair but probe-output subdirectories shared the fictional mail sink and caused EISDIR. The final 9473d879 runner preserves DISPLAY and XAUTHORITY and separates probe diagnostics from delivery JSON. Both earlier attempts remain diagnostics, not accepted runtime evidence; no application behavior was changed by these fixture corrections.
+
+Operational acceptance: 100 staged GET checks, 288 read-only live guest checks and 5 canonical/health checks passed. The same READY deployment dpl_8DMGCiyuNCVzwbKeP1yWZ9Cs8Q3k was promoted once at 2026-10-08T21:26:27.838Z; canonical source/version were confirmed at 2026-10-08T21:26:53.290Z. Final live acceptance closed at 2026-10-08T21:29:09.267Z. One production submission was used for this batch, within the 12-per-rolling-hour ceiling. No production test writes, recipient sends or queue publications occurred.
+
+Broad SEC-01 remains open. Account export, later Needs privacy layers, native integration and actual provider/device acceptance remain separate. Fictional Google proof rows and redirects do not establish real Google acceptance; the guarded email transport simulated one Resend delivery and made no real provider send. Data Saver uses fictional gallery/image transport. Sparse unmeasured counters remain null. Guest live checks do not exercise production deactivation, credential changes or authenticated operator actions.
+
+The historical behavior and original local source evidence below remain preserved; the verified current release record above supersedes their pending integration status.
+
+
+
 ## Behavior
 
 A deactivation form belongs to the account that opened it. Its command and

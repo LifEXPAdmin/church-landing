@@ -1,3 +1,14 @@
+## Deactivation owner safety release boundary
+
+Current disposition: Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.14, source 9473d87906b3951290eaee3b6b97cbdf50995370.
+
+Fresh exact-source acceptance: 591 source/security checks, 65 service/handler cases, 9 built HTTPS lifecycle cases and 40 full-application browser groups. The 7 controlled Data Saver scenarios are separate. The two receiving-baseline handler failures and two fixed-source safe cases are also separate, with no network attempts or limiter resets. Isolated verification build: DyESnfj721wgUyIJkA6p3. Both built serving phases enforce MFA. The current audit reported zero advisories, 496 signatures and 86 attestations; lint reported zero errors and 42 warnings.
+
+Operational acceptance: 100 staged GET checks, 288 read-only live guest checks and 5 canonical/health checks passed. The same READY deployment dpl_8DMGCiyuNCVzwbKeP1yWZ9Cs8Q3k was promoted once at 2026-10-08T21:26:27.838Z; canonical source/version were confirmed at 2026-10-08T21:26:53.290Z. Final live acceptance closed at 2026-10-08T21:29:09.267Z. One production submission was used for this batch, within the 12-per-rolling-hour ceiling. No production test writes, recipient sends or queue publications occurred.
+
+The narrow deactivation release scope is complete after final live evidence and independent post-live review. The original PR30 is superseded only after that acceptance, while its original body and branch remain retained. Broad SEC-01 and its existing task remain open. Account export, later Needs privacy layers, native integration and actual provider/device acceptance remain separate. Fictional Google proof rows and redirects do not establish real Google acceptance; the guarded email transport simulated one Resend delivery and made no real provider send. Data Saver uses fictional gallery/image transport. Sparse unmeasured counters remain null. Guest live checks do not exercise production deactivation, credential changes or authenticated operator actions.
+
+
 ## Account deactivation owner safety — pending, 8 October 2026 UTC
 
 Candidate **2026.10.08.14** is not release-accepted. It preserves original-account deactivation, mounted draft recovery and newer logins across delayed replies. The current combined source must pass the existing source/security and release checks, plus the planned 65 service/handler, 9 HTTPS and 40 browser cases and 7 separately scoped controlled Data Saver scenarios.

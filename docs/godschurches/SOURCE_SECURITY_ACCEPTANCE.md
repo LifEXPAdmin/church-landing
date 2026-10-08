@@ -1,3 +1,16 @@
+## Deactivation owner and delayed-cookie boundary, 8 October 2026
+
+Source 9473d87906b3951290eaee3b6b97cbdf50995370 passed 591 current source/security checks with zero advisories, 496 verified signatures, 86 attestations and zero lint errors with 42 warnings. The selected repair retains the current dependency graph and migration history.
+
+Deactivation stays bound to the account that opened the form. The server checks that owner under current session/access locks before changing access. Successful deactivation revokes canonical sessions but emits no Set-Cookie headers, so a delayed response cannot erase a newer login. Retained drafts conceal during uncertain access and survive same-owner confirmation and refreshed rendering. Current identity gates Google confirmation and navigation; a replacement login suppresses the old success redirect.
+
+Current isolated acceptance is 65 service/handler cases, 9 enforced HTTPS cases and 40 full-application groups. Seven controlled Data Saver scenarios and two baseline plus two fixed direct handler probes remain separately classified. No limiter reset or missing-MFA rejection substitutes for the canonical duty-assignment race assertion. Earlier candidate 82b8d102 failed because the hosted headed browser lacked forwarded XAUTHORITY. Candidate ccffd11 retained that repair but probe-output subdirectories shared the fictional mail sink and caused EISDIR. The final 9473d879 runner preserves DISPLAY and XAUTHORITY and separates probe diagnostics from delivery JSON. Both earlier attempts remain diagnostics, not accepted runtime evidence; no application behavior was changed by these fixture corrections.
+
+Release status: Verified live at https://godschurches.com; independent post-live review accepted. 100 staged GET checks, 288 read-only live guest checks and 5 canonical/health checks passed. The same READY deployment dpl_8DMGCiyuNCVzwbKeP1yWZ9Cs8Q3k was promoted once at 2026-10-08T21:26:27.838Z; canonical source/version were confirmed at 2026-10-08T21:26:53.290Z. Final live acceptance closed at 2026-10-08T21:29:09.267Z. One production submission was used for this batch, within the 12-per-rolling-hour ceiling. No production test writes, recipient sends or queue publications occurred.
+
+Broad SEC-01 remains open. Account export, later Needs privacy layers, native integration and actual provider/device acceptance remain separate. Fictional Google proof rows and redirects do not establish real Google acceptance; the guarded email transport simulated one Resend delivery and made no real provider send. Data Saver uses fictional gallery/image transport. Sparse unmeasured counters remain null. Guest live checks do not exercise production deactivation, credential changes or authenticated operator actions.
+
+
 ## Account deactivation owner source preparation, 8 October 2026 UTC
 
 Candidate **2026.10.08.14** has no current source or runtime acceptance yet. Existing fatal source, type, copy, lint, dependency audit, signature and history checks remain unchanged. The selected delta adds original-owner checks within existing session locks and suppresses cookie mutation by a delayed deactivation response; it does not import the native backend stack or change the dependency graph or schema.
