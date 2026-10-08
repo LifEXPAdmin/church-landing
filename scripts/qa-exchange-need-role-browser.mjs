@@ -547,6 +547,17 @@ try {
       response.request().method() === "POST" &&
       response.request().postData() === original.body
   );
+  // The replay clears pending state before Back cleanup and router.refresh.
+  // Observe the refresh that follows that cleanup before the next scenario.
+  const refreshedResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.origin === config.origin &&
+      url.pathname === f.page &&
+      response.request().method() === "GET" &&
+      response.request().headers()["rsc"] === "1"
+    );
+  });
   await confirm.click();
   const replay = await replayResponse;
   assert.equal(replay.status(), 200);
@@ -575,6 +586,18 @@ try {
   });
   assert.equal(current.version, committed.version);
   assert.equal(current.volunteerSlotId, first.roles[3].id);
+  const refreshed = await refreshedResponse;
+  assert.equal(refreshed.status(), 200);
+  assert.equal(await refreshed.finished(), null);
+  await page.waitForFunction(() => !window.history.state?.gcPhotoWork);
+  await slotRegion()
+    .getByRole("form", {
+      name: "Edit slot " + parsed.fields.label,
+      exact: true,
+      includeHidden: true
+    })
+    .waitFor({ state: "attached" });
+  assert.equal(page.url(), config.origin + f.page);
   ok(
     "Lost committed slot response requires deliberate byte-identical owner/version replay and creates one canonical link"
   );
