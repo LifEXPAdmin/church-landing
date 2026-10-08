@@ -267,6 +267,41 @@ try {
     await ready(remove());
     assert.equal(await remove().getAttribute("aria-pressed"), "true");
   }
+  // Controlled browser focus state. This is not a native-window focus test.
+  const unfocusedReads = [];
+  const observeForegroundRead = (request) => {
+    if (favoriteRoute(new URL(request.url()))) unfocusedReads.push(request.url());
+  };
+  page.on("request", observeForegroundRead);
+  await page.evaluate(() => {
+    if (document.visibilityState !== "visible")
+      throw Error("Foreground regression requires a visible document");
+    const descriptor = Object.getOwnPropertyDescriptor(document, "hasFocus");
+    window.__gcRestoreTestFocus = () => {
+      if (descriptor) Object.defineProperty(document, "hasFocus", descriptor);
+      else delete document.hasFocus;
+      delete window.__gcRestoreTestFocus;
+    };
+    Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false });
+    window.dispatchEvent(new Event("blur"));
+  });
+  try {
+    for (const event of ["pageshow", "visibilitychange"]) {
+      await page.evaluate((event) => {
+        (event === "visibilitychange" ? document : window).dispatchEvent(new Event(event));
+      }, event);
+      await page.waitForTimeout(150);
+      assert.equal(await stateButton.count(), 0);
+      assert.equal(await exact("Confirm original request").count(), 0);
+      assert.deepEqual(unfocusedReads, [], "Unfocused return must not start a private read");
+    }
+  } finally {
+    page.off("request", observeForegroundRead);
+    await page.evaluate(() => window.__gcRestoreTestFocus());
+  }
+  await signal("focus");
+  await ready(remove());
+  assert.equal(await remove().getAttribute("aria-pressed"), "true");
   ok(
     "Blur, pagehide and offline physically omit favorite state; passive events cannot reopen it"
   );
@@ -319,6 +354,45 @@ try {
   });
   await save().click();
   await ready(retry());
+  {
+    // Repeat with an actual lost request, preserving its exact pending body.
+    const unfocusedReads = [];
+    const observeForegroundRead = (request) => {
+      if (favoriteRoute(new URL(request.url()))) unfocusedReads.push(request.url());
+    };
+    page.on("request", observeForegroundRead);
+    await page.evaluate(() => {
+      if (document.visibilityState !== "visible")
+        throw Error("Foreground regression requires a visible document");
+      const descriptor = Object.getOwnPropertyDescriptor(document, "hasFocus");
+      window.__gcRestoreTestFocus = () => {
+        if (descriptor) Object.defineProperty(document, "hasFocus", descriptor);
+        else delete document.hasFocus;
+        delete window.__gcRestoreTestFocus;
+      };
+      Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false });
+      window.dispatchEvent(new Event("blur"));
+    });
+    try {
+      for (const event of ["pageshow", "visibilitychange"]) {
+        await page.evaluate((event) => {
+          (event === "visibilitychange" ? document : window).dispatchEvent(new Event(event));
+        }, event);
+        await page.waitForTimeout(150);
+        assert.equal(await stateButton.count(), 0);
+        assert.equal(await exact("Confirm original request").count(), 0);
+        assert.equal(await retry().count(), 0);
+        assert.equal(lost.length, 1, "Unfocused return must not replay a pending command");
+        assert.deepEqual(unfocusedReads, [], "Unfocused return must not start a private read");
+      }
+    } finally {
+      page.off("request", observeForegroundRead);
+      await page.evaluate(() => window.__gcRestoreTestFocus());
+    }
+    await signal("focus");
+    await ready(retry());
+    assert.equal(lost.length, 1);
+  }
   const beforeDeparture = page.url();
   await page
     .getByRole("link", { name: "Return to listing results", exact: true })

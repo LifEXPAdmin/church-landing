@@ -333,6 +333,40 @@ try {
     await signal("focus");
     await rows().first().waitFor();
   }
+  // Controlled browser focus state. This is not a native-window focus test.
+  const unfocusedReads = [];
+  const observeForegroundRead = (request) => {
+    if (listRoute(new URL(request.url()))) unfocusedReads.push(request.url());
+  };
+  page.on("request", observeForegroundRead);
+  await page.evaluate(() => {
+    if (document.visibilityState !== "visible")
+      throw Error("Foreground regression requires a visible document");
+    const descriptor = Object.getOwnPropertyDescriptor(document, "hasFocus");
+    window.__gcRestoreTestFocus = () => {
+      if (descriptor) Object.defineProperty(document, "hasFocus", descriptor);
+      else delete document.hasFocus;
+      delete window.__gcRestoreTestFocus;
+    };
+    Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false });
+    window.dispatchEvent(new Event("blur"));
+  });
+  try {
+    for (const event of ["pageshow", "visibilitychange"]) {
+      await page.evaluate((event) => {
+        (event === "visibilitychange" ? document : window).dispatchEvent(new Event(event));
+      }, event);
+      await page.waitForTimeout(150);
+      assert.equal(await rows().count(), 0);
+      assert.ok(!(await page.locator("body").textContent()).includes(requester.name));
+      assert.deepEqual(unfocusedReads, [], "Unfocused return must not start a private read");
+    }
+  } finally {
+    page.off("request", observeForegroundRead);
+    await page.evaluate(() => window.__gcRestoreTestFocus());
+  }
+  await signal("focus");
+  await rows().first().waitFor();
   ok(
     "Blur, pagehide and offline physically remove rows; passive events cannot reopen the list"
   );

@@ -1,3 +1,9 @@
+## Saved-search and favorite integration preparation, 8 October 2026 UTC
+
+The current candidate retains the accepted dependency graph and fatal source, audit, registry-signature and reachable-history checks. Historical blockers below describe their dated checkpoints and do not override the later verified fifth release.
+
+Preserved PR13/14 source is integrated with the exact applicable guard lifecycle correction. A fresh preimage replay produced three passes and seven failures across ten deterministic cases; after correction, the guard and saved-search/favorite suites passed 70 cases. The evidence executes actual component bodies with controlled hooks and does not establish native-window, browser or live acceptance. A separate fourteen-case deterministic reproduction confirmed that unfocused page-return events reopened private readers across six Exchange owners and the shared read-only snapshot. The favorite case used the actual guard, choice hook and recovery registration and showed the original-recovery button returning outside its concealed child. Each owner now requires document focus before rechecking. Existing receipt/draft semantics remain unchanged, with all 234 affected focused checks passing and additive browser checks pending fresh execution. Three older positive-control fixtures now set their mocked focus to true before emitting a focus event; their initial-unfocused assertions remain intact. The guard lifecycle fixture uses an equivalent deterministic SHA-256 adapter after a local parallel run exposed a crypto-worker timing race. Assertions and application behavior were not weakened. Fresh hosted acceptance, exact-source receipt, independent final review and publication remain required.
+
 ## Current hosting-plan correction, 26 September 2026 UTC
 
 Authenticated provider inspection confirms active Vercel Pro. The older Hobby

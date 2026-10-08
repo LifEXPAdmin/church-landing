@@ -111,7 +111,11 @@ export function PrivateReadSnapshot<T>({
       setNotice(`Checking current ${label} access…`);
     };
     const resume = () => {
-      if (document.visibilityState !== "hidden" && navigator.onLine !== false) {
+      if (
+        document.hasFocus() &&
+        document.visibilityState !== "hidden" &&
+        navigator.onLine !== false
+      ) {
         active.current = true;
         void load();
       }
@@ -155,6 +159,7 @@ export function PrivateReadSnapshot<T>({
           className="gc-button gc-button-quiet"
           onClick={() => {
             if (
+              document.hasFocus() &&
               document.visibilityState !== "hidden" &&
               navigator.onLine !== false
             ) {

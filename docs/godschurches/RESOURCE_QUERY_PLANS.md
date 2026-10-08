@@ -1,3 +1,7 @@
+## Sixth candidate applicability, 8 October 2026 UTC
+
+Saved-search editing and favorite privacy change client ownership and presentation. Query implementations, schema and measured plan tooling are unchanged in this preparation. Prior query-plan results remain historical until their exact source and retained artifacts are bound by the final applicability review. No new plan execution or performance result is claimed. The changed shared snapshot guard requires fresh Discovery behavior checks and cannot be described as unchanged frontend evidence.
+
 # Measured resource query plans and bounded traversal
 
 ## Applicability to the handoff and saved-choice release, 8 October 2026 UTC

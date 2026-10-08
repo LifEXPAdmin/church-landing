@@ -331,6 +331,42 @@ try {
     await noteField.waitFor();
     assert.equal(await noteField.inputValue(), note);
   }
+  // Controlled browser focus state. This is not a native-window focus test.
+  const unfocusedReads = [];
+  const observeForegroundRead = (request) => {
+    if (detailRoute(new URL(request.url()))) unfocusedReads.push(request.url());
+  };
+  page.on("request", observeForegroundRead);
+  await page.evaluate(() => {
+    if (document.visibilityState !== "visible")
+      throw Error("Foreground regression requires a visible document");
+    const descriptor = Object.getOwnPropertyDescriptor(document, "hasFocus");
+    window.__gcRestoreTestFocus = () => {
+      if (descriptor) Object.defineProperty(document, "hasFocus", descriptor);
+      else delete document.hasFocus;
+      delete window.__gcRestoreTestFocus;
+    };
+    Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false });
+    window.dispatchEvent(new Event("blur"));
+  });
+  try {
+    for (const event of ["pageshow", "visibilitychange"]) {
+      await page.evaluate((event) => {
+        (event === "visibilitychange" ? document : window).dispatchEvent(new Event(event));
+      }, event);
+      await page.waitForTimeout(150);
+      assert.equal(await details.locator("textarea").count(), 0);
+      assert.ok(!(await details.textContent()).includes(purpose));
+      assert.ok(!(await details.textContent()).includes(pickup));
+      assert.deepEqual(unfocusedReads, [], "Unfocused return must not start a private read");
+    }
+  } finally {
+    page.off("request", observeForegroundRead);
+    await page.evaluate(() => window.__gcRestoreTestFocus());
+  }
+  await signal("focus");
+  await noteField.waitFor();
+  assert.equal(await noteField.inputValue(), note);
   ok(
     "Blur, pagehide and offline physically omit saved details and draft inputs; passive events cannot reopen them and current-owner focus restores drafts"
   );

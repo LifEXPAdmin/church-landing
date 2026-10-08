@@ -83,9 +83,25 @@ export function PrivateSnapshotGuard({
     checking = useRef(false),
     queued = useRef(false),
     active = useRef(true);
+  const foreground = useRef(
+    typeof document !== "undefined" &&
+      document.hasFocus() &&
+      navigator.onLine !== false
+  );
   const latestCheck = useRef<() => Promise<void>>(async () => {});
+  const conceal = useCallback(() => {
+    generation.current++;
+    setVisible(false);
+    setCurrentAccess(false);
+  }, []);
   const check = useCallback(async () => {
-    if (!active.current || document.visibilityState === "hidden") return;
+    if (
+      !active.current ||
+      !foreground.current ||
+      document.visibilityState === "hidden" ||
+      navigator.onLine === false
+    )
+      return;
     if (checking.current) {
       queued.current = true;
       return;
@@ -132,39 +148,50 @@ export function PrivateSnapshotGuard({
     }
   }, [owner, url, confirmedChecksum, label, project]);
   latestCheck.current = check;
+  const resume = useCallback(() => {
+    if (
+      document.visibilityState !== "hidden" &&
+      document.hasFocus() &&
+      navigator.onLine !== false
+    ) {
+      foreground.current = true;
+      void check();
+    }
+  }, [check]);
   useEffect(() => {
     active.current = true;
     const hide = () => {
-      generation.current++;
-      setVisible(false);
-      setCurrentAccess(false);
+      foreground.current = false;
+      conceal();
     };
-    const resume = () => {
-      if (document.visibilityState !== "hidden") void check();
-    };
+    const refresh = () => void check();
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : resume();
     void check();
     window.addEventListener("blur", hide);
+    window.addEventListener("pagehide", hide);
     window.addEventListener("focus", resume);
-    window.addEventListener("online", resume);
+    window.addEventListener("online", refresh);
     window.addEventListener("offline", hide);
-    window.addEventListener("social-relationships-changed", resume);
+    window.addEventListener("social-relationships-changed", refresh);
     window.addEventListener("pageshow", resume);
     document.addEventListener("visibilitychange", visibility);
     return () => {
       active.current = false;
       queued.current = false;
-      hide();
+      // Invalidate old reads without replacing foreground state on a changed
+      // checksum/URL or React's development effect replay.
+      conceal();
       window.removeEventListener("blur", hide);
+      window.removeEventListener("pagehide", hide);
       window.removeEventListener("focus", resume);
-      window.removeEventListener("online", resume);
+      window.removeEventListener("online", refresh);
       window.removeEventListener("offline", hide);
-      window.removeEventListener("social-relationships-changed", resume);
+      window.removeEventListener("social-relationships-changed", refresh);
       window.removeEventListener("pageshow", resume);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [check]);
+  }, [check, resume, conceal]);
   return (
     <RecoveryContext.Provider value={register}>
       {!visible && (
@@ -192,7 +219,7 @@ export function PrivateSnapshotGuard({
           <button
             type="button"
             className="gc-button gc-button-quiet"
-            onClick={() => void check()}
+            onClick={resume}
           >
             Recheck current access
           </button>

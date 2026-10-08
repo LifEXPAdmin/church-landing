@@ -287,6 +287,7 @@ test("a page initialized in the background waits for an explicit return", async 
   s.poll();
   await s.h.settle();
   assert.equal(s.requests.length, 0);
+  s.document.hasFocus = () => true;
   s.emit("focus");
   await s.h.settle();
   assert.equal(s.visible(), true);

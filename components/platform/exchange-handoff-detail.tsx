@@ -218,6 +218,7 @@ export function ExchangeHandoffDetail({
   latest.current = load;
   const recheck = useCallback(() => {
     if (
+      !document.hasFocus() ||
       document.visibilityState === "hidden" ||
       navigator.onLine === false ||
       changed.current

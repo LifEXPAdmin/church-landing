@@ -1,3 +1,7 @@
+## Sixth candidate applicability, 8 October 2026 UTC
+
+The saved-search/favorite candidate adds no dependency or schema change. Existing measured backend contracts are retained, subject to final source/hash review. Its source and browser work is not a fresh load test; the prior fictional-loopback measurements, unresolved rapid repeated Back behavior and open production/100-client capacity limits remain explicit. Fresh Discovery behavioral verification is required for the changed shared guard. No production latency or provider headroom improvement is inferred.
+
 # Resource budgets for enabled modules
 
 ## Reused measurements for the handoff and saved-choice release, 8 October 2026 UTC

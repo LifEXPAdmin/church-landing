@@ -1048,6 +1048,14 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "private-exchange-searches-and-favorites", version: "2026.10.08.6", date: "2026-10-08",
+    summary: "Protect saved-search editing and favorite choices through access changes and interrupted saves.",
+    added: [],
+    improved: ["Saved-search fields and favorite choices appear after checking your current account access. Interrupted saves retain the original request for deliberate recovery while the same account remains in use.", "Saved-search names and alert choices remain available after current access is restored. Changed saved information requires deliberate review."],
+    fixed: ["Background connection and relationship updates cannot reopen concealed private snapshots. Pages that remain unfocused keep private Exchange controls concealed.", "Delayed or mismatched responses cannot confirm a different saved-search or favorite change."],
+    featureIds: ["exchange-search-saved", "account"]
+  },
+  {
     id: "private-exchange-handoffs-and-saved-choices", version: "2026.10.08.5", date: "2026-10-08",
     summary: "Keep handoff details and saved Exchange choices private through access changes and interrupted actions.",
     added: [],

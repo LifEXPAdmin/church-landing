@@ -1,3 +1,9 @@
+## Sixth release candidate: saved searches and favorites, 8 October 2026 UTC
+
+**Prepared, not released.** The two scopes are private saved-search editing and favorite controls, with the applicable preserved shared-guard lifecycle correction. Prior dependency repairs, exact handoff receipts, migration checks and fatal CI gates are retained. No schema or dependency change belongs to this candidate.
+
+Passing deterministic component checks do not close runtime or release acceptance. Fresh combined Exchange checks and Discovery regressions are required because Discovery settings use the changed guard. Reuse of artist, resource and query-plan evidence requires exact applicability review; no fresh performance or production-capacity result is claimed. Source-bound release evidence, final review, recovery and staging checks, same-build promotion and canonical/live checks remain open.
+
 ## Handoff and saved-choice release acceptance, 8 October 2026 UTC
 
 Version **2026.10.08.5**, source `284e054dd35222d47896562506364cdd1989af0f`: **verified live**. Final review: accepted for the exact source and receipt; independent post-live review accepted the resulting evidence at 2026-10-08T07:52:35.269037+00:00. Main integration: ordinary fast-forward to the exact candidate at 2026-10-08T07:41:27.502Z; main CI: [run 37744996734](https://github.com/LifEXPAdmin/church-landing/actions/runs/37744996734) completed successfully at 2026-10-08T07:43:40Z. Staging, live guest and health/release checks respectively: **62 checks passed at 2026-10-08T07:47:20.741Z**, **238 checks passed at 2026-10-08T07:48:54.185Z**, **5 health/release checks**. 165 original table fingerprints and all 123 migration records remained unchanged in read-only comparison at 2026-10-08T07:49:53.193Z; no new migration was applied.

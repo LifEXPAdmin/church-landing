@@ -31,13 +31,76 @@ assert.ok(
     "exchange-privacy",
     "exchange-handoff-detail",
     "exchange-saved-list",
-    "exchange-handoff-saved"
+    "exchange-handoff-saved",
+    "exchange-saved-search",
+    "exchange-favorite",
+    "exchange-search-favorite"
   ].includes(suite),
   "Choose a declared isolated suite"
 );
 // Keep historical profiles and their exact suites available. The privacy profile
 // covers the shared reader; handoff/saved covers the retained command owners.
 const privacyProfiles = {
+  "exchange-saved-search": {
+    services: ["exchange-input", "exchange-listings"],
+    browsers: [
+      "qa-exchange-saved-search-privacy-browser",
+      "qa-exchange-search-browser",
+      "qa-exchange-saved-list-privacy-browser"
+    ],
+    https: [
+      "exchange-saved-search-http",
+      "exchange-saved-list-http",
+      "exchange-http"
+    ]
+  },
+  "exchange-favorite": {
+    services: ["exchange-input", "exchange-listings"],
+    browsers: [
+      "qa-exchange-favorite-privacy-browser",
+      "qa-exchange-search-browser",
+      "qa-exchange-saved-search-privacy-browser",
+      "qa-exchange-saved-list-privacy-browser"
+    ],
+    https: [
+      "exchange-favorite-http",
+      "exchange-saved-search-http",
+      "exchange-saved-list-http",
+      "exchange-http"
+    ]
+  },
+  "exchange-search-favorite": {
+    services: [
+      "exchange-input",
+      "exchange-listings",
+      "exchange-handoff-input",
+      "exchange-handoffs"
+    ],
+    browsers: [
+      "qa-exchange-favorite-privacy-browser",
+      "qa-exchange-saved-search-privacy-browser",
+      "qa-exchange-saved-list-privacy-browser",
+      "qa-exchange-handoff-detail-privacy-browser",
+      "qa-exchange-search-browser",
+      "qa-exchange-inquiry-composer-privacy-browser",
+      "qa-exchange-defaults-privacy-browser",
+      "qa-exchange-handoff-browser",
+      "qa-exchange-inquiry-list-privacy-browser",
+      "qa-topic-catalogue-privacy-browser",
+      "qa-support-index-browser",
+      "qa-notification-integration-browser"
+    ],
+    https: [
+      "exchange-favorite-http",
+      "exchange-saved-search-http",
+      "exchange-saved-list-http",
+      "exchange-handoff-detail-http",
+      "exchange-inquiry-composer-http",
+      "exchange-inquiry-list-http",
+      "exchange-defaults-http",
+      "exchange-http"
+    ]
+  },
   "exchange-handoff-detail": {
     services: ["exchange-handoff-input", "exchange-handoffs"],
     browsers: [

@@ -193,6 +193,7 @@ test("unfocused, hidden and offline mounts wait for a usable explicit return", a
     assert.equal(s.requests.length, 0);
     s.navigator.onLine = true;
     s.document.visibilityState = "visible";
+    s.document.hasFocus = () => true;
     s.emit("focus");
     await s.h.settle();
     accepted(s);

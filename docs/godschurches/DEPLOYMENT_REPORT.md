@@ -1,3 +1,9 @@
+## Sixth release preparation, 8 October 2026 UTC
+
+The saved-search editor and favorite-control batch is under verification for version **2026.10.08.6**. No sixth deployment or promotion has occurred at this checkpoint. The canonical accepted product is still version 2026.10.08.5, source `284e054dd35222d47896562506364cdd1989af0f`.
+
+Publication will use one deliberate exact-source deployment and promote that same accepted build, subject to the rolling twelve-release ceiling. Required source, isolated service, HTTPS, production-build, browser, recovery and live checks remain gates. A report-only closeout will not create another product deployment.
+
 ## Private Exchange handoffs and saved choices, 8 October 2026 UTC
 
 Version **2026.10.08.5**, source `284e054dd35222d47896562506364cdd1989af0f`: **verified live** at [God’s Churches](https://godschurches.com), deployment `dpl_GrWZq4dn4ET7HjsDk8HwPxp3qxg9`. This batch integrates PR11’s handoff detail/actions, PR12’s saved choices and the preserved `b1688b0` receipt repair.
