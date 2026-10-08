@@ -88,6 +88,7 @@ const page = await context.newPage(),
   errors = [],
   results = [],
   diagnostics = [],
+  navigationObservations = [],
   readCosts = [];
 const output = fixtureDir + "/navigation-journey-" + Date.now();
 mkdirSync(output, { recursive: true });
@@ -136,9 +137,43 @@ const settingsLink = () =>
   page
     .getByRole("navigation", { name: "Account and website", exact: true })
     .getByRole("link", { name: "Settings", exact: true });
-const backTo = async (address) => {
+let lastBackAddress;
+const observeNavigation = async (stage, address = lastBackAddress) => {
+  const current = await page.evaluate(() => ({
+    pathname: location.pathname,
+    headings: Array.from(document.querySelectorAll("h1"))
+      .slice(0, 6)
+      .map((node) => node.textContent?.trim() ?? "")
+  }));
+  const publicHeadings = new Set([
+    "Home",
+    "My feed",
+    "Menu",
+    "Exchange",
+    "My calendars",
+    "Settings",
+    "Notification preferences"
+  ]);
+  navigationObservations.push({
+    stage,
+    expectedPathname: address ? new URL(address).pathname : null,
+    currentPathname: current.pathname,
+    h1s: current.headings.map((heading) =>
+      publicHeadings.has(heading) ? heading : "[fixture heading]"
+    )
+  });
+  if (navigationObservations.length > 100) navigationObservations.shift();
+};
+const backTo = async (address, destination) => {
+  lastBackAddress = address;
+  await observeNavigation("before-back", address);
   await page.goBack();
   await page.waitForURL(address);
+  await observeNavigation("url-matched", address);
+  if (destination) {
+    await destination();
+    await observeNavigation("destination-visible", address);
+  }
 };
 const watchLeaks = async (marker, target = page) =>
   target.evaluate((value) => {
@@ -394,9 +429,23 @@ try {
     await page.getByLabel("Viewing time zone", { exact: true }).inputValue(),
     "America/Chicago"
   );
-  await backTo(calendarAddress);
-  await backTo(calendarsAddress);
-  await backTo(menuFromProfile);
+  await backTo(calendarAddress, async () => {
+    await page
+      .getByRole("heading", { name: calendarName, exact: true, level: 1 })
+      .waitFor();
+    await page
+      .getByText("No events in this month for the selected calendars.", {
+        exact: true
+      })
+      .waitFor();
+  });
+  await backTo(calendarsAddress, async () => {
+    await page
+      .getByRole("heading", { name: "My calendars", exact: true, level: 1 })
+      .waitFor();
+    await page.getByRole("link", { name: calendarName, exact: true }).waitFor();
+  });
+  await backTo(menuFromProfile, () => menuLink("/platform/calendars").waitFor());
   await backTo(profileAddress);
   await page
     .getByRole("heading", { name: publisher.name, exact: true, level: 1 })
@@ -437,9 +486,19 @@ try {
     });
     console.log("FAIL " + JSON.stringify(diagnostics.at(-1)));
   }
-  await backTo(allListings);
-  await page.goBack();
-  await page.waitForURL((url) => url.pathname === "/platform/menu");
+  await backTo(allListings, async () => {
+    // Native GET-form history may retain unsent inputs. The restored result
+    // set, rather than an empty search field, identifies this original page.
+    await page
+      .getByRole("link", { name: marker + " item 3.00", exact: true })
+      .waitFor();
+    assert.deepEqual(await page.locator(resultsSelector).allTextContents(), [
+      marker + " item 3.00",
+      marker + " item 2.00",
+      marker + " item 1.00"
+    ]);
+  });
+  await backTo(menuFromFeed, () => menuLink("/platform/exchange").waitFor());
   if (page.url() !== menuFromFeed)
     diagnostics.push({
       check: "Feed state escaped onto Menu URL",
@@ -970,6 +1029,7 @@ try {
   );
   console.log("NAVIGATION_JOURNEY_BROWSER_PASS " + results.length);
 } catch (error) {
+  await observeNavigation("failure").catch(() => {});
   await page
     .screenshot({ path: output + "/failure.png", fullPage: true })
     .catch(() => {});
@@ -994,6 +1054,17 @@ try {
   );
   throw error;
 } finally {
-  await browser.close();
-  await db.$disconnect();
+  try {
+    writeFileSync(
+      output + "/navigation-observations.json",
+      JSON.stringify({ observations: navigationObservations }, null, 2),
+      { mode: 0o600 }
+    );
+  } finally {
+    try {
+      await browser.close();
+    } finally {
+      await db.$disconnect();
+    }
+  }
 }

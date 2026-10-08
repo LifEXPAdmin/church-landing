@@ -145,6 +145,7 @@ jobs:
             .account-test/discovery-hosted-*/four-feeds-browser/RESULT.json
             .account-test/discovery-hosted-*/navigation-journey-*/*.png
             .account-test/discovery-hosted-*/navigation-journey-*/result.json
+            .account-test/discovery-hosted-*/navigation-journey-*/navigation-observations.json
           include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
