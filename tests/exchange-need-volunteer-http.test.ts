@@ -288,6 +288,7 @@ test("volunteer roster stays out of initial HTML/RSC and requires the current ow
     id: f.needSlot.id
   });
   assert.deepEqual(data, canonical);
+  assert.ok("volunteers" in data && data.volunteers);
   assert.equal(data.ownerId, f.ada.id);
   assert.equal(data.volunteerNeedId, f.need.id);
   assert.equal(data.volunteerSlotId, f.needSlot.id);
@@ -316,6 +317,7 @@ test("volunteer roster stays out of initial HTML/RSC and requires the current ow
       after: anchor
     })
   );
+  assert.ok("volunteers" in next && next.volunteers);
   assert.equal(next.volunteers.length, 1);
   assert.notEqual(next.volunteers[0].id, anchor);
   for (const [token, owner, status] of [
