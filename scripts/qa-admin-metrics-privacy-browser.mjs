@@ -197,6 +197,9 @@ const results = [],
   routeErrors = [],
   externalRequests = [],
   browserWrites = [],
+  allMutations = [],
+  sessionActivityWrites = [],
+  unexpectedMutations = [],
   requests = [],
   downloads = [],
   receipts = [],
@@ -260,14 +263,27 @@ context.on("request", (request) => {
     document: request.isNavigationRequest(),
     rsc: request.headers().rsc ?? null
   });
-  if (!["GET", "HEAD"].includes(request.method()))
-    browserWrites.push({
+  if (!["GET", "HEAD"].includes(request.method())) {
+    const mutation = {
       method: request.method(),
+      origin: url.origin,
       path: url.pathname,
+      search: url.search,
       body: request.postData(),
       owner: request.headers()["x-expected-account"],
       expectedOwner: actor?.id
-    });
+    };
+    allMutations.push(mutation);
+    if (url.origin === config.origin && !url.search &&
+        request.method() === "POST" && url.pathname === "/api/platform/admin")
+      browserWrites.push(mutation);
+    else if (url.origin === config.origin && !url.search &&
+             request.method() === "POST" && url.pathname === "/api/platform/session" &&
+             mutation.body === JSON.stringify({ activity: "foreground" }) &&
+             typeof mutation.owner === "string" && mutation.owner === mutation.expectedOwner)
+      sessionActivityWrites.push(mutation);
+    else unexpectedMutations.push(mutation);
+  }
 });
 page.on("pageerror", (error) => errors.push(error.message));
 page.on("download", (download) => downloads.push(download));
@@ -488,29 +504,47 @@ const hold = (matches) => {
   };
 };
 const failedRead = async (matches) => {
-  const remove = register(matches, (route) =>
-    route.fulfill({
+  let intercepted503 = 0;
+  const remove = register(matches, (route) => {
+    intercepted503++;
+    return route.fulfill({
       status: 503,
       contentType: "application/json",
       body: JSON.stringify({ message: "Fictional Metrics source unavailable" })
-    })
-  );
+    });
+  });
   try {
     await event("focus");
-    await page
-      .getByText(
-        matches === identity
-          ? "Your sign-in could not be checked. Reconnect and try again."
-          : "Fictional Metrics source unavailable",
+    if (matches === identity) {
+      // Keep the failure installed until the shared session consumer has
+      // observed it; its identity check first awaits its session response.
+      await page.getByText(
+        "Your sign-in could not be checked. Your entries stay in this tab. Reconnect, then recheck before continuing.",
         { exact: true }
-      )
-      .waitFor();
-    await inactive(matches === identity ? "failed identity" : "failed source");
+      ).waitFor();
+      await button("Recheck this sign-in").waitFor();
+      await inactive("failed identity awaiting explicit sign-in recheck");
+    } else {
+      await page.getByText("Fictional Metrics source unavailable", { exact: true }).waitFor();
+      await inactive("failed source");
+    }
+    assert.ok(intercepted503 > 0, "The selected read must receive the injected503");
   } finally {
     remove();
   }
-  await button("Recheck current access").click();
+  const beforeWrites = browserWrites.length;
+  const beforeDownloads = downloads.length;
+  if (matches === identity) {
+    // The shared session notice resumes its original owner after verification.
+    await button("Recheck this sign-in").click();
+    observations.push({ label: "failed identity recovery", control: "Recheck this sign-in", intercepted503 });
+  } else {
+    await button("Recheck current access").click();
+    observations.push({ label: "failed source recovery", control: "Recheck current access", intercepted503 });
+  }
   await valuesAre(draftDates);
+  assert.equal(browserWrites.length, beforeWrites, "A read recovery must not replay an export");
+  assert.equal(downloads.length, beforeDownloads);
 };
 const lateRead = async (matches) => {
   const held = hold(matches);
@@ -530,6 +564,15 @@ const lateRead = async (matches) => {
     held.remove();
   }
   await event("pageshow");
+  await settled();
+  // A canceled held read normally resumes on pageshow. If the shared session
+  // guard settled unavailable, use its offered explicit recovery first.
+  const signInRecheck = button("Recheck this sign-in");
+  if (await signInRecheck.isVisible()) {
+    await inactive("late read awaiting explicit sign-in recheck");
+    await signInRecheck.click();
+    observations.push({ label: "late read recovery", control: "Recheck this sign-in" });
+  }
   await valuesAre(draftDates);
 };
 const blockedNavigation = async () => {
@@ -1187,6 +1230,13 @@ const run = async () => {
         JSON.parse(write.body).operation === "metrics-export"
     )
   );
+  assert.deepEqual(unexpectedMutations, [], "Reject every unrecognized browser mutation");
+  assert.equal(allMutations.length, browserWrites.length + sessionActivityWrites.length);
+  assert.ok(sessionActivityWrites.every((entry) =>
+    entry.method === "POST" && entry.origin === config.origin &&
+    entry.path === "/api/platform/session" && entry.search === "" &&
+    entry.body === JSON.stringify({ activity: "foreground" }) &&
+    cohortOwners.includes(entry.owner) && entry.owner === entry.expectedOwner));
   assert.equal(new Set((await rows()).map((row) => row.requestKey)).size, 7);
   assert.deepEqual(
     await Promise.all(
@@ -1214,6 +1264,8 @@ const run = async () => {
     externalRequests,
     requests,
     browserWrites,
+    allMutations,
+    unexpectedMutations,
     receipts,
     observations,
     dialogs,
@@ -1223,7 +1275,14 @@ const run = async () => {
     })),
     node: { version: process.version, execPath: process.execPath },
     fixtureOnly: true,
-    browserMutationAttempts: browserWrites.length,
+    browserMutationAttempts: allMutations.length,
+    mutationInventory: {
+      all: allMutations.length,
+      metricExports: browserWrites.length,
+      sessionActivity: sessionActivityWrites.length,
+      unexpected: unexpectedMutations.length
+    },
+    sessionActivityWrites,
     fixtureEffects: {
       createdActors: 3,
       seededOperatorGrants: 4,
@@ -1262,6 +1321,8 @@ try {
     externalRequests,
     requests,
     browserWrites,
+    allMutations,
+    unexpectedMutations,
     observations,
     dialogs,
     captures,

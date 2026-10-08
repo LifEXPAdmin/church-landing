@@ -173,8 +173,26 @@ jobs:
                   Array.isArray(mfaCounts) &&
                   mfaCounts.length === (privacy ? 2 : 1) &&
                   mfaCounts.every((n) => Number.isSafeInteger(n) && n > 0 && n <= 10);
+                const mutationKeys = ["all", "metricExports", "sessionActivity", "unexpected"];
+                const mutationCounts = privacy
+                  ? Object.fromEntries(mutationKeys.map((key) => [
+                      key,
+                      Number.isSafeInteger(v.mutationInventory?.[key]) &&
+                      v.mutationInventory[key] >= 0 ? v.mutationInventory[key] : null
+                    ]))
+                  : null;
+                const mutationValid = !privacy || (
+                  v.mutationInventory &&
+                  Object.keys(v.mutationInventory).sort().join(",") === [...mutationKeys].sort().join(",") &&
+                  Object.values(mutationCounts).every((n) => Number.isSafeInteger(n) && n >= 0) &&
+                  mutationCounts.metricExports === 13 &&
+                  mutationCounts.unexpected === 0 &&
+                  mutationCounts.all === mutationCounts.metricExports + mutationCounts.sessionActivity &&
+                  v.browserMutationAttempts === mutationCounts.all
+                );
                 const detailsValid =
                   mfaValid &&
+                  mutationValid &&
                   count(v.results) === definition.groups &&
                   v.results.every((r) => typeof r === "string" && r.length > 0) &&
                   empty(v.errors) &&
@@ -193,7 +211,8 @@ jobs:
                   recipientSends: privacy ? (v.recipientSends ?? null) : null,
                   scopeEvidence: "full-application-over-isolated-https",
                   physicalDevice: false,
-                  authenticatorCommandCounts: mfaCounts
+                  authenticatorCommandCounts: mfaCounts,
+                  mutationCounts
                 });
               }
             }
