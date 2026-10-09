@@ -175,6 +175,70 @@ test("Like body policy keeps bodyless reads and the exact 16 KiB UTF-8 write lim
   assert.equal(state.requests.length, 1, "Response consumption never replays the write");
 });
 
+test("reaction preference GET and POST use the captured account and unchanged transport limits", async () => {
+  const { state, adapter } = harness();
+  const captured = await adapter.capture();
+  const path = "/api/platform/v1/reaction-preferences";
+  const body = JSON.stringify({ mutationId: "fictional-count-choice", expectedVersion: 0, hideAuthoredReactionCounts: true });
+  for (const method of ["GET", "POST"] as const) {
+    await captured.send({ path, method, expectedOwner: owner, ...(method === "POST" ? { body } : {}) });
+    const sent = state.requests.at(-1)!;
+    assert.equal(sent.url, origin + path);
+    assert.equal(sent.method, method);
+    assert.equal(sent.body, method === "POST" ? body : undefined);
+    assert.deepEqual(sent.headers, {
+      Accept: "application/json", "Cache-Control": "no-store", Pragma: "no-cache", "X-API-Version": "1",
+      ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
+      Authorization: "Bearer " + token, "X-Expected-Account": owner
+    });
+    assert.equal(sent.maximumResponseBytes, API_MAX_RESPONSE_BYTES);
+    assert.equal(sent.timeoutMs, 15000);
+  }
+  await assert.rejects(captured.send({ path, method: "GET", expectedOwner: owner, body: "" }));
+  await assert.rejects(captured.send({ path, method: "POST", expectedOwner: owner }));
+  for (const oversized of ["x".repeat(16385), "é".repeat(8193)])
+    await assert.rejects(captured.send({ path, method: "POST", expectedOwner: owner, body: oversized }));
+  const maximum = "é".repeat(8192);
+  const reply = await captured.send({ path, method: "POST", expectedOwner: owner, body: maximum });
+  assert.equal(state.requests.at(-1)!.body, maximum);
+  await reply.read(); await assert.rejects(reply.read());
+  assert.equal(state.requests.length, 3, "Reading a response does not replay the write");
+});
+
+test("reaction preference aliases, query delimiters and unsupported methods never dispatch", async () => {
+  const { state, adapter } = harness();
+  const captured = await adapter.capture();
+  const path = "/api/platform/v1/reaction-preferences";
+  for (const bad of [
+    "/api/platform/v1/reaction-preference", "/api/platform/v1/Reaction-preferences",
+    "/api/platform/v1/%72eaction-preferences", "/api/platform/v1/reaction%2dpreferences",
+    path + "/", path + "/extra", path + "?", path + "?copy=1", path + "?#fragment", path + "#fragment"
+  ]) {
+    await assert.rejects(captured.send({ path: bad, method: "GET", expectedOwner: owner }));
+    await assert.rejects(captured.send({ path: bad, method: "POST", expectedOwner: owner, body: "{}" }));
+  }
+  for (const method of ["PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "get", "post"])
+    await assert.rejects(captured.send({ path, method: method as "GET", expectedOwner: owner }));
+  assert.equal(state.requests.length, 0);
+});
+
+test("reaction preferences deny guests and replaced credentials for both reads and writes", async () => {
+  const path = "/api/platform/v1/reaction-preferences";
+  for (const method of ["GET", "POST"] as const) {
+    const { state, adapter } = harness();
+    const input = { path, method, ...(method === "POST" ? { body: "{}" } : {}) };
+    state.current = { identity: { owner: null, generation: 1 }, credential: null };
+    const guest = await adapter.capture();
+    await assert.rejects(guest.send({ ...input, expectedOwner: null }));
+    state.current = { identity: { owner, generation: 2 }, credential: { ownerId: owner, token } };
+    const captured = await adapter.capture();
+    await assert.rejects(captured.send({ ...input, expectedOwner: "another" }));
+    state.current = { ...state.current, credential: { ownerId: owner, token: "b".repeat(43) } };
+    await assert.rejects(captured.send({ ...input, expectedOwner: owner }));
+    assert.equal(state.requests.length, 0);
+  }
+});
+
 test("owner/header and body bounds fail before dispatch, including multi-byte text", async () => {
   const { state, adapter } = harness();
   const captured = await adapter.capture();

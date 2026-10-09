@@ -11,6 +11,7 @@ import { Button, Card, Screen, Text } from "./primitives";
 import { NativePost } from "./NativePost";
 import { NativePendingLike, NativePostLike } from "./NativePostLike";
 import { NativeFeedChoices } from "./NativeFeedChoices";
+import { NativeReactionPreferences } from "./NativeReactionPreferences";
 import { captureScrollPosition, restoreScrollPosition, type ScrollIdentity, type ScrollPosition } from "./feed-scroll-position";
 import { PasswordSignIn } from "./PasswordSignIn";
 import { NativePrivacyPresentation } from "./NativePrivacyPresentation";
@@ -229,6 +230,8 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
   const state = useSyncExternalStore(runtime.session.subscribe, runtime.session.getSnapshot);
   const navigation = useSyncExternalStore(runtime.navigation.subscribe, runtime.navigation.getSnapshot);
   const reading = useSyncExternalStore(runtime.reading.subscribe, runtime.reading.getSnapshot);
+  const preferences = useSyncExternalStore(runtime.reactionPreferences.subscribe, runtime.reactionPreferences.getSnapshot);
+  const settings = preferences.open || preferences.hasPending;
   const [presentation, setPresentation] = useState<Presentation | null>(null);
   const memory = useRef<ScrollMemory>({ runtime, navigation, positions: { feed: null, post: null }, mount: null }).current;
   const owner = state.account?.id ?? null;
@@ -282,9 +285,9 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
     if (memory.runtime === runtime) { memory.positions = { feed: null, post: null }; memory.mount = null; }
   }, [runtime, memory]);
   const post = navigation.destination?.kind === "post";
-  const readingVisible = visible && state.phase === "ready" && !!owner &&
+  const readingVisible = visible && !settings && state.phase === "ready" && !!owner &&
     (post ? reading.kind === "post" && reading.post.id === navigation.destination.postId : reading.kind === "feed");
-  const routeKey = (post ? "post:" + navigation.destination.postId : "feed") + ":" + (readingVisible ? scroll.revision : "");
+  const routeKey = (settings ? "reaction-preferences" : post ? "post:" + navigation.destination.postId : "feed") + ":" + (readingVisible ? scroll.revision : "");
   return <><Screen foreground={visible} scrollKey={state.generation + ":" + routeKey} {...(readingVisible ? scroll.handlers : null)}>
     <Text variant="small" tone="muted">GOD'S CHURCHES</Text>
     {signInMode.kind === "fixture" ? <Text variant="small" tone="muted">Development preview. Fictional accounts and posts only.</Text> : null}
@@ -295,7 +298,10 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
       <Button label="Cancel and sign out" secondary onPress={() => { void runtime.cancelSignIn(); }} />
     </> : null}
     {state.phase === "unavailable" ? <Button label="Check access again" onPress={() => { void runtime.retryVerification(); }} /> : null}
-    {state.phase === "ready" && state.account ? <Reading key={state.account.id + ":" + state.generation} runtime={runtime} state={reading} post={post} clearScroll={clearScroll} /> : null}
+    {state.phase === "ready" && state.account ? <>
+      <NativeReactionPreferences runtime={runtime} />
+      {!settings ? <Reading key={state.account.id + ":" + state.generation} runtime={runtime} state={reading} post={post} clearScroll={clearScroll} /> : null}
+    </> : null}
     {state.phase === "ready" || state.phase === "unavailable" || state.cleanup === "cleanup-pending" || state.cleanup === "unconfirmed" ?
       <Button label={state.phase === "ready" ? "Sign out" : "Retry sign-out"} secondary onPress={() => { void runtime.signOut(); }} /> : null}
     {signInMode.kind === "fixture" ? previewTools : null}

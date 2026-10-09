@@ -271,3 +271,50 @@ test("an unmounted Like leaf cannot dispatch or renew activity while its runtime
   ui.unmount(); retained.onPress(); await ui.drain();
   assert.equal(ui.activities(), 0); assert.equal(r.likes.getSnapshot().liked, false);
 });
+
+test("count setting changes only personal authored totals and close reauthorizes the saved page", async t => {
+  const f = fixture(t), r = f.runtime; await r.setForeground(true); await f.signIn();
+  await r.startFeed("weekly"); await r.nextPage();
+  await r.openReactionPreferences(r.reactionPreferences.getSnapshot());
+  assert.equal(r.reading.getSnapshot().kind, "idle");
+  assert.equal(r.reactionPreferences.getSnapshot().hideCounts, true);
+  await r.setReactionPreferences(r.reactionPreferences.getSnapshot(), false);
+  assert.equal(r.reactionPreferences.getSnapshot().hideCounts, false);
+  await r.closeReactionPreferences(r.reactionPreferences.getSnapshot());
+  const page = r.reading.getSnapshot(); assert.equal(page.kind, "feed");
+  if (page.kind === "feed") { assert.equal(page.feed.mode, "weekly"); assert.equal(page.feed.pageCursor, "fixture.second"); }
+  let state = await detail(r, "fixture-welcome"); assert.equal(state.count, 0);
+  await r.setLike(state, true); state = r.likes.getSnapshot(); assert.equal(state.count, 1);
+  await r.openReactionPreferences(r.reactionPreferences.getSnapshot());
+  assert.equal(r.likes.getSnapshot().count, null);
+  await r.setReactionPreferences(r.reactionPreferences.getSnapshot(), true);
+  await r.closeReactionPreferences(r.reactionPreferences.getSnapshot());
+  await waitLike(r, next => next.phase === "ready");
+  assert.equal(r.likes.getSnapshot().currentPostId, "fixture-welcome"); assert.equal(r.likes.getSnapshot().count, null);
+  state = await detail(r, "fixture-repost"); assert.equal(state.count, null);
+  state = await detail(r, "fixture-quote"); assert.equal(state.count, 0, "Church totals remain visible.");
+  state = await detail(r, "fixture-prayer"); assert.equal(state.count, null, "Another author's setting is unchanged.");
+});
+
+test("fictional interrupted preference reply keeps reading blocked until explicit exact recovery", async t => {
+  const f = fixture(t), r = f.runtime; await r.setForeground(true); await f.signIn();
+  await r.openReactionPreferences(r.reactionPreferences.getSnapshot());
+  f.interruptNextPreferenceReply(); await r.setReactionPreferences(r.reactionPreferences.getSnapshot(), false);
+  assert.equal(r.reactionPreferences.getSnapshot().canRetry, true);
+  assert.equal(r.reactionPreferences.getSnapshot().canClose, false);
+  await r.closeReactionPreferences(r.reactionPreferences.getSnapshot()); await r.refresh(); await r.backToFeed();
+  assert.equal(await r.open({ kind: "post", postId: "fixture-welcome" }), "unavailable");
+  assert.equal(r.reading.getSnapshot().kind, "idle");
+  await r.refreshReactionPreferences(r.reactionPreferences.getSnapshot());
+  assert.equal(r.reactionPreferences.getSnapshot().hideCounts, false);
+  assert.equal(r.reactionPreferences.getSnapshot().hasPending, true, "A GET cannot settle an interrupted write.");
+  await r.setForeground(false); assert.equal(r.reactionPreferences.getSnapshot().phase, "concealed");
+  await r.setForeground(true); assert.equal(r.reading.getSnapshot().kind, "idle");
+  assert.equal(r.reactionPreferences.getSnapshot().hasPending, true);
+  await r.openReactionPreferences(r.reactionPreferences.getSnapshot());
+  await r.retryReactionPreferences(r.reactionPreferences.getSnapshot());
+  assert.equal(r.reactionPreferences.getSnapshot().hasPending, false);
+  await r.closeReactionPreferences(r.reactionPreferences.getSnapshot());
+  const feed = r.reading.getSnapshot(); assert.equal(feed.kind, "feed");
+  if (feed.kind === "feed") assert.equal(feed.feed.page.items[0].likeCount, 0);
+});

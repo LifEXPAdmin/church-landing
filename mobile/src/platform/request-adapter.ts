@@ -74,13 +74,14 @@ function requestUrl(origin: string, input: RequestData): URL {
   } catch { throw fail(); }
   if (url.origin !== origin || url.username || url.password || url.hash) throw fail();
   const like = /^\/api\/platform\/v1\/posts\/[A-Za-z0-9_-]{1,100}\/like$/.test(url.pathname);
-  // URL.search hides an empty query delimiter. This new route accepts none.
-  if (like && input.path.includes("?")) throw fail();
+  const preferences = url.pathname === "/api/platform/v1/reaction-preferences";
+  // URL.search hides an empty query delimiter. These routes accept none.
+  if ((like || preferences) && input.path.includes("?")) throw fail();
   if (input.method === "POST") {
-    if (!(like || ["/api/platform/v1/auth/password", "/api/platform/v1/session/activity", "/api/platform/v1/session/logout"].includes(url.pathname)) || url.search)
+    if (!(like || preferences || ["/api/platform/v1/auth/password", "/api/platform/v1/session/activity", "/api/platform/v1/session/logout"].includes(url.pathname)) || url.search)
       throw fail();
   } else if (input.method !== "GET" || !(
-    like ||
+    like || preferences ||
     ["/api/platform/v1/capabilities", "/api/platform/v1/session", "/api/platform/v1/session/activity", "/api/platform/v1/feed", "/api/platform/v1/churches"].includes(url.pathname) ||
     /^\/api\/platform\/v1\/(?:posts|profiles|churches)\/[A-Za-z0-9_-]{1,100}$/.test(url.pathname)
   )) throw fail();
@@ -111,6 +112,7 @@ export function createNativeRequestAdapter(
           const url = requestUrl(origin, input);
           const issuance = url.pathname === "/api/platform/v1/auth/password";
           if ((issuance && captured.credential) || (input.method === "POST" && !issuance && !captured.credential)) throw fail();
+          if (url.pathname === "/api/platform/v1/reaction-preferences" && !captured.credential) throw fail();
           if (input.method === "GET" ? input.body !== undefined : typeof input.body !== "string") throw fail();
           const body = input.body;
           if (body !== undefined && (body.length > API_MAX_REQUEST_BYTES || new TextEncoder().encode(body).byteLength > API_MAX_REQUEST_BYTES)) throw fail();
