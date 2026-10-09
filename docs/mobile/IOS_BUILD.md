@@ -468,3 +468,48 @@ This run does not repeat privacy lifecycle, Like recovery or form-keyboard tests
 Changed-bounds native restoration, touch-only navigation, cold maximum-text
 launch, full assistive technology, Android and physical-device acceptance remain
 open, as do real HTTPS/session, minimum-iOS, dependency-security and release gates.
+
+## Authored reaction-count preference acceptance
+
+The account settings panel adds the canonical authored count preference and
+explicit recovery of one interrupted choice. It clears current reading before
+editing and keeps reading blocked while a save is unconfirmed. Normal close
+reauthorizes the prior detail or finite feed page. Fixture interruption controls
+exercise the same runtime without a real account or network endpoint.
+
+All 336 mobile tests pass without skips, along with mobile TypeScript 6, strict
+changed-test types, lint, the 48-module boundary, copy and source-security checks.
+Swift 6 passes 17 macOS Foundation policy/transport groups with warnings treated
+as errors. Fresh iOS project preparation, Pods and the unsigned Xcode 27 Release
+build pass. A transient code-generator file read delayed Pods, which completed
+naturally without source or dependency changes.
+
+The installed iPhone SE Simulator app on iOS 18.3.1 matches the build's JavaScript,
+executable and Info.plist hashes. Its Hermes bundle is 1,796,410 bytes, 23,755 bytes
+above the detail-scroll checkpoint. This is an artifact measurement, not a
+download-size or runtime-performance claim.
+
+Fictional native checks observe hidden and shown settings, an own-post total
+changing from one Like to hidden while Unlike remains selected, and ordinary
+close returning to the same detail or selected weekly second page. Live
+accessibility observations show the church total staying visible and the other
+member's hidden total staying hidden. The feed captures crop before those counts;
+they do not independently prove their values or exact scroll restoration.
+
+An interrupted save keeps both new choices and Back to posts disabled. Checking
+current state reports the last checked value while preserving the pending choice.
+The switcher shows the opaque privacy cover; verified return shows a generic
+review control and no posts. Explicit retry reconciles the choice and returns
+fresh reading. Both recovery button labels are complete inside their borders at
+live maximum system text size. A second interrupted choice is cleared by sign-out;
+fresh fictional sign-in can read posts without inheriting that command. The
+session closed with unchanged source, normal text restored and the owned device
+shut down.
+
+This fictional in-memory wire bypasses native HTTP. Request identity, held-response
+races, malformed receipts and recovery-required cases have source-test evidence,
+not new native/backend observations. Kotlin/Android execution, real HTTPS/session,
+full accessibility, physical/minimum-iOS, dependency-security and release gates
+remain open. A separate optional form check reproduced an existing caret issue:
+Hide/Show moves a middle password caret to the end. The form source was unchanged;
+that repair remains separate from this preference acceptance.
