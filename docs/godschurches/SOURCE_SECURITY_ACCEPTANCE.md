@@ -1,3 +1,17 @@
+## Inline Need contributions and post links prepared, 8 October 2026 UTC
+
+Candidate **2026.10.08.17** moves inline contributions and eligible church post
+choices behind current account-bound readers. Each reader preserves original
+requests and concealed drafts, accepts only the expected confirmed change, and
+checks foreground state before reads and presentation. The current role,
+form-context, progress and nested-recovery protections remain in place.
+
+Modeled baseline checks reproduced private fields in initial page output and
+unfocused read/presentation failures. Fresh combined source, services, HTTPS,
+build, browser and release acceptance remain pending. No schema or dependency
+change is proposed. Version 2026.10.08.16 remains verified live. See
+[the scoped implementation report](NEED_INLINE_POST_PRIVACY.md).
+
 ## Need roles and account guard verified live, 2026.10.08.16
 
 Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.16, source bccbc178a33b7e2fbfdee41a2f838735853ee456, [PR75](https://github.com/LifEXPAdmin/church-landing/pull/75).

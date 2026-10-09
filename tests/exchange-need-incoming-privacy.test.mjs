@@ -315,7 +315,8 @@ async function incomingServer(after, account = owner, need = null) {
         NeedVolunteerReceipt: "volunteer"
       },
       "./exchange-need-contributions": { ExchangeNeedContributions },
-      "./exchange-need-volunteers": { ExchangeNeedVolunteers: "volunteers" },
+      "./exchange-need-posts": { ExchangeNeedPosts: "current-posts" },
+    "./exchange-need-volunteers": { ExchangeNeedVolunteers: "volunteers" },
       "./exchange-need-roles": { ExchangeNeedRoles: "current-roles" },
       "./exchange-need-progress": {
         ExchangeNeedProgressProvider: ({ children }) => children,

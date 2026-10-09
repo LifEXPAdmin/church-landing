@@ -1048,6 +1048,22 @@ export const features: Feature[] = [
 ];
 export const releases: ReleaseEntry[] = [
   {
+    id: "needs-inline-post-privacy",
+    version: "2026.10.08.17",
+    date: "2026-10-08",
+    summary: "Check current account access before showing private Need contributions and church post links.",
+    added: [],
+    improved: [
+      "Your contributions within a Church Need use the current account check while retaining unsent entries and original requests.",
+      "Church Need post links load in bounded pages and confirm the original request before showing a saved change."
+    ],
+    fixed: [
+      "Private contribution details and eligible post choices are no longer included in the initial Need page data.",
+      "Contribution and post checks cannot reveal a delayed reply after the page loses focus."
+    ],
+    featureIds: ["church-needs", "account"]
+  },
+  {
     id: "needs-roles-account-guard",
     version: "2026.10.08.16",
     date: "2026-10-08",

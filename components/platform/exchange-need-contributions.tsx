@@ -2,7 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { NeedContributionView } from "@/lib/platform/exchange-need-reads";
+import type {
+  NeedContributionView,
+  NeedDetailView
+} from "@/lib/platform/exchange-need-reads";
 import {
   currentSocialOwner,
   socialRequest,
@@ -17,15 +20,26 @@ type Snapshot = {
   ownerId: string;
   contributions: NeedContributionView[];
   next: string | null;
+  more?: boolean;
 };
 type ContributionsQuery =
   | { view: "mine"; after?: string }
+  | { view: "need"; listingId: string; needId: string; after?: never }
   | { view: "incoming"; needId: string; path: string; after?: string };
 type Receipt = Parameters<PrivateChoiceAccess["onConfirmed"]>[0];
 type Target = { id: string; expectedVersion: number };
 const checking = "Checking your current contribution access…";
+const foreground = () =>
+  document.visibilityState === "visible" &&
+  document.hasFocus() &&
+  navigator.onLine !== false;
 function inScope(row: NeedContributionView, query: ContributionsQuery) {
   if (query.view === "mine") return row.own === true;
+  if (query.view === "need") {
+    if (row.own !== true) return false;
+    if (row.current)
+      return row.needId === query.needId && row.listingId === query.listingId;
+  }
   if (!row.own) return row.current === true && row.needId === query.needId;
   return (
     row.current === false &&
@@ -110,9 +124,10 @@ export function ExchangeNeedContributions({
   query: ContributionsQuery;
 }) {
   const incoming = query.view === "incoming";
+  const inline = query.view === "need";
   const refreshNeedProgress = useNeedProgressRefresh(
     owner,
-    incoming ? query.needId : null
+    incoming ? query.needId : inline ? query.listingId : null
   );
   const router = useRouter();
   const parentVisible = useReadVisibility();
@@ -156,13 +171,11 @@ export function ExchangeNeedContributions({
     );
   }, [hide]);
   const load = useCallback(async () => {
-    if (
-      !active.current ||
-      changed.current ||
-      document.visibilityState === "hidden" ||
-      navigator.onLine === false
-    )
+    if (!active.current || changed.current) return;
+    if (!foreground()) {
+      hide();
       return;
+    }
     const seq = ++generation.current,
       identity = ++identityGeneration.current;
     setVisible(false);
@@ -179,11 +192,19 @@ export function ExchangeNeedContributions({
     const deadline = setTimeout(() => request.abort(), 15000);
     try {
       const params = new URLSearchParams({
-        view: incoming ? "need-contributors" : "need-mine",
-        ...(incoming ? { id: query.needId } : {})
+        view: incoming
+          ? "need-contributors"
+          : inline
+            ? "need-need"
+            : "need-mine",
+        ...(incoming
+          ? { id: query.needId }
+          : inline
+            ? { listingId: query.listingId }
+            : {})
       });
       if (query.after) params.set("after", query.after);
-      const { data } = await socialRequest<Snapshot>(
+      const { data: response } = await socialRequest<Snapshot | NeedDetailView>(
         `/api/platform/exchange?${params}`,
         undefined,
         owner,
@@ -191,14 +212,44 @@ export function ExchangeNeedContributions({
         undefined,
         request.signal
       );
+      let data: Snapshot;
+      if (inline) {
+        if (
+          !("listingId" in response) ||
+          response.ownerId !== owner ||
+          response.listingId !== query.listingId ||
+          response.need?.id !== query.needId ||
+          typeof response.need.moreContributions !== "boolean"
+        )
+          throw Error(
+            "Current contributions could not be confirmed. Try again."
+          );
+        data = {
+          ownerId: owner,
+          contributions: response.need.contributions,
+          next: null,
+          more: response.need.moreContributions
+        };
+      } else {
+        if (!("contributions" in response))
+          throw Error(
+            "Current contributions could not be confirmed. Try again."
+          );
+        data = response;
+      }
       if (!validPage(data, owner, query))
         throw Error("Current contributions could not be confirmed. Try again.");
       if (seq !== generation.current || !active.current) return;
+      if (!foreground()) {
+        hide();
+        return;
+      }
       setCurrentAccess(true);
       const prior = snapshot.current;
       if (prior) {
         const samePage =
           prior.next === data.next &&
+          prior.more === data.more &&
           prior.contributions.length === data.contributions.length &&
           prior.contributions.every(
             (row, index) => row.id === data.contributions[index].id
@@ -231,7 +282,7 @@ export function ExchangeNeedContributions({
       }
       setVisible(true);
       setNotice("");
-      if (incoming && confirmedCommand) {
+      if ((incoming || inline) && confirmedCommand) {
         void refreshNeedProgress?.().catch(() => {});
         router.refresh();
       }
@@ -266,7 +317,16 @@ export function ExchangeNeedContributions({
         void latest.current();
       }
     }
-  }, [owner, query, incoming, clearAccount, router, refreshNeedProgress]);
+  }, [
+    owner,
+    query,
+    incoming,
+    inline,
+    hide,
+    clearAccount,
+    router,
+    refreshNeedProgress
+  ]);
   latest.current = load;
   const recheck = useCallback(() => {
     if (
@@ -349,11 +409,17 @@ export function ExchangeNeedContributions({
     <section
       className="space-y-5 [overflow-wrap:anywhere]"
       aria-label={
-        incoming ? "Incoming private contributions" : "My contributions"
+        incoming
+          ? "Incoming private contributions"
+          : inline
+            ? "Your contributions to this need"
+            : "My contributions"
       }
     >
       {incoming ? (
         <h2 className="text-2xl">Incoming private contributions</h2>
+      ) : inline ? (
+        <h2 className="text-2xl">Your contributions</h2>
       ) : (
         <h1 className="text-4xl">My Needs contributions</h1>
       )}
@@ -410,6 +476,15 @@ export function ExchangeNeedContributions({
       </ReadVisibility.Provider>
       {presented && page && !page.contributions.length && (
         <p>No contributions yet.</p>
+      )}
+      {presented && inline && page?.more && (
+        <Link
+          prefetch={false}
+          className="gc-button gc-button-quiet"
+          href="/platform/exchange/needs"
+        >
+          Open all of your contribution pages
+        </Link>
       )}
       {presented && page?.next && (
         <Link

@@ -78,6 +78,7 @@ async function serverForms() {
     "./exchange-need-contributions": {
       ExchangeNeedContributions: "contributions"
     },
+    "./exchange-need-posts": { ExchangeNeedPosts: "current-posts" },
     "./exchange-need-volunteers": { ExchangeNeedVolunteers: "volunteers" },
     "./exchange-need-roles": { ExchangeNeedRoles: "current-roles" },
     "./exchange-need-progress": {

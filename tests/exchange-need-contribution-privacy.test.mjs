@@ -5,7 +5,7 @@ import {
   button,
   clientHarness,
   nodes,
-  textContent
+  textContent,
 } from "./fixtures/client-hook-harness.mjs";
 
 const owner = "contributor-a";
@@ -33,19 +33,19 @@ const contribution = (extra = {}) => ({
   loanReturnAt: "2026-10-10T10:00:00.000Z",
   loanResponsibility: "Private loan terms",
   contributor: null,
-  ...extra
+  ...extra,
 });
 const listPage = (rows = [contribution()]) => ({
   ownerId: owner,
   contributions: rows,
-  next: null
+  next: null,
 });
 const response = (data, status = 200) => ({
   ok: status >= 200 && status < 300,
   status,
   headers: new Headers(),
   body: { cancel: async () => {} },
-  json: async () => data
+  json: async () => data,
 });
 const deferred = () => {
   let resolve;
@@ -58,7 +58,7 @@ const receipt = (extra = {}) => ({
   id: "contribution-a",
   version: 4,
   message: "Fictional contribution saved",
-  ...extra
+  ...extra,
 });
 
 // Execute actual component and command-hook bodies with real pinned transport.
@@ -67,7 +67,7 @@ function environment(row = contribution()) {
   const window = new EventTarget(),
     document = new EventTarget();
   document.visibilityState = "visible";
-  document.hasFocus = () => true;
+  document.hasFocus = () => state.focused;
   window.location = { reload() {} };
   const navigator = { onLine: true },
     deadlines = new Map(),
@@ -78,6 +78,8 @@ function environment(row = contribution()) {
     dispatched = [];
   const state = {
     owner,
+    focused: true,
+    expectedView: "need-mine",
     visible: true,
     access: true,
     row,
@@ -88,7 +90,7 @@ function environment(row = contribution()) {
     refreshes: 0,
     identityHandler: null,
     readHandler: null,
-    writeHandler: null
+    writeHandler: null,
   };
   const h = clientHarness({
     window,
@@ -108,8 +110,8 @@ function environment(row = contribution()) {
           assert.equal(algorithm, "SHA-256");
           return Uint8Array.from(createHash("sha256").update(bytes).digest())
             .buffer;
-        }
-      }
+        },
+      },
     },
     setTimeout(fn, ms) {
       assert.equal(ms, 15000);
@@ -140,20 +142,22 @@ function environment(row = contribution()) {
         if (state.writeHandler) return state.writeHandler(options);
         const body = JSON.parse(options.body);
         return response(
-          receipt({ id: body.id, version: body.expectedVersion + 1 })
+          receipt({ id: body.id, version: body.expectedVersion + 1 }),
         );
       }
       assert.equal(
         new URL(path, "https://fixture.invalid").searchParams.get("view"),
-        "need-mine"
+        state.expectedView,
       );
       return state.readHandler
         ? state.readHandler(options, path)
         : response(state.result);
-    }
+    },
   });
   const social = h.load("lib/platform/social-client.ts", {
-    "./privileged-auth-navigation": { announcePrivilegedChallenge: () => false }
+    "./privileged-auth-navigation": {
+      announcePrivilegedChallenge: () => false,
+    },
   });
   const hook = h.load("components/platform/use-private-choice-action.tsx", {
     "./use-photo-back-guard": { settlePhotoNavigation: async () => {} },
@@ -161,30 +165,30 @@ function environment(row = contribution()) {
       useRouter: () => ({
         refresh() {
           state.refreshes++;
-        }
-      })
+        },
+      }),
     },
     "@/lib/platform/social-client": social,
     "./read-visibility": { useReadVisibility: () => state.visible },
     "./private-snapshot-guard": {
       usePrivateRecovery(_id, pending, busy, retry, allowed) {
         state.recovery = pending ? { busy, retry, allowed } : null;
-      }
+      },
     },
     "./use-unsaved-social-work": {
       useUnsavedSocialWork(value, _blocked, protectBack) {
         state.guard = { ...value, protectBack };
-      }
-    }
+      },
+    },
   });
   const controls = h.load("components/platform/exchange-saved-controls.tsx", {
     "next/link": { default: "a" },
     "./use-private-choice-action": hook,
     "./read-visibility": { useReadVisibility: () => state.visible },
     "@/lib/platform/exchange-options": h.load(
-      "lib/platform/exchange-options.ts"
+      "lib/platform/exchange-options.ts",
     ),
-    "./portal-action-form": { portalInputClass: "" }
+    "./portal-action-form": { portalInputClass: "" },
   });
   const actions = h.load("components/platform/exchange-need-actions.tsx", {
     "next/link": { default: "a" },
@@ -192,13 +196,13 @@ function environment(row = contribution()) {
     "./use-private-choice-action": hook,
     "./read-visibility": { useReadVisibility: () => state.visible },
     "@/lib/platform/exchange-need-options": h.load(
-      "lib/platform/exchange-need-options.ts"
+      "lib/platform/exchange-need-options.ts",
     ),
     "@/lib/platform/community-report-types": {
-      reportEntryHref: (_type, id) => "/report/" + id
+      reportEntryHref: (_type, id) => "/report/" + id,
     },
     "./portal-action-form": { portalInputClass: "" },
-    "./regional-presentation": { RegionalTime: "time" }
+    "./regional-presentation": { RegionalTime: "time" },
   });
   return {
     h,
@@ -221,7 +225,7 @@ function environment(row = contribution()) {
         },
         onConfirmed(value) {
           confirmed.push(value);
-        }
+        },
       };
     },
     emit(name) {
@@ -237,7 +241,7 @@ function environment(row = contribution()) {
     },
     reads() {
       return requests.filter(
-        (r) => !r.body && r.path !== "/api/platform/profile?view=identity"
+        (r) => !r.body && r.path !== "/api/platform/profile?view=identity",
       );
     },
     expire() {
@@ -250,7 +254,7 @@ function environment(row = contribution()) {
     poll() {
       for (const fn of intervals.values()) fn();
       h.render();
-    }
+    },
   };
 }
 function cardHarness(t, row = contribution(), privacy = true) {
@@ -266,10 +270,10 @@ function cardHarness(t, row = contribution(), privacy = true) {
             onRequest(target) {
               s.dispatched.push(target);
               s.state.acceptedReceipt = null;
-            }
+            },
           }
-        : {})
-    })
+        : {}),
+    }),
   );
   t.after(() => s.h.unmount());
   return {
@@ -284,7 +288,7 @@ function cardHarness(t, row = contribution(), privacy = true) {
     change(kind, value) {
       this.field(kind).props.onChange({ target: { value } });
       s.h.render();
-    }
+    },
   };
 }
 
@@ -305,46 +309,47 @@ async function serverPage(after, account = owner) {
         ExchangeNavigation: "navigation",
         ExchangeUnavailable: "unavailable",
         exchangeChecksum: (value) =>
-          createHash("sha256").update(JSON.stringify(value)).digest("hex")
+          createHash("sha256").update(JSON.stringify(value)).digest("hex"),
       },
       "./exchange-need-forms": {
         NeedClaimForm: "claim",
         NeedSetupForm: "setup",
-        NeedSlotForm: "slot"
+        NeedSlotForm: "slot",
       },
       "./exchange-need-actions": {
         NeedContributionCard,
         NeedOrganizerActions: "organizer",
         NeedPostLinks: "posts",
-        NeedVolunteerReceipt: "volunteer"
+        NeedVolunteerReceipt: "volunteer",
       },
       "./exchange-need-contributions": { ExchangeNeedContributions },
       "./exchange-need-volunteers": { ExchangeNeedVolunteers: "volunteers" },
       "./exchange-need-roles": { ExchangeNeedRoles: "current-roles" },
+      "./exchange-need-posts": { ExchangeNeedPosts: "current-posts" },
       "./exchange-need-progress": {
         ExchangeNeedProgressProvider: ({ children }) => children,
-        NeedSlotProgress: "progress"
+        NeedSlotProgress: "progress",
       },
       "./regional-presentation": { RegionalTime: "time" },
       "@/lib/platform/session": {
-        getCurrentPlatformUser: async () => ({ id: account })
+        getCurrentPlatformUser: async () => ({ id: account }),
       },
       "@/lib/platform/exchange-session": {
-        exchangeNeedPage: async () => result
+        exchangeNeedPage: async () => result,
       },
       "@/lib/platform/exchange-need-form-context": h.load(
-        "lib/platform/exchange-need-form-context.ts"
+        "lib/platform/exchange-need-form-context.ts",
       ),
       "@/lib/platform/exchange-need-options": h.load(
-        "lib/platform/exchange-need-options.ts"
+        "lib/platform/exchange-need-options.ts",
       ),
       "@/lib/platform/portal-policy": { PortalError: class extends Error {} },
-      "@/lib/platform/post-input": { postId: (id) => id }
-    }
+      "@/lib/platform/post-input": { postId: (id) => id },
+    },
   );
   return {
     output: await ExchangeNeedsPage({ query: after ? { after } : {} }),
-    Entry: ExchangeNeedContributions
+    Entry: ExchangeNeedContributions,
   };
 }
 
@@ -355,19 +360,19 @@ test("standalone My Needs bootstrap omits private contribution rows, notes and q
   for (const secret of [
     "contribution-a",
     "Private retained contribution note",
-    "18765"
+    "18765",
   ])
     assert.ok(
       !serialized.includes(secret),
-      `Private bootstrap contains ${secret}`
+      `Private bootstrap contains ${secret}`,
     );
   const entries = nodes(output, (n) => n.type === Entry);
   assert.equal(entries.length, 1);
   assert.equal(entries[0].props.owner, owner);
   assert.ok(
     Object.keys(entries[0].props).every((key) =>
-      ["owner", "query"].includes(key)
-    )
+      ["owner", "query"].includes(key),
+    ),
   );
   assert.equal(entries[0].props.query.view, "mine");
 });
@@ -379,10 +384,10 @@ test("concealment physically removes saved notes and unsent dispute/return value
   s.visible(false);
   assert.equal(
     nodes(s.h.output, (n) => ["textarea", "input"].includes(n.type)).length,
-    0
+    0,
   );
   assert.ok(
-    !textContent(s.h.output).includes("Private retained contribution note")
+    !textContent(s.h.output).includes("Private retained contribution note"),
   );
   assert.equal(nodes(s.h.output, (n) => n.type === "a").length, 0);
   s.visible(true);
@@ -398,14 +403,14 @@ for (const malformed of ["target", "version"])
         receipt(
           malformed === "target"
             ? { id: "another-contribution" }
-            : { version: 2 }
-        )
+            : { version: 2 },
+        ),
       );
     s.click("Allow my contributor name to be shown");
     await s.h.settle();
     assert.ok(
       s.state.recovery,
-      "Malformed receipt cannot consume the pending contribution request"
+      "Malformed receipt cannot consume the pending contribution request",
     );
     assert.equal(s.confirmed.length, 0);
     assert.equal(s.state.refreshes, 0);
@@ -455,8 +460,8 @@ test("attribution acknowledgment preserves dirty return and dispute siblings bef
       shareName: true,
       returned: 2,
       disputed: true,
-      disputeNote: dispute.note
-    })
+      disputeNote: dispute.note,
+    }),
   );
   assert.equal(s.field().props.value, "");
   assert.equal(s.state.guard.dirty, false);
@@ -499,7 +504,7 @@ test("hidden accepted receipt cannot reset fields or rearm before visible acknow
   assert.equal(
     nodes(s.h.output, (n) => n.type === "textarea" || n.type === "input")
       .length,
-    0
+    0,
   );
   s.state.access = true;
   s.h.render();
@@ -510,8 +515,8 @@ test("hidden accepted receipt cannot reset fields or rearm before visible acknow
     contribution({
       version: 4,
       disputed: true,
-      disputeNote: "Submitted private dispute"
-    })
+      disputeNote: "Submitted private dispute",
+    }),
   );
   assert.equal(nodes(s.h.output, (n) => n.type === "textarea").length, 0);
   assert.equal(s.state.guard.dirty, true);
@@ -574,7 +579,7 @@ test("legacy contribution callers retain their existing command and refresh beha
   assert.equal(JSON.parse(s.writes()[0].body).operation, "need-attribution");
 });
 
-function ownerHarness(t, setup, after) {
+function ownerHarness(t, setup, after, queryOverride) {
   const s = environment();
   setup?.(s);
   const NeedContributionCard = () => null,
@@ -589,11 +594,11 @@ function ownerHarness(t, setup, after) {
       "./exchange-need-progress": { useNeedProgressRefresh: () => null },
       "./read-visibility": {
         ReadVisibility: { Provider: "visibility" },
-        useReadVisibility: () => s.state.visible
-      }
-    }
+        useReadVisibility: () => s.state.visible,
+      },
+    },
   );
-  const query = { view: "mine", ...(after ? { after } : {}) };
+  const query = queryOverride ?? { view: "mine", ...(after ? { after } : {}) };
   s.h.mount(() => ExchangeNeedContributions({ owner, query }));
   t.after(() => s.h.unmount());
   return {
@@ -622,12 +627,12 @@ function ownerHarness(t, setup, after) {
       const controls = nodes(
         s.h.output,
         (n) =>
-          n.type === "button" && /Recheck current access/.test(textContent(n))
+          n.type === "button" && /Recheck current access/.test(textContent(n)),
       );
       assert.equal(controls.length, 1);
       controls[0].props.onClick();
       s.h.render();
-    }
+    },
   };
 }
 const aborted = (signal) =>
@@ -636,7 +641,7 @@ const aborted = (signal) =>
     signal.addEventListener(
       "abort",
       () => reject(new Error("Aborted owned request")),
-      { once: true }
+      { once: true },
     );
   });
 
@@ -647,16 +652,16 @@ test("contribution bootstrap waits for a complete pinned first read and retains 
     (s) => {
       s.state.readHandler = () => gate.promise;
     },
-    "cursor-a"
+    "cursor-a",
   );
   await s.h.settle();
   assert.equal(s.cards().length, 0);
   assert.equal(s.shown(), false);
   assert.equal(
     new URL(s.reads()[0].path, "https://fixture.invalid").searchParams.get(
-      "after"
+      "after",
     ),
-    "cursor-a"
+    "cursor-a",
   );
   gate.resolve(response(listPage()));
   await s.h.settle();
@@ -670,7 +675,7 @@ for (const failure of [
   "wrong-owner",
   "missing-rows",
   "duplicate-id",
-  "not-own"
+  "not-own",
 ])
   test(`invalid initial ${failure} read never initializes contribution cards`, async (t) => {
     const s = ownerHarness(t, (s) => {
@@ -719,7 +724,7 @@ for (const changed of ["row", "order", "next"])
     const s = ownerHarness(t, (s) => {
       s.state.result = listPage([
         contribution(),
-        contribution({ id: "contribution-b" })
+        contribution({ id: "contribution-b" }),
       ]);
     });
     await s.h.settle();
@@ -727,7 +732,7 @@ for (const changed of ["row", "order", "next"])
     if (changed === "row")
       s.state.result = listPage([
         contribution({ version: 4 }),
-        contribution({ id: "contribution-b" })
+        contribution({ id: "contribution-b" }),
       ]);
     else if (changed === "order")
       s.state.result = listPage([...original].reverse());
@@ -738,7 +743,7 @@ for (const changed of ["row", "order", "next"])
     assert.equal(s.card().props.privacy.currentAccess, true);
     assert.deepEqual(
       s.cards().map((card) => card.props.row),
-      original
+      original,
     );
     assert.equal(s.card().props.acceptedReceipt ?? null, null);
   });
@@ -753,7 +758,7 @@ test("one exact receipt cannot authorize changed sibling rows with the same vers
   s.request(second.id);
   s.state.result = listPage([
     contribution({ version: 4, shareName: true }),
-    { ...second, version: 4, shareName: true }
+    { ...second, version: 4, shareName: true },
   ]);
   const firstReceipt = receipt(),
     secondReceipt = receipt({ id: second.id });
@@ -768,7 +773,7 @@ test("one exact receipt cannot authorize changed sibling rows with the same vers
   assert.equal(s.card(second.id).props.acceptedReceipt, secondReceipt);
   assert.deepEqual(
     s.cards().map((card) => card.key),
-    ["contribution-a", "contribution-b"]
+    ["contribution-a", "contribution-b"],
   );
 });
 
@@ -860,12 +865,12 @@ test("redacted own contributions retain canonical withdrawal and loan-return con
     quoteCurrency: null,
     shareName: false,
     loanResponsibility: "",
-    disputeNote: ""
+    disputeNote: "",
   });
   const s = cardHarness(t, row);
   assert.equal(nodes(s.h.output, (n) => n.type === "textarea").length, 0);
   assert.ok(
-    !textContent(s.h.output).includes("Private retained contribution note")
+    !textContent(s.h.output).includes("Private retained contribution note"),
   );
   assert.ok(!textContent(s.h.output).includes("Allow my contributor name"));
   s.change("input", "2");
@@ -943,8 +948,8 @@ test("server bootstrap keys retained owners by both account and canonical cursor
     assert.ok(!JSON.stringify(result.output).includes("contribution-a"));
     assert.ok(
       Object.keys(entry(result).props).every((key) =>
-        ["owner", "query"].includes(key)
-      )
+        ["owner", "query"].includes(key),
+      ),
     );
   }
 });
@@ -964,9 +969,9 @@ test("a held obsolete data response cannot replace the retained page after a fre
   gate.resolve(
     response(
       listPage([
-        contribution({ version: 99, note: "Obsolete private response" })
-      ])
-    )
+        contribution({ version: 99, note: "Obsolete private response" }),
+      ]),
+    ),
   );
   await s.h.settle();
   assert.equal(s.shown(), true);
@@ -974,3 +979,269 @@ test("a held obsolete data response cannot replace the retained page after a fre
   assert.equal(s.card().props.row.note, contribution().note);
   assert.equal(s.card().props.acceptedReceipt ?? null, null);
 });
+
+const inlineQuery = { view: "need", needId: "need-a", listingId: "listing-a" };
+const inlinePage = (rows = [contribution()], extra = {}) => ({
+  ownerId: owner,
+  listingId: "listing-a",
+  need: { id: "need-a", contributions: rows, moreContributions: true },
+  ...extra,
+});
+function inlineHarness(t, setup) {
+  return ownerHarness(
+    t,
+    (s) => {
+      s.state.expectedView = "need-need";
+      s.state.result = inlinePage();
+      setup?.(s);
+    },
+    undefined,
+    inlineQuery,
+  );
+}
+test("inline contributions use the exact account/listing/need and expose no rows before current read", async (t) => {
+  const gate = deferred();
+  const s = inlineHarness(t, (s) => {
+    s.state.readHandler = () => gate.promise;
+  });
+  await s.h.settle();
+  assert.equal(s.cards().length, 0);
+  const params = new URL(s.reads()[0].path, "https://fixture.invalid")
+    .searchParams;
+  assert.equal(params.get("listingId"), "listing-a");
+  assert.equal(params.get("view"), "need-need");
+  assert.equal(params.has("id"), false);
+  gate.resolve(response(inlinePage()));
+  await s.h.settle();
+  assert.equal(s.shown(), true);
+  assert.equal(s.card().props.row.note, contribution().note);
+  assert.equal(nodes(s.h.output, (n) => n.type === "h1").length, 0);
+  assert.ok(
+    nodes(s.h.output, (n) => n.type === "a").some(
+      (n) => n.props.href === "/platform/exchange/needs",
+    ),
+  );
+});
+for (const [name, invalid] of [
+  ["account", () => inlinePage(undefined, { ownerId: "other" })],
+  ["listing", () => inlinePage(undefined, { listingId: "other" })],
+  [
+    "need",
+    () =>
+      inlinePage(undefined, {
+        need: {
+          id: "other",
+          contributions: [contribution()],
+          moreContributions: false,
+        },
+      }),
+  ],
+  [
+    "someone else's contribution",
+    () => inlinePage([contribution({ own: false })]),
+  ],
+  [
+    "a current contribution from another need",
+    () => inlinePage([contribution({ needId: "other" })]),
+  ],
+  [
+    "a current contribution from another listing",
+    () => inlinePage([contribution({ listingId: "other" })]),
+  ],
+  [
+    "unredacted unavailable source",
+    () => inlinePage([contribution({ current: false })]),
+  ],
+])
+  test(`inline contribution rejects ${name}`, async (t) => {
+    const s = inlineHarness(t, (s) => {
+      s.state.result = invalid();
+    });
+    await s.h.settle();
+    assert.equal(s.shown(), false);
+    assert.equal(s.cards().length, 0);
+  });
+test("inline unavailable source accepts only a redacted own receipt", async (t) => {
+  const row = contribution({
+    current: false,
+    listingId: null,
+    needId: null,
+    slotId: null,
+    title: "Unavailable need",
+    note: "",
+    quoteMinor: null,
+    quoteCurrency: null,
+    shareName: false,
+    disputeNote: "",
+    loanResponsibility: "",
+    contributor: null,
+  });
+  const s = inlineHarness(t, (s) => {
+    s.state.result = inlinePage([row]);
+  });
+  await s.h.settle();
+  assert.equal(s.shown(), true);
+  assert.equal(s.card().props.row.title, "Unavailable need");
+});
+test("inline receipt reconciles only its own version and leaves untouched siblings retained", async (t) => {
+  const sibling = contribution({ id: "sibling-a", note: "Retained sibling" });
+  const s = inlineHarness(t, (s) => {
+    s.state.result = inlinePage([contribution(), sibling]);
+  });
+  await s.h.settle();
+  s.request();
+  s.state.result = inlinePage([
+    contribution({ version: 4, shareName: true }),
+    sibling,
+  ]);
+  s.confirm();
+  await s.h.settle();
+  assert.equal(s.shown(), true);
+  assert.equal(s.card().props.acceptedReceipt.version, 4);
+  assert.equal(s.card("sibling-a").props.row.note, "Retained sibling");
+  s.state.result = inlinePage([
+    contribution({ version: 4, shareName: true }),
+    { ...sibling, note: "Unexpected changed sibling" },
+  ]);
+  s.poll();
+  await s.h.settle();
+  assert.equal(s.shown(), false);
+  assert.equal(s.card("sibling-a").props.row.note, "Retained sibling");
+});
+test("inline more-page changes conceal retained entries rather than accepting a changed page", async (t) => {
+  const s = inlineHarness(t);
+  await s.h.settle();
+  s.state.result.need.moreContributions = false;
+  s.poll();
+  await s.h.settle();
+  assert.equal(s.shown(), false);
+  assert.equal(s.cards().length, 1);
+});
+
+// Added to the existing actual-body harness; no browser/native focus claim.
+for (const mode of ["mine", "incoming", "inline"]) {
+  const setupMode = (s) => {
+    s.state.expectedView =
+      mode === "incoming"
+        ? "need-contributors"
+        : mode === "inline"
+          ? "need-need"
+          : "need-mine";
+    s.state.result =
+      mode === "inline"
+        ? inlinePage()
+        : listPage([contribution(mode === "incoming" ? { own: false } : {})]);
+  };
+  const query =
+    mode === "incoming"
+      ? {
+          view: "incoming",
+          needId: "need-a",
+          path: "/platform/exchange/listing-a/needs",
+        }
+      : mode === "inline"
+        ? inlineQuery
+        : { view: "mine" };
+  const start = (t, setup) =>
+    ownerHarness(
+      t,
+      (s) => {
+        setupMode(s);
+        setup?.(s);
+      },
+      undefined,
+      query,
+    );
+  test(`foreground ${mode}: direct unfocused mount admits no private read`, async (t) => {
+    const s = start(t, (s) => {
+      s.state.focused = false;
+    });
+    await s.h.settle();
+    assert.equal(s.reads().length, 0);
+    assert.equal(s.shown(), false);
+    assert.equal(s.cards().length, 0);
+    s.state.focused = true;
+    s.emit("focus");
+    await s.h.settle();
+    assert.equal(
+      s.shown(),
+      true,
+      "positive current-owner focused read must present",
+    );
+  });
+  test(`foreground ${mode}: unfocused timer admission conceals and does not read`, async (t) => {
+    const s = start(t);
+    await s.h.settle();
+    assert.equal(s.shown(), true);
+    const prior = s.reads().length;
+    s.state.focused = false;
+    s.poll();
+    await s.h.settle();
+    assert.equal(
+      s.reads().length,
+      prior,
+      "visible but unfocused timer must not admit a pinned read",
+    );
+    assert.equal(
+      s.shown(),
+      false,
+      "unfocused timer must conceal retained private data",
+    );
+    s.state.focused = true;
+    s.emit("focus");
+    await s.h.settle();
+    assert.equal(s.shown(), true);
+  });
+  test(`foreground ${mode}: held reply cannot grant access after focus is lost`, async (t) => {
+    const gate = deferred();
+    const s = start(t, (s) => {
+      s.state.readHandler = () => gate.promise;
+    });
+    await s.h.settle();
+    assert.equal(s.reads().length, 1);
+    assert.equal(s.shown(), false);
+    s.state.focused = false;
+    gate.resolve(response(s.state.result));
+    await s.h.settle();
+    assert.equal(
+      s.shown(),
+      false,
+      "held reply must not present while visible but unfocused",
+    );
+    assert.equal(
+      s.cards().length,
+      0,
+      "held reply must not initialize private child props",
+    );
+    s.state.readHandler = null;
+    s.state.focused = true;
+    s.emit("focus");
+    await s.h.settle();
+    assert.equal(s.shown(), true);
+  });
+  test(`foreground ${mode}: queued read rechecks focus after obsolete reply`, async (t) => {
+    const s = start(t);
+    await s.h.settle();
+    assert.equal(s.shown(), true);
+    const gate = deferred();
+    s.state.readHandler = () => gate.promise;
+    s.poll();
+    await s.h.settle();
+    assert.equal(s.reads().length, 2);
+    s.request();
+    s.state.focused = false;
+    gate.resolve(response(s.state.result));
+    await s.h.settle();
+    assert.equal(
+      s.reads().length,
+      2,
+      "queued admission must not issue another unfocused read",
+    );
+    assert.equal(s.shown(), false);
+    s.state.readHandler = null;
+    s.state.focused = true;
+    s.emit("focus");
+    await s.h.settle();
+    assert.equal(s.shown(), true);
+  });
+}

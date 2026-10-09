@@ -48,7 +48,8 @@ async function volunteerServer(extra = {}) {
       "./exchange-need-contributions": {
         ExchangeNeedContributions: "contributions"
       },
-      "./exchange-need-volunteers": {
+      "./exchange-need-posts": { ExchangeNeedPosts: "current-posts" },
+    "./exchange-need-volunteers": {
         ExchangeNeedVolunteers: "volunteers-client"
       },
       "./exchange-need-roles": { ExchangeNeedRoles: "current-roles" },
