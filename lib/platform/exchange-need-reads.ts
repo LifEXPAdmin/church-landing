@@ -217,8 +217,25 @@ export async function readExchangeNeeds(
           next: rows.length > NEED_PAGE ? rows[NEED_PAGE - 1].id : null
         };
       }
+      const postsNeed = await tx.exchangeNeed.findUnique({
+        where: { listingId: listing.id }
+      });
+      // Scope/version metadata binds the current post page to its need.
+      // Existing manager/MFA and post audience checks remain authoritative.
+      const postsScope = {
+        postsListingId: listing.id,
+        postsNeedId: postsNeed?.id ?? null,
+        postsNeedVersion: postsNeed?.version ?? null,
+        postsCanLink:
+          !!postsNeed &&
+          !postsNeed.closedAt &&
+          !postsNeed.canceledAt &&
+          postsNeed.coordinatorId === ownerId &&
+          context.publishers.has(listing.ownerChurchId!) &&
+          (await needCoordinatorCurrent(tx, postsNeed))
+      };
       if (!context.publishers.has(listing.ownerChurchId!))
-        return { ownerId, posts: [], next: null };
+        return { ownerId, ...postsScope, posts: [], next: null };
       const rows = await tx.platformPost.findMany({
         where: {
           AND: [
@@ -242,6 +259,7 @@ export async function readExchangeNeeds(
       });
       return {
         ownerId,
+        ...postsScope,
         posts: rows.slice(0, NEED_PAGE).map((p) => ({
           id: p.id,
           version: p.version,

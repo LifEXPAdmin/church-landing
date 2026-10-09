@@ -3,12 +3,12 @@ import {
   needSetupContext,
   needSlotContext,
   needClaimContext,
-  needOrganizerContext,
-  needPostContext
+  needOrganizerContext
 } from "@/lib/platform/exchange-need-form-context";
 import { PlatformShell } from "./platform-shell";
 import { ExchangeNeedContributions } from "./exchange-need-contributions";
 import { ExchangeNeedVolunteers } from "./exchange-need-volunteers";
+import { ExchangeNeedPosts } from "./exchange-need-posts";
 import { ExchangeNeedRoles } from "./exchange-need-roles";
 import {
   ExchangeNeedProgressProvider,
@@ -29,9 +29,7 @@ import {
   NeedSlotForm
 } from "./exchange-need-forms";
 import {
-  NeedContributionCard,
-  NeedOrganizerActions,
-  NeedPostLinks
+  NeedOrganizerActions
 } from "./exchange-need-actions";
 import { RegionalTime } from "./regional-presentation";
 import { getCurrentPlatformUser } from "@/lib/platform/session";
@@ -95,42 +93,20 @@ export async function ExchangeNeedsPage({
       if (!("listingId" in result))
         throw new Error("Need projection unavailable");
       const need = result.need;
-      let rolesAccess: { url: string; checksum: string } | null = null,
-        postsAccess: { url: string; checksum: string } | null = null;
-      let posts: {
-          id: string;
-          version: number;
-          excerpt: string;
-          linked: boolean;
-        }[] = [],
-        postsNext: string | null = null;
+      let rolesAccess: { url: string; checksum: string } | null = null;
       if (user && result.canCoordinate && need && !need.closed) {
-        const [roleView, postView] = await Promise.all([
-          exchangeNeedPage({
-            view: "roles",
-            listingId,
-            after: query.rolesAfter
-          }),
-          exchangeNeedPage({
-            view: "posts",
-            listingId,
-            after: query.postsAfter
-          })
-        ]);
+        const roleView = await exchangeNeedPage({
+          view: "roles",
+          listingId,
+          after: query.rolesAfter
+        });
         if ("roles" in roleView) {
           rolesAccess = {
             url: `/api/platform/exchange?${new URLSearchParams({ view: "need-roles", listingId, ...(query.rolesAfter ? { after: postId(query.rolesAfter) } : {}) })}`,
             checksum: exchangeChecksum(roleView)
           };
         }
-        if ("posts" in postView) {
-          posts = postView.posts ?? [];
-          postsNext = postView.next;
-          postsAccess = {
-            url: `/api/platform/exchange?${new URLSearchParams({ view: "need-posts", listingId, ...(query.postsAfter ? { after: postId(query.postsAfter) } : {}) })}`,
-            checksum: exchangeChecksum(postView)
-          };
-        }
+
       }
       const article = (
         <article className="space-y-6 break-words">
@@ -277,29 +253,12 @@ export async function ExchangeNeedsPage({
               {!need.slots.length && (
                 <p>No action slots have been configured.</p>
               )}
-              {!!need.contributions.length && user && (
-                <section
-                  className="space-y-4"
-                  aria-label="Your contributions to this need"
-                >
-                  <h2 className="text-2xl">Your contributions</h2>
-                  {need.contributions.map((row) => (
-                    <NeedContributionCard
-                      key={`${row.id}:${row.version}`}
-                      owner={user.id}
-                      row={row}
-                    />
-                  ))}
-                  {need.moreContributions && (
-                    <Link
-                      prefetch={false}
-                      href="/platform/exchange/needs"
-                      className="underline"
-                    >
-                      Open all of your contribution pages
-                    </Link>
-                  )}
-                </section>
+              {user && (
+                <ExchangeNeedContributions
+                  key={`${user.id}:${listingId}:${need.id}`}
+                  owner={user.id}
+                  query={{ view: "need", listingId, needId: need.id }}
+                />
               )}
               {user && result.canCoordinate && (
                 <>
@@ -341,28 +300,16 @@ export async function ExchangeNeedsPage({
                     owner={user.id}
                     {...needOrganizerContext(need)}
                   />
-                  {!need.closed && postsAccess && (
-                    <PrivateSnapshotGuard
+                  {!need.closed && (
+                    <ExchangeNeedPosts
                       owner={user.id}
-                      {...postsAccess}
-                      label="eligible church Need posts"
-                    >
-                      <NeedPostLinks
-                        key={`posts:${need.version}`}
-                        owner={user.id}
-                        {...needPostContext(need)}
-                        posts={posts}
-                      />
-                      {postsNext && (
-                        <Link
-                          prefetch={false}
-                          className="gc-button gc-button-quiet"
-                          href={`${path}?postsAfter=${encodeURIComponent(postsNext)}`}
-                        >
-                          More eligible church Need posts
-                        </Link>
-                      )}
-                    </PrivateSnapshotGuard>
+                      listingId={listingId}
+                      needId={need.id}
+                      path={path}
+                      after={
+                        query.postsAfter ? postId(query.postsAfter) : undefined
+                      }
+                    />
                   )}
                 </>
               )}

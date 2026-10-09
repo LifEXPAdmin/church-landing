@@ -473,14 +473,63 @@ export function NeedOrganizerActions({
 export function NeedPostLinks({
   owner,
   need,
-  posts
+  posts,
+  privacy,
+  acceptedReceipt,
+  onRequest
 }: {
   owner: string;
   posts: { id: string; version: number; excerpt: string; linked: boolean }[];
+  privacy?: PrivateChoiceAccess;
+  acceptedReceipt?: Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null;
+  onRequest?: (target: {
+    id: string;
+    expectedVersion: number;
+    postId: string;
+    postVersion: number;
+    linked: boolean;
+  }) => void;
 } & NeedPostContext) {
   const visible = useReadVisibility();
-  const action = useExchangeAction(owner, false, undefined, true);
-  if (!visible) return null;
+  const target = useRef<{ id: string; version: number } | null>(null);
+  const dispatching = useRef(false);
+  const confirmed = useRef<
+    Parameters<PrivateChoiceAccess["onConfirmed"]>[0] | null
+  >(null);
+  const action = usePrivateChoiceAction(
+    "/api/platform/exchange",
+    owner,
+    false,
+    undefined,
+    true,
+    privacy
+      ? {
+          ...privacy,
+          expectedReceiptId: () => target.current?.id ?? null,
+          expectedReceiptVersion: () => target.current?.version ?? null,
+          onConfirmed(receipt) {
+            confirmed.current = receipt;
+            privacy.onConfirmed(receipt);
+          }
+        }
+      : undefined
+  );
+  const rearm = action.rearm;
+  useEffect(() => {
+    if (
+      !privacy ||
+      !visible ||
+      !acceptedReceipt ||
+      acceptedReceipt !== confirmed.current ||
+      need.id !== acceptedReceipt.id ||
+      need.version !== acceptedReceipt.version ||
+      !rearm(acceptedReceipt.version)
+    )
+      return;
+    confirmed.current = null;
+    target.current = null;
+  }, [privacy, visible, acceptedReceipt, need, rearm]);
+  if (!visible) return privacy ? action.status : null;
   return (
     <section className="space-y-3" aria-label="Church Need post links">
       <h2 className="text-2xl">Church Need posts</h2>
@@ -504,16 +553,31 @@ export function NeedPostLinks({
             className="gc-button gc-button-quiet"
             disabled={action.blocked}
             type="button"
-            onClick={() =>
-              void action.command({
-                operation: "need-link-post",
-                needId: need.id,
+            onClick={() => {
+              if (action.blocked || dispatching.current) return;
+              dispatching.current = true;
+              target.current = { id: need.id, version: need.version + 1 };
+              confirmed.current = null;
+              onRequest?.({
+                id: need.id,
                 expectedVersion: need.version,
                 postId: post.id,
                 postVersion: post.version,
                 linked: !post.linked
-              })
-            }
+              });
+              void action
+                .command({
+                  operation: "need-link-post",
+                  needId: need.id,
+                  expectedVersion: need.version,
+                  postId: post.id,
+                  postVersion: post.version,
+                  linked: !post.linked
+                })
+                .finally(() => {
+                  dispatching.current = false;
+                });
+            }}
           >
             {post.linked
               ? "Remove this need link"

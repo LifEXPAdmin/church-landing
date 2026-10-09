@@ -1,0 +1,210 @@
+name: Needs inline contribution and post reader isolated verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/release-needs-inline-post-20261008
+
+permissions:
+  contents: read
+
+concurrency:
+  group: need-inline-post-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install locked application dependencies
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run prisma:generate
+          node scripts/patch-toolchain-depth.mjs
+          node scripts/patch-next-hydration.mjs
+      - name: Prepare runner-only browser and PostgreSQL tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v xvfb-run
+          command -v xauth
+          export PLAYWRIGHT_BROWSERS_PATH="$RUNNER_TEMP/need-inline-post-chromium"
+          echo "PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH" >> "$GITHUB_ENV"
+          pg_bin="$(pg_config --bindir)"
+          test -x "$pg_bin/initdb"
+          echo "TEST_PG_BIN=$pg_bin" >> "$GITHUB_ENV"
+          npm install --prefix "$RUNNER_TEMP/need-inline-post-tooling" --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node "$RUNNER_TEMP/need-inline-post-tooling/node_modules/playwright/cli.js" install --with-deps chromium
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/need-inline-post-tooling/node_modules/playwright/package.json" >> "$GITHUB_ENV"
+          chromium_path="$(node -e "console.log(require(process.argv[1]).chromium.executablePath())" "$RUNNER_TEMP/need-inline-post-tooling/node_modules/playwright")"
+          echo "CHROMIUM_PATH=$chromium_path" >> "$GITHUB_ENV"
+      - name: Build and verify fictional Need owners over local HTTPS
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run --auto-servernum node scripts/test-platform-isolated.mjs need-inline-post 2>&1 | tee "$RUNNER_TEMP/need-inline-post-verification.log"
+      - name: Record exact source and separate full-application and controlled acceptance
+        if: always()
+        env:
+          NEED_INLINE_POST_RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import {createHash} from "node:crypto";
+          import {execFileSync} from "node:child_process";
+          import {existsSync,mkdirSync,readFileSync,readdirSync,writeFileSync} from "node:fs";
+          import {join,dirname} from "node:path";
+          import {createRequire} from "node:module";
+          const require=createRequire(join(process.cwd(),"package.json"));
+          const sourceSha=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+          assert.equal(sourceSha,process.env.GITHUB_SHA);
+          const profile="need-inline-post", output=join(process.env.RUNNER_TEMP,profile+"-evidence");
+          mkdirSync(output,{recursive:true});
+          const rawPath=join(process.env.RUNNER_TEMP,profile+"-verification.log");
+          const lines=existsSync(rawPath)?readFileSync(rawPath,"utf8").split(/\r?\n/):[];
+          const safe=lines.filter(line=>/^(?:#|ℹ) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+$/.test(line)||/^Platform production build ID: [A-Za-z0-9_-]+$/.test(line)||/^Verified fictional server source: [a-f0-9]{40} MFA mode: (?:off|enforce)$/.test(line));
+          const log=safe.join("\n")+"\n";
+          const totals=metric=>[...log.matchAll(new RegExp("^(?:#|ℹ) "+metric+" (\\d+)$","gm"))].map(m=>Number(m[1]));
+          const hash=path=>createHash("sha256").update(readFileSync(path)).digest("hex");
+          const empty=value=>Array.isArray(value)&&value.length===0;
+          const count=value=>Array.isArray(value)?value.length:null;
+          const buildId=existsSync(".next/BUILD_ID")?readFileSync(".next/BUILD_ID","utf8").trim():null;
+          const servingIdentities=[...log.matchAll(/^Verified fictional server source: ([a-f0-9]{40}) MFA mode: (off|enforce)$/gm)].map(m=>({sourceSha:m[1],mode:m[2]}));
+          const definitions={
+            "need-inline-post-browser":6,
+            "need-form-browser":5,
+            "need-volunteer-browser":5,
+            "need-incoming-browser":5,
+            "need-contribution-browser":10,
+            "needs-browser":10,
+            "need-role-browser":6,
+            "exchange-favorite-browser":8,
+            "exchange-inquiry-composer-browser":11,
+            "discovery-browser":11
+          };
+          const controlledDefinitions={"need-progress-browser":17,"need-volunteer-client":11,"need-form-client":22,"need-inline-client":15,"need-post-client":15};
+          const formSources=["components/platform/exchange-need-roles.tsx","components/platform/private-snapshot-guard.tsx","lib/platform/exchange-need-form-context.ts","components/platform/exchange-need-forms.tsx","components/platform/exchange-need-actions.tsx","components/platform/exchange-saved-controls.tsx","components/platform/use-private-choice-action.tsx","components/platform/read-visibility.ts","lib/platform/social-client.ts","lib/platform/exchange-need-options.ts","lib/platform/exchange-options.ts"];
+          const volunteerSources=["components/platform/exchange-need-volunteers.tsx","components/platform/exchange-need-actions.tsx","components/platform/use-private-choice-action.tsx","components/platform/read-visibility.ts","lib/platform/social-client.ts","lib/platform/exchange-need-options.ts"];
+          const ownerSources=owner=>[`components/platform/exchange-need-${owner==="inline"?"contributions":"posts"}.tsx`,"components/platform/private-snapshot-guard.tsx","components/platform/exchange-need-actions.tsx","components/platform/use-private-choice-action.tsx","components/platform/read-visibility.ts","lib/platform/social-client.ts","lib/platform/exchange-need-options.ts"];
+          const expectedRuntimeModules=[
+            ["react","react","react.development.js"],["react/jsx-runtime","react","react-jsx-runtime.development.js"],
+            ["react-dom","react-dom","react-dom.development.js"],["react-dom/client","react-dom","react-dom-client.development.js"],
+            ["scheduler","scheduler","scheduler.development.js"]
+          ].map(([name,pkg,file])=>({name,package:pkg,file,sha256:hash(join(dirname(require.resolve(`${pkg}/package.json`)),"cjs",file))}));
+          const fixtures=(existsSync(".account-test")?readdirSync(".account-test"):[]).filter(n=>n.startsWith(profile+"-hosted-"));
+          const browsers=[],controlled=[];
+          for(const name of fixtures) {
+            const fixture=join(".account-test",name);
+            for(const directory of readdirSync(fixture)) {
+              const match=/^(.*)-\d+$/.exec(directory)??/^(need-progress-browser|need-volunteer-client|need-form-client|need-inline-client|need-post-client)-[A-Za-z0-9]+$/.exec(directory);
+              if(!match)continue;
+              const suite=match[1];
+              if(!Object.hasOwn(definitions,suite)&&!Object.hasOwn(controlledDefinitions,suite))continue;
+              let result=null;try{result=JSON.parse(readFileSync(join(fixture,directory,"results.json"),"utf8"));}catch{}
+              if(Object.hasOwn(controlledDefinitions,suite)) {
+                let valid=empty(result?.errors)&&count(result?.results)===controlledDefinitions[suite]&&result.results.every(r=>r.pass===true);
+                let sourceBindings=[];
+                if(["need-inline-client","need-post-client"].includes(suite)) {
+                  const kind=suite==="need-inline-client"?"inline":"post", paths=ownerSources(kind);
+                  const expectedSources=paths.map(path=>({path,sha256:hash(path)}));
+                  valid&&=result?.suite===suite&&result?.sourceSha===sourceSha&&result?.externalRequests===0&&result?.productionWrites===null&&result?.externalSends===null&&result?.scopeEvidence==="controlled-component-with-blocked-network-and-stub-transport"&&result?.harnessSha256===hash(`scripts/qa-exchange-need-${kind}-client.mjs`);
+                  if(kind==="inline") {
+                    valid&&=result?.complete===true&&result?.lifecycleEvidence==="controlled-document-focus-events-not-native-focus"&&result?.visibility==="controlled-ReadVisibility-context-not-native-focus"&&Object.keys(result?.sources??{}).length===paths.length&&paths.every(path=>result?.sources?.[path]===hash(path));
+                  } else {
+                    valid&&=result?.sourceOverride===false&&result?.caseFilter===null&&result?.failure===null&&result?.blockedNetworkRequests===0&&JSON.stringify(result?.sourceBindings)===JSON.stringify(expectedSources)&&JSON.stringify(result?.runtimeModules)===JSON.stringify(expectedRuntimeModules);
+                  }
+                  sourceBindings=expectedSources;
+                } else if(suite==="need-progress-browser") {
+                  const path="components/platform/exchange-need-progress.tsx";
+                  valid&&=result?.source===path&&result?.sourceSha256===hash(path)&&result?.harnessSha256===hash("scripts/qa-exchange-need-progress-client.mjs");
+                  sourceBindings=[{path,sha256:result?.sourceSha256??null}];
+                } else {
+                  const paths=suite==="need-form-client"?formSources:volunteerSources;
+                  valid&&=paths.every(path=>result?.sources?.[path]===hash(path))&&result?.externalRequests===0&&result?.harnessSha256===hash(suite==="need-form-client"?"scripts/qa-exchange-need-form-client.mjs":"scripts/qa-exchange-need-volunteer-client.mjs");
+                  sourceBindings=paths.map(path=>({path,sha256:result?.sources?.[path]??null}));
+                  if(suite==="need-form-client")valid&&=result?.lifecycleEvidence==="controlled-document-focus-events-not-native-focus"&&result?.suite===suite&&result?.sourceSha===sourceSha&&result?.complete===true&&result?.scopeEvidence==="controlled-component-with-blocked-network-and-stub-transport"&&result?.productionWrites===null&&result?.externalSends===null;
+                  else valid&&=result?.controlledForegroundScenarios===2;
+                }
+                controlled.push({suite,reportedGroups:count(result?.results),errorCount:count(result?.errors),detailsValid:valid,sourceBindings,harnessSha256:result?.harnessSha256??null,productionWrites:null,externalSends:null,externalRequestCount:suite==="need-progress-browser"?null:result?.externalRequests??null,scopeEvidence:"controlled-component-with-blocked-network-and-stub-transport",...(suite==="need-post-client"?{runtimeModules:result?.runtimeModules??null,sourceOverride:result?.sourceOverride??null,caseFilter:result?.caseFilter??null,failure:result?.failure??null}:{}),...(["need-inline-client","need-post-client"].includes(suite)?{sourceSha:result?.sourceSha??null}:{}),...(suite==="need-inline-client"?{lifecycleEvidence:result?.lifecycleEvidence??null}:{} )});
+              } else {
+                let valid=empty(result?.errors)&&count(result?.results)===definitions[suite];
+                if(suite==="discovery-browser")valid&&=empty(result?.external)&&result?.externalRequests===0&&result?.applicationWrites==="isolated fictional fixtures only"&&result?.physicalDeviceTested===false;
+                else valid&&=result?.productionWrites===0&&result?.externalSends===0;
+                if(!["needs-browser","discovery-browser"].includes(suite))valid&&=empty(result?.layoutFailures);
+                if(["need-form-browser","need-role-browser","need-inline-post-browser"].includes(suite))valid&&=result?.complete===true&&result?.source===sourceSha&&result?.buildId===buildId&&result?.routingErrorCount===0&&result?.externalRequestCount===0;
+                const externalRequestCount=["need-form-browser","need-role-browser","need-inline-post-browser"].includes(suite)?result?.externalRequestCount??null:suite==="discovery-browser"?result?.externalRequests??null:null;
+                browsers.push({suite,reportedGroups:count(result?.results),errorCount:count(result?.errors),detailsValid:valid,productionWrites:result?.productionWrites??null,externalSends:result?.externalSends??null,externalRequestCount,scopeEvidence:"explicit-fixture-receipt"});
+              }
+            }
+          }
+          const report={sourceSha,profile,buildId,servingIdentities,runtimeOutcome:process.env.NEED_INLINE_POST_RUNTIME_OUTCOME,complete:false,environment:"isolated-fictional",tests:totals("tests"),pass:totals("pass"),fail:totals("fail"),cancelled:totals("cancelled"),skipped:totals("skipped"),todo:totals("todo"),expectedBrowserGroups:77,expectedControlledGroups:80,browsers,controlled,omittedLogLines:lines.filter(Boolean).length-safe.length,limits:["Full application 77 groups and controlled 80 cases are separate.","Existing controlled progress does not measure external request count; it remains null.","Browser phase uses MFA off; exact same build separately serves enforce for 10 HTTPS cases.","No native-device, provider delivery, production-write or capacity/performance acceptance.","Initial HTML/RSC excludes private inline contribution rows and eligible post choices; authorized minimal form contexts and public Need content remain.","Discovery does not numerically measure production writes or sends; those values stay null.","Confirmed different or signed-out identity permanently clears mounted private children; same-owner denial preserves concealed drafts."]};
+          const save=()=>writeFileSync(join(output,"report.json"),JSON.stringify(report,null,2)+"\n");
+          save();writeFileSync(join(output,"verification.log"),log);
+          if(report.runtimeOutcome==="success") {
+           assert.equal(fixtures.length,1);assert.match(buildId??"",/^[A-Za-z0-9_-]+$/);
+           assert.deepEqual([...log.matchAll(/^Platform production build ID: ([A-Za-z0-9_-]+)$/gm)].map(m=>m[1]),[buildId]);
+           assert.deepEqual(servingIdentities,[{sourceSha,mode:"off"},{sourceSha,mode:"enforce"}]);
+           assert.deepEqual(report.tests,[18,10]);assert.deepEqual(report.pass,[18,10]);
+           for(const metric of ["fail","cancelled","skipped","todo"])assert.deepEqual(report[metric],[0,0]);
+           for(const [suite,expected] of Object.entries(definitions)){const rows=browsers.filter(r=>r.suite===suite);assert.equal(rows.length,1);assert.equal(rows[0].reportedGroups,expected);assert.equal(rows[0].detailsValid,true);}
+           for(const [suite,expected] of Object.entries(controlledDefinitions)){const rows=controlled.filter(r=>r.suite===suite);assert.equal(rows.length,1);assert.equal(rows[0].reportedGroups,expected);assert.equal(rows[0].detailsValid,true);}
+           assert.equal(browsers.length,10);assert.equal(controlled.length,5);
+           assert.equal(browsers.reduce((n,r)=>n+r.reportedGroups,0),77);assert.equal(controlled.reduce((n,r)=>n+r.reportedGroups,0),80);
+           report.complete=true;save();
+          }
+          NODE
+      - name: Preserve sanitized receipt and allowlisted fictional screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: need-inline-post-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/need-inline-post-evidence/report.json
+            ${{ runner.temp }}/need-inline-post-evidence/verification.log
+            .account-test/need-inline-post-hosted-*/need-inline-post-browser-*/inline-visible-390.png
+            .account-test/need-inline-post-hosted-*/need-inline-post-browser-*/inline-visible-320-200.png
+            .account-test/need-inline-post-hosted-*/need-inline-post-browser-*/posts-visible-390.png
+            .account-test/need-inline-post-hosted-*/need-inline-post-browser-*/posts-visible-320-200.png
+            .account-test/need-inline-post-hosted-*/need-inline-post-browser-*/posts-concealed.png
+            .account-test/need-inline-post-hosted-*/need-form-browser-*/forms-manager-390.png
+            .account-test/need-inline-post-hosted-*/need-form-browser-*/forms-offers-390.png
+            .account-test/need-inline-post-hosted-*/need-form-browser-*/forms-offers-320-200.png
+            .account-test/need-inline-post-hosted-*/need-form-browser-*/forms-revoked.png
+            .account-test/need-inline-post-hosted-*/need-volunteer-browser-*/volunteers-visible-390.png
+            .account-test/need-inline-post-hosted-*/need-volunteer-browser-*/volunteers-visible-320-200.png
+            .account-test/need-inline-post-hosted-*/need-volunteer-browser-*/volunteers-concealed.png
+            .account-test/need-inline-post-hosted-*/need-incoming-browser-*/incoming-visible-390.png
+            .account-test/need-inline-post-hosted-*/need-incoming-browser-*/incoming-visible-320-200.png
+            .account-test/need-inline-post-hosted-*/need-incoming-browser-*/incoming-concealed-after-revocation.png
+            .account-test/need-inline-post-hosted-*/need-contribution-browser-*/contribution-390.png
+            .account-test/need-inline-post-hosted-*/need-contribution-browser-*/contribution-320-200.png
+            .account-test/need-inline-post-hosted-*/needs-browser-*/contributions-390.png
+            .account-test/need-inline-post-hosted-*/needs-browser-*/contributions-320.png
+            .account-test/need-inline-post-hosted-*/need-role-browser-*/roles-selected-390.png
+            .account-test/need-inline-post-hosted-*/need-role-browser-*/roles-selected-320-200.png
+            .account-test/need-inline-post-hosted-*/need-role-browser-*/roles-revoked.png
+            .account-test/need-inline-post-hosted-*/exchange-favorite-browser-*/favorite-390.png
+            .account-test/need-inline-post-hosted-*/exchange-favorite-browser-*/favorite-320-200.png
+            .account-test/need-inline-post-hosted-*/exchange-inquiry-composer-browser-*/composer-390.png
+            .account-test/need-inline-post-hosted-*/exchange-inquiry-composer-browser-*/composer-320-200.png
+            .account-test/need-inline-post-hosted-*/discovery-browser-*/settings-320.png
+            .account-test/need-inline-post-hosted-*/discovery-browser-*/settings-390.png
+            .account-test/need-inline-post-hosted-*/discovery-browser-*/settings-1280.png
+            .account-test/need-inline-post-hosted-*/discovery-browser-*/standalone-large-text-320.png
+            .account-test/need-inline-post-hosted-*/discovery-browser-*/final.png
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

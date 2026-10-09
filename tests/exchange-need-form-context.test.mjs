@@ -9,7 +9,7 @@ const contribution = {
   state: "COMMITTED",
   note: secret,
   quoteMinor: 24680,
-  disputeNote: "Fictional private dispute"
+  disputeNote: "Fictional private dispute",
 };
 const slot = {
   id: "slot-a",
@@ -24,7 +24,7 @@ const slot = {
   status: "Open",
   closed: false,
   loan: false,
-  volunteer: null
+  volunteer: null,
 };
 const need = {
   id: "need-a",
@@ -40,7 +40,7 @@ const need = {
   slots: [slot],
   contributions: [contribution],
   names: [],
-  updates: []
+  updates: [],
 };
 const detail = {
   listingId: "need-a",
@@ -49,7 +49,7 @@ const detail = {
   listingState: "ACTIVE",
   canCoordinate: true,
   canManage: true,
-  need
+  need,
 };
 async function serverForms() {
   const h = clientHarness({ URLSearchParams });
@@ -63,30 +63,31 @@ async function serverForms() {
       ExchangeNavigation: "nav",
       ExchangeUnavailable: "unavailable",
       exchangeChecksum: (v) =>
-        createHash("sha256").update(JSON.stringify(v)).digest("hex")
+        createHash("sha256").update(JSON.stringify(v)).digest("hex"),
     },
     "./exchange-need-forms": {
       NeedClaimForm: "claim",
       NeedSetupForm: "setup",
-      NeedSlotForm: "slot"
+      NeedSlotForm: "slot",
     },
     "./exchange-need-actions": {
       NeedOrganizerActions: "organizer",
       NeedPostLinks: "posts",
-      NeedContributionCard: "contribution"
+      NeedContributionCard: "contribution",
     },
     "./exchange-need-contributions": {
-      ExchangeNeedContributions: "contributions"
+      ExchangeNeedContributions: "contributions",
     },
     "./exchange-need-volunteers": { ExchangeNeedVolunteers: "volunteers" },
     "./exchange-need-roles": { ExchangeNeedRoles: "current-roles" },
+    "./exchange-need-posts": { ExchangeNeedPosts: "current-posts" },
     "./exchange-need-progress": {
       ExchangeNeedProgressProvider: "progress-owner",
-      NeedSlotProgress: "progress"
+      NeedSlotProgress: "progress",
     },
     "./regional-presentation": { RegionalTime: "time" },
     "@/lib/platform/session": {
-      getCurrentPlatformUser: async () => ({ id: "owner-a" })
+      getCurrentPlatformUser: async () => ({ id: "owner-a" }),
     },
     "@/lib/platform/exchange-session": {
       exchangeNeedPage: async (query) =>
@@ -94,25 +95,25 @@ async function serverForms() {
           ? { roles: [], next: null }
           : query.view === "posts"
             ? { posts: [], next: null }
-            : detail
+            : detail,
     },
     "@/lib/platform/exchange-need-form-context": h.load(
-      "lib/platform/exchange-need-form-context.ts"
+      "lib/platform/exchange-need-form-context.ts",
     ),
     "@/lib/platform/exchange-need-options": h.load(
-      "lib/platform/exchange-need-options.ts"
+      "lib/platform/exchange-need-options.ts",
     ),
     "@/lib/platform/portal-policy": { PortalError: class extends Error {} },
-    "@/lib/platform/post-input": { postId: (id) => id }
+    "@/lib/platform/post-input": { postId: (id) => id },
   });
   const result = await pageModule.ExchangeNeedsPage({
     listingId: "need-a",
-    query: {}
+    query: {},
   });
   assert.equal(nodes(result, (n) => n.type === "unavailable").length, 0);
   return result;
 }
-for (const type of ["claim", "setup", "slot", "organizer", "posts"])
+for (const type of ["claim", "setup", "slot", "organizer", "current-posts"])
   test(`${type} server props exclude unrelated private contribution data`, async () => {
     const tree = await serverForms();
     const forms = nodes(tree, (n) => n.type === type);
@@ -122,7 +123,7 @@ for (const type of ["claim", "setup", "slot", "organizer", "posts"])
       assert.ok(!value.includes(secret), `${type} duplicates private notes`);
       assert.ok(
         !value.includes("private-contribution-a"),
-        `${type} duplicates private identifiers`
+        `${type} duplicates private identifiers`,
       );
     }
   });
@@ -137,7 +138,7 @@ function formHarness() {
     command: async (value) => {
       commands.push(value);
       return true;
-    }
+    },
   };
   const context = h.load("lib/platform/exchange-need-form-context.ts");
   const common = {
@@ -146,23 +147,23 @@ function formHarness() {
     "./exchange-saved-controls": { useExchangeAction: () => action },
     "./portal-action-form": { portalInputClass: "" },
     "@/lib/platform/exchange-need-options": h.load(
-      "lib/platform/exchange-need-options.ts"
-    )
+      "lib/platform/exchange-need-options.ts",
+    ),
   };
   const forms = h.load("components/platform/exchange-need-forms.tsx", {
     "./exchange-need-roles": { useNeedRoleChoices: () => [] },
     ...common,
     "@/lib/platform/exchange-options": h.load(
-      "lib/platform/exchange-options.ts"
-    )
+      "lib/platform/exchange-options.ts",
+    ),
   });
   const actions = h.load("components/platform/exchange-need-actions.tsx", {
     ...common,
     "./use-private-choice-action": { usePrivateChoiceAction: () => action },
     "@/lib/platform/community-report-types": {
-      reportEntryHref: () => "/report"
+      reportEntryHref: () => "/report",
     },
-    "./regional-presentation": { RegionalTime: "time" }
+    "./regional-presentation": { RegionalTime: "time" },
   });
   return { h, commands, context, forms, actions };
 }
@@ -176,14 +177,14 @@ test("claim context keeps only the matching active offer state, without changing
     "QUOTED",
     "DECLINED",
     "CANCELED",
-    "REVOKED"
+    "REVOKED",
   ]) {
     const value = {
       ...need,
       contributions: [
         { ...contribution, state, slotId: "other" },
-        { ...contribution, state }
-      ]
+        { ...contribution, state },
+      ],
     };
     const before = JSON.stringify(value);
     const result = context.needClaimContext(value, slot);
@@ -191,14 +192,14 @@ test("claim context keeps only the matching active offer state, without changing
       plain(result.need.contributions),
       ["COMMITTED", "WAITLISTED", "QUOTED"].includes(state)
         ? [{ slotId: "slot-a", state }]
-        : []
+        : [],
     );
     assert.equal(JSON.stringify(value), before);
     assert.deepEqual(Object.keys(result.need).sort(), [
       "canContribute",
       "consentVersion",
       "contributions",
-      "id"
+      "id",
     ]);
   }
 });
@@ -218,8 +219,8 @@ test("slot and signup projections discard nested identifiers and unrelated field
       version: 7,
       state: "CANCELED",
       completedAt: null,
-      extra: secret
-    }
+      extra: secret,
+    },
   };
   const value = { ...slot, volunteer, extra: secret };
   const claim = context.needClaimContext(need, value),
@@ -229,14 +230,14 @@ test("slot and signup projections discard nested identifiers and unrelated field
     opportunityId: "opportunity-a",
     approvalRequired: true,
     open: false,
-    signup: { version: 7, state: "CANCELED", completedAt: null }
+    signup: { version: 7, state: "CANCELED", completedAt: null },
   });
   assert.deepEqual(plain(editor.slot.volunteer), { id: "role-a" });
   assert.ok(!JSON.stringify([claim, editor]).includes(secret));
   assert.ok(!JSON.stringify([claim, editor]).includes("private-signup-a"));
   assert.equal(
     context.needSetupContext({ ...detail, need: null }).detail.need,
-    null
+    null,
   );
   assert.equal(context.needSlotContext(need).slot, undefined);
 });
@@ -248,8 +249,8 @@ for (const [name, build] of Object.entries({
     c.needSetupContext(detail),
     (tree) =>
       nodes(tree, (n) => n.type === "form")[0].props.onSubmit({
-        preventDefault() {}
-      })
+        preventDefault() {},
+      }),
   ],
   slot: (c) => [
     "NeedSlotForm",
@@ -257,8 +258,8 @@ for (const [name, build] of Object.entries({
     { ...c.needSlotContext(need, slot), roles: [] },
     (tree) =>
       nodes(tree, (n) => n.type === "form")[0].props.onSubmit({
-        preventDefault() {}
-      })
+        preventDefault() {},
+      }),
   ],
   claim: (c) => {
     const fresh = { ...need, contributions: [] };
@@ -268,8 +269,8 @@ for (const [name, build] of Object.entries({
       c.needClaimContext(fresh, slot),
       (tree) =>
         nodes(tree, (n) => n.type === "form")[0].props.onSubmit({
-          preventDefault() {}
-        })
+          preventDefault() {},
+        }),
     ];
   },
   volunteer: (c) => {
@@ -286,16 +287,16 @@ for (const [name, build] of Object.entries({
           id: "private-signup",
           version: 4,
           state: "CANCELED",
-          completedAt: null
-        }
-      }
+          completedAt: null,
+        },
+      },
     };
     const fresh = { ...need, contributions: [] };
     return [
       "NeedClaimForm",
       { need: fresh, slot: role },
       c.needClaimContext(fresh, role),
-      (tree) => nodes(tree, (n) => n.type === "button")[0].props.onClick()
+      (tree) => nodes(tree, (n) => n.type === "button")[0].props.onClick(),
     ];
   },
   organizer: (c) => [
@@ -304,39 +305,39 @@ for (const [name, build] of Object.entries({
     c.needOrganizerContext(need),
     (tree) =>
       nodes(tree, (n) => n.type === "form")[0].props.onSubmit({
-        preventDefault() {}
-      })
+        preventDefault() {},
+      }),
   ],
   closeSlot: (c) => [
     "NeedOrganizerActions",
     { need, slot },
     c.needOrganizerContext(need, slot),
-    (tree) => nodes(tree, (n) => n.type === "button")[0].props.onClick()
+    (tree) => nodes(tree, (n) => n.type === "button")[0].props.onClick(),
   ],
   post: (c) => {
     const posts = [
-      { id: "post-a", version: 8, excerpt: "Fictional post", linked: false }
+      { id: "post-a", version: 8, excerpt: "Fictional post", linked: false },
     ];
     return [
       "NeedPostLinks",
       { need, posts },
       { ...c.needPostContext(need), posts },
-      (tree) => nodes(tree, (n) => n.type === "button")[0].props.onClick()
+      (tree) => nodes(tree, (n) => n.type === "button")[0].props.onClick(),
     ];
-  }
+  },
 }))
   test(`${name} narrowed props preserve displayed controls and exact command fields`, () => {
     const first = formHarness(),
       second = formHarness();
     const [name, full, narrow, act] = build(first.context);
     first.h.mount(() =>
-      (first.forms[name] ?? first.actions[name])({ owner: "owner-a", ...full })
+      (first.forms[name] ?? first.actions[name])({ owner: "owner-a", ...full }),
     );
     second.h.mount(() =>
       (second.forms[name] ?? second.actions[name])({
         owner: "owner-a",
-        ...narrow
-      })
+        ...narrow,
+      }),
     );
     assert.deepEqual(plain(second.h.output), plain(first.h.output));
     act(first.h.output);
@@ -355,17 +356,15 @@ for (const [name, build] of Object.entries({
     second.h.unmount();
   });
 
-test("canonical guard checksum and explicit contribution card remain unchanged", async () => {
+test("canonical form guard checksum remains unchanged while private rows use a current reader", async () => {
   const tree = await serverForms();
   assert.ok(
     nodes(tree, (n) => n.type === "guard").some(
       (n) =>
         n.props.checksum ===
-        createHash("sha256").update(JSON.stringify(detail)).digest("hex")
-    )
+        createHash("sha256").update(JSON.stringify(detail)).digest("hex"),
+    ),
   );
-  assert.equal(
-    nodes(tree, (n) => n.type === "contribution")[0].props.row,
-    contribution
-  );
+  assert.equal(nodes(tree, (n) => n.type === "contribution").length, 0);
+  assert.equal(nodes(tree, (n) => n.type === "contributions").length, 1);
 });
