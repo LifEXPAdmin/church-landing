@@ -1,3 +1,15 @@
+## Need roles and account guard verified live, 2026.10.08.16
+
+Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.16, source bccbc178a33b7e2fbfdee41a2f838735853ee456, [PR75](https://github.com/LifEXPAdmin/church-landing/pull/75).
+
+Private event role choices and cursors stay out of initial Need slot props. The existing account-pinned reader supplies bounded verified choices. A denied read conceals retained entries; only confirmed account replacement or sign-out permanently clears the mounted private children and recovery registrations for that visit. Same-owner denial or an unavailable identity preserves concealed drafts. Current contribution, incoming, volunteer, progress and original request owners remain in place.
+
+Exact-source acceptance: 642 source/security checks, 18 service cases, 6 HTTPS cases and 71 full-application browser groups; 50 controlled scenarios remain separate.
+
+Actual acceptance passed 104 staged GET checks, 293 read-only live guest checks and 5 canonical/health checks. One production deployment was submitted and that same build was promoted once for this retained run. Canonical source/version were confirmed at 2026-10-09T00:46:10.199Z; final live acceptance closed at 2026-10-09T00:48:39.481Z. Production test writes, recipient sends and queue publications were zero in this scope.
+
+Broad SEC-01 remains open. See [Need role privacy](NEED_ROLE_PRIVACY.md) for scope and limitations.
+
 ## Verified Needs roles and account replacement prepared, 8 October 2026 UTC
 
 Candidate **2026.10.08.16**, `needs-roles-account-guard`, removes private role choices from initial slot form data and clears retained private children only after a confirmed replacement account or sign-out. Three current mocked-source assertion failures were reproduced; all 152 focused Node checks pass on the applied source. Fresh hosted, browser, HTTPS and live acceptance remain pending. Current canonical release remains separately verified **2026.10.08.15**. See [Need role privacy](NEED_ROLE_PRIVACY.md).

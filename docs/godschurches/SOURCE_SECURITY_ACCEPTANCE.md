@@ -1,3 +1,19 @@
+## Need roles and account guard verified live, 2026.10.08.16
+
+Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.16, source bccbc178a33b7e2fbfdee41a2f838735853ee456, [PR75](https://github.com/LifEXPAdmin/church-landing/pull/75).
+
+Exact-source acceptance: 642 source/security checks, 18 service cases, 6 HTTPS cases and 71 full-application browser groups; 50 controlled scenarios remain separate. Isolated verification build: lzviGjGwswLWuwO84lTOG; this is not a production build identifier. Browser checks use MFA off; the same isolated build separately serves enforce for HTTPS. Audit reported 0 advisories, 496 signatures and 86 attestations; lint reported 0 errors and 42 warnings. Discovery and controlled write/send counters remain null; other per-suite measured or sparse counters retain their original scope.
+
+During preparation, three specific mocked page/guard assertions failed on the baseline. A separate 152-case focused Node run passed on the applied precommit source, including fixed-only adapter checks. These modeled checks are separate from current-candidate source checks, full-browser groups and controlled React scenarios; they do not establish HTTP, native-focus or device behavior.
+
+Hosted preparation exposed inaccessible original-request recovery through nested guards after a committed reply was lost. The guard relay was repaired without changing the request or each scope’s access checks. Five focused baseline cases failed; the repaired precommit suite passed 175 cases. Separate fixtures were corrected for public church eligibility, canonical MFA denial and re-confirmation, guard context setup, and navigation settlement after exact replay. Failed candidates and focused checks remain separate from fresh acceptance. The stable sequential test transition does not prove all rapid real-user navigation; rapid repeated Back remains unresolved. A later run was canceled with its paused operation unknown; the response-completion wait now has an explicit 15-second bound. Current hosted and staged/live checks passed separately; none of the earlier diagnostic counts was added to those totals.
+
+All 165 table fingerprints and 123 migration checksums were unchanged at 2026-10-09T00:48:37.063Z; no new migration ran. The ordinary restore completed at 2026-10-08T04:51:44.297Z was reused with its original applicability evidence. No new restore or protected replay was performed.
+
+The observed runtime window 2026-10-09T00:46:10.199Z to 2026-10-09T00:48:32.437Z contained zero error, fatal or CSP diagnostic rows. Queue-consumer execution and real provider delivery were not exercised.
+
+This is targeted role-projection and account-guard behavior, not routing-only HTML/RSC or memory erasure. Authorized own inline contribution data can remain in initial markup. Later inline/post/offer receipt owners, rearming, accepted-refresh sibling-draft survival, rapid repeated Back, physical-device/provider and capacity acceptance remain separate. Broad SEC-01 stays open.
+
 ## Verified Needs roles and account replacement prepared, 8 October 2026 UTC
 
 The current server-page body reproduced role identity in serialized output; two modeled account replacement cases retained the original child after denied reads. These three failures were `ERR_ASSERTION` results, not missing imports or setup errors. All 152 focused guard, role, favorite and current Need checks pass after the four-file source reconciliation. The new role adapter cases are fixed-only. Fresh source/security CI, full application, HTTPS and separately scoped controlled verification remain pending; no older passing count is treated as current acceptance.

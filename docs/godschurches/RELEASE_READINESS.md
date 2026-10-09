@@ -1,3 +1,17 @@
+## Need roles and account guard verified live, 2026.10.08.16
+
+Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.16, source bccbc178a33b7e2fbfdee41a2f838735853ee456, [PR75](https://github.com/LifEXPAdmin/church-landing/pull/75).
+
+The narrow role-projection and confirmed-account clearing scope passed the actual acceptance below. This is targeted role-projection and account-guard behavior, not routing-only HTML/RSC or memory erasure. Authorized own inline contribution data can remain in initial markup. Later inline/post/offer receipt owners, rearming, accepted-refresh sibling-draft survival, rapid repeated Back, physical-device/provider and capacity acceptance remain separate. Broad SEC-01 stays open.
+
+Exact-source acceptance: 642 source/security checks, 18 service cases, 6 HTTPS cases and 71 full-application browser groups; 50 controlled scenarios remain separate.
+
+Actual acceptance passed 104 staged GET checks, 293 read-only live guest checks and 5 canonical/health checks. One production deployment was submitted and that same build was promoted once for this retained run. Canonical source/version were confirmed at 2026-10-09T00:46:10.199Z; final live acceptance closed at 2026-10-09T00:48:39.481Z. Production test writes, recipient sends and queue publications were zero in this scope.
+
+All 165 table fingerprints and 123 migration checksums were unchanged at 2026-10-09T00:48:37.063Z; no new migration ran. The ordinary restore completed at 2026-10-08T04:51:44.297Z was reused with its original applicability evidence. No new restore or protected replay was performed.
+
+This report-only closeout does not request another production deployment or complete broader security work.
+
 ## Verified Needs roles and account replacement prepared, 8 October 2026 UTC
 
 The bounded role and shared account-guard prerequisite is applied. Current Node reproduction observed three specific assertion failures, followed by 152 focused passes. These deterministic component checks do not establish browser or release readiness. Current full application and shared-consumer regression evidence, independent review and operational release gates remain open. Broad security, later Needs owner/rearm, export and provider/device acceptance remain separate.

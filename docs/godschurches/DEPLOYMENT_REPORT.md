@@ -1,3 +1,27 @@
+## Need roles and account guard verified live, 2026.10.08.16
+
+Verified live at https://godschurches.com; independent post-live review accepted. Version 2026.10.08.16, source bccbc178a33b7e2fbfdee41a2f838735853ee456, [PR75](https://github.com/LifEXPAdmin/church-landing/pull/75).
+
+Private event role choices and cursors stay out of initial Need slot props. The existing account-pinned reader supplies bounded verified choices. A denied read conceals retained entries; only confirmed account replacement or sign-out permanently clears the mounted private children and recovery registrations for that visit. Same-owner denial or an unavailable identity preserves concealed drafts. Current contribution, incoming, volunteer, progress and original request owners remain in place.
+
+Exact-source acceptance: 642 source/security checks, 18 service cases, 6 HTTPS cases and 71 full-application browser groups; 50 controlled scenarios remain separate. Isolated verification build: lzviGjGwswLWuwO84lTOG; this is not a production build identifier. Browser checks use MFA off; the same isolated build separately serves enforce for HTTPS. Audit reported 0 advisories, 496 signatures and 86 attestations; lint reported 0 errors and 42 warnings. Discovery and controlled write/send counters remain null; other per-suite measured or sparse counters retain their original scope.
+
+During preparation, three specific mocked page/guard assertions failed on the baseline. A separate 152-case focused Node run passed on the applied precommit source, including fixed-only adapter checks. These modeled checks are separate from current-candidate source checks, full-browser groups and controlled React scenarios; they do not establish HTTP, native-focus or device behavior.
+
+Actual acceptance passed 104 staged GET checks, 293 read-only live guest checks and 5 canonical/health checks. One production deployment was submitted and that same build was promoted once for this retained run. Canonical source/version were confirmed at 2026-10-09T00:46:10.199Z; final live acceptance closed at 2026-10-09T00:48:39.481Z. Production test writes, recipient sends and queue publications were zero in this scope.
+
+All 165 table fingerprints and 123 migration checksums were unchanged at 2026-10-09T00:48:37.063Z; no new migration ran. The ordinary restore completed at 2026-10-08T04:51:44.297Z was reused with its original applicability evidence. No new restore or protected replay was performed.
+
+The observed runtime window 2026-10-09T00:46:10.199Z to 2026-10-09T00:48:32.437Z contained zero error, fatal or CSP diagnostic rows. Queue-consumer execution and real provider delivery were not exercised.
+
+Read-only scheduled-backup inspection at 2026-10-09T00:47:50.736Z found the scheduler loaded, last exit zero and no operational problems. Installed copy age was 15.68 hours, at or below its 20-hour refresh predicate. This inspection performed no copy, restore, job invocation or inventory refresh; scheduled metadata is separate from the ordinary restore.
+
+Hosted preparation exposed inaccessible original-request recovery through nested guards after a committed reply was lost. The guard relay was repaired without changing the request or each scope’s access checks. Five focused baseline cases failed; the repaired precommit suite passed 175 cases. Separate fixtures were corrected for public church eligibility, canonical MFA denial and re-confirmation, guard context setup, and navigation settlement after exact replay. Failed candidates and focused checks remain separate from fresh acceptance. The stable sequential test transition does not prove all rapid real-user navigation; rapid repeated Back remains unresolved. A later run was canceled with its paused operation unknown; the response-completion wait now has an explicit 15-second bound. Current hosted and staged/live checks passed separately; none of the earlier diagnostic counts was added to those totals.
+
+All 23 current guest live captures were reviewed with no new scoped visual blocker. Fixed navigation overlaps the lower sign-in area at narrow widths, including part of the primary button at 320px; the enlarged Topic view retains large heading wrapping. These observations do not establish unobstructed controls, comprehensive accessibility, physical-device behavior or authenticated role/replay flows. Rapid repeated Back remains unverified. The hosted build identifier describes isolated verification, not a verified production Next build ID.
+
+This is targeted role-projection and account-guard behavior, not routing-only HTML/RSC or memory erasure. Authorized own inline contribution data can remain in initial markup. Later inline/post/offer receipt owners, rearming, accepted-refresh sibling-draft survival, rapid repeated Back, physical-device/provider and capacity acceptance remain separate. Broad SEC-01 stays open.
+
 ## Verified Needs roles and account replacement prepared, 8 October 2026 UTC
 
 No deployment has been submitted for this candidate. The source preserves current recipient contexts, progress/loan behavior, canonical authorization, schema and dependencies. Fresh combined source, build, service, HTTPS, shared-consumer browser, recovery and live checks are required before publication. The verified production baseline remains 2026.10.08.15. See [Need role privacy](NEED_ROLE_PRIVACY.md) for the intended scope and current evidence.
