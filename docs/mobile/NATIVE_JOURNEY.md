@@ -255,9 +255,10 @@ available padded width while preserving centered text, native wrapping and
 intrinsic height. All 301 existing mobile regressions and a fresh iPhone Release
 build pass. The small iPhone shows the complete normal-size weekly label in both
 selection states and a longer four-line button at maximum text size. The weekly
-control at maximum size and separate heading overflow remain explicit visual
-follow-ups. Android's measured text-view/layout mismatch still requires its own
-corrected-binary acceptance. See [the bounded width check](IOS_BUILD.md#shared-button-label-width).
+control at maximum size and the incompletely visible separate heading required
+visual follow-up in that run. Android's measured text-view/layout mismatch still
+requires its own corrected-binary acceptance. See
+[the bounded width check](IOS_BUILD.md#shared-button-label-width).
 
 ## Detail scroll continuity
 
@@ -286,3 +287,20 @@ The callback harness is not React/Fabric or native-device evidence. Fresh iPhone
 and Android checks of periodic detail restoration, changed-content clamping and
 large-text layout remain open, alongside the existing backend, accessibility,
 dependency-security and release gates.
+
+The subsequent combined iPhone checkpoint passes all 309 mobile tests and a
+fresh unsigned Release build. On the iPhone SE Simulator with iOS 18.3.1, saved
+church-detail captures retain the same reading landmark across 59 seconds with
+no app interaction. Back keeps the weekly second page and a scrolled position;
+accessibility activation prevents an exact before/after feed-offset claim.
+Reopening starts at the top. Prayer content requires reveal again after recheck,
+but its saved pair does not establish changed-content clamping or reveal-time
+scroll continuity. Intermediate loading frames and touch-only behavior remain
+unverified.
+
+The full live-maximum Preview checks heading is wrapped, not clipped, and the
+selected weekly label is complete on two lines inside its border. Unselected
+maximum-size weekly layout remains open. Normal text was restored before the
+source-unchanged session shut down. No further primitive or theme edit was made.
+See [the combined native observations](IOS_BUILD.md#detail-scroll-and-complete-enlarged-labels)
+for the artifact identity and remaining acceptance limits.

@@ -428,10 +428,43 @@ again complete. The managed session closed with source unchanged, normal text
 restored and the task device shut down.
 
 Automated scrolling did not reliably position the whole weekly control at
-maximum text size; that visual case remains unverified. The largest guest capture
-also shows apparent horizontal clipping of the separate Preview checks heading,
-preserved for follow-up. This bounded Button check does not establish complete
+maximum text size in that run. The largest guest capture also left the separate
+Preview checks heading incompletely visible, so it could not establish clipping.
+The subsequent observations below resolve the heading and selected weekly case.
+This bounded Button check does not establish complete
 large-text or assistive-technology acceptance. Android must verify the corrected
 binary's visible labels and allocated text height against native line layout at
 default, enlarged and restored sizes. Existing backend, device and release gates
 remain open.
+
+## Detail scroll and complete enlarged labels
+
+The combined detail-scroll source passes all 309 mobile tests without skips,
+mobile TypeScript 6, lint, the 46-module boundary, copy and source-security checks.
+A fresh unsigned Xcode 27 Release build passed. The installed iPhone SE Simulator
+app on iOS 18.3.1 matches the build's JavaScript, executable and Info.plist hashes.
+Its Hermes bundle is 1,772,655 bytes, 900 bytes above the Button checkpoint.
+This measures the artifact only, not download size or runtime performance.
+
+A scrolled fictional church detail retained its visible reading landmark across
+59 seconds without app interaction, spanning the reader's 30-second recheck
+interval. Back returned to the selected weekly feed's second page at a scrolled
+position. Accessibility activation also scrolls the target into view, so the feed
+captures do not establish exact offset equality. Reopening the detail started at
+the top. A separate prayer observation showed revealed content becoming hidden
+again after recheck. That saved pair begins at the top and does not prove
+changed-content clamping or reveal-transition scroll continuity. No intermediate
+loading frame, request count or absence of a brief visual flash is claimed.
+
+At live maximum system text size, the complete Preview checks heading wraps
+across four lines; the earlier cropped image was not a clipping defect. The
+complete selected Top This Week label wraps across two centered lines inside its
+border. Its unselected maximum-size state could not be reliably positioned and
+remains unverified. Restored normal text shows the selected label complete again.
+The managed session closed with unchanged source, normal text restored and the
+owned device shut down. No theme or primitive change was needed for these checks.
+
+This run does not repeat privacy lifecycle, Like recovery or form-keyboard tests.
+Changed-bounds native restoration, touch-only navigation, cold maximum-text
+launch, full assistive technology, Android and physical-device acceptance remain
+open, as do real HTTPS/session, minimum-iOS, dependency-security and release gates.
