@@ -36,10 +36,21 @@ changes and late responses after cancellation. Failure messages and clock errors
 are sanitized; server Retry-After remains a hint for explicit recovery.
 
 `mobile/src/session/native-client.ts` supplies typed session, activity, logout,
-capability, feed, post and Like consumers. Schema, envelope, viewer and error rules
+capability, feed, post, Like and authored reaction-count preference consumers. Schema, envelope, viewer and error rules
 remain in the shared package. The native layer contains no parallel server
 authorization or business policy. A separate captured source allows old-session
 revocation after visible local state has already been cleared.
+
+The account preference consumer admits exact GET/POST
+`/api/platform/v1/reaction-preferences` requests through all three policy layers.
+Both methods require the captured bearer and expected account. Queries, including
+an empty `?`, suffixes and encoded path aliases are rejected. Existing origin,
+header, byte, cancellation and one-shot-write bounds are unchanged. The canonical
+decoder binds read owner and mutation receipt owner to the captured viewer. The
+consumer additionally requires the receipt version to equal the immutable
+command's expected version plus one. Malformed acknowledgments leave dispatched
+choices unconfirmed. A valid historical receipt is followed by a fresh preference
+read; no response message or historical version becomes current account state.
 
 ## Native wire implementation
 
@@ -113,7 +124,7 @@ no network requests and changes no trust settings. These checks exercise macOS
 Foundation, not the Expo wrapper or an iOS binary. Android compilation and the
 resolved Gradle dependency graph require the configured Android toolchain.
 
-The current Swift 6 compile passes with warnings treated as errors. Fourteen macOS
+The current Swift 6 compile passes with warnings treated as errors. Seventeen macOS
 Foundation test groups cover request policy, single-use bodies, responses,
 redirect refusal, cancellation and the native 15-second deadline. Cancellation
 waits for the fictional request to start before cancelling, so that check proves
@@ -121,6 +132,13 @@ an active task was stopped. This evidence does not establish iOS or Android
 binary acceptance. The current Xcode compiler required an explicit strong capture
 on the existing serial reserve closure; its nested deadline timer remains weak.
 This preserves the existing ownership while satisfying the strict capture check.
+
+The three additional preference-policy groups cover exact authenticated GET/POST,
+guest rejection and method/query/path-alias rejection. Fresh project/Pods
+preparation and an iOS Release build include the updated policy. Fictional
+preference-screen observations use the in-memory wire and do not establish native
+HTTP or backend acceptance. The subsequent shared intake executes Kotlin's
+matching preference cases as described below.
 
 The Like route adds focused JavaScript and Swift policy cases for exact paths,
 guest reads, authenticated writes, method/query rejection, header rules and the
@@ -139,6 +157,14 @@ resolved compiler and Release compile graphs, then reused from its existing
 cache without downloads. The private receipt pins every input and output hash.
 This verifies standalone JVM policy behavior, including one-shot replay rejection;
 it does not verify the Expo bridge, an Android binary, TLS or network behavior.
+
+The preference intake then compiles the updated policy and assertion entrypoint
+with the same resolved toolchain, rechecking every reused dependency hash. All
+seven Like/preference groups pass with warnings treated as errors. The new cases
+cover exact authenticated GET/POST, owner-header pairing, method/query/path-alias
+rejection, UTF-8 body limits and one-shot dispatch/body behavior. This is fresh
+standalone JVM evidence; preference behavior in an Android binary and native HTTP
+remain unverified. No dependencies were installed for this check.
 
 Autolinking search and resolution can verify both native class registrations
 without generating a new app project or installing dependencies. Podspec syntax

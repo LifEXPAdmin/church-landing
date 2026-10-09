@@ -71,6 +71,50 @@ private func likePolicyChecks() throws -> Int {
   return 4
 }
 
+private func reactionPreferencesPolicyChecks() throws -> Int {
+  let path = "/api/platform/v1/reaction-preferences"
+  var authenticated = headers
+  authenticated["Authorization"] = "Bearer " + String(repeating: "a", count: 43)
+  authenticated["X-Expected-Account"] = "fictional"
+  var writing = authenticated; writing["Content-Type"] = "application/json"
+  func input(_ value: String, _ method: String = "GET", _ fields: [String: String]? = nil, _ body: String? = nil) -> GCJSONRequest {
+    GCJSONRequest(url: origin + value, method: method, headers: fields ?? authenticated, body: body)
+  }
+  for method in ["GET", "POST"] {
+    let value = try GCJSONPolicy.request(input(path, method, method == "POST" ? writing : authenticated, method == "POST" ? "{}" : nil), origin: origin)
+    expect(value.url?.absoluteString == origin + path && value.httpMethod == method, "exact preference route")
+    expect(value.value(forHTTPHeaderField: "Authorization") == authenticated["Authorization"] &&
+      value.value(forHTTPHeaderField: "X-Expected-Account") == "fictional", "preference account binding")
+    expect(value.cachePolicy == .reloadIgnoringLocalCacheData && !value.httpShouldHandleCookies && value.timeoutInterval == 15, "preference transport limits")
+    var guest = headers; if method == "POST" { guest["Content-Type"] = "application/json" }
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, method, guest, method == "POST" ? "{}" : nil), origin: origin) }, "preferences require account")
+    for key in ["Authorization", "X-Expected-Account"] {
+      var missing = method == "POST" ? writing : authenticated; missing.removeValue(forKey: key)
+      expect(rejects { _ = try GCJSONPolicy.request(input(path, method, missing, method == "POST" ? "{}" : nil), origin: origin) }, "preferences require both account headers")
+    }
+  }
+  for value in [
+    "/api/platform/v1/reaction-preference", "/api/platform/v1/Reaction-preferences",
+    "/api/platform/v1/%72eaction-preferences", "/api/platform/v1/reaction%2dpreferences",
+    path + "/", path + "/extra", path + "?", path + "?copy=1", path + "?#fragment", path + "#fragment"
+  ] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(value), origin: origin) }, "unsafe preference GET path")
+    expect(rejects { _ = try GCJSONPolicy.request(input(value, "POST", writing, "{}"), origin: origin) }, "unsafe preference POST path")
+  }
+  for method in ["PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "get", "post"] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, method), origin: origin) }, "unsupported preference method")
+  }
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "GET", authenticated, ""), origin: origin) }, "preference GET has no body")
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "GET", writing), origin: origin) }, "preference GET has no body header")
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", writing), origin: origin) }, "preference POST requires body")
+  for body in [String(repeating: "x", count: 16385), String(repeating: "é", count: 8193)] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", writing, body), origin: origin) }, "preference UTF8 byte cap")
+  }
+  let maximum = try GCJSONPolicy.request(input(path, "POST", writing, String(repeating: "é", count: 8192)), origin: origin)
+  expect(maximum.value(forHTTPHeaderField: "Content-Length") == "16384" && maximum.httpBody == nil, "preference body remains a bounded one-shot input")
+  return 3
+}
+
 private final class ChallengeSender: NSObject, URLAuthenticationChallengeSender {
   func use(_ credential: URLCredential, for challenge: URLAuthenticationChallenge) {}
   func continueWithoutCredential(for challenge: URLAuthenticationChallenge) {}
@@ -151,6 +195,7 @@ private final class FictionalProtocol: URLProtocol, @unchecked Sendable {
     expect(rejects { _ = try GCJSONPolicy.request(GCJSONRequest(url: origin + "/api/platform/v1/session/logout", method: "POST", headers: postHeaders, body: String(repeating: "x", count: 129)), origin: origin) }, "session request cap")
     groups += 1
     groups += try likePolicyChecks()
+    groups += try reactionPreferencesPolicyChecks()
     var bytes = Data(repeating: 65, count: GCJSONPolicy.maximumBytes - 1)
     try GCJSONPolicy.append(Data([65]), to: &bytes)
     expect(rejects { try GCJSONPolicy.append(Data([65]), to: &bytes) }, "response cap")

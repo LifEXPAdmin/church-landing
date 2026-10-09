@@ -304,3 +304,57 @@ maximum-size weekly layout remains open. Normal text was restored before the
 source-unchanged session shut down. No further primitive or theme edit was made.
 See [the combined native observations](IOS_BUILD.md#detail-scroll-and-complete-enlarged-labels)
 for the artifact identity and remaining acceptance limits.
+
+## Authored reaction-count settings
+
+The signed-in account panel consumes the existing reaction-preference contract.
+It controls Like and prayer totals on the member's own personal posts and
+comments. Church totals, comment totals, audiences and others' ability to react
+are unchanged. It is separate from local reading display controls. Opening the
+panel checks unique read/write capabilities and the current owner-bound setting;
+startup and feed cards do not fetch preferences. Unavailable writes remain
+disabled. Recovery-required state stays hidden and permits an explicit protected
+choice, including keeping totals hidden, without automatically saving anything.
+
+The panel clears the reader and its periodic recheck, removing feed/detail and
+Like projections before editing. Ordinary close freshly reads the same detail or
+the saved finite feed page. A pending preference command blocks all reading and
+navigation until its exact acknowledgment is reconciled. A current GET alone
+cannot remove that barrier: an interrupted POST could still commit after it.
+The member can retry the same choice, check current availability or sign out.
+
+One immutable choice remains in memory through an interrupted reply. A confirmed
+first rejection requires a fresh setting read before a new choice. A later pause
+or denial after uncertainty preserves the original command. Valid acknowledgment
+clears it and obtains current state through a fresh GET; a historical receipt
+never overwrites a newer choice. A failed follow-up GET offers explicit refresh,
+not another mutation. The app adds no timer, automatic resend, rebasing, persistent
+outbox, dependency or parallel server policy.
+
+Concealment hides the panel and pending metadata and aborts its flight. After
+fresh verification of the same saved credential, a generic pending-review control
+allows explicit recovery while posts remain hidden. Sign-out, replacement sign-in
+and disposal discard the choice. Rendered snapshot, mounted-leaf and in-flight
+guards reject stale or duplicate controls before activity renewal. Android Back
+closes an ordinary panel; a pending choice keeps the confirmation screen active.
+
+The fictional preview can interrupt a preference reply after its in-memory save.
+It keeps one bounded historical receipt and projects personal authored totals
+through its current choice, including plain repost originals. This exercises the
+canonical native client and controller without a real server. Source tests and
+fictional native observations remain distinct from real HTTPS, privacy recovery,
+full accessibility, physical-device and release acceptance.
+
+The combined source passes 336 mobile tests and the existing source checks. A
+fresh unsigned Release build on the iPhone SE Simulator verifies bounded
+fictional hide/show, retained own Like state, interrupted-save recovery, pending
+reading barriers across verified return, logout cleanup and complete maximum-size
+recovery labels. Ordinary panel close preserves the prior detail or feed page;
+session concealment retains its existing reading reset. See
+[the native observations and limits](IOS_BUILD.md#authored-reaction-count-preference-acceptance).
+
+
+The shared intake retains the exact preference code and test bytes, passes 217
+focused local cases, and compiles/runs seven standalone Kotlin Like/preference
+policy groups. See [shared intake evidence](IOS_BUILD.md#shared-preference-intake)
+for the dependency recovery and native acceptance limits.

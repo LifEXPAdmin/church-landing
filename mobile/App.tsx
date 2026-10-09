@@ -27,6 +27,11 @@ function useAndroidBack(runtime: Fixture["runtime"]) {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => handleAndroidBack({
       isKeyboardVisible: () => Keyboard.isVisible(), dismissKeyboard: () => Keyboard.dismiss(),
       goBack: () => {
+        const preference = runtime.reactionPreferences.getSnapshot();
+        if (preference.hasPending) return true;
+        if (preference.open) {
+          void runtime.recordForegroundActivity(); void runtime.closeReactionPreferences(preference); return true;
+        }
         if (runtime.session.getSnapshot().phase !== "ready" || runtime.navigation.getSnapshot().destination?.kind !== "post") return false;
         void runtime.recordForegroundActivity(); void runtime.backToFeed(); return true;
       }
@@ -92,6 +97,7 @@ function Preview({ fixture }: { fixture: Fixture }) {
       <Text variant="small" tone="muted">Fictional responses stay in memory. These checks do not connect to a real account.</Text>
       <Button label="Try interrupted read" secondary disabled={session.phase !== "ready"} onPress={() => readCase(fixture.failNextRead)} />
       <Button label="Interrupt next Like reply" secondary disabled={session.phase !== "ready"} onPress={fixture.interruptNextLikeReply} />
+      <Button label="Interrupt next count setting reply" secondary disabled={session.phase !== "ready"} onPress={fixture.interruptNextPreferenceReply} />
       <Button label="Try empty feed" secondary disabled={session.phase !== "ready"} onPress={() => readCase(fixture.emptyNextFeed)} />
       <Button label="Test app link" secondary onPress={() => { void checkLink(); }} />
       {linkStatus ? <Text accessibilityLiveRegion="polite">{linkStatus}</Text> : null}

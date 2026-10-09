@@ -17,6 +17,49 @@ private fun rejects(message: String, action: () -> Unit) {
   check(runCatching(action).isFailure) { message }
 }
 
+private fun reactionPreferencesPolicyChecks() {
+  val path = "/api/platform/v1/reaction-preferences"
+  for (method in listOf("GET", "POST")) {
+    val fields = if (method == "POST") writing else authenticated
+    val body = if (method == "POST") "{}" else null
+    val value = GCJSONPolicy.request(input(path, method, fields, body), origin)
+    check(value.url.toString() == origin + path && value.method == method)
+    check(value.header("Authorization") == authenticated["Authorization"] && value.header("X-Expected-Account") == "fictional")
+    check(value.header("Cache-Control") == "no-store" && value.header("Cookie") == null)
+    val guest = if (method == "POST") headers + ("Content-Type" to "application/json") else headers
+    rejects("preferences require account") { GCJSONPolicy.request(input(path, method, guest, body), origin) }
+    for (key in listOf("Authorization", "X-Expected-Account")) {
+      rejects("preferences require both account headers") { GCJSONPolicy.request(input(path, method, fields - key, body), origin) }
+    }
+  }
+  for (bad in listOf(
+    "/api/platform/v1/reaction-preference", "/api/platform/v1/Reaction-preferences",
+    "/api/platform/v1/%72eaction-preferences", "/api/platform/v1/reaction%2dpreferences",
+    "$path/", "$path/extra", "$path?", "$path?copy=1", "$path?#fragment", "$path#fragment"
+  )) {
+    rejects("unsafe preference GET path") { GCJSONPolicy.request(input(bad), origin) }
+    rejects("unsafe preference POST path") { GCJSONPolicy.request(input(bad, "POST", writing, "{}"), origin) }
+  }
+  for (method in listOf("PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "get", "post")) {
+    rejects("unsupported preference method") { GCJSONPolicy.request(input(path, method), origin) }
+  }
+  rejects("preference GET has no body") { GCJSONPolicy.request(input(path, body = ""), origin) }
+  rejects("preference GET has no body header") { GCJSONPolicy.request(input(path, fields = writing), origin) }
+  rejects("preference POST requires body") { GCJSONPolicy.request(input(path, "POST", writing), origin) }
+  for (body in listOf("x".repeat(16385), "é".repeat(8193))) {
+    rejects("preference UTF8 byte cap") { GCJSONPolicy.request(input(path, "POST", writing, body), origin) }
+  }
+  val body = "é".repeat(8192)
+  val maximum = GCJSONPolicy.request(input(path, "POST", writing, body), origin)
+  check(maximum.body?.contentLength() == 16384L && maximum.body?.isOneShot() == true)
+  val buffer = Buffer()
+  maximum.body!!.writeTo(buffer)
+  rejects("preference body cannot replay") { maximum.body!!.writeTo(buffer) }
+  check(buffer.readUtf8() == body)
+  val dispatch = maximum.tag(GCJSONDispatch::class.java)!!
+  check(dispatch.take() && !dispatch.take())
+}
+
 fun main() {
   check(GCJSONPolicy.origin("staging", origin) == origin)
   for (id in listOf("a", "Ab_9-", "x".repeat(100))) {
@@ -79,5 +122,6 @@ fun main() {
   val dispatch = maximum.tag(GCJSONDispatch::class.java)!!
   check(dispatch.take() && !dispatch.take())
   check(GCJSONPolicy.MAXIMUM_BYTES == 2 * 1024 * 1024 && GCJSONPolicy.MAXIMUM_FLIGHTS == 4 && GCJSONPolicy.DEADLINE_SECONDS == 15L)
-  println("Passed 4 Kotlin Like policy groups. No Android binary, Expo bridge, TLS or network acceptance.")
+  reactionPreferencesPolicyChecks()
+  println("Passed 7 Kotlin Like/preference policy groups. No Android binary, Expo bridge, TLS or network acceptance.")
 }

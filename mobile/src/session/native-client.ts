@@ -92,6 +92,26 @@ export function createNativeClient(adapter: RequestAdapter) {
         }
       }).run({ cancellation: cancellation(signal) })).data;
     },
+    async reactionPreferences(owner: string, signal?: AbortSignal) {
+      apiId.parse(owner);
+      return (await prepareRequest(adapter, {
+        path: apiContracts.reactionPreferences.path, method: "GET", expectedOwner: owner,
+        decode: (value, original) => decodeApiResponse("reactionPreferences", value, original.owner)
+      }).run({ cancellation: cancellation(signal) })).data;
+    },
+    prepareReactionPreferences(owner: string, input: WireValue<typeof apiContracts.setReactionPreferences.body>) {
+      apiId.parse(owner);
+      const parsed = apiContracts.setReactionPreferences.body.parse(input), expectedVersion = parsed.expectedVersion;
+      const body = JSON.stringify(parsed);
+      return prepareRequest(adapter, {
+        path: apiContracts.setReactionPreferences.path, method: "POST", expectedOwner: owner, body, idempotent: true,
+        decode: (value, original) => {
+          const result = decodeApiResponse("setReactionPreferences", value, original.owner);
+          if (result.data.version !== expectedVersion + 1) throw new Error("Preference receipt version did not match the choice.");
+          return result;
+        }
+      });
+    },
     prepareLike(owner: string, postId: string, interactionId: string,
       input: WireValue<typeof apiContracts.setLike.body>) {
       apiId.parse(owner);

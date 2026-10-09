@@ -88,6 +88,7 @@ function componentHarness(runtime: Runtime) {
   }
   modules["./NativeFeedChoices"] = evaluate(choicesCode);
   modules["./NativePostLike"] = evaluate(compile("NativePostLike"));
+  modules["./NativeReactionPreferences"] = evaluate(compile("NativeReactionPreferences"));
   const { NativeJourney } = evaluate(journeyCode);
   assert.equal(typeof NativeJourney, "function");
   function cleanup(instance: Instance) { for (const work of instance.cleanups.values()) work(); instance.cleanups.clear(); }
@@ -500,4 +501,24 @@ test("navigation replacement and getter-triggered expiry fence detail callbacks 
     next.content(); next.scroll(0); next.drag(); assert.deepEqual(next.calls, []);
     assert.deepEqual(s.commands, []);
   }
+});
+
+test("the account panel and a pending count choice remove reading hosts across verified return", async t => {
+  const fixture = createNativeFixture({ latencyMs: 0 }), runtime = fixture.runtime; t.after(runtime.dispose);
+  await runtime.setForeground(true); await fixture.signIn();
+  const view = componentHarness(runtime); t.after(view.unmount);
+  const before = view.render(); assert.equal(view.posts().length, 2);
+  await runtime.openReactionPreferences(runtime.reactionPreferences.getSnapshot());
+  const panel = view.render(); assert.deepEqual(view.posts(), []);
+  assert.equal(panel.props.scrollRef, undefined); assert.notEqual(panel.props.scrollKey, before.props.scrollKey);
+  fixture.interruptNextPreferenceReply();
+  await runtime.setReactionPreferences(runtime.reactionPreferences.getSnapshot(), false);
+  view.render(); assert.deepEqual(view.posts(), []);
+  await runtime.setForeground(false); view.render(); await runtime.setForeground(true);
+  const returned = view.render(); assert.equal(returned.props.scrollRef, undefined); assert.deepEqual(view.posts(), []);
+  assert.equal(runtime.reactionPreferences.getSnapshot().hasPending, true);
+  await runtime.openReactionPreferences(runtime.reactionPreferences.getSnapshot());
+  await runtime.retryReactionPreferences(runtime.reactionPreferences.getSnapshot());
+  await runtime.closeReactionPreferences(runtime.reactionPreferences.getSnapshot());
+  view.render(); assert.equal(view.posts().length, 2);
 });
