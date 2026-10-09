@@ -9,8 +9,9 @@ import { createNativePrivacySource } from "../platform/native-privacy.native";
 import { presentationMatches, type NativePrivacyPresentation as Presentation } from "../platform/native-privacy.ts";
 import { Button, Card, Screen, Text } from "./primitives";
 import { NativePost } from "./NativePost";
+import { NativePendingLike, NativePostLike } from "./NativePostLike";
 import { NativeFeedChoices } from "./NativeFeedChoices";
-import { captureFeedScrollPosition, restoreFeedScrollPosition, type FeedScrollIdentity, type FeedScrollPosition } from "./feed-scroll-position";
+import { captureScrollPosition, restoreScrollPosition, type ScrollIdentity, type ScrollPosition } from "./feed-scroll-position";
 import { PasswordSignIn } from "./PasswordSignIn";
 import { NativePrivacyPresentation } from "./NativePrivacyPresentation";
 import { useTheme } from "./theme";
@@ -19,12 +20,14 @@ type Runtime = ReturnType<typeof createNativeRuntime>;
 type SignInMode = { kind: "password" } | { kind: "fixture"; signIn: () => Promise<void>;
   credentials: Readonly<{ email: string; password: string }> };
 
-type FeedScrollMemory = { runtime: Runtime; position: FeedScrollPosition | null; mount: object | null };
+type Navigation = ReturnType<Runtime["navigation"]["getSnapshot"]>;
+type ScrollMemory = { runtime: Runtime; navigation: Navigation;
+  positions: Record<ScrollIdentity["kind"], ScrollPosition | null>; mount: object | null };
 
 /** A response owns stable handlers, but only an attached native view may use
- * them. The bookmark contains an address and pixels, never retained feed data. */
-function feedScrollHandlers(runtime: Runtime, reading: Extract<ReadingSnapshot, { kind: "feed" }>,
-  identity: FeedScrollIdentity, memory: FeedScrollMemory) {
+ * them. Bookmarks contain addresses and pixels, never retained reading data. */
+function readingScrollHandlers(runtime: Runtime, navigation: Navigation,
+  reading: Extract<ReadingSnapshot, { kind: "feed" | "post" }>, identity: ScrollIdentity, memory: ScrollMemory) {
   let view: ScrollView | null = null, attachment: object | null = null;
   let viewportHeight: number | null = null, contentHeight: number | null = null;
   let measured = false, pending: number | null = null;
@@ -34,22 +37,27 @@ function feedScrollHandlers(runtime: Runtime, reading: Extract<ReadingSnapshot, 
     if (!attached || !nativeView || memory.runtime !== runtime || memory.mount !== attached) return null;
     const session = runtime.session.getSnapshot();
     const currentReading = runtime.reading.getSnapshot();
+    const currentNavigation = runtime.navigation.getSnapshot();
+    // Reveal changes only presentation, not the immutable authorized response.
+    const sameResponse = reading.kind === "post"
+      ? currentReading.kind === "post" && currentReading.post === reading.post : currentReading === reading;
     // Reading/session getters can synchronously expire access and notify React.
     // Recheck the session and attachment after those calls before any mutation.
     return session.foreground && session.phase === "ready" && session.account?.id === identity.owner &&
-      session.generation === identity.generation && currentReading === reading &&
-      runtime.session.getSnapshot() === session && runtime.reading.getSnapshot() === reading &&
+      session.generation === identity.generation && sameResponse && currentNavigation === navigation &&
+      runtime.session.getSnapshot() === session && runtime.reading.getSnapshot() === currentReading &&
+      runtime.navigation.getSnapshot() === navigation &&
       attachment === attached && memory.mount === attached && view === nativeView
       ? nativeView : null;
   }
   function restore() {
     if (measured || viewportHeight === null || contentHeight === null || !current()) return;
-    const target = restoreFeedScrollPosition(memory.position, identity, { viewportHeight, contentHeight });
+    const target = restoreScrollPosition(memory.positions[identity.kind], identity, { viewportHeight, contentHeight });
     const nativeView = current();
     if (!nativeView) return;
     measured = true;
     pending = target;
-    if (target === null) memory.position = null;
+    if (target === null) memory.positions[identity.kind] = null;
     else {
       // A queued zero event must not replace the bookmark before native scroll
       // acknowledgement. A direct drag can take over if no event is emitted.
@@ -61,15 +69,16 @@ function feedScrollHandlers(runtime: Runtime, reading: Extract<ReadingSnapshot, 
     if (dragging) { measured = true; pending = null; }
     if (!measured || (pending !== null && Math.abs(y - pending) > 1)) return;
     pending = null;
-    memory.position = captureFeedScrollPosition(identity, y);
+    memory.positions[identity.kind] = captureScrollPosition(identity, y);
   }
   return {
     scrollRef(nativeView: ScrollView | null) {
       detach?.();
       if (!nativeView) return;
       const attached = {};
-      if (memory.runtime !== runtime) memory.position = null;
-      memory.runtime = runtime;
+      if (memory.runtime !== runtime) memory.positions = { feed: null, post: null };
+      if (memory.navigation !== navigation) memory.positions.post = null;
+      memory.runtime = runtime; memory.navigation = navigation;
       attachment = attached; view = nativeView; memory.mount = attached;
       viewportHeight = null; contentHeight = null; measured = false; pending = null;
       const cleanup = () => {
@@ -206,8 +215,9 @@ function Reading({ runtime, state, post, clearScroll }:
       {state.feed.page.items.map((item, index) => <NativePost key={item.id + ":" + index} post={item} onOpen={open} />)}
       {state.feed.page.nextCursor ? <Button label="Next page" onPress={() => reset(runtime.nextPage)} /> : <Text variant="small" tone="muted">You're up to date on this page.</Text>}
     </> : null}
+    <NativePendingLike runtime={runtime} />
     {state.kind === "post" ? <NativePost post={state.post} detail revealed={state.revealed} onOpen={open}
-      onReveal={() => act(runtime.reveal)} /> : null}
+      onReveal={() => act(runtime.reveal)} interaction={<NativePostLike runtime={runtime} postId={state.post.id} />} /> : null}
     {state.kind === "idle" ? <Button label="Load posts" onPress={() => reset(() => runtime.startFeed("latest"))} /> : null}
   </>;
 }
@@ -220,15 +230,20 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
   const navigation = useSyncExternalStore(runtime.navigation.subscribe, runtime.navigation.getSnapshot);
   const reading = useSyncExternalStore(runtime.reading.subscribe, runtime.reading.getSnapshot);
   const [presentation, setPresentation] = useState<Presentation | null>(null);
-  const memory = useRef<FeedScrollMemory>({ runtime, position: null, mount: null }).current;
+  const memory = useRef<ScrollMemory>({ runtime, navigation, positions: { feed: null, post: null }, mount: null }).current;
   const owner = state.account?.id ?? null;
-  const makeScroll = (revision: number) => ({ runtime, reading, owner, generation: state.generation, revision,
-    handlers: reading.kind === "feed" && owner ? feedScrollHandlers(runtime, reading,
-      { owner, generation: state.generation, mode: reading.feed.mode, scope: reading.feed.scope, pageCursor: reading.feed.pageCursor }, memory) : null });
+  const response = reading.kind === "post" ? reading.post : reading;
+  const makeScroll = (revision: number) => ({ runtime, navigation, response, owner, generation: state.generation, revision,
+    handlers: owner && (reading.kind === "feed" || reading.kind === "post")
+      ? readingScrollHandlers(runtime, navigation, reading, reading.kind === "feed"
+        ? { kind: "feed", owner, generation: state.generation, mode: reading.feed.mode, scope: reading.feed.scope, pageCursor: reading.feed.pageCursor }
+        : { kind: "post", owner, generation: state.generation, postId: reading.post.id }, memory) : null });
   const [scroll, setScroll] = useState(() => makeScroll(0));
   // Keep only the current response. Even coalesced loading renders must produce
   // a fresh native mount when a newly authorized response has the same address.
-  if (scroll.runtime !== runtime || scroll.reading !== reading || scroll.owner !== owner || scroll.generation !== state.generation)
+  // A reveal-only snapshot keeps the same response and native scroll ownership.
+  if (scroll.runtime !== runtime || scroll.navigation !== navigation || scroll.response !== response ||
+    scroll.owner !== owner || scroll.generation !== state.generation)
     setScroll(makeScroll(scroll.revision + 1));
   useEffect(() => observeSessionVisibility({
     nativePrivacy: Platform.OS === "ios" || Platform.OS === "android" ? { source: createNativePrivacySource(),
@@ -250,21 +265,27 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
   }, runtime.setForeground), [runtime]);
   const visible = state.foreground && state.phase !== "concealed" &&
     ((Platform.OS !== "ios" && Platform.OS !== "android") || presentationMatches(presentation, state));
-  function clearScroll() { memory.position = null; memory.mount = null; }
+  function clearScroll() { memory.positions = { feed: null, post: null }; memory.mount = null; }
   useLayoutEffect(() => {
     if (!visible || state.phase !== "ready" || !owner || reading.kind === "error") {
-      memory.position = null; memory.mount = null;
-    } else if (memory.position && (memory.position.identity.owner !== owner || memory.position.identity.generation !== state.generation))
-      memory.position = null;
-  }, [visible, state.phase, owner, state.generation, reading.kind, memory]);
+      memory.positions = { feed: null, post: null }; memory.mount = null;
+    } else for (const kind of ["feed", "post"] as const) {
+      const saved = memory.positions[kind]?.identity;
+      if (saved && (saved.owner !== owner || saved.generation !== state.generation)) memory.positions[kind] = null;
+    }
+    // Navigation publishes a new bounded address even for A -> B -> A or a
+    // same-post reopen coalesced into one render. Periodic reads do not.
+    if (memory.navigation !== navigation) { memory.positions.post = null; memory.navigation = navigation; }
+  }, [visible, state.phase, owner, state.generation, reading.kind, navigation, memory]);
   useLayoutEffect(() => () => {
     // An old runtime's layout cleanup may run after the new native ref attaches.
-    if (memory.runtime === runtime) { memory.position = null; memory.mount = null; }
+    if (memory.runtime === runtime) { memory.positions = { feed: null, post: null }; memory.mount = null; }
   }, [runtime, memory]);
   const post = navigation.destination?.kind === "post";
-  const feedVisible = visible && state.phase === "ready" && !!owner && reading.kind === "feed" && !post;
-  const routeKey = post ? "post:" + navigation.destination.postId : "feed:" + (feedVisible ? scroll.revision : "");
-  return <><Screen foreground={visible} scrollKey={state.generation + ":" + routeKey} {...(feedVisible ? scroll.handlers : null)}>
+  const readingVisible = visible && state.phase === "ready" && !!owner &&
+    (post ? reading.kind === "post" && reading.post.id === navigation.destination.postId : reading.kind === "feed");
+  const routeKey = (post ? "post:" + navigation.destination.postId : "feed") + ":" + (readingVisible ? scroll.revision : "");
+  return <><Screen foreground={visible} scrollKey={state.generation + ":" + routeKey} {...(readingVisible ? scroll.handlers : null)}>
     <Text variant="small" tone="muted">GOD'S CHURCHES</Text>
     {signInMode.kind === "fixture" ? <Text variant="small" tone="muted">Development preview. Fictional accounts and posts only.</Text> : null}
     <SessionNotice state={state} runtime={runtime} />

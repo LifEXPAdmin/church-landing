@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { AccessibilityInfo, AppState, useColorScheme } from "react-native";
+import { AccessibilityInfo, AppState, useColorScheme, useWindowDimensions } from "react-native";
 import { nativeDesignTokens, type NativeDesignPreferences } from "@godschurches/shared-core";
 import { observeMotionPreference } from "./motion-preference";
 
@@ -8,6 +8,8 @@ export type NativeTheme = ReturnType<typeof nativeDesignTokens>;
 const initial: LocalChoices = { appearance: "system", readerSize: "comfortable", reduceMotion: false };
 const ThemeContext = createContext<{
   theme: NativeTheme;
+  /** Text layout identity only. Native Text still performs font scaling. */
+  fontScale: number;
   choices: LocalChoices;
   update: (change: Partial<LocalChoices>) => void;
 } | null>(null);
@@ -15,6 +17,7 @@ const ThemeContext = createContext<{
 /** Preview choices are ephemeral installation UI state, never account settings. */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const deviceAppearance = useColorScheme();
+  const { fontScale } = useWindowDimensions();
   const systemAppearance = deviceAppearance === "dark" || deviceAppearance === "light" ? deviceAppearance : null;
   const [choices, setChoices] = useState(initial);
   const [systemReduceMotion, setSystemReduceMotion] = useState(true);
@@ -30,9 +33,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, setSystemReduceMotion), []);
   const theme = useMemo(() => nativeDesignTokens({ ...choices, systemAppearance, systemReduceMotion }), [choices, systemAppearance, systemReduceMotion]);
-  const value = useMemo(() => ({ theme, choices,
+  const value = useMemo(() => ({ theme, choices, fontScale,
     update: (change: Partial<LocalChoices>) => setChoices((current) => ({ ...current, ...change }))
-  }), [theme, choices]);
+  }), [theme, choices, fontScale]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 

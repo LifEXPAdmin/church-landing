@@ -57,9 +57,11 @@ enum GCJSONPolicy {
     let prefix = "/api/platform/v1/"
     let issuance = path == prefix + "auth/password"
     let post = input.method == "POST"
+    let like = matches(path, "\\A/api/platform/v1/posts/[A-Za-z0-9_-]{1,100}/like\\z")
+    guard !like || parts.query == nil else { throw GCJSONFailure.unconfirmed }
     let gets = ["capabilities", "session", "session/activity", "feed", "churches"].map { prefix + $0 }
-    guard post ? (parts.query == nil && [prefix + "auth/password", prefix + "session/activity", prefix + "session/logout"].contains(path)) :
-      (input.method == "GET" && (gets.contains(path) || matches(path, "\\A/api/platform/v1/(posts|profiles|churches)/[A-Za-z0-9_-]{1,100}\\z")))
+    guard post ? (parts.query == nil && (like || [prefix + "auth/password", prefix + "session/activity", prefix + "session/logout"].contains(path))) :
+      (input.method == "GET" && (like || gets.contains(path) || matches(path, "\\A/api/platform/v1/(posts|profiles|churches)/[A-Za-z0-9_-]{1,100}\\z")))
     else { throw GCJSONFailure.unconfirmed }
     let allowed: Set<String> = ["Accept", "Cache-Control", "Pragma", "X-API-Version", "Content-Type", "Authorization", "X-Expected-Account"]
     guard Set(input.headers.keys).isSubset(of: allowed),

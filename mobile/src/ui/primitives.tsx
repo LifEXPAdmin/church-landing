@@ -12,8 +12,10 @@ export function Text({ variant = "body", tone = "text", style, accessibilityRole
   Omit<TextProps, "allowFontScaling" | "maxFontSizeMultiplier"> & {
     variant?: TextVariant; tone?: "text" | "muted" | "error";
   }) {
-  const { theme } = useTheme();
-  return <NativeText {...props} allowFontScaling
+  const { theme, fontScale } = useTheme();
+  // Refresh the iOS text host's measurement after a live Dynamic Type change.
+  // Keep its surrounding controls, inputs, scroll view and runtime mounted.
+  return <NativeText {...props} key={Platform.OS === "ios" ? fontScale : undefined} allowFontScaling
     accessibilityRole={accessibilityRole ?? (["title", "heading", "subheading"].includes(variant) ? "header" : undefined)}
     style={[theme.type[variant], { color: theme.color[tone], flexShrink: 1 }, style]} />;
 }
@@ -36,7 +38,7 @@ export function Button({ label, onPress, secondary = false, disabled = false, se
         : pressed ? theme.color.hover : theme.color.action,
       alignItems: "center", justifyContent: "center", alignSelf: "stretch"
     })}>
-    <Text variant="control" style={{ textAlign: "center", color: disabled ? theme.color.muted : secondary ? theme.color.text : theme.color["on-action"] }}>{label}</Text>
+    <Text variant="control" style={{ alignSelf: "stretch", textAlign: "center", color: disabled ? theme.color.muted : secondary ? theme.color.text : theme.color["on-action"] }}>{label}</Text>
   </Pressable>;
 }
 
