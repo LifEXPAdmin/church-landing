@@ -15,12 +15,13 @@ type Fixture = ReturnType<typeof createNativeFixture>;
 type Application = NativeApplication | { kind: "fixture"; fixture: Fixture };
 type Element = { type: unknown; props: { children?: unknown } };
 type Setup = () => void | (() => void);
-const adapters = ["./src/platform/native-json.native", "./src/platform/secure-credentials", "./src/platform/storage-probe"];
+const adapters = ["./src/platform/native-json.native", "./src/platform/secure-credentials", "./src/platform/storage-probe", "expo-crypto"];
 
 /** Execute the real module and only its owner effect. JSX is a descriptor tree;
  * this does not simulate React reconciliation, native rendering or StrictMode. */
-function entry(mode?: string, missing?: "wire" | "vault") {
+function entry(mode?: string, missing?: "wire" | "vault" | "randomness") {
   const loaded: string[] = [], fixtures: Fixture[] = [];
+  let mutationId: (() => string) | undefined;
   let application: Application | null = null, setup: Setup | null = null, renderingOwner = false;
   const jsx = (type: unknown, props: Element["props"]): Element => ({ type, props });
   const unexpectedHook = () => { assert.fail("Only ApplicationOwner hooks should execute"); };
@@ -37,7 +38,11 @@ function entry(mode?: string, missing?: "wire" | "vault") {
     "./application-configuration": { selectApplicationConfiguration: (value: unknown) => missing ?
       selectApplicationConfiguration(value, { environment: "staging", origin: "https://fictional.example.invalid" }) :
       selectApplicationConfiguration(value) },
-    "./src/session/native-application": { createNativeApplication },
+    "./src/session/native-application": { createNativeApplication: (...args: Parameters<typeof createNativeApplication>) => {
+      if (missing !== "randomness") return createNativeApplication(...args);
+      mutationId = args[1].mutationId;
+      return { kind: "unavailable" };
+    } },
     "./src/spike/native-fixture": { createNativeFixture() {
       const fixture = createNativeFixture({ latencyMs: 0 }); fixtures.push(fixture); return fixture;
     } },
@@ -80,7 +85,7 @@ function entry(mode?: string, missing?: "wire" | "vault") {
     try { return owner(); } finally { renderingOwner = false; }
   };
   render(); assert.equal(typeof setup, "function");
-  return { loaded, fixtures, render, state: () => application, start: () => setup!(),
+  return { loaded, fixtures, render, mutationId: () => mutationId, state: () => application, start: () => setup!(),
     dispose: () => { for (const fixture of fixtures) fixture.runtime.dispose(); } };
 }
 
@@ -126,4 +131,16 @@ test("owner setup, cleanup and setup construct distinct usable fixtures without 
   await second.runtime.setForeground(true);
   assert.equal(second.runtime.session.getSnapshot().phase, "concealed");
   assert.deepEqual(app.loaded.filter(name => adapters.includes(name)), []);
+});
+
+
+test("selected native composition defers the random ID module until an explicit choice requests it", t => {
+  const app = entry("native", "randomness"); t.after(app.dispose);
+  assert.equal(app.mutationId(), undefined);
+  const cleanup = app.start();
+  assert.equal(typeof app.mutationId(), "function");
+  assert.deepEqual(app.loaded.filter(name => adapters.includes(name)), []);
+  assert.throws(() => app.mutationId()!(), /Private native module/);
+  assert.deepEqual(app.loaded.filter(name => adapters.includes(name)), ["expo-crypto"]);
+  cleanup?.();
 });

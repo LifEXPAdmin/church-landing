@@ -87,6 +87,7 @@ function componentHarness(runtime: Runtime) {
     return exports;
   }
   modules["./NativeFeedChoices"] = evaluate(choicesCode);
+  modules["./NativePostLike"] = evaluate(compile("NativePostLike"));
   const { NativeJourney } = evaluate(journeyCode);
   assert.equal(typeof NativeJourney, "function");
   function cleanup(instance: Instance) { for (const work of instance.cleanups.values()) work(); instance.cleanups.clear(); }
@@ -140,6 +141,7 @@ function componentHarness(runtime: Runtime) {
     return { id: found.path!, props: found.props as unknown as ScreenProps };
   }
   return { render, screen, flushEffects,
+    posts() { return elements(tree).filter(element => element.type === "NativePost").map(element => element.props); },
     replaceRuntime(next: Runtime) { runtime = next; return render(true); },
     press(label: string) {
       const found = elements(tree).find(element => element.type === "Button" && element.props.label === label);
@@ -174,15 +176,24 @@ async function subject(t: { after(cleanup: () => void): void }) {
     backToFeed: () => dispatch("backToFeed")
   } as Runtime;
   let view = componentHarness(runtime); t.after(() => view.unmount());
+  const seedFeed = seed.feed;
   function freshFeed() {
-    state.reading = { kind: "feed", feed: structuredClone(seed.feed) };
+    state.reading = { kind: "feed", feed: structuredClone(seedFeed) };
     state.navigation = { ...state.navigation, destination: { kind: "screen", screen: "home" } };
+    return view.render();
+  }
+  function freshPost(postId = seedFeed.page.items[0].id, revealed = false) {
+    const seedPost = structuredClone(seedFeed.page.items[0]);
+    state.reading = { kind: "post", post: { ...seedPost, id: postId,
+      body: { ...seedPost.body, contentNote: "Fictional content note" } }, revealed };
+    if (state.navigation.destination?.kind !== "post" || state.navigation.destination.postId !== postId)
+      state.navigation = { ...state.navigation, destination: { kind: "post", postId } };
     return view.render();
   }
   function mount(screen = view.render()) {
     const calls: Array<{ x: number; y: number; animated: boolean }> = [];
     const props = screen.props;
-    assert.equal(typeof props.scrollRef, "function", "Ready feed must expose its native scroll ref.");
+    assert.equal(typeof props.scrollRef, "function", "Ready reading must expose its native scroll ref.");
     const cleanup = props.scrollRef!({ scrollTo(value) { calls.push(structuredClone(value) as typeof calls[number]); } });
     return { id: screen.id, props, calls,
       detach() { if (typeof cleanup === "function") cleanup(); else props.scrollRef!(null); },
@@ -195,7 +206,7 @@ async function subject(t: { after(cleanup: () => void): void }) {
   function remember(y = 800) {
     const m = mount(); m.layout(); m.content(); m.scroll(y); return m;
   }
-  return { state, commands, get view() { return view; }, mount, remember, freshFeed,
+  return { state, commands, get view() { return view; }, mount, remember, freshFeed, freshPost,
     remountJourney() { view.unmount(); view = componentHarness(runtime); return view.render(); },
     replaceRuntime() { return view.replaceRuntime({ ...runtime }); },
     commandHook(work: (name: string) => void) { onCommand = work; },
@@ -365,4 +376,128 @@ test("old runtime layout cleanup cannot revoke a replacement runtime ref attache
   const later = s.mount(s.freshFeed()); later.layout(); later.content();
   assert.equal(later.calls[0]?.y, 280);
   assert.deepEqual(s.commands, []);
+});
+
+test("detail rechecks restore only after fresh authorized layout, without retaining body or reveal state", async t => {
+  for (const coalesced of [false, true]) for (const contentFirst of [false, true]) {
+    const s = await subject(t); s.freshPost("fictional-post", true);
+    const old = s.remember(720);
+    if (!coalesced) {
+      s.state.reading = { kind: "idle" }; s.view.render();
+      assert.deepEqual(s.view.posts(), []);
+      s.state.reading = { kind: "loading", target: "post" };
+      const loading = s.view.render();
+      assert.equal(loading.props.scrollRef, undefined);
+      assert.deepEqual(s.view.posts(), [], "A bookmark must never keep the old post body mounted.");
+      old.scroll(0); old.drag(); old.layout(1); old.content(1);
+    }
+    const next = s.mount(s.freshPost("fictional-post", false));
+    assert.notEqual(next.props.scrollKey, old.props.scrollKey);
+    assert.equal(s.view.posts()[0]?.revealed, false, "A fresh content note is never implicitly revealed.");
+    old.scroll(0); old.detach(); next.scroll(0);
+    if (contentFirst) { next.content(1000); assert.deepEqual(next.calls, []); next.layout(700); }
+    else { next.layout(700); assert.deepEqual(next.calls, []); next.content(1000); }
+    assert.deepEqual(next.calls, [{ x: 0, y: 300, animated: false }]);
+    next.scroll(0); next.content(2000); next.layout(500);
+    assert.equal(next.calls.length, 1);
+    const later = s.mount(s.freshPost("fictional-post")); later.layout(); later.content();
+    assert.equal(later.calls[0]?.y, 720, "Queued zero before acknowledgement cannot overwrite the bookmark.");
+    assert.deepEqual(s.commands, [], "Passive scroll and layout cannot renew access or dispatch a request.");
+  }
+});
+
+test("revealing the current detail keeps its scroll owner while a new response resets reveal", async t => {
+  const s = await subject(t); s.freshPost("fictional-post");
+  const old = s.remember(400), reading = s.state.reading;
+  assert.equal(reading.kind, "post"); if (reading.kind !== "post") throw Error("Expected detail.");
+  s.state.reading = { ...reading, revealed: true };
+  const revealed = s.view.render();
+  assert.equal(revealed.props.scrollKey, old.props.scrollKey);
+  assert.equal(revealed.props.scrollRef, old.props.scrollRef);
+  assert.equal(s.view.posts()[0]?.revealed, true);
+  old.scroll(640);
+  const fresh = s.mount(s.freshPost("fictional-post", false)); fresh.layout(); fresh.content();
+  assert.equal(fresh.calls[0]?.y, 640);
+  assert.equal(s.view.posts()[0]?.revealed, false);
+  assert.notEqual(s.view.posts()[0]?.post, reading.post, "Only the fresh authorized body may render.");
+  assert.deepEqual(s.commands, []);
+});
+
+test("detail offsets cannot leak across route changes or a coalesced same-address reopen", async t => {
+  for (const coalesced of [false, true]) {
+    const s = await subject(t); s.freshPost("post-a"); const old = s.remember(540);
+    if (coalesced) {
+      // Navigation emits a fresh address on every open, even if A -> B -> A
+      // gets batched before React renders or the same post is opened explicitly.
+      s.state.navigation = { ...s.state.navigation, destination: { kind: "post", postId: "post-a" } };
+    } else {
+      const b = s.mount(s.freshPost("post-b")); b.layout(); b.content();
+      assert.deepEqual(b.calls, []); b.scroll(120);
+    }
+    const next = s.mount(s.freshPost("post-a")); old.scroll(0); old.detach(); next.layout(); next.content();
+    assert.deepEqual(next.calls, [], "Returning to a previous post must start a new bounded detail visit.");
+    next.scroll(240);
+    const later = s.mount(s.freshPost("post-a")); later.layout(); later.content();
+    assert.equal(later.calls[0]?.y, 240);
+  }
+});
+
+test("Back retains the separate feed bookmark and discards detail history", async t => {
+  const s = await subject(t); s.remember(800);
+  s.freshPost("post-a"); const detail = s.remember(320);
+  s.view.press("Back to feed"); assert.deepEqual(s.commands, ["activity", "backToFeed"]);
+  const feed = s.mount(s.freshFeed()); detail.scroll(0); detail.detach(); feed.layout(); feed.content();
+  assert.equal(feed.calls[0]?.y, 800);
+  const reopened = s.mount(s.freshPost("post-a")); reopened.layout(); reopened.content();
+  assert.deepEqual(reopened.calls, []);
+});
+
+test("detail acknowledgement, direct drag and detached callbacks obey the shared restore fence", async t => {
+  for (const drag of [false, true]) {
+    const s = await subject(t); s.freshPost("post-a"); const old = s.remember(580);
+    const next = s.mount(s.freshPost("post-a")); old.scroll(0); old.detach();
+    next.layout(); next.content(); assert.equal(next.calls[0]?.y, 580);
+    if (drag) next.drag(); else next.scroll(580);
+    next.scroll(310); old.drag(); old.layout(1); old.content(1); old.scroll(0);
+    const later = s.mount(s.freshPost("post-a")); later.layout(); later.content();
+    assert.equal(later.calls[0]?.y, 310); assert.deepEqual(s.commands, []);
+  }
+});
+
+test("detail errors, concealment, account replacement, runtime replacement and unmount clear offsets", async t => {
+  for (const reset of ["error", "conceal", "owner", "runtime", "unmount"] as const) {
+    const s = await subject(t); s.freshPost("post-a"); const old = s.remember(620);
+    if (reset === "error") { s.state.reading = { kind: "error", target: "post", problem: "unavailable", retryAfterSeconds: null }; s.view.render(); }
+    if (reset === "conceal") {
+      s.state.session = { ...s.state.session, foreground: false, phase: "concealed" }; s.view.render();
+      s.state.session = { ...s.state.session, foreground: true, phase: "ready" };
+    }
+    if (reset === "owner") {
+      s.state.session = { ...s.state.session, generation: s.state.session.generation + 1,
+        account: { ...s.state.session.account!, id: "other-fictional-owner" } };
+      s.state.navigation = { ...s.state.navigation, generation: s.state.session.generation, owner: s.state.session.account!.id };
+    }
+    if (reset === "runtime") { s.mount(s.replaceRuntime()); s.view.flushEffects(); }
+    if (reset === "unmount") s.remountJourney();
+    const next = s.mount(s.freshPost("post-a")); old.scroll(0); old.detach(); next.layout(); next.content();
+    assert.deepEqual(next.calls, [], reset + " must clear detail memory.");
+    next.scroll(260);
+    const later = s.mount(s.freshPost("post-a")); later.layout(); later.content();
+    assert.equal(later.calls[0]?.y, 260); assert.deepEqual(s.commands, []);
+  }
+});
+
+test("navigation replacement and getter-triggered expiry fence detail callbacks before the next render", async t => {
+  for (const source of ["navigation", "session", "reading"] as const) {
+    const s = await subject(t); s.freshPost("post-a"); s.remember(500);
+    const next = s.mount(s.freshPost("post-a")); next.layout();
+    if (source === "navigation")
+      s.state.navigation = { ...s.state.navigation, destination: { kind: "post", postId: "post-b" } };
+    else {
+      const expire = () => { s.state.session = { ...s.state.session, foreground: false, phase: "concealed" }; s.view.render(); };
+      if (source === "session") s.sessionReadHook(expire); else s.readingReadHook(expire);
+    }
+    next.content(); next.scroll(0); next.drag(); assert.deepEqual(next.calls, []);
+    assert.deepEqual(s.commands, []);
+  }
 });

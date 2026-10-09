@@ -78,6 +78,34 @@ export function createNativeClient(adapter: RequestAdapter) {
           return response;
         }
       }).run({ cancellation: cancellation(signal) })).data;
+    },
+    async like(owner: string, postId: string, interactionId: string, signal?: AbortSignal) {
+      apiId.parse(owner);
+      const id = apiId.parse(interactionId);
+      const path = apiContracts.like.path.replace(":postId", encodeURIComponent(apiId.parse(postId)));
+      return (await prepareRequest(adapter, {
+        path, method: "GET", expectedOwner: owner,
+        decode: (value, original) => {
+          const result = decodeApiResponse("like", value, original.owner);
+          if (result.data.id !== id) throw new Error("Like identity did not match the current post.");
+          return result;
+        }
+      }).run({ cancellation: cancellation(signal) })).data;
+    },
+    prepareLike(owner: string, postId: string, interactionId: string,
+      input: WireValue<typeof apiContracts.setLike.body>) {
+      apiId.parse(owner);
+      const id = apiId.parse(interactionId);
+      const body = JSON.stringify(apiContracts.setLike.body.parse(input));
+      const path = apiContracts.setLike.path.replace(":postId", encodeURIComponent(apiId.parse(postId)));
+      return prepareRequest(adapter, {
+        path, method: "POST", expectedOwner: owner, body, idempotent: true,
+        decode: (value, original) => {
+          const result = decodeApiResponse("setLike", value, original.owner);
+          if (result.data.id !== id) throw new Error("Like receipt did not match the current post.");
+          return result;
+        }
+      });
     }
   };
 }

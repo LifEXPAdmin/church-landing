@@ -91,6 +91,90 @@ test("unsafe paths and unsupported native writes never reach the wire", async ()
   assert.equal(state.requests.length, 0);
 });
 
+test("exact Like GET and POST paths retain fixed origin, captured headers and body bytes", async () => {
+  const { state, adapter } = harness();
+  const captured = await adapter.capture();
+  const body = JSON.stringify({ mutationId: "fixture-choice", expectedVersion: 0, desired: true });
+  for (const id of ["a", "Ab_9-", "x".repeat(100)]) {
+    const path = `/api/platform/v1/posts/${id}/like`;
+    for (const method of ["GET", "POST"] as const) {
+      await captured.send({ path, method, expectedOwner: owner, ...(method === "POST" ? { body } : {}) });
+      const sent = state.requests.at(-1)!;
+      assert.equal(sent.url, origin + path);
+      assert.equal(sent.method, method);
+      assert.equal(sent.body, method === "POST" ? body : undefined);
+      assert.deepEqual(sent.headers, {
+        Accept: "application/json", "Cache-Control": "no-store", Pragma: "no-cache", "X-API-Version": "1",
+        ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
+        Authorization: "Bearer " + token, "X-Expected-Account": owner
+      });
+      assert.equal(sent.maximumResponseBytes, API_MAX_RESPONSE_BYTES);
+      assert.equal(sent.timeoutMs, 15000);
+    }
+  }
+  assert.equal(state.requests.length, 6);
+  // Preserve the existing GET query policy outside the new Like route.
+  await captured.send({ path: "/api/platform/v1/feed?mode=latest", method: "GET", expectedOwner: owner });
+  await captured.send({ path: "/api/platform/v1/posts/fixture?", method: "GET", expectedOwner: owner });
+  assert.equal(state.requests.length, 8);
+});
+
+test("Like lookalikes, encoded IDs, all query delimiters and unsupported methods never dispatch", async () => {
+  const { state, adapter } = harness();
+  const captured = await adapter.capture();
+  const path = "/api/platform/v1/posts/fixture/like";
+  for (const bad of [
+    "/api/platform/v1/posts//like", `/api/platform/v1/posts/${"x".repeat(101)}/like`,
+    "/api/platform/v1/posts/a.b/like", "/api/platform/v1/posts/é/like", "/api/platform/v1/posts/a%2Fb/like",
+    "/api/platform/v1/posts/%61/like", "/api/platform/v1/posts/../like", "/api/platform/v1/posts/%2e/like",
+    "/api/platform/v1/profiles/fixture/like", "/api/platform/v1/churches/fixture/like",
+    "/api/platform/v1/posts/fixture/likes", "/api/platform/v1/posts/fixture/unlike", path + "/", path + "/extra",
+    path + "?", path + "?copy=1", path + "?#fragment", path + "#fragment"
+  ]) {
+    await assert.rejects(captured.send({ path: bad, method: "GET", expectedOwner: owner }));
+    await assert.rejects(captured.send({ path: bad, method: "POST", expectedOwner: owner, body: "{}" }));
+  }
+  for (const method of ["PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "get", "post"])
+    await assert.rejects(captured.send({ path, method: method as "GET", expectedOwner: owner }));
+  assert.equal(state.requests.length, 0);
+});
+
+test("Like admission preserves genuine guest GET while writes and mismatched credentials fail closed", async () => {
+  const path = "/api/platform/v1/posts/fixture/like";
+  const { state, adapter } = harness();
+  state.current = { identity: { owner: null, generation: 1 }, credential: null };
+  const guest = await adapter.capture();
+  await guest.send({ path, method: "GET", expectedOwner: null });
+  assert.equal(state.requests[0].headers.Authorization, undefined);
+  assert.equal(state.requests[0].headers["X-Expected-Account"], undefined);
+  await assert.rejects(guest.send({ path, method: "POST", expectedOwner: null, body: "{}" }));
+  await assert.rejects(guest.send({ path, method: "GET", expectedOwner: owner }));
+  assert.equal(state.requests.length, 1);
+  state.current = { identity: { owner, generation: 2 }, credential: { ownerId: owner, token } };
+  const captured = await adapter.capture();
+  await assert.rejects(captured.send({ path, method: "POST", expectedOwner: "another", body: "{}" }));
+  state.current = { ...state.current, credential: { ownerId: owner, token: "b".repeat(43) } };
+  await assert.rejects(captured.send({ path, method: "POST", expectedOwner: owner, body: "{}" }));
+  assert.equal(state.requests.length, 1);
+});
+
+test("Like body policy keeps bodyless reads and the exact 16 KiB UTF-8 write limit", async () => {
+  const { state, adapter } = harness();
+  const captured = await adapter.capture();
+  const path = "/api/platform/v1/posts/fixture/like";
+  await assert.rejects(captured.send({ path, method: "GET", expectedOwner: owner, body: "" }));
+  await assert.rejects(captured.send({ path, method: "POST", expectedOwner: owner }));
+  for (const body of ["x".repeat(16385), "é".repeat(8193)])
+    await assert.rejects(captured.send({ path, method: "POST", expectedOwner: owner, body }));
+  assert.equal(state.requests.length, 0);
+  const body = "é".repeat(8192);
+  const result = await captured.send({ path, method: "POST", expectedOwner: owner, body });
+  assert.equal(state.requests[0].body, body);
+  await result.read();
+  await assert.rejects(result.read());
+  assert.equal(state.requests.length, 1, "Response consumption never replays the write");
+});
+
 test("owner/header and body bounds fail before dispatch, including multi-byte text", async () => {
   const { state, adapter } = harness();
   const captured = await adapter.capture();

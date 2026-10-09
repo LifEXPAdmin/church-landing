@@ -4,6 +4,7 @@ import type { SessionPorts } from "./session-controller.ts";
 import { createNativeRuntime } from "./runtime.ts";
 
 export type NativeApplicationPorts = {
+  mutationId?(): string;
   wire(configuration: NativeApiConfiguration): NativeWire;
   vault(environment: NativeApiConfiguration["environment"], origin: string): SessionPorts["vault"];
 };
@@ -22,7 +23,7 @@ export function createNativeApplication(configuration: NativeApiConfiguration,
     const wire = ports.wire(fixed);
     const vault = ports.vault(fixed.environment, fixed.origin);
     return Object.freeze({ kind: "ready", runtime: createNativeRuntime({
-      configuration: fixed, wire, vault,
+      configuration: fixed, wire, vault, mutationId: ports.mutationId,
       availability: { screens: ["home"], resources: ["post"] }
     }) });
   } catch {

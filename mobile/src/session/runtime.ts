@@ -5,6 +5,7 @@ import type { NativeNavigationAvailability } from "../navigation/availability.ts
 import { createNativeReadController, type ReadingSnapshot } from "../reading/read-controller.ts";
 import { createNativeClient, type NativeClient } from "./native-client.ts";
 import { createNativeSessionController, type SessionPorts } from "./session-controller.ts";
+import { createNativePostLikeController, type PostLikeSnapshot } from "../interactions/post-like-controller.ts";
 
 /** Private composition. The app must deliberately supply an accepted native
  * wire and implemented renderers. No native module or network activates on import. */
@@ -14,6 +15,7 @@ export function createNativeRuntime(options: {
   vault: SessionPorts["vault"];
   clock?: SessionPorts["clock"];
   availability?: NativeNavigationAvailability;
+  mutationId?: () => string;
 }) {
   let primary: NativeClient | null = null;
   const session = createNativeSessionController({ vault: options.vault, clock: options.clock,
@@ -26,6 +28,7 @@ export function createNativeRuntime(options: {
   });
   const navigation = createSessionNavigation(session, options.availability ?? { screens: [], resources: [] });
   const reading = createNativeReadController(session, primary!, options.clock);
+  const likes = createNativePostLikeController(session, reading, primary!, options.mutationId);
   const unsubscribe = navigation.subscribe(reading.clear);
   let disposed = false, intent = 0;
   const current = (operation: number) => !disposed && operation === intent;
@@ -57,6 +60,7 @@ export function createNativeRuntime(options: {
     session: Object.freeze({ getSnapshot: session.getSnapshot, subscribe: session.subscribe }),
     navigation: Object.freeze({ getSnapshot: navigation.getSnapshot, subscribe: navigation.subscribe }),
     reading: Object.freeze({ getSnapshot: reading.getSnapshot, subscribe: reading.subscribe }),
+    likes: Object.freeze({ getSnapshot: likes.getSnapshot, subscribe: likes.subscribe }),
     setForeground(value: boolean) {
       if (disposed) return Promise.resolve();
       const changed = session.getSnapshot().foreground !== value;
@@ -75,9 +79,10 @@ export function createNativeRuntime(options: {
       const operation = ++intent;
       return afterVerification(session.retryVerification(), operation);
     },
-    signOut() { intent++; return session.signOut(); },
+    signOut() { intent++; likes.clearPending(); return session.signOut(); },
     cancelSignIn() {
       const operation = ++intent;
+      likes.clearPending();
       navigation.cancelReturn();
       return current(operation) ? session.signOut() : Promise.resolve();
     },
@@ -97,9 +102,19 @@ export function createNativeRuntime(options: {
     nextPage() { return readCommand(state => state.kind === "feed" && !!state.feed.page.nextCursor, reading.nextPage); },
     retry() { return readCommand(state => state.kind === "error", reading.retry); },
     reveal() { return readCommand(state => state.kind === "post" && !state.revealed, reading.reveal); },
+    setLike: likes.setLike,
+    retryLike: likes.retryLike,
+    refreshLike: likes.refreshLike,
+    async reviewPendingLike(expected: PostLikeSnapshot) {
+      const id = likes.pendingPost(expected);
+      if (!id || disposed) return;
+      const prior = intent;
+      const result = navigation.open({ kind: "post", postId: id });
+      if (current(prior) && result === "opened") await loadCurrent(navigation.getSnapshot().generation, ++intent);
+    },
     dispose() {
       if (disposed) return;
-      disposed = true; intent++; unsubscribe(); navigation.dispose(); reading.dispose(); session.dispose();
+      disposed = true; intent++; unsubscribe(); likes.dispose(); navigation.dispose(); reading.dispose(); session.dispose();
     }
   });
 }
