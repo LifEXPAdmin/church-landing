@@ -1,6 +1,7 @@
 import { RequestClientError, type WireValue, type nativePasswordInput } from "@godschurches/shared-core";
 import type { NativeIdentitySource } from "../platform/request-adapter.ts";
 import type { Credential, CredentialCandidate, ClearResult, createCredentialVault } from "./credential-vault.ts";
+import { sameCredential } from "./credential-vault.ts";
 import type { NativeClient } from "./native-client.ts";
 
 type Account = Extract<Awaited<ReturnType<NativeClient["session"]>>["data"], { state: "authenticated" }>["account"];
@@ -206,6 +207,15 @@ export function createNativeSessionController(ports: SessionPorts) {
     subscribe(listener: () => void) {
       if (!disposed) listeners.add(listener);
       return () => { listeners.delete(listener); };
+    },
+    /** Private command continuity, never part of the public session snapshot.
+     * A fresh foreground verification may retain the same saved credential;
+     * another sign-in, even for the same account, must not inherit its command. */
+    captureVerifiedContinuity(): (() => boolean) | null {
+      if (state.phase !== "ready" || !candidate || !credential || !live(generation)) return null;
+      const original = candidate;
+      return () => state.phase === "ready" && live(generation) && candidate !== null && credential !== null &&
+        sameCredential(original, candidate) && original.token === credential.token;
     },
     /** Pass active AND focused. Android notification shade blur also conceals. */
     setForeground(value: boolean): Promise<void> {

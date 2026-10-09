@@ -1,0 +1,8 @@
+{
+  "platforms": ["ios", "android"],
+  "apple": {
+    "modules": ["GCNativePrivacyModule"],
+    "appDelegateSubscribers": ["GCPrivacyAppDelegateSubscriber"]
+  },
+  "android": { "modules": ["expo.modules.gcnativeprivacy.GCNativePrivacyModule"] }
+}

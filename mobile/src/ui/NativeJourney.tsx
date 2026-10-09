@@ -1,17 +1,109 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { AccessibilityInfo, ActivityIndicator, AppState, Platform, View } from "react-native";
-import { nativePasswordInput } from "@godschurches/shared-core";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { AccessibilityInfo, ActivityIndicator, AppState, Platform, View, type ScrollView, type ScrollViewProps } from "react-native";
 import type { createNativeRuntime } from "../session/runtime";
 import type { SessionSnapshot } from "../session/session-controller";
 import type { ReadingSnapshot } from "../reading/read-controller";
 import { observeSessionVisibility } from "../platform/session-visibility";
 import { readNativeWindowFocus } from "../platform/native-visibility";
-import { Button, Card, Input, Screen, Text } from "./primitives";
+import { createNativePrivacySource } from "../platform/native-privacy.native";
+import { presentationMatches, type NativePrivacyPresentation as Presentation } from "../platform/native-privacy.ts";
+import { Button, Card, Screen, Text } from "./primitives";
 import { NativePost } from "./NativePost";
+import { NativePendingLike, NativePostLike } from "./NativePostLike";
+import { NativeFeedChoices } from "./NativeFeedChoices";
+import { NativeReactionPreferences } from "./NativeReactionPreferences";
+import { captureScrollPosition, restoreScrollPosition, type ScrollIdentity, type ScrollPosition } from "./feed-scroll-position";
+import { PasswordSignIn } from "./PasswordSignIn";
+import { NativePrivacyPresentation } from "./NativePrivacyPresentation";
 import { useTheme } from "./theme";
 
 type Runtime = ReturnType<typeof createNativeRuntime>;
-type SignInMode = { kind: "password" } | { kind: "fixture"; signIn: () => Promise<void> };
+type SignInMode = { kind: "password" } | { kind: "fixture"; signIn: () => Promise<void>;
+  credentials: Readonly<{ email: string; password: string }> };
+
+type Navigation = ReturnType<Runtime["navigation"]["getSnapshot"]>;
+type ScrollMemory = { runtime: Runtime; navigation: Navigation;
+  positions: Record<ScrollIdentity["kind"], ScrollPosition | null>; mount: object | null };
+
+/** A response owns stable handlers, but only an attached native view may use
+ * them. Bookmarks contain addresses and pixels, never retained reading data. */
+function readingScrollHandlers(runtime: Runtime, navigation: Navigation,
+  reading: Extract<ReadingSnapshot, { kind: "feed" | "post" }>, identity: ScrollIdentity, memory: ScrollMemory) {
+  let view: ScrollView | null = null, attachment: object | null = null;
+  let viewportHeight: number | null = null, contentHeight: number | null = null;
+  let measured = false, pending: number | null = null;
+  let detach: (() => void) | undefined;
+  function current() {
+    const attached = attachment, nativeView = view;
+    if (!attached || !nativeView || memory.runtime !== runtime || memory.mount !== attached) return null;
+    const session = runtime.session.getSnapshot();
+    const currentReading = runtime.reading.getSnapshot();
+    const currentNavigation = runtime.navigation.getSnapshot();
+    // Reveal changes only presentation, not the immutable authorized response.
+    const sameResponse = reading.kind === "post"
+      ? currentReading.kind === "post" && currentReading.post === reading.post : currentReading === reading;
+    // Reading/session getters can synchronously expire access and notify React.
+    // Recheck the session and attachment after those calls before any mutation.
+    return session.foreground && session.phase === "ready" && session.account?.id === identity.owner &&
+      session.generation === identity.generation && sameResponse && currentNavigation === navigation &&
+      runtime.session.getSnapshot() === session && runtime.reading.getSnapshot() === currentReading &&
+      runtime.navigation.getSnapshot() === navigation &&
+      attachment === attached && memory.mount === attached && view === nativeView
+      ? nativeView : null;
+  }
+  function restore() {
+    if (measured || viewportHeight === null || contentHeight === null || !current()) return;
+    const target = restoreScrollPosition(memory.positions[identity.kind], identity, { viewportHeight, contentHeight });
+    const nativeView = current();
+    if (!nativeView) return;
+    measured = true;
+    pending = target;
+    if (target === null) memory.positions[identity.kind] = null;
+    else {
+      // A queued zero event must not replace the bookmark before native scroll
+      // acknowledgement. A direct drag can take over if no event is emitted.
+      nativeView.scrollTo({ x: 0, y: target, animated: false });
+    }
+  }
+  function capture(y: number, dragging: boolean) {
+    if (!current() || !Number.isFinite(y) || y < 0) return;
+    if (dragging) { measured = true; pending = null; }
+    if (!measured || (pending !== null && Math.abs(y - pending) > 1)) return;
+    pending = null;
+    memory.positions[identity.kind] = captureScrollPosition(identity, y);
+  }
+  return {
+    scrollRef(nativeView: ScrollView | null) {
+      detach?.();
+      if (!nativeView) return;
+      const attached = {};
+      if (memory.runtime !== runtime) memory.positions = { feed: null, post: null };
+      if (memory.navigation !== navigation) memory.positions.post = null;
+      memory.runtime = runtime; memory.navigation = navigation;
+      attachment = attached; view = nativeView; memory.mount = attached;
+      viewportHeight = null; contentHeight = null; measured = false; pending = null;
+      const cleanup = () => {
+        if (memory.mount === attached) memory.mount = null;
+        if (attachment === attached) { attachment = null; view = null; }
+      };
+      detach = cleanup;
+      return cleanup;
+    },
+    onLayout: ((event) => {
+      if (!current()) return;
+      const height = event.nativeEvent.layout.height;
+      if (!Number.isFinite(height) || height <= 0) return;
+      viewportHeight = height; restore();
+    }) satisfies NonNullable<ScrollViewProps["onLayout"]>,
+    onContentSizeChange: ((_width, height) => {
+      if (!current() || !Number.isFinite(height) || height < 0) return;
+      contentHeight = height; restore();
+    }) satisfies NonNullable<ScrollViewProps["onContentSizeChange"]>,
+    onScroll: ((event) => capture(event.nativeEvent.contentOffset.y, false)) satisfies NonNullable<ScrollViewProps["onScroll"]>,
+    onScrollBeginDrag: ((event) => capture(event.nativeEvent.contentOffset.y, true)) satisfies NonNullable<ScrollViewProps["onScrollBeginDrag"]>,
+    scrollEventThrottle: 16
+  };
+}
 
 function useIosStatus(runtime: Runtime, message: string | null) {
   useEffect(() => {
@@ -52,29 +144,25 @@ function SessionNotice({ state, runtime }: { state: SessionSnapshot; runtime: Ru
 }
 
 function SignIn({ runtime, mode }: { runtime: Runtime; mode: SignInMode }) {
-  const [email, setEmail] = useState(""), [password, setPassword] = useState(""), [invalid, setInvalid] = useState(false);
-  useIosStatus(runtime, invalid ? "Enter your email and a password of 8 to 128 characters." : null);
-  function submit() {
-    let input;
-    try { input = nativePasswordInput.parse({ email: email.trim(), password }); }
-    catch { setInvalid(true); setPassword(""); return; }
-    setEmail(""); setPassword(""); setInvalid(false);
-    void runtime.signIn(input);
-  }
+  const [previewForm, setPreviewForm] = useState(false);
   // This component is keyed by session generation and unmounted on concealment
   // or sign-in. Submitted values never enter navigation, storage or diagnostics.
   return <Card>
     <Text variant="heading">Welcome to God's Churches</Text>
     <Text>Connect with your community, share encouragement and make room for prayer.</Text>
-    {mode.kind === "fixture" ? <Button label="Continue with demo account" onPress={() => { void mode.signIn(); }} /> : <>
-      <Input label="Email" value={email} onChangeText={setEmail} maxLength={254} keyboardType="email-address"
-        autoCapitalize="none" autoCorrect={false} textContentType="username" autoComplete="username" />
-      <Input label="Password" value={password} onChangeText={setPassword} maxLength={128} secureTextEntry
-        autoCapitalize="none" autoCorrect={false} textContentType="password" autoComplete="current-password"
-        returnKeyType="go" onSubmitEditing={submit} />
-      {invalid ? <Text accessibilityLiveRegion="polite" tone="error">Enter your email and a password of 8 to 128 characters.</Text> : null}
-      <Button label="Sign in" onPress={submit} />
-    </>}
+    {mode.kind === "fixture" ? <>
+      {previewForm ? <>
+        <Text variant="subheading">Fictional sign-in form</Text>
+        <Text>Do not enter real account details. Use only the fictional details below.</Text>
+        <Text variant="small">Email: {mode.credentials.email}</Text>
+        <Text variant="small">Password: {mode.credentials.password}</Text>
+        <PasswordSignIn runtime={runtime} />
+        <Button label="Back to demo button" secondary onPress={() => setPreviewForm(false)} />
+      </> : <>
+        <Button label="Continue with demo account" onPress={() => { void mode.signIn(); }} />
+        <Button label="Try fictional sign-in form" secondary onPress={() => setPreviewForm(true)} />
+      </>}
+    </> : <PasswordSignIn runtime={runtime} />}
   </Card>;
 }
 
@@ -100,7 +188,8 @@ function ReadingError({ state, runtime, act }: { state: Extract<ReadingSnapshot,
   </Card>;
 }
 
-function Reading({ runtime, state, post }: { runtime: Runtime; state: ReadingSnapshot; post: boolean }) {
+function Reading({ runtime, state, post, clearScroll }:
+  { runtime: Runtime; state: ReadingSnapshot; post: boolean; clearScroll: () => void }) {
   const { theme } = useTheme();
   function act(command: () => Promise<unknown>) {
     // Only direct user interaction renews activity. Passive rendering, native
@@ -108,6 +197,7 @@ function Reading({ runtime, state, post }: { runtime: Runtime; state: ReadingSna
     void runtime.recordForegroundActivity();
     void command();
   }
+  function reset(command: () => Promise<unknown>) { clearScroll(); act(command); }
   const open = (id: string) => act(() => runtime.open({ kind: "post", postId: id }));
   return <>
     <Text variant="title">{post ? "Post" : "Your community"}</Text>
@@ -115,21 +205,21 @@ function Reading({ runtime, state, post }: { runtime: Runtime; state: ReadingSna
     {state.kind === "loading" ? <View accessibilityLiveRegion="polite" style={{ gap: theme.space.content }}>
       <ActivityIndicator color={theme.color.action} /><Text>Checking current access and loading {state.target === "post" ? "post" : "posts"}...</Text>
     </View> : null}
-    {state.kind === "error" ? <ReadingError state={state} runtime={runtime} act={act} /> : null}
+    {state.kind === "error" ? <ReadingError state={state} runtime={runtime} act={reset} /> : null}
     {state.kind === "feed" ? <>
       <View style={{ gap: theme.space.inline }}>
-        <Button label="Latest" secondary selected={state.feed.mode === "latest"} onPress={() => act(() => runtime.startFeed("latest"))} />
-        <Button label="Friends" secondary selected={state.feed.mode === "friends"} onPress={() => act(() => runtime.startFeed("friends"))} />
-        <Button label="Refresh feed" secondary onPress={() => act(runtime.refresh)} />
+        <NativeFeedChoices mode={state.feed.mode} onChoose={(mode) => reset(() => runtime.startFeed(mode))}
+          onRefresh={() => reset(runtime.refresh)} />
       </View>
       {state.feed.notice ? <Text accessibilityLiveRegion="polite">{state.feed.notice}</Text> : null}
       {state.feed.page.items.length === 0 ? <Text>No posts are available in this feed yet.</Text> : null}
       {state.feed.page.items.map((item, index) => <NativePost key={item.id + ":" + index} post={item} onOpen={open} />)}
-      {state.feed.page.nextCursor ? <Button label="Next page" onPress={() => act(runtime.nextPage)} /> : <Text variant="small" tone="muted">You're up to date on this page.</Text>}
+      {state.feed.page.nextCursor ? <Button label="Next page" onPress={() => reset(runtime.nextPage)} /> : <Text variant="small" tone="muted">You're up to date on this page.</Text>}
     </> : null}
+    <NativePendingLike runtime={runtime} />
     {state.kind === "post" ? <NativePost post={state.post} detail revealed={state.revealed} onOpen={open}
-      onReveal={() => act(runtime.reveal)} /> : null}
-    {state.kind === "idle" ? <Button label="Load posts" onPress={() => act(() => runtime.startFeed("latest"))} /> : null}
+      onReveal={() => act(runtime.reveal)} interaction={<NativePostLike runtime={runtime} postId={state.post.id} />} /> : null}
+    {state.kind === "idle" ? <Button label="Load posts" onPress={() => reset(() => runtime.startFeed("latest"))} /> : null}
   </>;
 }
 
@@ -140,13 +230,27 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
   const state = useSyncExternalStore(runtime.session.subscribe, runtime.session.getSnapshot);
   const navigation = useSyncExternalStore(runtime.navigation.subscribe, runtime.navigation.getSnapshot);
   const reading = useSyncExternalStore(runtime.reading.subscribe, runtime.reading.getSnapshot);
-  const [scroll, setScroll] = useState({ generation: state.generation, page: "" });
-  // Keep just one bounded page address through a loading/recheck state. A new
-  // page resets scrolling; rechecking the same page or revealing text does not.
-  const page = reading.kind === "feed" ? JSON.stringify([reading.feed.mode, reading.feed.scope, reading.feed.pageCursor]) :
-    scroll.generation === state.generation ? scroll.page : "";
-  if (scroll.generation !== state.generation || scroll.page !== page) setScroll({ generation: state.generation, page });
+  const preferences = useSyncExternalStore(runtime.reactionPreferences.subscribe, runtime.reactionPreferences.getSnapshot);
+  const settings = preferences.open || preferences.hasPending;
+  const [presentation, setPresentation] = useState<Presentation | null>(null);
+  const memory = useRef<ScrollMemory>({ runtime, navigation, positions: { feed: null, post: null }, mount: null }).current;
+  const owner = state.account?.id ?? null;
+  const response = reading.kind === "post" ? reading.post : reading;
+  const makeScroll = (revision: number) => ({ runtime, navigation, response, owner, generation: state.generation, revision,
+    handlers: owner && (reading.kind === "feed" || reading.kind === "post")
+      ? readingScrollHandlers(runtime, navigation, reading, reading.kind === "feed"
+        ? { kind: "feed", owner, generation: state.generation, mode: reading.feed.mode, scope: reading.feed.scope, pageCursor: reading.feed.pageCursor }
+        : { kind: "post", owner, generation: state.generation, postId: reading.post.id }, memory) : null });
+  const [scroll, setScroll] = useState(() => makeScroll(0));
+  // Keep only the current response. Even coalesced loading renders must produce
+  // a fresh native mount when a newly authorized response has the same address.
+  // A reveal-only snapshot keeps the same response and native scroll ownership.
+  if (scroll.runtime !== runtime || scroll.navigation !== navigation || scroll.response !== response ||
+    scroll.owner !== owner || scroll.generation !== state.generation)
+    setScroll(makeScroll(scroll.revision + 1));
   useEffect(() => observeSessionVisibility({
+    nativePrivacy: Platform.OS === "ios" || Platform.OS === "android" ? { source: createNativePrivacySource(),
+      generation: () => runtime.session.getSnapshot().generation, publish: setPresentation } : undefined,
     requiresFocus: Platform.OS === "android",
     currentFocus: readNativeWindowFocus,
     currentState: () => AppState.isAvailable ? AppState.currentState : null,
@@ -162,10 +266,29 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
       } catch (error) { focus.remove(); throw error; }
     }
   }, runtime.setForeground), [runtime]);
-  const visible = state.foreground && state.phase !== "concealed";
+  const visible = state.foreground && state.phase !== "concealed" &&
+    ((Platform.OS !== "ios" && Platform.OS !== "android") || presentationMatches(presentation, state));
+  function clearScroll() { memory.positions = { feed: null, post: null }; memory.mount = null; }
+  useLayoutEffect(() => {
+    if (!visible || state.phase !== "ready" || !owner || reading.kind === "error") {
+      memory.positions = { feed: null, post: null }; memory.mount = null;
+    } else for (const kind of ["feed", "post"] as const) {
+      const saved = memory.positions[kind]?.identity;
+      if (saved && (saved.owner !== owner || saved.generation !== state.generation)) memory.positions[kind] = null;
+    }
+    // Navigation publishes a new bounded address even for A -> B -> A or a
+    // same-post reopen coalesced into one render. Periodic reads do not.
+    if (memory.navigation !== navigation) { memory.positions.post = null; memory.navigation = navigation; }
+  }, [visible, state.phase, owner, state.generation, reading.kind, navigation, memory]);
+  useLayoutEffect(() => () => {
+    // An old runtime's layout cleanup may run after the new native ref attaches.
+    if (memory.runtime === runtime) { memory.positions = { feed: null, post: null }; memory.mount = null; }
+  }, [runtime, memory]);
   const post = navigation.destination?.kind === "post";
-  const routeKey = post ? "post:" + navigation.destination.postId : "feed:" + page;
-  return <Screen foreground={visible} scrollKey={state.generation + ":" + routeKey}>
+  const readingVisible = visible && !settings && state.phase === "ready" && !!owner &&
+    (post ? reading.kind === "post" && reading.post.id === navigation.destination.postId : reading.kind === "feed");
+  const routeKey = (settings ? "reaction-preferences" : post ? "post:" + navigation.destination.postId : "feed") + ":" + (readingVisible ? scroll.revision : "");
+  return <><Screen foreground={visible} scrollKey={state.generation + ":" + routeKey} {...(readingVisible ? scroll.handlers : null)}>
     <Text variant="small" tone="muted">GOD'S CHURCHES</Text>
     {signInMode.kind === "fixture" ? <Text variant="small" tone="muted">Development preview. Fictional accounts and posts only.</Text> : null}
     <SessionNotice state={state} runtime={runtime} />
@@ -175,9 +298,12 @@ export function NativeJourney({ runtime, signInMode, previewTools }:
       <Button label="Cancel and sign out" secondary onPress={() => { void runtime.cancelSignIn(); }} />
     </> : null}
     {state.phase === "unavailable" ? <Button label="Check access again" onPress={() => { void runtime.retryVerification(); }} /> : null}
-    {state.phase === "ready" && state.account ? <Reading key={state.account.id + ":" + state.generation} runtime={runtime} state={reading} post={post} /> : null}
+    {state.phase === "ready" && state.account ? <>
+      <NativeReactionPreferences runtime={runtime} />
+      {!settings ? <Reading key={state.account.id + ":" + state.generation} runtime={runtime} state={reading} post={post} clearScroll={clearScroll} /> : null}
+    </> : null}
     {state.phase === "ready" || state.phase === "unavailable" || state.cleanup === "cleanup-pending" || state.cleanup === "unconfirmed" ?
       <Button label={state.phase === "ready" ? "Sign out" : "Retry sign-out"} secondary onPress={() => { void runtime.signOut(); }} /> : null}
     {signInMode.kind === "fixture" ? previewTools : null}
-  </Screen>;
+  </Screen><NativePrivacyPresentation presentation={presentation} generation={state.generation} ready={visible} /></>;
 }

@@ -14,11 +14,20 @@ generation and credential together. The adapter checks all three before dispatch
 after the wire resolves and before consuming the response. Normal requests use
 only the captured bearer and expected-account header. Initial password issuance
 uses the canonical one-shot command with no bearer, cookie, Origin or existing
-account header. Neither the adapter nor its typed consumer retries a request.
+account header. Neither the adapter nor its typed consumer automatically retries
+a request. Explicit Like recovery preserves the canonical prepared command and
+its identity checks.
 
 Requests send `X-API-Version: 1` and require the same response version, consuming
 the canonical API compatibility receipt. No platform, build or minimum-binary
-header is invented. The path allowlist contains the initial session and read routes. Request
+header is invented. The path allowlist contains the initial session and read
+routes plus exact GET/POST `/api/platform/v1/posts/:postId/like` requests. The
+Like ID must contain 1 to 100 ASCII letters, digits, underscores or hyphens.
+All three policy layers reject queries on this route, including an empty `?`,
+without changing existing GET query admission elsewhere. Genuine guest Like
+reads remain available at the transport boundary; writes require the captured
+bearer and expected account. The detail consumer has its own session and
+capability requirements. Request
 and response limits come from the canonical contract: 16 KiB requests, 128-byte
 session activity/logout requests and 2 MiB responses, counted as UTF-8 bytes.
 The adapter allows four simultaneous wire calls and passes a 15-second deadline.
@@ -27,10 +36,21 @@ changes and late responses after cancellation. Failure messages and clock errors
 are sanitized; server Retry-After remains a hint for explicit recovery.
 
 `mobile/src/session/native-client.ts` supplies typed session, activity, logout,
-capability, feed and post consumers. Schema, envelope, viewer and error rules
+capability, feed, post, Like and authored reaction-count preference consumers. Schema, envelope, viewer and error rules
 remain in the shared package. The native layer contains no parallel server
 authorization or business policy. A separate captured source allows old-session
 revocation after visible local state has already been cleared.
+
+The account preference consumer admits exact GET/POST
+`/api/platform/v1/reaction-preferences` requests through all three policy layers.
+Both methods require the captured bearer and expected account. Queries, including
+an empty `?`, suffixes and encoded path aliases are rejected. Existing origin,
+header, byte, cancellation and one-shot-write bounds are unchanged. The canonical
+decoder binds read owner and mutation receipt owner to the captured viewer. The
+consumer additionally requires the receipt version to equal the immutable
+command's expected version plus one. Malformed acknowledgments leave dispatched
+choices unconfirmed. A valid historical receipt is followed by a fresh preference
+read; no response message or historical version becomes current account state.
 
 ## Native wire implementation
 
@@ -104,12 +124,30 @@ no network requests and changes no trust settings. These checks exercise macOS
 Foundation, not the Expo wrapper or an iOS binary. Android compilation and the
 resolved Gradle dependency graph require the configured Android toolchain.
 
-The local Swift 6 compile passes with warnings treated as errors. Ten macOS
+The current Swift 6 compile passes with warnings treated as errors. Seventeen macOS
 Foundation test groups cover request policy, single-use bodies, responses,
 redirect refusal, cancellation and the native 15-second deadline. Cancellation
 waits for the fictional request to start before cancelling, so that check proves
 an active task was stopped. This evidence does not establish iOS or Android
-binary acceptance.
+binary acceptance. The current Xcode compiler required an explicit strong capture
+on the existing serial reserve closure; its nested deadline timer remains weak.
+This preserves the existing ownership while satisfying the strict capture check.
+
+The three additional preference-policy groups cover exact authenticated GET/POST,
+guest rejection and method/query/path-alias rejection. Fresh project/Pods
+preparation and an iOS Release build include the updated policy. Fictional
+preference-screen observations use the in-memory wire and do not establish native
+HTTP or backend acceptance. Kotlin's matching preference cases await execution
+under the Android owner's resolved toolchain.
+
+The Like route adds focused JavaScript and Swift policy cases for exact paths,
+guest reads, authenticated writes, method/query rejection, header rules and the
+16 KiB UTF-8 boundary. `mobile/tests/native-json-policy.kt` supplies an assertion
+entrypoint for the Kotlin policy using the Android owner's already resolved
+OkHttp/Okio classpath. It adds no testing dependency and opens no network
+connection. Its source must be compiled and executed under the configured
+Android toolchain before claiming Kotlin acceptance; JavaScript or Foundation
+results do not establish that result.
 
 Autolinking search and resolution can verify both native class registrations
 without generating a new app project or installing dependencies. Podspec syntax

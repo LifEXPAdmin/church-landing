@@ -11,6 +11,110 @@ private func expect(_ value: @autoclosure () -> Bool, _ message: String) {
 }
 private func rejects(_ action: () throws -> Void) -> Bool { do { try action(); return false } catch { return true } }
 
+private func likePolicyChecks() throws -> Int {
+  let path = "/api/platform/v1/posts/fixture/like"
+  var authenticated = headers
+  authenticated["Authorization"] = "Bearer " + String(repeating: "a", count: 43)
+  authenticated["X-Expected-Account"] = "fictional"
+  var writing = authenticated; writing["Content-Type"] = "application/json"
+  func input(_ value: String, _ method: String = "GET", _ fields: [String: String]? = nil, _ body: String? = nil) -> GCJSONRequest {
+    GCJSONRequest(url: origin + value, method: method, headers: fields ?? authenticated, body: body)
+  }
+  for value in ["a", "Ab_9-", String(repeating: "x", count: 100)] {
+    let target = "/api/platform/v1/posts/" + value + "/like"
+    let read = try GCJSONPolicy.request(input(target), origin: origin)
+    let write = try GCJSONPolicy.request(input(target, "POST", writing, "{}"), origin: origin)
+    expect(read.url?.absoluteString == origin + target && read.httpMethod == "GET", "exact Like GET")
+    expect(write.url?.absoluteString == origin + target && write.httpMethod == "POST", "exact Like POST")
+    expect(write.value(forHTTPHeaderField: "Authorization") == authenticated["Authorization"], "captured Like bearer")
+    expect(write.value(forHTTPHeaderField: "Content-Length") == "2" && write.httpBody == nil, "body remains a one-shot transport input")
+  }
+  _ = try GCJSONPolicy.request(input(path, "GET", headers), origin: origin) // Canonical genuine guest read.
+  _ = try GCJSONPolicy.request(input("/api/platform/v1/feed?mode=latest"), origin: origin)
+  _ = try GCJSONPolicy.request(input("/api/platform/v1/posts/fixture?"), origin: origin)
+  for value in [
+    "/api/platform/v1/posts//like", "/api/platform/v1/posts/" + String(repeating: "x", count: 101) + "/like",
+    "/api/platform/v1/posts/a.b/like", "/api/platform/v1/posts/é/like", "/api/platform/v1/posts/a%2Fb/like",
+    "/api/platform/v1/posts/%61/like", "/api/platform/v1/posts/../like", "/api/platform/v1/posts/%2e/like",
+    "/api/platform/v1/profiles/fixture/like", "/api/platform/v1/churches/fixture/like",
+    "/api/platform/v1/posts/fixture/likes", "/api/platform/v1/posts/fixture/unlike", path + "/", path + "/extra",
+    path + "?", path + "?copy=1", path + "?#fragment", path + "#fragment"
+  ] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(value), origin: origin) }, "unsafe Like GET path")
+    expect(rejects { _ = try GCJSONPolicy.request(input(value, "POST", writing, "{}"), origin: origin) }, "unsafe Like POST path")
+  }
+  for method in ["PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "get", "post"] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, method), origin: origin) }, "unsupported Like method")
+  }
+  for key in ["Authorization", "X-Expected-Account", "X-API-Version", "Accept", "Cache-Control", "Pragma", "Content-Type"] {
+    var missing = writing; missing.removeValue(forKey: key)
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", missing, "{}"), origin: origin) }, "Like required header")
+  }
+  var guestWrite = headers; guestWrite["Content-Type"] = "application/json"
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", guestWrite, "{}"), origin: origin) }, "Like POST requires account")
+  for (key, value) in [
+    ("Cookie", "private"), ("Origin", origin), ("authorization", "private"),
+    ("Authorization", "Bearer short"), ("X-Expected-Account", "wrong owner"),
+    ("Content-Type", "application/json; charset=utf-8"), ("X-API-Version", "2")
+  ] {
+    var changed = writing; changed[key] = value
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", changed, "{}"), origin: origin) }, "Like header boundary")
+  }
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "GET", authenticated, ""), origin: origin) }, "Like GET has no body")
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "GET", writing), origin: origin) }, "Like GET has no body header")
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", writing), origin: origin) }, "Like POST requires body")
+  for body in [String(repeating: "x", count: 16385), String(repeating: "é", count: 8193)] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", writing, body), origin: origin) }, "Like UTF8 byte cap")
+  }
+  let maximum = try GCJSONPolicy.request(input(path, "POST", writing, String(repeating: "é", count: 8192)), origin: origin)
+  expect(maximum.value(forHTTPHeaderField: "Content-Length") == "16384", "Like exact UTF8 boundary")
+  return 4
+}
+
+private func reactionPreferencesPolicyChecks() throws -> Int {
+  let path = "/api/platform/v1/reaction-preferences"
+  var authenticated = headers
+  authenticated["Authorization"] = "Bearer " + String(repeating: "a", count: 43)
+  authenticated["X-Expected-Account"] = "fictional"
+  var writing = authenticated; writing["Content-Type"] = "application/json"
+  func input(_ value: String, _ method: String = "GET", _ fields: [String: String]? = nil, _ body: String? = nil) -> GCJSONRequest {
+    GCJSONRequest(url: origin + value, method: method, headers: fields ?? authenticated, body: body)
+  }
+  for method in ["GET", "POST"] {
+    let value = try GCJSONPolicy.request(input(path, method, method == "POST" ? writing : authenticated, method == "POST" ? "{}" : nil), origin: origin)
+    expect(value.url?.absoluteString == origin + path && value.httpMethod == method, "exact preference route")
+    expect(value.value(forHTTPHeaderField: "Authorization") == authenticated["Authorization"] &&
+      value.value(forHTTPHeaderField: "X-Expected-Account") == "fictional", "preference account binding")
+    expect(value.cachePolicy == .reloadIgnoringLocalCacheData && !value.httpShouldHandleCookies && value.timeoutInterval == 15, "preference transport limits")
+    var guest = headers; if method == "POST" { guest["Content-Type"] = "application/json" }
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, method, guest, method == "POST" ? "{}" : nil), origin: origin) }, "preferences require account")
+    for key in ["Authorization", "X-Expected-Account"] {
+      var missing = method == "POST" ? writing : authenticated; missing.removeValue(forKey: key)
+      expect(rejects { _ = try GCJSONPolicy.request(input(path, method, missing, method == "POST" ? "{}" : nil), origin: origin) }, "preferences require both account headers")
+    }
+  }
+  for value in [
+    "/api/platform/v1/reaction-preference", "/api/platform/v1/Reaction-preferences",
+    "/api/platform/v1/%72eaction-preferences", "/api/platform/v1/reaction%2dpreferences",
+    path + "/", path + "/extra", path + "?", path + "?copy=1", path + "?#fragment", path + "#fragment"
+  ] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(value), origin: origin) }, "unsafe preference GET path")
+    expect(rejects { _ = try GCJSONPolicy.request(input(value, "POST", writing, "{}"), origin: origin) }, "unsafe preference POST path")
+  }
+  for method in ["PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "get", "post"] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, method), origin: origin) }, "unsupported preference method")
+  }
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "GET", authenticated, ""), origin: origin) }, "preference GET has no body")
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "GET", writing), origin: origin) }, "preference GET has no body header")
+  expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", writing), origin: origin) }, "preference POST requires body")
+  for body in [String(repeating: "x", count: 16385), String(repeating: "é", count: 8193)] {
+    expect(rejects { _ = try GCJSONPolicy.request(input(path, "POST", writing, body), origin: origin) }, "preference UTF8 byte cap")
+  }
+  let maximum = try GCJSONPolicy.request(input(path, "POST", writing, String(repeating: "é", count: 8192)), origin: origin)
+  expect(maximum.value(forHTTPHeaderField: "Content-Length") == "16384" && maximum.httpBody == nil, "preference body remains a bounded one-shot input")
+  return 3
+}
+
 private final class ChallengeSender: NSObject, URLAuthenticationChallengeSender {
   func use(_ credential: URLCredential, for challenge: URLAuthenticationChallenge) {}
   func continueWithoutCredential(for challenge: URLAuthenticationChallenge) {}
@@ -90,6 +194,8 @@ private final class FictionalProtocol: URLProtocol, @unchecked Sendable {
     expect(rejects { _ = try GCJSONPolicy.request(GCJSONRequest(url: postURL, method: "POST", headers: postHeaders, body: "{}"), origin: origin) }, "password must be guest")
     expect(rejects { _ = try GCJSONPolicy.request(GCJSONRequest(url: origin + "/api/platform/v1/session/logout", method: "POST", headers: postHeaders, body: String(repeating: "x", count: 129)), origin: origin) }, "session request cap")
     groups += 1
+    groups += try likePolicyChecks()
+    groups += try reactionPreferencesPolicyChecks()
     var bytes = Data(repeating: 65, count: GCJSONPolicy.maximumBytes - 1)
     try GCJSONPolicy.append(Data([65]), to: &bytes)
     expect(rejects { try GCJSONPolicy.append(Data([65]), to: &bytes) }, "response cap")

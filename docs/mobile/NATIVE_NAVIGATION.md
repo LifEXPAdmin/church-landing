@@ -5,8 +5,9 @@ The native navigation adapter consumes `AppDestination`, `ScreenId`,
 It introduces no router, transport, session implementation or dependency. The
 current App connects `NativeJourney` screens to the shared session, navigation
 and reading runtime through `createNativeFixture`. Its responses and credential
-vault remain fictional and in memory; this is prepared source, not real-network
-or native-device acceptance.
+vault remain fictional and in memory. The native fixture checkpoints below
+record local emulator evidence; real-network and physical-device acceptance
+remain open.
 
 ## Presentation and availability
 
@@ -41,6 +42,22 @@ OAuth callbacks, verify domain associations, authorize a private resource, or
 launch a navigator. The existing custom-scheme fixture remains separate and
 deliberately narrow. Platform link configuration and cold/warm device acceptance
 must follow their own receipts.
+
+`observeNativeLinks` admits one normalized destination through the native
+lifecycle boundary. Android can deliver `onNewIntent` while the activity is
+paused, before `onResume`. An address received while concealed may wait only for
+the immediately following foreground verification. It dispatches no read and
+exposes no destination while concealed. An address already delivered before
+concealment is discarded as before.
+
+The pending delivery binds to that verification generation and, when the observer
+has a previously verified account, that same owner. Logout, cancellation,
+verification failure, another account or generation, a second concealment after
+verification starts, and disposal drop it. A verified guest can use the existing
+explicit contextual sign-in flow. Only one address is retained, and a newer valid
+delivery replaces it. A delayed initial URL may cross the first startup
+verification, but no later lifecycle change or newer URL. No raw URL, credential,
+private content, disk record or background read is introduced.
 
 ## Session integration gate
 
@@ -81,9 +98,69 @@ integration checks; no native UI, device or real-network acceptance is implied.
 Link security vectors also run with the locked WHATWG URL implementation that
 Expo installs at native startup, as well as Node's URL. This is library-level
 evidence; it does not launch Hermes or an OS link event.
+Lifecycle regressions reproduce Android's paused-intent ordering and initial URL
+resolution before, during and after startup verification. The actual shared
+runtime proves a fresh post read wins over restoration's feed continuation.
+Cancellation, logout, owner replacement, failure, repeated concealment and late
+initial delivery retain their invalidation checks.
 Type and import checks cover the actual native package. These establish source
-contracts, not native navigation, authenticated return, system Back, modal/dirty
-entry dismissal, process death, screen-reader focus or device link acceptance.
+contracts separately from the native fixture checks below. Real authenticated
+return, modal/dirty entry dismissal, process death, screen-reader focus and
+physical-device link acceptance remain open.
+
+### Android fixture checkpoint, 8 October 2026
+
+Clean source `288e6e366865504490ef26681cef8e632c21f3cb` built and ran on an
+Android API 36 ARM64 emulator using the local debug signing key. The identified
+APK includes the link lifecycle repair and the shared iOS build configuration.
+After the locked dependency install and Android prebuild, all 36 generated
+Android source files matched the previous build inputs. The merged manifest
+still excludes the six blocked broad storage/media permissions.
+
+Actual native checks opened the fresh fictional post from an external link
+while already open, from an external link after Home/background, and from the
+in-app link button. A cold launch held the destination at the welcome screen,
+then opened the post after explicit demo sign-in. System Back returned to the
+feed. Sign-out cleared the post; a new demo session opened the feed without
+replaying the old destination. Earlier failure evidence and the distinct older
+APK remain retained with the private task receipt.
+
+These checks use fictional in-memory responses. They do not accept a real
+account, verified HTTPS App Links, a physical device or an app-store release.
+
+### iPhone first-confirmation diagnosis, 8 October 2026
+
+Earlier iOS 27 acceptance observed the first external Open-app confirmation
+losing its continuation; reopening worked. That run did not record callback
+ordering. Its proposed active, URL, inactive sequence was an inference.
+
+After consuming the shared next-resume admission change, temporary diagnostic
+builds on iOS 18.3.1 and a fresh iOS 27 Simulator recorded concealment before URL
+receipt, then foreground verification. The signed-in iOS 18.3.1 session opened
+the intended post after verifying the same owner. The iOS 27 guest received a
+contextual return and opened the intended fictional prayer post after explicit
+demo sign-in. Traces contained only normalized fixture destinations, session
+phase/generation and open completion, without credentials or content.
+
+The existing admission change handles this observed sequence. No additional
+lifecycle policy change was needed; a completed foreground delivery still cannot
+return after later concealment. A focused regression uses the actual runtime to
+check the previously active guest, concealed receipt, deferred return, explicit
+sign-in and unrevealed prayer post. Temporary tracing is absent from the ordinary
+Release bundle.
+
+The ordinary unsigned Release build then passed on a separate fresh iOS 27
+Simulator: first confirmation cancellation followed by demo sign-in opened the
+feed without an old destination; accepting the next confirmation retained the
+guest destination and opened the requested prayer post after sign-in. External
+warm and background links, the in-app link round trip, Back to feed, cold-link
+launch, and sign-out followed by a new session passed. These checks use the
+unchanged shared intake implementation with the new guest regression. All 210
+mobile tests, type/lint checks and the native import boundary passed.
+
+This is fictional custom-scheme Simulator evidence. Real accounts, HTTPS
+Universal Links, physical iPhones, full accessibility and distribution acceptance
+remain open. Existing security and release gates are unchanged.
 
 The shared runtime and native controls are already composed in the fictional
 journey. Next, use a verified nonproduction HTTPS endpoint and fictional account

@@ -47,9 +47,12 @@ reasonable reversible choices and fix routine code, dependency, configuration
 and test problems. A genuine dependency block holds the dependent acceptance;
 record it precisely and continue another useful independent step.
 
-Use the guarded workspace launcher in [README.md](README.md). Verify the current
-prepared SSD before large writes, retain source/history and keep generated data
-task-scoped. Never use an internal-disk fallback. Reserve the machine-build
+Use the guarded workspace launcher in [README.md](README.md). The default profile
+requires the prepared external SSD. A separately inspected host may use an
+explicit private host/volume/workspace profile with verified writable storage
+and headroom. Record that host's authorization, storage receipt and task ownership
+before large writes. Never fall back to another disk when a profile fails.
+Retain source/history and keep generated data task-scoped. Reserve the machine-build
 contract for install, runtime, export and native builds. One worker runs heavy
 work on the shared Mac at a time. Inspect port ownership before starting local
 services and gracefully stop only services owned by this task.
@@ -82,3 +85,7 @@ a durable checkpoint; never leave completion or release acceptance implied.
 
 Keep private workspace links, task IDs, personal paths, device identifiers,
 credentials and private test evidence outside this public repository.
+
+Storage clarification, 8 October 2026: a recorded handoff to another Mac uses its
+own verified host profile. This does not change the original Mac's SSD default
+or permit an implicit internal-disk substitute.

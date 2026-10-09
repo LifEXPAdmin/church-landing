@@ -54,6 +54,18 @@ moderation, reporting/blocking, account deletion, compatibility, accessible
 device QA, store disclosures and owner acceptance. Existing adult and feature
 gates remain. None is bypassed by a screen mock or fixture success.
 
+The release-scope checklist remains open until its own evidence exists:
+
+- [ ] First slice: both installed native targets complete the canonical staging
+  sign-in, finite feed, fresh post, interrupted-read recovery and safe sign-out
+  journey, including foreground verification and cleared private state.
+- [ ] Core beta: each selected additional feature has its own canonical contract,
+  native consumer checks and platform acceptance. Unavailable features remain
+  unavailable; optional complexity does not hold an unrelated ready feature.
+- [ ] Public release: required authentication, privacy, moderation, reporting,
+  blocking, deletion, accessibility, dependency security and store obligations
+  pass, with the actual owner, signing and distribution decisions recorded.
+
 | Deferred scope | Revisit condition |
 | --- | --- |
 | Complex organization editing and advanced scheduling | Canonical website contracts and a selected native user need are ready. |
@@ -62,6 +74,25 @@ gates remain. None is bypassed by a screen mock or fixture success.
 | 3D village and bundled offline media | A measured native use case and download/storage budget justify them. |
 | Bible translations and licensed media | Rights and provider gates are satisfied. |
 | Rich post interactions absent from the initial DTO | Owning adapter and shared-package receipts expose their complete safe behavior. |
+
+## Engineering costs and unresolved evidence
+
+One TypeScript feature implementation still requires separate iOS and Android
+toolchains, native adapters and platform testing. Config plugins and generated
+projects are the escape hatch for native integration; they require inspected,
+repeatable changes rather than manual fixes that disappear on regeneration.
+Maintaining two complete native UI implementations would add a second feature
+and parity workload. A wrapper would retain the website's browser coupling.
+
+Native build success alone does not settle lifecycle ordering, accessibility,
+supported OS versions, secure transport or delivery and installed size. Those
+remain measured spike and first-journey gates. Dependency advisories remain
+fatal release checks. Store enrollment, signing ownership and any paid service
+remain separate owner decisions; no cost or purchase is assumed by this record.
+
+The scope and provisional architecture decisions are documented. Their decision
+records can be accepted while the unchecked implementation and release criteria
+remain open. Complete the two-platform spike before confirming the framework.
 
 ## Spike pass or fail
 

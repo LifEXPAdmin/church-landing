@@ -1,13 +1,12 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, realpathSync, statSync, statfsSync, writeFileSync, unlinkSync, openSync, closeSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { readFileSync, realpathSync, writeFileSync, unlinkSync, openSync, closeSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { mobileBuildEnv } from "./build-identity.mjs";
+import { verifyWorkspaceStorage, prepareWorkspaceDirectories } from "./workspace-storage.mjs";
 
 const mobile = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const website = resolve(mobile, "..");
-const uuid = process.env.GC_MOBILE_VOLUME_UUID;
-if (!uuid || !/^[A-F0-9-]{36}$/i.test(uuid)) throw new Error("Set GC_MOBILE_VOLUME_UUID from the private storage policy.");
 const commands = {
   install: ["npm", ["ci", "--no-audit", "--no-fund"]],
   bootstrap: ["npm", ["install", "--no-audit", "--no-fund"]],
@@ -25,21 +24,7 @@ const commands = {
 };
 const action = process.argv[2] || "inspect";
 if (action !== "inspect" && !Object.hasOwn(commands, action)) throw new Error("Unknown mobile workspace action.");
-if (process.platform !== "darwin") throw new Error("This Mac launcher requires the prepared SSD. Configure another host explicitly.");
-const plist = execFileSync("diskutil", ["info", "-plist", uuid], { encoding: "utf8" });
-const disk = JSON.parse(execFileSync("plutil", ["-convert", "json", "-o", "-", "-"], { input: plist, encoding: "utf8" }));
-if (typeof disk.VolumeUUID !== "string" || disk.VolumeUUID.toUpperCase() !== uuid.toUpperCase() || disk.WritableVolume !== true || disk.Internal !== false || disk.Locked || !disk.MountPoint)
-  throw new Error("The prepared writable SSD is unavailable.");
-const mount = realpathSync(disk.MountPoint);
-const storage = realpathSync(join(mount, "Codex Storage"));
-const actual = realpathSync(mobile);
-const storageRelative = relative(mount, storage);
-if (!storageRelative || storageRelative.startsWith("..") || storageRelative.startsWith("/") || statSync(storage).dev !== statSync(mount).dev || statSync(actual).dev !== statSync(mount).dev)
-  throw new Error("Storage and source must be on the verified SSD volume.");
-const nested = relative(storage, actual);
-if (!nested || nested.startsWith("..") || nested.startsWith("/")) throw new Error("Mobile workspace must be inside the verified SSD storage root.");
-const free = statfsSync(mount);
-if (free.bavail * free.bsize < 4 * 1024 ** 3) throw new Error("Less than 4 GiB remains on the SSD.");
+const storage = verifyWorkspaceStorage({ website, mobile });
 if (["install", "bootstrap", "dev", "export", "fixture", "prebuild-ios", "prebuild-android", "pods-ios", "build-ios"].includes(action)) {
   const common = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: website, encoding: "utf8" }).trim();
   const registry = JSON.parse(readFileSync(join(common, "gc-coordination", "registry.json"), "utf8"));
@@ -50,22 +35,8 @@ if (["install", "bootstrap", "dev", "export", "fixture", "prebuild-ios", "prebui
   if (!claim?.resources.includes("contract:machine-build") || !path || realpathSync(path) !== realpathSync(website))
     throw new Error("Reserve contract:machine-build in this worktree and set GC_MOBILE_WORKER before a heavy job.");
 }
-const generated = join(mobile, ".generated");
-mkdirSync(generated, { recursive: true });
-if (!realpathSync(generated).startsWith(actual + "/") || statSync(generated).dev !== statSync(mount).dev) throw new Error("Generated output must stay on this SSD workspace.");
-const proof = join(generated, "write-proof-" + process.pid);
-let proofCreated = false;
-try {
-  writeFileSync(proof, "mobile-storage-proof", { flag: "wx" });
-  proofCreated = true;
-  if (readFileSync(proof, "utf8") !== "mobile-storage-proof") throw new Error("SSD write/read verification failed.");
-} finally { if (proofCreated) unlinkSync(proof); }
-for (const child of ["npm-cache", "tmp", "expo-home", "cache"]) {
-  const path = join(generated, child);
-  mkdirSync(path, { recursive: true });
-  if (!realpathSync(path).startsWith(actual + "/") || statSync(path).dev !== statSync(mount).dev) throw new Error("Cache path leaves the verified SSD workspace.");
-}
-console.log(JSON.stringify({ action, volumeUUID: disk.VolumeUUID, mount, freeGiB: Math.floor(free.bavail * free.bsize / 1024 ** 3), mobile }));
+const { generated, freeGiB } = prepareWorkspaceDirectories(storage);
+console.log(JSON.stringify({ action, storageKind: storage.kind, volumeUUID: storage.volumeUUID, mount: storage.mount, freeGiB, minimumFreeGiB: storage.minimumFreeGiB, mobile }));
 if (action !== "inspect") {
   const [command, args] = commands[action];
   const lockPath = join(generated, "heavy-job.lock");

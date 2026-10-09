@@ -57,9 +57,12 @@ enum GCJSONPolicy {
     let prefix = "/api/platform/v1/"
     let issuance = path == prefix + "auth/password"
     let post = input.method == "POST"
+    let like = matches(path, "\\A/api/platform/v1/posts/[A-Za-z0-9_-]{1,100}/like\\z")
+    let preferences = path == prefix + "reaction-preferences"
+    guard !(like || preferences) || parts.query == nil else { throw GCJSONFailure.unconfirmed }
     let gets = ["capabilities", "session", "session/activity", "feed", "churches"].map { prefix + $0 }
-    guard post ? (parts.query == nil && [prefix + "auth/password", prefix + "session/activity", prefix + "session/logout"].contains(path)) :
-      (input.method == "GET" && (gets.contains(path) || matches(path, "\\A/api/platform/v1/(posts|profiles|churches)/[A-Za-z0-9_-]{1,100}\\z")))
+    guard post ? (parts.query == nil && (like || preferences || [prefix + "auth/password", prefix + "session/activity", prefix + "session/logout"].contains(path))) :
+      (input.method == "GET" && (like || preferences || gets.contains(path) || matches(path, "\\A/api/platform/v1/(posts|profiles|churches)/[A-Za-z0-9_-]{1,100}\\z")))
     else { throw GCJSONFailure.unconfirmed }
     let allowed: Set<String> = ["Accept", "Cache-Control", "Pragma", "X-API-Version", "Content-Type", "Authorization", "X-Expected-Account"]
     guard Set(input.headers.keys).isSubset(of: allowed),
@@ -70,7 +73,8 @@ enum GCJSONPolicy {
     let token = input.headers["Authorization"], owner = input.headers["X-Expected-Account"]
     guard (token == nil && owner == nil) || (token.map { matches($0, "\\ABearer [A-Za-z0-9_-]{43}\\z") } == true &&
       owner.map { matches($0, "\\A[A-Za-z0-9_-]{1,100}\\z") } == true),
-      !issuance || token == nil, !post || issuance || token != nil else { throw GCJSONFailure.unconfirmed }
+      !issuance || token == nil, !post || issuance || token != nil,
+      !preferences || token != nil else { throw GCJSONFailure.unconfirmed }
     if post {
       guard let body = input.body, body.utf8.count <= (path.hasPrefix(prefix + "session/") ? 128 : 16384),
         input.headers["Content-Type"] == "application/json" else { throw GCJSONFailure.unconfirmed }

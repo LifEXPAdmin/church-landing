@@ -1,3 +1,4 @@
+const { selectApplicationConfiguration } = require("./application-configuration");
 const variants = {
   development: { name: "God's Churches Dev", suffix: ".dev", scheme: "godschurches-dev" },
   staging: { name: "God's Churches Staging", suffix: ".staging", scheme: "godschurches-staging" }
@@ -5,6 +6,9 @@ const variants = {
 module.exports = () => {
   const variant = process.env.APP_VARIANT || "development";
   if (!Object.hasOwn(variants, variant)) throw new Error("Select development or staging. Production identifiers and release approval remain pending.");
+  const application = selectApplicationConfiguration(process.env.EXPO_PUBLIC_APPLICATION_MODE);
+  if (application.kind === "native" && application.configuration.environment !== variant)
+    throw new Error("Native application environment must match its build variant.");
   const selected = variants[variant];
   return {
     name: selected.name,
@@ -31,8 +35,15 @@ module.exports = () => {
         "android.permission.MANAGE_EXTERNAL_STORAGE"
       ]
     },
-    plugins: ["expo-system-ui", ["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: false }], "./plugins/with-fixture-network", "./plugins/with-ios-build-storage"],
-    extra: { variant, fixtureOnly: true },
+    plugins: [
+      "expo-system-ui",
+      ["expo-secure-store", { configureAndroidBackup: true, faceIDPermission: false }],
+      // Expo 57 requires this opt-in for apps built with the iOS 27 SDK.
+      ["expo-build-properties", { ios: { enableSceneSupport: true, usePrecompiledModules: false } }],
+      ...(application.kind === "fixture" ? ["./plugins/with-fixture-network"] : []),
+      "./plugins/with-ios-build-storage"
+    ],
+    extra: { variant, fixtureOnly: application.kind === "fixture", applicationMode: application.kind },
     updates: { enabled: false }
   };
 };

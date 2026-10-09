@@ -15,10 +15,10 @@ const welcome: ApiPost = apiPost.parse({
   body: { text: "A fictional post for testing the first mobile reading journey. Make room to listen, read and share encouragement.",
     contentNote: null, safeExcerpt: "Welcome to this fictional community.", scripture: null,
     linkUrl: null, linkTitle: null, linkDescription: null },
-  publishedAt: date, updatedAt: date, editedAt: null, version: 1, likeCount: null, commentCount: 0,
+  publishedAt: date, updatedAt: date, editedAt: null, version: 1, likeCount: 0, commentCount: 0,
   ownReaction: null, canReply: false, discussionClosed: false, requiresWeb: true, repost: null
 });
-const prayer: ApiPost = apiPost.parse({ ...welcome, id: "fixture-prayer", type: "PRAYER", audience: "CHURCH",
+const prayer: ApiPost = apiPost.parse({ ...welcome, id: "fixture-prayer", type: "PRAYER", audience: "CHURCH", likeCount: null,
   author: { kind: "person", identity: { id: "fictional-jordan", name: "Jordan, demo member", username: "fictional_jordan" } },
   body: { ...welcome.body, text: "This fictional prayer request is shown only after you choose to reveal it.",
     contentNote: "A sensitive fictional prayer request", safeExcerpt: "A community member asks for prayer." } });
@@ -29,6 +29,10 @@ const quote: ApiPost = apiPost.parse({ ...welcome, id: "fixture-quote", type: "T
   repost: { kind: "QUOTE", source: quotedSource }, likeCount: 0, discussionClosed: true });
 const unavailable: ApiPost = apiPost.parse({ ...welcome, id: "fixture-unavailable", repost: { kind: "PLAIN", source: null } });
 const posts = [welcome, prayer, quote, unavailable];
+const { repost: _welcomeRepost, ...plainSource } = welcome;
+// Direct-detail test address; keep the existing two finite feed pages unchanged.
+const plain = apiPost.parse({ ...quote, id: "fixture-repost", repost: { kind: "PLAIN", source: plainSource } });
+const details = [...posts, plain];
 
 function memoryStore(): TextStore {
   let value: string | null = null;
@@ -47,7 +51,20 @@ const failure = (code: string, status: number) => response({ apiVersion: API_VER
 export function createNativeFixture({ latencyMs = 180 }: { latencyMs?: number } = {}) {
   if (!Number.isSafeInteger(latencyMs) || latencyMs < 0 || latencyMs > 1000) throw Error("Invalid fixture delay.");
   let nonce = 0, issuance = 0, token: string | null = null;
-  let nextReadFails = false, nextFeedEmpty = false;
+  let nextReadFails = false, nextFeedEmpty = false, nextLikeReplyFails = false, mutationNonce = 0;
+  let nextPreferenceReplyFails = false;
+  let preference = { ownerId: owner, hideAuthoredReactionCounts: true, version: 0, recoveryRequired: false };
+  let lastPreference: { body: string; receipt: { id: string; version: number; message: string } } | null = null;
+  const likes = new Map<string, { liked: boolean; version: number }>();
+  let lastLike: { path: string; body: string; receipt: { id: string; version: number; message: string } } | null = null;
+  const likeState = (id: string) => likes.get(id) ?? { liked: false, version: 0 };
+  function withLikes<T extends Pick<ApiPost, "id" | "likeCount" | "author">>(post: T) {
+    const own = likeState(post.id);
+    const hidden = post.author.kind === "person" && post.author.identity.id === owner && preference.hideAuthoredReactionCounts;
+    return { ...post, ownReaction: own, likeCount: hidden || post.likeCount === null ? null : post.likeCount + (own.liked ? 1 : 0) };
+  }
+  const project = (post: ApiPost): ApiPost => ({ ...withLikes(post),
+    repost: post.repost ? { ...post.repost, source: post.repost.source ? withLikes(post.repost.source) : null } : null });
   const secret = memoryStore(), marker = memoryStore();
   const vault = createCredentialVault("development|" + origin, { secret, marker,
     randomId: () => `00000000-0000-4000-8000-${String(++nonce).padStart(12, "0")}` });
@@ -92,7 +109,47 @@ export function createNativeFixture({ latencyMs = 180 }: { latencyMs?: number } 
     }
     if (path === "/api/platform/v1/capabilities" && request.method === "GET")
       return response(encodeApiResponse("capabilities", envelope({ supportedVersions: [API_VERSION], features: [
-        { name: "feed.read", available: true }, { name: "post.read", available: true }] })));
+        { name: "feed.read", available: true }, { name: "post.read", available: true },
+        { name: "likes.read", available: true }, { name: "likes.write", available: true },
+        { name: "reactionPreferences.read", available: true }, { name: "reactionPreferences.write", available: true }] })));
+    if (path === "/api/platform/v1/reaction-preferences") {
+      if (request.method === "GET") return response(encodeApiResponse("reactionPreferences", envelope(preference)));
+      const supplied = apiContracts.setReactionPreferences.body.parse(JSON.parse(request.body ?? "null"));
+      const body = JSON.stringify(supplied);
+      let receipt = lastPreference?.body === body ? lastPreference.receipt : null;
+      if (!receipt) {
+        if (supplied.expectedVersion !== preference.version) return failure("conflict", 409);
+        preference = { ...preference, hideAuthoredReactionCounts: supplied.hideAuthoredReactionCounts, version: preference.version + 1 };
+        receipt = { id: owner, version: preference.version, message: "Fictional count choice saved." };
+        lastPreference = { body, receipt };
+      }
+      if (nextPreferenceReplyFails) { nextPreferenceReplyFails = false; throw Error("Fictional count reply interrupted after saving."); }
+      return response(encodeApiResponse("setReactionPreferences", envelope(receipt)));
+    }
+    const likePost = details.find(item => path === "/api/platform/v1/posts/" + item.id + "/like");
+    if (likePost) {
+      const target = likePost.repost?.kind === "PLAIN" ? likePost.repost.source : likePost;
+      if (!target) return failure("not_found", 404);
+      const state = likeState(target.id);
+      if (request.method === "POST") {
+        const supplied = apiContracts.setLike.body.parse(JSON.parse(request.body ?? "null"));
+        const body = JSON.stringify(supplied);
+        let receipt = lastLike?.path === path && lastLike.body === body ? lastLike.receipt : null;
+        if (!receipt) {
+          if (supplied.expectedVersion !== state.version) return failure("conflict", 409);
+          const changed = { liked: supplied.desired, version: state.version + 1 };
+          likes.set(target.id, changed);
+          receipt = { id: target.id, version: changed.version, message: changed.liked ? "Post liked." : "Like removed." };
+          // One pending client command permits one bounded fictional receipt.
+          lastLike = { path, body, receipt };
+        }
+        if (nextLikeReplyFails) { nextLikeReplyFails = false; throw Error("Fictional Like reply interrupted after saving."); }
+        return response(encodeApiResponse("setLike", envelope(receipt)));
+      }
+      if (request.method !== "GET") return failure("not_found", 404);
+      return response(encodeApiResponse("like", envelope({ id: target.id, ...state,
+        count: withLikes(target).likeCount })));
+    }
     if (request.method !== "GET") return failure("not_found", 404);
     if (nextReadFails) { nextReadFails = false; throw Error("Fictional connection interruption."); }
     if (path === "/api/platform/v1/feed") {
@@ -101,16 +158,18 @@ export function createNativeFixture({ latencyMs = 180 }: { latencyMs?: number } 
       const empty = nextFeedEmpty; nextFeedEmpty = false;
       return response(encodeApiResponse("feed", envelope({ mode: query.mode, scope: "fictional-scope",
         pageCursor: page ? "fixture.second" : "fixture.first", notice: null,
-        page: { items: empty ? [] : posts.slice(page * 2, page * 2 + 2), nextCursor: empty || page ? null : "fixture.second" } })));
+        page: { items: empty ? [] : posts.slice(page * 2, page * 2 + 2).map(project), nextCursor: empty || page ? null : "fixture.second" } })));
     }
-    const post = posts.find(item => path === "/api/platform/v1/posts/" + item.id);
-    return post ? response(encodeApiResponse("post", envelope(post))) : failure("not_found", 404);
+    const post = details.find(item => path === "/api/platform/v1/posts/" + item.id);
+    return post ? response(encodeApiResponse("post", envelope(project(post)))) : failure("not_found", 404);
   };
-  const runtime = createNativeRuntime({ configuration: { environment: "development", origin }, wire, vault,
+  const runtime = createNativeRuntime({ mutationId: () => "fixture-choice-" + ++mutationNonce, configuration: { environment: "development", origin }, wire, vault,
     availability: { screens: ["home"], resources: ["post"] } });
-  return Object.freeze({ runtime,
+  return Object.freeze({ runtime, credentials: input,
     signIn: () => runtime.signIn(input),
     failNextRead() { nextReadFails = true; },
+    interruptNextLikeReply() { nextLikeReplyFails = true; },
+    interruptNextPreferenceReply() { nextPreferenceReplyFails = true; },
     emptyNextFeed() { nextFeedEmpty = true; }
   });
 }

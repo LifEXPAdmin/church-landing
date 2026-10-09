@@ -40,9 +40,12 @@ internal object GCJSONPolicy {
     }
     val post = input.method == "POST"
     val issuance = path == prefix + "auth/password"
+    val like = Regex("/api/platform/v1/posts/[A-Za-z0-9_-]{1,100}/like").matches(path)
+    val preferences = path == prefix + "reaction-preferences"
+    require(!(like || preferences) || uri.rawQuery == null)
     val gets = setOf("capabilities", "session", "session/activity", "feed", "churches").map { prefix + it }
-    require(if (post) uri.rawQuery == null && path in setOf(prefix + "auth/password", prefix + "session/activity", prefix + "session/logout")
-      else input.method == "GET" && (path in gets || Regex("/api/platform/v1/(posts|profiles|churches)/[A-Za-z0-9_-]{1,100}").matches(path)))
+    require(if (post) uri.rawQuery == null && (like || preferences || path in setOf(prefix + "auth/password", prefix + "session/activity", prefix + "session/logout"))
+      else input.method == "GET" && (like || preferences || path in gets || Regex("/api/platform/v1/(posts|profiles|churches)/[A-Za-z0-9_-]{1,100}").matches(path)))
     val allowed = setOf("Accept", "Cache-Control", "Pragma", "X-API-Version", "Content-Type", "Authorization", "X-Expected-Account")
     val headers = input.headers
     require(allowed.containsAll(headers.keys) && headers["Accept"] == "application/json" && headers["Cache-Control"] == "no-store" &&
@@ -51,7 +54,7 @@ internal object GCJSONPolicy {
     val owner = headers["X-Expected-Account"]
     require((token == null && owner == null) || (token != null && Regex("Bearer [A-Za-z0-9_-]{43}").matches(token) &&
       owner != null && Regex("[A-Za-z0-9_-]{1,100}").matches(owner)))
-    require((!issuance || token == null) && (!post || issuance || token != null))
+    require((!issuance || token == null) && (!post || issuance || token != null) && (!preferences || token != null))
     val maximumRequestBytes = if (path.startsWith(prefix + "session/")) 128 else 16384
     // Refuse oversized bridge strings before allocating an encoded copy.
     require(if (post) input.body != null && input.body.length <= maximumRequestBytes && headers["Content-Type"] == "application/json"

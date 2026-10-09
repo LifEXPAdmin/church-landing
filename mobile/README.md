@@ -34,7 +34,7 @@ npm run check:boundary
 node scripts/workspace.mjs export
 ```
 
-The launcher resolves the mounted volume by UUID, verifies writable external
+By default, the launcher resolves the mounted volume by UUID, verifies writable external
 storage and at least 4 GiB free, checks the actual project path, and performs a
 small reversible write/read proof. It rejects missing storage without making an
 internal substitute. Dependencies stay in `mobile/node_modules`; npm cache,
@@ -42,6 +42,42 @@ temporary files, Expo state and exports stay in `mobile/.generated`. All these
 paths are ignored by Git. Reserve the shared heavy-job contract before install,
 fixture/dev runtime or export. The launcher checks that reservation against this
 worktree. Only one worker owns heavy work at a time.
+
+### Another inspected Mac
+
+For a recorded handoff to another Mac, use `GC_MOBILE_HOST_PROFILE` to select an
+explicit private JSON profile outside the checkout. The profile binds the exact
+hostname, writable internal APFS volume UUID, task storage root and checkout,
+and requires at least 32 GiB free. Keep the real values in the private workstation
+record. The launcher rechecks the profile and current free space before every
+action. A missing, mismatched, locked or undersized volume fails without a
+fallback. The original external-SSD mode remains the default.
+
+The private file has this shape, with values from that host's actual inspection:
+
+```json
+{
+  "schema": 1,
+  "kind": "internal",
+  "hostname": "inspected-host.local",
+  "volumeUUID": "11111111-2222-3333-4444-555555555555",
+  "storageRoot": "/absolute/task-storage",
+  "workspaceRoot": "/absolute/task-storage/source",
+  "minimumFreeGiB": 32
+}
+```
+
+Use a private file readable only by its owner, outside the public checkout.
+The storage root must be narrower than the home or filesystem root. A supplied
+`GC_MOBILE_VOLUME_UUID` must agree with the profile; it never overrides one.
+
+Use the writable data volume's UUID on a Mac with separate APFS system and data
+volumes; the system snapshot may be read-only. Verify the actual source and
+generated paths against that data volume. Never relocate existing home,
+credential, SDK or simulator directories to make a check pass. Dependencies,
+caches and native output still stay within this task's mobile workspace, and the
+local machine-build reservation still applies. Check Xcode, SDKs and runtimes on
+the receiving host; another Mac's successful setup is only historical evidence.
 
 The pinned Expo CLI reads its shell-only `__UNSAFE_EXPO_HOME_DIRECTORY` setting;
 the launcher points it at the task's new `.generated/expo-home` directory.
@@ -80,7 +116,7 @@ redirects, and has an eight-second timeout. It cannot access production.
 
 Generate the iOS project with `node scripts/workspace.mjs prebuild-ios` after
 reserving the heavy-job contract. This uses `--no-install --no-clean`, keeps the
-project on the SSD and leaves CocoaPods/native compilation for the inspected
+project in the verified workspace and leaves CocoaPods/native compilation for the inspected
 Xcode route. The first generated target is iPhone-only with an iOS 16.4 minimum.
 
 After preparing an inspected full Xcode and CocoaPods, use `pods-ios` and
@@ -89,11 +125,12 @@ journey in an unsigned Release Simulator app, with two compiler jobs and
 task-scoped caches and DerivedData. See [iPhone build paths](../docs/mobile/IOS_BUILD.md)
 for setup, variant checks and the separate physical-device route.
 
-Generated `ios/` and `android/` live under `mobile/` on the SSD. A later native
+Generated `ios/` and `android/` live under `mobile/` on the verified volume. A later native
 build must use task-scoped DerivedData, Gradle caches and device storage after
 the platform environment check. Do not move existing Xcode, Android, home or
 credential directories as an incidental setup change. Full Xcode was absent at
-discovery; Xcode 26.6 and iPhone SDK 26.5 are now verified. Android tooling is
+discovery; Xcode 26.6 and iPhone SDK 26.5 were subsequently verified on the original
+Mac. Receiving hosts must verify their own installation. Android tooling is
 owned by the Android lane. Native compilation, simulator/device launch and
 installed-size results require their own receipts.
 

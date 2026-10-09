@@ -26,7 +26,7 @@ function fixture() {
   mkdirSync(next, { recursive: true });
   writeFileSync(
     join(next, "package.json"),
-    JSON.stringify({ version: "15.5.25" })
+    JSON.stringify({ version: "15.5.27" })
   );
   for (const file of files) {
     let source = readFileSync(resolve("node_modules/next", file), "utf8");
