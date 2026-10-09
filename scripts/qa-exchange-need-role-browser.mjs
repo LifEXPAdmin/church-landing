@@ -588,7 +588,10 @@ try {
   assert.equal(current.volunteerSlotId, first.roles[3].id);
   const refreshed = await refreshedResponse;
   assert.equal(refreshed.status(), 200);
-  assert.equal(await refreshed.finished(), null);
+  assert.equal(
+    await timeout(refreshed.finished(), "Need refresh response completion"),
+    null
+  );
   await page.waitForFunction(() => !window.history.state?.gcPhotoWork);
   await slotRegion()
     .getByRole("form", {
